@@ -206,6 +206,29 @@ parser async would slow it and infect every API. Instead:
   options_test and helpers_test create no documents, so they have no records.
 * Parity: AST 2584/2693, output 1753/1875, messages 2615/2691; 0 unexpected failures.
 
+
+### 2026-09-26 (release + architecture review)
+* Published: GitHub `bobzhang/asciidoctor.mbt` (CI runs `scripts/check.mbtx` on Ubuntu and macOS with the
+  pinned upstream checkout) and mooncakes.io `bobzhang/asciidoctor`. `io/` and the CLI build for
+  `native` and `wasm`, so `moonx bobzhang/asciidoctor/cmd/asciidoctor@latest doc.adoc` works on moonx's
+  default wasm target. Dev-only files are kept out of the package with `.moonignore`.
+* Codex reviewed the whole architecture (`docs/review-2026-09-26-codex.md`). Fixed from it:
+  - validation gates: golden and corpus runners exit non-zero on unexpected differences, corpus
+    compares exit codes (`tests/corpus_known_diffs.txt`), goldens compare messages and are
+    machine-independent (see above);
+  - `io`: safe-mode jail for explicit destinations, `FixpointExhausted` instead of silent partial
+    results, unreadable vs missing includes, `prefetch_conversion` for `load_file`, file-system tests;
+  - core: `ProcessingError::MissingConverter` (Ruby's NotImplementedError), user converters are not
+    overwritten by the facade, `ArgumentError`/`SecurityError` instead of aborts in public helpers,
+    manpage without `mantitle` fails like Ruby, `Timings`;
+  - CLI: OptionParser parity (long `--opt=value` forms, abbreviations, `--`, error messages), invoker
+    error reporting, `-t` timings, manpage alternate pages, tests;
+  - regex: no matches inside surrogate pairs, `i`/`x` flags and scoped inline options, step budget
+    (`RegexTimeout` from `try_*`; the non-raising API aborts on exhaustion, where Ruby without
+    `Regexp.timeout` would hang), nesting/size limits, many Onigmo syntax details (13,556 oracle cases);
+  - date attributes use the local time zone like Ruby (`@core.set_utc_offset`, installed by `io` and the
+    CLI via `internal/localtime`; wasm stays UTC); LICENSE with upstream attribution.
+
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
 2. Server-side syntax highlighting adapter interface is in place; a Rouge-compatible lexer set is out of
@@ -213,3 +236,9 @@ parser async would slow it and infect every API. Instead:
 3. Profile hot paths (block attribute line, quote regexes) and add scanners where the regex engine
    dominates; add memoization to the regex VM if pathological patterns appear.
 4. ~~Raise an error for backends without a registered converter~~ (done: `ProcessingError::MissingConverter`).
+5. Remaining review items (`docs/review-2026-09-26-codex.md`): an explicit processing context instead of
+   process-global logger/registries/compliance; tighter `Node` invariants (kind-specific payloads);
+   public table-construction API; `CompositeConverter` chain semantics; highlighter adapter options
+   (callout extraction, line numbers, offsets); `Writer` abstraction; template converters (excluded).
+6. Consider splitting the async `io`/CLI into a separate module so pure-library users do not depend on
+   `moonbitlang/async`.
