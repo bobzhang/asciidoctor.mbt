@@ -14,8 +14,8 @@ total=0; same=0
 for f in $(find "$DIR" -name '*.adoc' | sort); do
   total=$((total+1))
   key=$(echo "$f" | sed "s|$DIR/||; s|/|__|g")
-  (cd "$(dirname "$f")" && ruby -I"$ROOT/.repos/asciidoctor/lib" "$ROOT/.repos/asciidoctor/bin/asciidoctor" -S safe -s -o - "$f" > "$OUT/rb/$key.html" 2>"$OUT/rb/$key.err") || true
-  (cd "$(dirname "$f")" && "$BIN" -S safe -s -o - "$f" > "$OUT/mbt/$key.html" 2>"$OUT/mbt/$key.err") || true
+  (cd "$(dirname "$f")" && ruby -I"$ROOT/.repos/asciidoctor/lib" "$ROOT/.repos/asciidoctor/bin/asciidoctor" -S safe -b ${BACKEND:-html5} ${EMBEDDED--s} -o - "$f" > "$OUT/rb/$key.html" 2>"$OUT/rb/$key.err") || true
+  (cd "$(dirname "$f")" && "$BIN" -S safe -b ${BACKEND:-html5} ${EMBEDDED--s} -o - "$f" > "$OUT/mbt/$key.html" 2>"$OUT/mbt/$key.err") || true
   if cmp -s "$OUT/rb/$key.html" "$OUT/mbt/$key.html"; then same=$((same+1)); else echo "DIFF $key"; fi
 done
 echo "identical: $same / $total"
