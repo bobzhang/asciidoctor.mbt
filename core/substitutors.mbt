@@ -696,22 +696,68 @@ fn Node::highlight_source(
   source : String,
   process_callouts : Bool,
 ) -> String {
-  match self.document().syntax_highlighter() {
-    Some(hl) if hl.handles_highlighting() => {
-      let opts : Map[String, String] = Map([])
-      let highlighted = hl.highlight(
-        self,
+  // NOTE the call to handles_highlighting is a defensive check since,
+  // normally, we wouldn't arrive here unless it returns true
+  let doc = self.document()
+  guard doc.syntax_highlighter() is Some(syntax_hl) &&
+    syntax_hl.handles_highlighting() else {
+    return self.sub_source(source, process_callouts)
+  }
+  let (source, callout_marks) = if process_callouts {
+    self.extract_callouts(source)
+  } else {
+    (source, None)
+  }
+  let doc_attrs = doc.attributes
+  let syntax_hl_name = syntax_hl.name()
+  let linenums_mode = if self.has_option("linenums") {
+    Some(doc_attrs.str("\{syntax_hl_name}-linenums-mode").unwrap_or("table"))
+  } else {
+    None
+  }
+  let start_line_number = if linenums_mode is Some(_) {
+    let start = @rb.to_i(self.attr("start", default="1").unwrap_or("1"))
+    Some(if start < 1 { 1 } else { start })
+  } else {
+    None
+  }
+  let highlight_lines = if self.has_attr("highlight") {
+    Some(
+      resolve_lines_to_highlight(
         source,
-        self.attr("language").unwrap_or(""),
-        opts,
-      )
-      if process_callouts {
-        self.sub_callouts(highlighted)
-      } else {
-        highlighted
-      }
-    }
-    _ => self.sub_source(source, process_callouts)
+        self.attr("highlight").unwrap_or(""),
+        start?=start_line_number,
+      ),
+    )
+  } else {
+    None
+  }
+  let (highlighted, source_offset) = syntax_hl.highlight(
+    self,
+    source,
+    self.attr("language"),
+    HighlightOptions::new(
+      callouts?=callout_marks,
+      css_mode=doc_attrs.str("\{syntax_hl_name}-css").unwrap_or("class"),
+      highlight_lines?,
+      number_lines?=linenums_mode,
+      start_line_number?,
+      style?=doc_attrs.str("\{syntax_hl_name}-style"),
+    ),
+  )
+  // fix passthrough placeholders that got caught up in syntax highlighting
+  let highlighted = if self.passthroughs.is_empty() {
+    highlighted
+  } else {
+    highlighted_pass_slot_rx.replace(highlighted, m => {
+      "\{pass_start}\{m.at(1)}\{pass_end}"
+    })
+  }
+  // NOTE highlight method may have depleted callouts
+  match callout_marks {
+    Some(marks) if !marks.is_empty() =>
+      self.restore_callouts(highlighted, marks, source_offset?)
+    _ => highlighted
   }
 }
 
@@ -1313,9 +1359,8 @@ pub fn Node::commit_subs(self : Node) -> Unit {
 }
 
 ///|
-/// Extracts callouts from source (Ruby `extract_callouts`); kept for
-/// server-side syntax highlighter adapters.
-#warnings("-unused_value")
+/// Extracts callouts from source (Ruby `extract_callouts`) before a
+/// server-side syntax highlighter highlights it.
 fn Node::extract_callouts(
   self : Node,
   source : String,
@@ -1368,7 +1413,6 @@ fn Node::extract_callouts(
 
 ///|
 /// Restores callouts after highlighting (Ruby `restore_callouts`).
-#warnings("-unused_value")
 fn Node::restore_callouts(
   self : Node,
   source : String,

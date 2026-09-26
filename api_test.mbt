@@ -1283,44 +1283,7 @@ impl @core.SyntaxHighlighter for FixedHighlighter with fn handles_highlighting(
 }
 
 ///|
-impl @core.SyntaxHighlighter for FixedHighlighter with fn format(
-  self,
-  node,
-  lang,
-  opts,
-) {
-  // Ruby SyntaxHighlighter::Base#format
-  let class_attr_val = if opts.contains("nowrap") {
-    "\{self.name} highlight nowrap"
-  } else {
-    "\{self.name} highlight"
-  }
-  let data_lang = match lang {
-    Some(l) => " data-lang=\"\{l}\""
-    None => ""
-  }
-  "<pre class=\"\{class_attr_val}\"><code\{data_lang}>\{node.content()}</code></pre>"
-}
-
-///|
-impl @core.SyntaxHighlighter for FixedHighlighter with fn has_docinfo(
-  _self,
-  _location,
-) {
-  false
-}
-
-///|
-impl @core.SyntaxHighlighter for FixedHighlighter with fn docinfo(
-  _self,
-  _location,
-  _doc,
-  _opts,
-) {
-  ""
-}
-
-///|
+/// `format` is the default one (Ruby `SyntaxHighlighter::Base#format`).
 impl @core.SyntaxHighlighter for FixedHighlighter with fn highlight(
   _self,
   _node,
@@ -1328,7 +1291,7 @@ impl @core.SyntaxHighlighter for FixedHighlighter with fn highlight(
   _lang,
   _opts,
 ) {
-  "highlighted"
+  ("highlighted", None)
 }
 
 ///|

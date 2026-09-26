@@ -274,13 +274,11 @@ fn Html5Converter::convert_document(
   }
   match syntax_hl {
     Some(hl) => {
-      let opts : Map[String, String] = {
-        "cdn_base_url": cdn_base_url,
-        "self_closing_tag_slash": slash,
-      }
-      if linkcss {
-        opts["linkcss"] = "true"
-      }
+      let opts = @core.DocinfoOptions::new(
+        linkcss~,
+        cdn_base_url~,
+        self_closing_tag_slash=slash,
+      )
       if hl.has_docinfo("head") {
         result[syntax_hl_docinfo_head_idx] = hl.docinfo("head", node, opts)
       } else {

@@ -367,9 +367,15 @@ fn Html5Converter::convert_listing(
   }
   let body = match syntax_hl {
     Some(hl) => {
-      let opts : Map[String, String] = Map([])
-      if nowrap {
-        opts["nowrap"] = "true"
+      let opts = if hl.handles_highlighting() {
+        let doc_attrs = doc.attributes
+        @core.FormatOptions::new(
+          nowrap~,
+          css_mode=doc_attrs.str("\{hl.name()}-css").unwrap_or("class"),
+          style?=doc_attrs.str("\{hl.name()}-style"),
+        )
+      } else {
+        @core.FormatOptions::new(nowrap~)
       }
       hl.format(node, lang, opts)
     }

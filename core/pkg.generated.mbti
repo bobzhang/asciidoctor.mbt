@@ -76,6 +76,8 @@ pub fn extname(String, fallback? : String) -> String
 
 pub fn format_log_message(LogMessage) -> String
 
+pub fn format_source(String, Node, String?, Bool, pre_style? : String) -> String
+
 pub fn generate_section_id(String, Node) -> String
 
 pub fn has_extname(String) -> Bool
@@ -413,6 +415,13 @@ pub(all) struct DocTitle {
 pub fn DocTitle::has_subtitle(Self) -> Bool
 pub fn DocTitle::new(String, sanitize? : Bool, separator? : String) -> Self
 
+pub(all) struct DocinfoOptions {
+  linkcss : Bool
+  cdn_base_url : String
+  self_closing_tag_slash : String
+}
+pub fn DocinfoOptions::new(linkcss? : Bool, cdn_base_url? : String, self_closing_tag_slash? : String) -> Self
+
 pub(all) struct DocinfoProcessor {
   location : String
   process : (Node) -> String? raise
@@ -458,12 +467,29 @@ pub(all) struct Footnote {
   text : String
 } derive(@debug.Debug)
 
+pub(all) struct FormatOptions {
+  nowrap : Bool
+  css_mode : String?
+  style : String?
+}
+pub fn FormatOptions::new(nowrap? : Bool, css_mode? : String, style? : String) -> Self
+
 pub(all) enum HeaderOption {
   NoHeader
   ExplicitHeader
   ImplicitHeader
   UnsetHeader
 } derive(Eq, @debug.Debug)
+
+pub(all) struct HighlightOptions {
+  callouts : Map[Int, Array[(AttrVal, String)]]?
+  css_mode : String
+  highlight_lines : Array[Int]?
+  number_lines : String?
+  start_line_number : Int?
+  style : String?
+}
+pub fn HighlightOptions::new(callouts? : Map[Int, Array[(AttrVal, String)]], css_mode? : String, highlight_lines? : Array[Int], number_lines? : String, start_line_number? : Int, style? : String) -> Self
 
 pub(all) struct ImageReference {
   target : String
@@ -875,6 +901,8 @@ pub(all) struct TreeProcessor {
 }
 
 // Type aliases
+pub type CalloutMarks = Map[Int, Array[(AttrVal, String)]]
+
 pub type ConverterFactory = (String, String?, Node) -> &Converter
 
 pub type SyntaxHighlighterFactory = (String, String, Node) -> &SyntaxHighlighter?
@@ -887,11 +915,13 @@ pub(open) trait Converter {
 
 pub(open) trait SyntaxHighlighter {
   fn name(Self) -> String
-  fn handles_highlighting(Self) -> Bool
-  fn format(Self, Node, String?, Map[String, String]) -> String
-  fn has_docinfo(Self, String) -> Bool
-  fn docinfo(Self, String, Node, Map[String, String]) -> String
-  fn highlight(Self, Node, String, String, Map[String, String]) -> String
+  fn handles_highlighting(Self) -> Bool = _
+  fn highlight(Self, Node, String, String?, HighlightOptions) -> (String, Int?) = _
+  fn format(Self, Node, String?, FormatOptions) -> String = _
+  fn has_docinfo(Self, String) -> Bool = _
+  fn docinfo(Self, String, Node, DocinfoOptions) -> String = _
+  fn writes_stylesheet(Self, Node) -> Bool = _
+  fn write_stylesheet(Self, Node) -> Array[(String, String)] = _
 }
 
 pub(open) trait Vfs {

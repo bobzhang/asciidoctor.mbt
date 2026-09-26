@@ -421,7 +421,6 @@ let uri_sniff_rx : @regex.Regex = @regex.re(
 let xml_sanitize_rx : @regex.Regex = @regex.re("<[^>]+>")
 
 ///|
-#warnings("-unused_value")
 let highlighted_pass_slot_rx : @regex.Regex = @regex.re(
   "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
 )
