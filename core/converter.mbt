@@ -159,15 +159,10 @@ let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = {
 }
 
 ///|
-/// Ruby warns once per process when a highlighter's gem cannot be loaded.
-let unavailable_warned : Map[String, Bool] = Map([])
-
-///|
 fn warn_unavailable(name : String) -> Unit {
-  if unavailable_warned.contains(name) {
+  if !once_per_process("unavailable:\{name}") {
     return
   }
-  unavailable_warned[name] = true
   let msg = match name {
     "pygments" =>
       "optional gem 'pygments.rb' is not available (reason: cannot load 'pygments'). Functionality disabled."

@@ -185,3 +185,35 @@ fn log_info(text : String, source_location? : Cursor) -> Unit {
 fn log_debug(text : String, source_location? : Cursor) -> Unit {
   log_msg(Debug, text, source_location?)
 }
+
+///|
+/// Keys of one-time actions already performed in this process (Ruby keeps such
+/// state in class variables, e.g. warning once that a gem is unavailable).
+let once_keys : Map[String, Bool] = Map([])
+
+///|
+/// Returns true the first time it is called with `key` in this process.
+fn once_per_process(key : String) -> Bool {
+  if once_keys.contains(key) {
+    false
+  } else {
+    once_keys[key] = true
+    true
+  }
+}
+
+///|
+/// Snapshot of the process-wide one-time state (see `restore_process_state`).
+pub fn snapshot_process_state() -> Array[String] {
+  once_keys.keys().collect()
+}
+
+///|
+/// Restores the process-wide one-time state. Used by drivers that rerun the
+/// pipeline (e.g. `@io`) so each run observes the same state.
+pub fn restore_process_state(keys : Array[String]) -> Unit {
+  once_keys.clear()
+  for k in keys {
+    once_keys[k] = true
+  }
+}

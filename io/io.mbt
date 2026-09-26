@@ -133,9 +133,11 @@ pub async fn[T] run_with_files(
   max_rounds? : Int = 32,
 ) -> T {
   let mut round = 0
+  let process_state = @core.snapshot_process_state()
   while true {
     vfs.misses.clear()
     vfs.missed.clear()
+    @core.restore_process_state(process_state)
     let (result, messages) = @core.with_memory_logger(f)
     round += 1
     if vfs.misses.is_empty() || round >= max_rounds {
