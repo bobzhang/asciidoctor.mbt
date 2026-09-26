@@ -325,7 +325,9 @@ pub fn register_syntax_highlighter(
 }
 
 ///|
-fn create_syntax_highlighter(
+/// Creates the registered syntax highlighter for `name`, if any (Ruby
+/// `SyntaxHighlighter.create`).
+pub fn create_syntax_highlighter(
   name : String,
   backend : String,
   doc : Node,

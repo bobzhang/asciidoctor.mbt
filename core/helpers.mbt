@@ -362,12 +362,11 @@ pub fn Node::normalize_asset_path(
   asset_name? : String = "path",
   autocorrect? : Bool = true,
 ) -> String {
-  let doc = self.document()
-  doc
-  .path_resolver()
-  .system_path(
-    Some(asset_ref),
-    start=doc.base_dir(),
+  // Ruby: normalize_system_path asset_ref, @document.base_dir, nil, ...
+  // (jailed to the base dir unless the safe mode is UNSAFE)
+  self.normalize_system_path_checked(
+    asset_ref,
+    start=self.document().base_dir(),
     target_name=asset_name,
     recover=autocorrect,
   ) catch {

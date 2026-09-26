@@ -55,6 +55,8 @@ pub fn create_pass_block(Node, Array[String], Attributes) -> Node
 
 pub fn create_section(Node, String, Attributes, level? : Int, numbered? : Bool) -> Node
 
+pub fn create_syntax_highlighter(String, String, Node) -> &SyntaxHighlighter?
+
 pub fn decode_text(Bytes) -> String
 
 pub fn decode_text_with(Bytes, String?) -> String
@@ -643,6 +645,7 @@ pub fn Node::resolve_block_subs(Self, String, Array[Sub]?, String) -> Array[Sub]
 pub fn Node::resolve_id(Self, String) -> String?
 pub fn Node::resolve_pass_subs(Self, String, subject? : String) -> Array[Sub]
 pub fn Node::resolve_subs(Self, String, type_? : String, defaults? : Array[Sub], subject? : String) -> Array[Sub]
+pub fn Node::restore_attributes(Self) -> Unit
 pub fn Node::revdate(Self) -> String?
 pub fn Node::role(Self) -> String?
 pub fn Node::role_is(Self, expected? : String) -> Bool
@@ -658,9 +661,10 @@ pub fn Node::set_caption(Self, String?) -> Unit
 pub fn Node::set_context(Self, Context) -> Unit
 pub fn Node::set_header_attribute(Self, String, value? : String, overwrite? : Bool) -> Bool
 pub fn Node::set_id(Self, String?) -> Unit
-pub fn Node::set_option(Self, String) -> Unit
+pub fn Node::set_option(Self, String) -> Bool
 pub fn Node::set_parent(Self, Self) -> Unit
 pub fn Node::set_role(Self, String) -> Unit
+pub fn Node::set_sourcemap(Self, Bool) -> Unit
 pub fn Node::set_text(Self, String?) -> Unit
 pub fn Node::set_title(Self, String?) -> Unit
 pub fn Node::source(Self) -> String
