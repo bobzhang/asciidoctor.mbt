@@ -74,7 +74,7 @@ fn is_delimited_block(line0 : String) -> BlockMatchData? {
       tip = @rb.slice(line, 0, 4)
       tip_len = 4
     }
-    if tip.has_prefix("`") {
+    if compliance.markdown_syntax && tip.has_prefix("`") {
       if tip_len == 4 {
         if tip == "````" {
           return None
@@ -138,7 +138,13 @@ fn read_paragraph_lines(
     preserve_last_line=true,
     skip_line_comments~,
     skip_processing~,
-    break_if=if break_at_list { start_of_block_or_list } else { start_of_block },
+    break_if?=if compliance.block_terminates_paragraph {
+      Some(if break_at_list { start_of_block_or_list } else { start_of_block })
+    } else if break_at_list {
+      Some(start_of_list)
+    } else {
+      None
+    },
   )
 }
 
@@ -247,7 +253,9 @@ fn next_block(
     let mut ch0 = ""
     let mut indented = false
     let mut done = false
-    if style is Some(s) && verbatim_styles.contains(s) {
+    if style is Some(s) &&
+      compliance.strict_verbatim_paragraphs &&
+      verbatim_styles.contains(s) {
       block_context = Context::from_name(s)
       cloaked_context = Paragraph
       reader.unshift_line(this_line)
@@ -260,7 +268,8 @@ fn next_block(
         indented = true
         ch0 = " "
         let stripped = @rb.lstrip(this_line)
-        if (
+        if compliance.markdown_syntax &&
+          (
             stripped.has_prefix("-") ||
             stripped.has_prefix("*") ||
             stripped.has_prefix("_")
@@ -277,8 +286,20 @@ fn next_block(
       } else {
         indented = false
         ch0 = first_char(this_line)
-        match layout_break_context(ch0) {
-          Some(lbc) if ext_layout_break_rx.matches(this_line) => {
+        let lb = if compliance.markdown_syntax {
+          layout_break_context(ch0)
+        } else if ch0 == "'" || ch0 == "<" {
+          layout_break_context(ch0)
+        } else {
+          None
+        }
+        match lb {
+          Some(lbc) if (if compliance.markdown_syntax {
+              ext_layout_break_rx.matches(this_line)
+            } else {
+              is_uniform(this_line, ch0, this_line.length()) &&
+              this_line.length() > 2
+            }) => {
             block = Some(Node::new_block(parent, lbc, content_model=Empty))
             done = true
           }
@@ -316,7 +337,7 @@ fn next_block(
                 if target.contains("{") {
                   let expanded = b.sub_attributes(target)
                   if expanded == "" &&
-                    doc_attrs.str("attribute-missing").unwrap_or("skip") ==
+                    doc_attrs.str("attribute-missing").unwrap_or(compliance.attribute_missing) ==
                     "drop-line" &&
                     b.sub_attributes(
                       target + " ",
@@ -399,7 +420,7 @@ fn next_block(
                         if target.contains("{") {
                           let expanded = parent.sub_attributes(target)
                           if expanded == "" &&
-                            doc_attrs.str("attribute-missing").unwrap_or("skip") ==
+                            doc_attrs.str("attribute-missing").unwrap_or(compliance.attribute_missing) ==
                             "drop-line" &&
                             parent.sub_attributes(
                               target + " ",
@@ -513,7 +534,11 @@ fn next_block(
         block = Some(parse_description_list(reader, m, parent))
         done = true
       } else if (style == Some("float") || style == Some("discrete")) &&
-        is_section_title(this_line, reader.peek_line()) is Some(_) {
+        (if compliance.underline_style_section_titles {
+          is_section_title(this_line, reader.peek_line()) is Some(_)
+        } else {
+          !indented && atx_section_title(this_line) is Some(_)
+        }) {
         reader.unshift_line(this_line)
         let (float_id, float_reftext, block_title, float_level, _) = parse_section_title(
           reader,
@@ -640,7 +665,9 @@ fn next_block(
               attributes~,
             ),
           )
-        } else if ch0 == ">" && this_line.has_prefix("> ") {
+        } else if compliance.markdown_syntax &&
+          ch0 == ">" &&
+          this_line.has_prefix("> ") {
           for i, line in lines {
             lines[i] = if line == ">" {
               @rb.from(line, 1)

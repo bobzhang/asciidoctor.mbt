@@ -69,6 +69,10 @@ pub struct Reader {
   mut unterminated : Bool
   priv mut saved : ReaderSnapshot?
   priv pre : PreState?
+  // list continuation markers carried by line (parallel to `lines`); Ruby
+  // tracks these through string identity (ListContinuationMarker)
+  priv mut marks : Array[Bool]?
+  priv mut last_marked : Bool
 }
 
 ///|
@@ -119,6 +123,41 @@ pub fn Reader::new(
     unterminated: false,
     saved: None,
     pre: None,
+    marks: None,
+    last_marked: false,
+  }
+}
+
+///|
+/// Creates a reader whose lines carry list-continuation markers.
+fn Reader::new_marked(data : Array[String], marks : Array[Bool], cursor? : Cursor) -> Reader {
+  let r = Reader::new(data, cursor?)
+  if marks.iter().any(m => m) {
+    let m = marks.copy()
+    m.rev_in_place()
+    r.marks = Some(m)
+  }
+  r
+}
+
+///|
+/// Whether the line most recently consumed carried a list continuation marker.
+fn Reader::last_line_marked(self : Reader) -> Bool {
+  self.last_marked
+}
+
+///|
+/// Restores a line with its marker flag.
+fn Reader::unshift_marked(self : Reader, line : String, mark : Bool) -> Unit {
+  if mark && self.marks is None {
+    self.marks = Some(Array::make(self.lines.length(), false))
+  }
+  self.lineno -= 1
+  self.look_ahead += 1
+  self.lines.push(line)
+  match self.marks {
+    Some(m) => m.push(mark)
+    None => ()
   }
 }
 
@@ -168,6 +207,8 @@ pub fn Reader::new_preprocessor(
     unterminated: false,
     saved: None,
     pre: Some(pre),
+    marks: None,
+    last_marked: false,
   }
   let skip_front_matter = document.attributes.truthy("skip-front-matter")
   let prepared = r.pre_prepare_lines(
@@ -530,6 +571,7 @@ pub fn Reader::skip_line_comments(self : Reader) -> Array[String] {
 pub fn Reader::terminate(self : Reader) -> Unit {
   self.lineno += self.lines.length()
   self.lines.clear()
+  self.marks = None
   self.look_ahead = 0
 }
 
@@ -660,6 +702,10 @@ fn Reader::base_shift(self : Reader) -> String? {
   if self.look_ahead != 0 {
     self.look_ahead -= 1
   }
+  self.last_marked = match self.marks {
+    Some(m) => m.pop().unwrap_or(false)
+    None => false
+  }
   self.lines.pop()
 }
 
@@ -668,6 +714,10 @@ fn Reader::unshift(self : Reader, line : String) -> Unit {
   self.lineno -= 1
   self.look_ahead += 1
   self.lines.push(line)
+  match self.marks {
+    Some(m) => m.push(false)
+    None => ()
+  }
 }
 
 ///|
@@ -676,6 +726,10 @@ fn Reader::unshift_all(self : Reader, lines : Array[String]) -> Unit {
   self.look_ahead += lines.length()
   for i = lines.length() - 1; i >= 0; i = i - 1 {
     self.lines.push(lines[i])
+    match self.marks {
+      Some(m) => m.push(false)
+      None => ()
+    }
   }
 }
 
@@ -1154,7 +1208,7 @@ fn Reader::preprocess_include_directive(
   let attrlist_s = attrlist.unwrap_or("")
   let mut expanded_target = target
   if target.contains("{") {
-    let attr_missing = doc.attributes.str("attribute-missing").unwrap_or("skip")
+    let attr_missing = doc.attributes.str("attribute-missing").unwrap_or(compliance.attribute_missing)
     expanded_target = doc.sub_attributes(
       target,
       attribute_missing=if attr_missing == "warn" {

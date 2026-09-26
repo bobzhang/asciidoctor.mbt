@@ -43,6 +43,9 @@ pub struct Node {
   // ListItem / Inline / Cell
   priv mut text_ : String?
   mut marker : String?
+  // Ruby stores an implicit ordered list style as a Symbol, which does not
+  // match ORDERED_LIST_KEYWORDS; track that quirk.
+  priv mut symbolic_style : Bool
   // Description list items (context == Dlist)
   dlist_items : Array[DlistItem]
   // Inline
@@ -106,6 +109,7 @@ fn Node::alloc(
     numbered: NotNumbered,
     text_: None,
     marker: None,
+    symbolic_style: false,
     dlist_items: [],
     inline_type: None,
     target: None,
@@ -518,7 +522,7 @@ pub fn Node::captioned_title(self : Node) -> String {
 pub fn Node::list_marker_keyword(self : Node, list_type? : String) -> String? {
   let lt = match list_type {
     Some(x) => Some(x)
-    None => self.style
+    None => if self.symbolic_style { None } else { self.style }
   }
   match lt {
     Some("loweralpha") => Some("a")

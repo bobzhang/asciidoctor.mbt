@@ -18,6 +18,7 @@ require 'minitest'
 
 module Harvest
   OUT = File.open(ENV.fetch('HARVEST_OUT'), 'w')
+  COMPLIANCE_DEFAULTS = Asciidoctor::Compliance.keys.each_with_object({}) {|k, h| h[k] = Asciidoctor::Compliance.send k }
   @test = nil
   @active = []
   class << self
@@ -128,6 +129,11 @@ module Harvest
               else (data.respond_to?(:read) ? { '__io__' => true } : data.to_s)
               end
         rec = { 'test' => Harvest.test, 'source' => src, 'options' => Harvest.options_for(options) }
+        compliance = Asciidoctor::Compliance.keys.each_with_object({}) do |k, h|
+          v = Asciidoctor::Compliance.send k
+          h[k.to_s] = v unless v == Harvest::COMPLIANCE_DEFAULTS[k]
+        end
+        rec['compliance'] = compliance unless compliance.empty?
         rec['source_lines'] = data if Array === data
         Harvest.active.push rec
       end
@@ -144,7 +150,7 @@ module Harvest
       r = super
       if (rec = @__harvest) && !rec['ast']
         begin
-          rec['ast'] = Harvest.dump_node self
+          rec['ast'] = JSON.parse(JSON.generate(Harvest.scrub(Harvest.dump_node(self)), max_nesting: false), max_nesting: false)
         rescue StandardError => e
           rec['ast_error'] = e.message
         end

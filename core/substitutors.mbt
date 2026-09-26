@@ -209,7 +209,7 @@ pub fn Node::sub_attributes(
             None => {
               let u = doc_attrs
                 .str("attribute-undefined")
-                .unwrap_or("drop-line")
+                .unwrap_or(compliance.attribute_undefined)
               attribute_undefined = Some(u)
               u
             }
@@ -244,7 +244,7 @@ pub fn Node::sub_attributes(
     let missing = match attribute_missing_val {
       Some(v) => v
       None => {
-        let v = doc_attrs.str("attribute-missing").unwrap_or("skip")
+        let v = doc_attrs.str("attribute-missing").unwrap_or(compliance.attribute_missing)
         attribute_missing_val = Some(v)
         v
       }
@@ -432,7 +432,8 @@ fn Node::parse_quoted_text_attributes(self : Node, str : String) -> Attributes {
   let attrs = Attributes::new()
   if str == "" {
     attrs
-  } else if str.has_prefix(".") || str.has_prefix("#") {
+  } else if (str.has_prefix(".") || str.has_prefix("#")) &&
+    compliance.shorthand_property_syntax {
     let (before, _, after) = @rb.partition(str, "#")
     if after == "" {
       if before.length() > 1 {

@@ -481,7 +481,9 @@ fn next_section(
     match preamble {
       Some(p) =>
         if p.has_blocks() {
-          if book || document.blocks.length() > 1 {
+          if book ||
+            document.blocks.length() > 1 ||
+            !compliance.unwrap_standalone_preamble {
             if document.sourcemap() {
               p.source_location = p.blocks[0].source_location
             }
@@ -639,8 +641,12 @@ fn is_next_line_section(reader : Reader, attributes : Attributes) -> Int? {
   if style == Some("discrete") || style == Some("float") {
     return None
   }
-  let next_lines = reader.peek_lines(num=2, direct=style == Some("comment"))
-  is_section_title(next_lines.get(0).unwrap_or(""), next_lines.get(1))
+  if compliance.underline_style_section_titles {
+    let next_lines = reader.peek_lines(num=2, direct=style == Some("comment"))
+    is_section_title(next_lines.get(0).unwrap_or(""), next_lines.get(1))
+  } else {
+    atx_section_title(reader.peek_line().unwrap_or(""))
+  }
 }
 
 ///|
@@ -673,11 +679,20 @@ fn is_section_title(line1 : String, line2 : String?) -> Int? {
 
 ///|
 fn atx_section_title(line : String) -> Int? {
-  if (line.has_prefix("=") || line.has_prefix("#")) &&
-    ext_atx_section_title_rx.find(line) is Some(m) {
-    Some(m.at(1).length() - 1)
+  let m = if compliance.markdown_syntax {
+    if line.has_prefix("=") || line.has_prefix("#") {
+      ext_atx_section_title_rx.find(line)
+    } else {
+      None
+    }
+  } else if line.has_prefix("=") {
+    atx_section_title_rx.find(line)
   } else {
     None
+  }
+  match m {
+    Some(m) => Some(m.at(1).length() - 1)
+    None => None
   }
 }
 
@@ -738,8 +753,14 @@ fn parse_section_title(
   let mut sect_level = 0
   let mut sect_title = ""
   let mut atx = false
-  let atx_m = if line1.has_prefix("=") || line1.has_prefix("#") {
-    ext_atx_section_title_rx.find(line1)
+  let atx_m = if compliance.markdown_syntax {
+    if line1.has_prefix("=") || line1.has_prefix("#") {
+      ext_atx_section_title_rx.find(line1)
+    } else {
+      None
+    }
+  } else if line1.has_prefix("=") {
+    atx_section_title_rx.find(line1)
   } else {
     None
   }
@@ -764,7 +785,11 @@ fn parse_section_title(
       }
     }
     None => {
-      let line2 = reader.peek_line(direct=true)
+      let line2 = if compliance.underline_style_section_titles {
+        reader.peek_line(direct=true)
+      } else {
+        None
+      }
       let setext = match line2 {
         Some(l2) if l2 != "" =>
           match setext_level(first_char(l2)) {
@@ -1414,7 +1439,8 @@ fn is_uniform(str : String, chr : String, len : Int) -> Bool {
 /// Parses the style attribute shorthand (`#id.role%option`), Ruby `parse_style_attribute`.
 fn parse_style_attribute(attributes : Attributes, reader : Reader?) -> String? {
   match attributes.pos_str(1) {
-    Some(raw_style) if !raw_style.contains(" ") => {
+    Some(raw_style) if !raw_style.contains(" ") &&
+      compliance.shorthand_property_syntax => {
       let mut name : String? = None
       let accum = StringBuilder()
       let mut parsed_style : String? = None

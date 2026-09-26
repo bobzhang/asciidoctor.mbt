@@ -80,7 +80,7 @@ pub fn generate_section_id(title : String, document : Node) -> String {
   }
   let refs = document.catalog().refs
   if refs.contains(gen_id) {
-    let mut cnt = 2
+    let mut cnt = compliance.unique_id_start_index
     while refs.contains("\{gen_id}\{sep}\{cnt}") {
       cnt += 1
     }

@@ -332,8 +332,8 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
   doc.doc_ = Some(dd)
   let standalone = options.standalone.unwrap_or(false)
   if parent_doc is None {
-    attrs.set_str("attribute-undefined", "drop-line")
-    attrs.set_str("attribute-missing", "skip")
+    attrs.set_str("attribute-undefined", compliance.attribute_undefined)
+    attrs.set_str("attribute-missing", compliance.attribute_missing)
     for p in default_attributes {
       attrs.set_str(p.0, p.1)
     }

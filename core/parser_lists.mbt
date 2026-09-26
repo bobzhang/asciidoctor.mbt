@@ -271,6 +271,7 @@ fn parse_list_item(
         sibling_trait = Marker(marker)
         li.marker = Some(marker)
         if first && style is None {
+          list_block.symbolic_style = implicit_style is Some(_)
           list_block.style = Some(
             match implicit_style {
               Some(s) => s
@@ -324,10 +325,10 @@ fn parse_list_item(
   }
   reader.shift() |> ignore
   let block_cursor = reader.cursor()
-  let list_item_reader = Reader::new(
-    read_lines_for_list_item(reader, list_type, sibling_trait, has_text),
-    cursor=block_cursor,
+  let (item_lines, item_marks) = read_lines_for_list_item(
+    reader, list_type, sibling_trait, has_text,
   )
+  let list_item_reader = Reader::new_marked(item_lines, item_marks, cursor=block_cursor)
   if list_item_reader.has_more_lines() {
     if sourcemap_assignment_deferred {
       list_item.source_location = Some(block_cursor)
@@ -397,7 +398,7 @@ fn read_lines_for_list_item(
   list_type : Context,
   sibling_trait : SiblingTrait,
   has_text : Bool,
-) -> Array[String] {
+) -> (Array[String], Array[Bool]) {
   let buffer : Array[String] = []
   let is_marker : Array[Bool] = []
   let push = fn(line : String, marker : Bool) {
@@ -416,13 +417,15 @@ fn read_lines_for_list_item(
   let mut detached_continuation : Int? = None
   let dlist = list_type == Dlist
   let mut this_line : String? = None
+  let mut this_marker = false
   while reader.has_more_lines() {
     let mut line = reader.read_line().unwrap()
     this_line = Some(line)
+    this_marker = line == "+" || reader.last_line_marked()
     if is_sibling_list_item(line, list_type, sibling_trait) {
       break
     }
-    let mut line_is_marker = line == "+"
+    let mut line_is_marker = this_marker
     let prev_idx = buffer.length() - 1
     let prev_line : String? = if prev_idx >= 0 {
       Some(buffer[prev_idx])
@@ -552,7 +555,8 @@ fn read_lines_for_list_item(
               Some(l) => {
                 line = l
                 this_line = Some(l)
-                line_is_marker = l == "+"
+                line_is_marker = l == "+" || reader.last_line_marked()
+                this_marker = line_is_marker
               }
               None => {
                 this_line = None
@@ -655,7 +659,7 @@ fn read_lines_for_list_item(
     this_line = None
   }
   match this_line {
-    Some(l) => reader.unshift_line(l)
+    Some(l) => reader.unshift_marked(l, this_marker && l != "+")
     None => ()
   }
   match detached_continuation {
@@ -678,7 +682,7 @@ fn read_lines_for_list_item(
       break
     }
   }
-  buffer
+  (buffer, is_marker)
 }
 
 ///|

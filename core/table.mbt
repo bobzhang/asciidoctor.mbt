@@ -156,7 +156,6 @@ fn Node::create_columns(self : Node, colspecs : Array[ColSpec]) -> Unit {
   let mut width_base = 0
   for colspec in colspecs {
     let a = Attributes::new()
-    a.set("width", Int(colspec.width))
     match colspec.halign {
       Some(h) => a.set_str("halign", h)
       None => ()
@@ -165,6 +164,7 @@ fn Node::create_columns(self : Node, colspecs : Array[ColSpec]) -> Unit {
       Some(v) => a.set_str("valign", v)
       None => ()
     }
+    a.set("width", Int(colspec.width))
     match colspec.style {
       Some(s) => a.set_str("style", s)
       None => ()

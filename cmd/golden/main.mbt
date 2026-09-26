@@ -186,6 +186,33 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
     stats.skipped += 1
     return
   }
+  @core.reset_compliance()
+  match rec.get("compliance") {
+    Some(Object(c)) =>
+      for k, v in c {
+        match (k, v) {
+          ("block_terminates_paragraph", _) =>
+            @core.compliance.block_terminates_paragraph = v is True
+          ("strict_verbatim_paragraphs", _) =>
+            @core.compliance.strict_verbatim_paragraphs = v is True
+          ("underline_style_section_titles", _) =>
+            @core.compliance.underline_style_section_titles = v is True
+          ("unwrap_standalone_preamble", _) =>
+            @core.compliance.unwrap_standalone_preamble = v is True
+          ("shorthand_property_syntax", _) =>
+            @core.compliance.shorthand_property_syntax = v is True
+          ("natural_xrefs", _) => @core.compliance.natural_xrefs = v is True
+          ("markdown_syntax", _) => @core.compliance.markdown_syntax = v is True
+          ("attribute_missing", String(s)) => @core.compliance.attribute_missing = s
+          ("attribute_undefined", String(s)) =>
+            @core.compliance.attribute_undefined = s
+          ("unique_id_start_index", Number(n, ..)) =>
+            @core.compliance.unique_id_start_index = n.to_int()
+          _ => ()
+        }
+      }
+    _ => ()
+  }
   let (doc, _messages) = @core.with_memory_logger(fn() {
     @asciidoctor.load_lines(
       if rec.contains("source_lines") {
