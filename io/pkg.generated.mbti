@@ -10,13 +10,22 @@ pub async fn convert(String, options? : @core.Options) -> String
 
 pub async fn convert_file(String, options? : @core.Options, destination? : Destination, to_dir? : String, mkdirs? : Bool) -> String
 
-pub async fn load(String, options? : @core.Options) -> @core.Node
+pub async fn load(String, options? : @core.Options, prefetch_conversion? : Bool) -> @core.Node
 
-pub async fn load_file(String, options? : @core.Options) -> @core.Node
+pub async fn load_file(String, options? : @core.Options, prefetch_conversion? : Bool) -> @core.Node
 
-pub async fn[T] run_with_files(FsVfs, () -> T, max_rounds? : Int) -> T
+pub async fn[T] run_with_files(FsVfs, () -> T raise, max_rounds? : Int) -> T
 
 // Errors
+pub suberror FixpointExhausted {
+  FixpointExhausted(rounds~ : Int, unresolved~ : Array[String])
+}
+pub impl Show for FixpointExhausted
+
+pub suberror IOError {
+  IOError(String)
+}
+pub impl Show for IOError
 
 // Types and methods
 pub(all) enum Destination {
