@@ -177,3 +177,25 @@ parser async would slow it and infect every API. Instead:
 * Ruby quirks reproduced deliberately: list continuation placeholder identity (tracked as per-line marker
   flags in Reader), implicit ordered-list style as Symbol (no `type` attr), `@reftexts` partial map during
   `resolve_id`, Integer/Float distinction in table column widths.
+
+### 2026-09-26 (later)
+* DocBook5 and manpage converters ported (in parallel worktrees) and merged; extensions API
+  (typed registry + processor helpers) with scenario tests generated against Ruby; `io/` package
+  (async caching VFS with fixpoint reruns, `load_file`/`convert_file`), and the `asciidoctor` CLI.
+* Parity: AST 2506/2612, output 1699/1819; **0 unexpected failures** — the remaining 226 are listed and
+  categorized in `tests/golden/known_failures.txt` (Ruby extension DSL 78, server-side highlighters 91,
+  remote URIs 13, API mutation 11, misc 3).
+* Real-world check: `scripts/corpus_compare.sh` — all 100 files of the Asciidoctor documentation convert
+  byte-identically to Ruby (HTML and warnings).
+* Performance (release native): 38k-line document converts in 0.19s CPU vs Ruby 0.58s; wall time is
+  dominated by a fixed ~0.36s startup/teardown latency of the `moonbitlang/async` runtime (an empty
+  `async fn main` shows the same), worth reporting upstream.
+* Tests pass on native, wasm-gc and js.
+
+## 10. Next steps
+1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
+2. Server-side syntax highlighting adapter interface is in place; a Rouge-compatible lexer set is out of
+   scope for now.
+3. Profile hot paths (block attribute line, quote regexes) and add scanners where the regex engine
+   dominates; add memoization to the regex VM if pathological patterns appear.
+4. Report the async-runtime exit latency upstream; consider a sync fast path for stdin/stdout-only CLI use.

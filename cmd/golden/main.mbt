@@ -345,6 +345,7 @@ async fn main {
   let home = @env.get_env_var("HOME").unwrap_or("/")
   let vfs = @core.MemoryVfs::new(cwd=root, home~)
   load_dir(vfs, "\{root}/test/fixtures")
+  let files_given_is_all = files.is_empty() && filter is None
   if files.is_empty() {
     for name in @fs.readdir("tests/golden", sort=true) {
       if name.has_suffix(".jsonl") {
@@ -403,6 +404,45 @@ async fn main {
   println(
     "TOTAL records \{total.records} skipped \{total.skipped} ast \{total.ast_pass}/\{total.ast_total} output \{total.out_pass}/\{total.out_total}",
   )
+  // compare with the known-failure list
+  let known : Map[String, String] = Map([])
+  let known_text = @fs.read_file("tests/golden/known_failures.txt").text() catch {
+    _ => ""
+  }
+  for line in known_text.split("\n") {
+    let line = line.to_owned()
+    if line == "" || line.has_prefix("#") {
+      continue
+    }
+    let (category, _, key) = @rb.partition(line, "\t")
+    known[key] = category
+  }
+  let failed_keys : Map[String, Bool] = Map([])
+  let unexpected = []
+  for f in total.failures {
+    let key = @rb.partition(f, "\n").0
+    failed_keys[key] = true
+    if !known.contains(key) {
+      unexpected.push(f)
+    }
+  }
+  let mut fixed = 0
+  if files_given_is_all {
+    for key, _ in known {
+      if !failed_keys.contains(key) {
+        fixed += 1
+      }
+    }
+  }
+  println(
+    "known failures: \{total.failures.length() - unexpected.length()}, unexpected failures: \{unexpected.length()}\{if files_given_is_all { ", known now passing: \{fixed}" } else { "" }}",
+  )
+  for idx, f in unexpected {
+    if idx >= max_failures {
+      break
+    }
+    println("UNEXPECTED ---- \{f}")
+  }
   if verbose || filter is Some(_) {
     for idx, f in total.failures {
       if idx >= max_failures {

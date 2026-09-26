@@ -1312,7 +1312,10 @@ fn Reader::preprocess_include_directive(
     IncludeResolved(p, r) => (p, r)
     IncludeHandled(b) => return b
   }
-  let read_text = fn() -> String? { doc.vfs().read(inc_path).map(decode_text) }
+  let encoding = parsed_attrs.str("encoding")
+  let read_text = fn() -> String? {
+    doc.vfs().read(inc_path).map(data => decode_text_with(data, encoding))
+  }
   let mut inc_linenos : Array[Int]? = None // -1 means "to the end"
   let mut inc_tags : Array[(String, Bool)]? = None
   if attrlist is Some(_) {
@@ -1842,11 +1845,11 @@ fn Reader::push_include_impl(
         Some(l) => ":leveloffset: \{l}"
         None => ":leveloffset!:"
       }
-      let all = [head, ""] +
+      // the line stack is reversed: the last element is read first
+      lines.rev_in_place()
+      self.lines = [head, ""] +
         lines +
         ["", ":leveloffset: \{attributes.str("leveloffset").unwrap_or("")}"]
-      all.rev_in_place()
-      self.lines = all
       self.lineno -= 2
     } else {
       lines.rev_in_place()

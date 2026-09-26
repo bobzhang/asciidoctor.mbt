@@ -151,3 +151,24 @@ pub fn decode_text(data : Bytes) -> String {
 fn fix_surrogates(s : String) -> String {
   s
 }
+
+///|
+/// Decodes file contents using the named encoding (Ruby `File.read` with an
+/// encoding mode). Supports UTF-8 (default), ISO-8859-1/Latin-1 and US-ASCII;
+/// unknown encodings fall back to UTF-8, like Ruby ignoring invalid names.
+pub fn decode_text_with(data : Bytes, encoding : String?) -> String {
+  match encoding.map(e => @rb.downcase_ascii(e)) {
+    Some("iso-8859-1")
+    | Some("iso8859-1")
+    | Some("latin1")
+    | Some("binary")
+    | Some("ascii-8bit") => {
+      let sb = StringBuilder(size_hint=data.length())
+      for b in data {
+        sb.write_char(b.to_int().unsafe_to_char())
+      }
+      sb.to_string()
+    }
+    _ => decode_text(data)
+  }
+}
