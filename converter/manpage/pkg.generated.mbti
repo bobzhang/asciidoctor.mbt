@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/converter/manpage"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn register() -> Unit
+
+// Errors
+
+// Types and methods
+pub struct ManPageConverter {
+  // private fields
+}
+pub fn ManPageConverter::new() -> Self
+pub impl @core.Converter for ManPageConverter
+
+// Type aliases
+
+// Traits

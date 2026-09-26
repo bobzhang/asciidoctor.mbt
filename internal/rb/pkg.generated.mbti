@@ -1,0 +1,89 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/internal/rb"
+
+// Values
+pub fn bytesize(String) -> Int
+
+pub fn capitalize(String) -> String
+
+pub fn char_length(String) -> Int
+
+pub fn chomp(String) -> String
+
+pub fn chomp_suffix(String, String) -> String
+
+pub fn chop(String) -> String
+
+pub fn count(String, String) -> Int
+
+pub fn delete_chars(String, String) -> String
+
+pub fn downcase(String) -> String
+
+pub fn downcase_ascii(String) -> String
+
+pub fn float_round(Double, Int) -> Double
+
+pub fn float_to_s(Double) -> String
+
+pub fn float_truncate(Double, Int) -> Double
+
+pub fn from(String, Int) -> String
+
+pub fn index_of(String, String, from? : Int) -> Int?
+
+pub fn int_to_roman(Int) -> String
+
+pub fn is_integral(Double) -> Bool
+
+pub fn is_space(UInt16) -> Bool
+
+pub fn lex_compare(String, String) -> Int
+
+pub fn limit_bytesize(String, Int) -> String
+
+pub fn ljust(String, Int, pad? : Char) -> String
+
+pub fn lstrip(String) -> String
+
+pub fn parse_int(String) -> Int?
+
+pub fn partition(String, String) -> (String, String, String)
+
+pub fn repeat(String, Int) -> String
+
+pub fn rjust(String, Int, pad? : Char) -> String
+
+pub fn rpartition(String, String) -> (String, String, String)
+
+pub fn rstrip(String) -> String
+
+pub fn slice(String, Int, Int) -> String
+
+pub fn split(String, String, limit? : Int) -> Array[String]
+
+pub fn split_ws(String) -> Array[String]
+
+pub fn squeeze(String, chars? : String) -> String
+
+pub fn strip(String) -> String
+
+pub fn succ(String) -> String
+
+pub fn take(String, Int) -> String
+
+pub fn to_f(String) -> Double
+
+pub fn to_i(String) -> Int
+
+pub fn tr_s(String, String, Char) -> String
+
+pub fn upcase(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

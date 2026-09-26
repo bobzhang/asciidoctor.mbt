@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/converter/html5"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn register() -> Unit
+
+// Errors
+
+// Types and methods
+pub struct Html5Converter {
+  // private fields
+}
+pub fn Html5Converter::new(htmlsyntax? : String) -> Self
+pub impl @core.Converter for Html5Converter
+
+// Type aliases
+
+// Traits

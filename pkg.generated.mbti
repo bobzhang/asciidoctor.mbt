@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn convert(String, options? : @core.Options) -> String
+
+pub fn load(String, options? : @core.Options) -> @core.Node
+
+pub fn load_lines(Array[String], options? : @core.Options) -> @core.Node
+
+pub fn logger() -> @core.Logger
+
+pub fn parse_attributes_option(String) -> Array[(String, @core.AttrVal)]
+
+pub fn set_logger(@core.Logger) -> @core.Logger
+
+pub fn[T] with_memory_logger(() -> T) -> (T, Array[@core.LogMessage])
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @core {type AttrVal}
+
+pub using @core {type Attributes}
+
+pub using @core {type Context}
+
+pub using @core {type LogMessage}
+
+pub using @core {type Logger}
+
+pub using @core {type MemoryVfs}
+
+pub using @core {type Node}
+
+pub using @core {type Options}
+
+pub using @core {type Severity}
+
+// Traits

@@ -1,0 +1,858 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/core"
+
+import {
+  "bobzhang/asciidoctor/regex",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const DEFAULT_BACKEND : String = "html5"
+
+pub const DEFAULT_DOCTYPE : String = "article"
+
+pub const SAFE_SAFE : Int = 1
+
+pub const SAFE_SECURE : Int = 20
+
+pub const SAFE_SERVER : Int = 10
+
+pub const SAFE_UNSAFE : Int = 0
+
+pub const VERSION : String = "2.1.0.alpha.0"
+
+pub fn base64_encode(Bytes) -> String
+
+pub fn basename(String, drop_ext? : Bool) -> String
+
+pub let basic_subs : Array[Sub]
+
+pub let compliance : Compliance
+
+pub fn create_anchor(Node, String?, String, target? : String, id? : String, attributes? : Attributes) -> Node
+
+pub fn create_block(Node, Context, Array[String]?, Attributes, content_model? : ContentModel, subs? : BlockSubs) -> Node
+
+pub fn create_example_block(Node, Array[String]?, Attributes) -> Node
+
+pub fn create_image_block(Node, Attributes) -> Node
+
+pub fn create_inline(Node, Context, String?, type_? : String, target? : String, id? : String, attributes? : Attributes) -> Node
+
+pub fn create_list(Node, Context, attrs? : Attributes) -> Node
+
+pub fn create_list_item(Node, text? : String) -> Node
+
+pub fn create_listing_block(Node, Array[String], Attributes) -> Node
+
+pub fn create_literal_block(Node, Array[String], Attributes) -> Node
+
+pub fn create_open_block(Node, Array[String]?, Attributes) -> Node
+
+pub fn create_paragraph(Node, Array[String], Attributes) -> Node
+
+pub fn create_pass_block(Node, Array[String], Attributes) -> Node
+
+pub fn create_section(Node, String, Attributes, level? : Int, numbered? : Bool) -> Node
+
+pub fn decode_text(Bytes) -> String
+
+pub fn decode_text_with(Bytes, String?) -> String
+
+pub fn derive_backend_traits(String, basebackend? : String) -> BackendTraits
+
+pub fn dirname(String) -> String
+
+pub fn encode_spaces_in_uri(String) -> String
+
+pub fn encode_uri_component(String) -> String
+
+pub fn expand_path_from(String, String) -> String
+
+pub fn extname(String, fallback? : String) -> String
+
+pub fn format_log_message(LogMessage) -> String
+
+pub fn generate_section_id(String, Node) -> String
+
+pub fn has_extname(String) -> Bool
+
+pub let header_subs : Array[Sub]
+
+pub fn is_uriish(String) -> Bool
+
+pub fn logger() -> Logger
+
+pub fn lookup_converter(String) -> ((String, String?, Node) -> &Converter)?
+
+pub fn new_document(Array[String]?, Options) -> Node
+
+pub let no_subs : Array[Sub]
+
+pub let normal_subs : Array[Sub]
+
+pub fn parse_attribute_list(String, positional_attrs? : Array[String?], block? : Node, delimiter? : String) -> Attributes
+
+pub fn parse_content(Node, Array[String], attributes? : Attributes) -> Node
+
+pub fn parse_content_from_reader(Node, Reader, attributes? : Attributes) -> Node
+
+pub fn parse_extension_attributes(Node, String, positional_attributes? : Array[String], sub_attributes? : Bool) -> Attributes
+
+pub fn prepare_source_array(Array[String], trim_end? : Bool) -> Array[String]
+
+pub fn prepare_source_string(String, trim_end? : Bool) -> Array[String]
+
+pub let primary_stylesheet_data : String
+
+pub let reftext_subs : Array[Sub]
+
+pub fn regex_escape(String) -> String
+
+pub fn register_converter(Array[String], (String, String?, Node) -> &Converter) -> Unit
+
+pub fn register_global_extensions((Extensions) -> Unit) -> Unit
+
+pub fn register_syntax_highlighter(Array[String], (String, String, Node) -> &SyntaxHighlighter?) -> Unit
+
+pub fn registered_backends() -> Array[String]
+
+pub fn rekey_attributes(Attributes, Array[String?]) -> Attributes
+
+pub fn reset_compliance() -> Unit
+
+pub fn resolve_lines_to_highlight(String, String, start? : Int) -> Array[Int]
+
+pub fn roman_to_int(String) -> Int
+
+pub fn rootname(String) -> String
+
+pub fn safe_mode_name_for_value(Int) -> String?
+
+pub fn safe_mode_value_for_name(String) -> Int?
+
+pub fn set_logger(Logger) -> Logger
+
+pub fn set_now_epoch(() -> Int64) -> Unit
+
+pub fn set_source_date_epoch(Int64?) -> Unit
+
+pub fn sub_placeholder(String, String) -> String
+
+pub fn sub_specialchars(String) -> String
+
+pub fn unregister_all_global_extensions() -> Unit
+
+pub let verbatim_subs : Array[Sub]
+
+pub fn[T] with_memory_logger(() -> T) -> (T, Array[LogMessage])
+
+// Errors
+pub suberror SecurityError {
+  SecurityError(String)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) enum AttrKey {
+  Name(String)
+  Pos(Int)
+} derive(Eq, Hash, @debug.Debug)
+
+pub(all) enum AttrVal {
+  Str(String)
+  Int(Int)
+  Float(Double)
+  Bool(Bool)
+  List(Array[String])
+  Nil
+} derive(Eq, @debug.Debug)
+pub fn AttrVal::is_str(Self, String) -> Bool
+pub fn AttrVal::to_f(Self) -> Double
+pub fn AttrVal::to_i(Self) -> Int
+pub fn AttrVal::to_s(Self) -> String
+pub fn AttrVal::truthy(Self) -> Bool
+
+pub(all) struct AttributeEntry {
+  name : String
+  value : String?
+  negate : Bool
+} derive(@debug.Debug)
+pub fn AttributeEntry::new(String, String?, negate? : Bool) -> Self
+
+pub struct Attributes {
+  mut entries : Array[AttributeEntry]?
+  // private fields
+}
+pub fn Attributes::clear(Self) -> Unit
+pub fn Attributes::clear_entries(Self) -> Unit
+pub fn Attributes::contains(Self, String) -> Bool
+pub fn Attributes::contains_pos(Self, Int) -> Bool
+pub fn Attributes::copy(Self) -> Self
+pub fn Attributes::from_array(Array[(String, AttrVal)]) -> Self
+pub fn Attributes::get(Self, String) -> AttrVal?
+pub fn Attributes::get_key(Self, AttrKey) -> AttrVal?
+pub fn Attributes::get_pos(Self, Int) -> AttrVal?
+pub fn Attributes::is_empty(Self) -> Bool
+pub fn Attributes::iter(Self) -> Iter2[AttrKey, AttrVal]
+pub fn Attributes::length(Self) -> Int
+pub fn Attributes::names(Self) -> Array[String]
+pub fn Attributes::new() -> Self
+pub fn Attributes::pos_str(Self, Int) -> String?
+pub fn Attributes::remove(Self, String) -> AttrVal?
+pub fn Attributes::remove_key(Self, AttrKey) -> Unit
+pub fn Attributes::remove_pos(Self, Int) -> AttrVal?
+pub fn Attributes::remove_str(Self, String) -> String?
+pub fn Attributes::replace(Self, Self) -> Unit
+pub fn Attributes::save_entry(Self, AttributeEntry) -> Unit
+pub fn Attributes::set(Self, String, AttrVal) -> Unit
+pub fn Attributes::set_default(Self, String, AttrVal) -> Unit
+pub fn Attributes::set_key(Self, AttrKey, AttrVal) -> Unit
+pub fn Attributes::set_pos(Self, Int, AttrVal) -> Unit
+pub fn Attributes::set_str(Self, String, String) -> Unit
+pub fn Attributes::str(Self, String) -> String?
+pub fn Attributes::truthy(Self, String) -> Bool
+pub fn Attributes::update(Self, Self) -> Unit
+
+pub(all) struct Author {
+  name : String?
+  firstname : String?
+  middlename : String?
+  lastname : String?
+  initials : String?
+  email : String?
+} derive(@debug.Debug)
+
+pub(all) struct BackendTraits {
+  basebackend : String
+  filetype : String
+  htmlsyntax : String?
+  outfilesuffix : String
+  supports_templates : Bool
+} derive(@debug.Debug)
+
+pub(all) struct BlockMacroProcessor {
+  name : String
+  config : ExtensionConfig
+  process : (Node, String, Attributes) -> Node?
+}
+
+pub(all) struct BlockProcessor {
+  name : String
+  config : ExtensionConfig
+  process : (Node, Reader, Attributes) -> Node?
+}
+
+pub(all) enum BlockSubs {
+  DefaultSubs(Array[Sub]?)
+  ExplicitSubs(Array[Sub])
+  SubsSpec(String)
+  NoSubs
+}
+
+pub struct Callouts {
+  // private fields
+}
+pub fn Callouts::callout_ids(Self, Int) -> String
+pub fn Callouts::new() -> Self
+pub fn Callouts::next_list(Self) -> Unit
+pub fn Callouts::read_next_id(Self) -> String?
+pub fn Callouts::register(Self, String) -> String
+pub fn Callouts::rewind(Self) -> Unit
+
+pub struct Catalog {
+  refs : Map[String, Node]
+  footnotes : Array[Footnote]
+  links : Array[String]
+  images : Array[ImageReference]
+  callouts : Callouts
+  includes : Map[String, Bool]
+}
+
+pub struct CellData {
+  mut text : String
+  mut colspan : Int?
+  mut rowspan : Int?
+  mut inner_document : Node?
+  // private fields
+}
+
+pub(all) struct ColSpec {
+  mut width : Int
+  mut halign : String?
+  mut valign : String?
+  mut style : String?
+} derive(@debug.Debug)
+
+pub(all) struct Compliance {
+  mut block_terminates_paragraph : Bool
+  mut strict_verbatim_paragraphs : Bool
+  mut underline_style_section_titles : Bool
+  mut unwrap_standalone_preamble : Bool
+  mut attribute_missing : String
+  mut attribute_undefined : String
+  mut shorthand_property_syntax : Bool
+  mut natural_xrefs : Bool
+  mut unique_id_start_index : Int
+  mut markdown_syntax : Bool
+}
+
+pub struct CompositeConverter {
+  handlers : Map[String, (Node) -> String]
+  delegate : &Converter
+}
+pub fn CompositeConverter::new(&Converter, handlers? : Map[String, (Node) -> String]) -> Self
+pub impl Converter for CompositeConverter
+
+pub(all) enum ContentModel {
+  Compound
+  Simple
+  Verbatim
+  Raw
+  Empty
+  Skip
+  Attributes
+} derive(Eq, @debug.Debug)
+pub fn ContentModel::name(Self) -> String
+
+pub(all) enum Context {
+  Document
+  Section
+  Preamble
+  Paragraph
+  Admonition
+  Listing
+  Literal
+  Example
+  Sidebar
+  Quote
+  Verse
+  Open
+  Pass
+  Stem
+  Image
+  Audio
+  Video
+  ThematicBreak
+  PageBreak
+  FloatingTitle
+  Toc
+  Ulist
+  Olist
+  Dlist
+  Colist
+  ListItem
+  Table
+  TableCell
+  TableColumn
+  Anchor
+  Break
+  Button
+  Callout
+  Footnote
+  Indexterm
+  Kbd
+  Menu
+  Quoted
+  Source
+  FencedCode
+  Comment
+  Abstract
+  PartIntro
+  LatexMath
+  AsciiMath
+  Custom(String)
+} derive(Eq, Hash, @debug.Debug)
+pub fn Context::from_name(String) -> Self
+pub fn Context::name(Self) -> String
+
+pub(all) struct Cursor {
+  file : String?
+  dir : String?
+  path : String?
+  mut lineno : Int
+} derive(Eq, @debug.Debug)
+pub fn Cursor::advance(Self, Int) -> Unit
+pub fn Cursor::dup(Self) -> Self
+pub fn Cursor::line_info(Self) -> String
+pub fn Cursor::new(file? : String, dir? : String, path? : String, lineno? : Int) -> Self
+
+pub(all) struct DlistItem {
+  terms : Array[Node]
+  mut desc : Node?
+}
+
+type DocData
+
+pub(all) struct DocTitle {
+  main : String
+  subtitle : String?
+  combined : String
+  sanitized : Bool
+} derive(@debug.Debug)
+pub fn DocTitle::has_subtitle(Self) -> Bool
+pub fn DocTitle::new(String, sanitize? : Bool, separator? : String) -> Self
+
+pub(all) struct DocinfoProcessor {
+  location : String
+  process : (Node) -> String?
+}
+
+pub(all) struct ExtensionConfig {
+  mut content_model : ContentModel?
+  mut positional_attrs : Array[String]
+  mut default_attrs : Array[(String, String)]
+  mut contexts : Array[Context]
+  mut format : String?
+  mut regexp : @regex.Regex?
+}
+pub fn ExtensionConfig::new(content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)], contexts? : Array[Context], format? : String, regexp? : @regex.Regex) -> Self
+
+pub struct Extensions {
+  mut document : Node?
+  // private fields
+}
+pub fn Extensions::activate(Self, Node) -> Self
+pub fn Extensions::add_group(Self, (Self) -> Unit) -> Unit
+pub fn Extensions::block(Self, String, (Node, Reader, Attributes) -> Node?, contexts? : Array[Context], content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
+pub fn Extensions::block_macro(Self, String, (Node, String, Attributes) -> Node?, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
+pub fn Extensions::docinfo_processor(Self, (Node) -> String?, location? : String, prefer? : Bool) -> Unit
+pub fn Extensions::include_processor(Self, (Node, Reader, String, Attributes) -> Unit, handles? : (Node, String) -> Bool, prefer? : Bool) -> Unit
+pub fn Extensions::inline_macro(Self, String, (Node, String, Attributes) -> InlineResult?, format? : String, regexp? : @regex.Regex, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
+pub fn Extensions::new(group? : (Self) -> Unit) -> Self
+pub fn Extensions::postprocessor(Self, (Node, String) -> String, prefer? : Bool) -> Unit
+pub fn Extensions::preprocessor(Self, (Node, Reader) -> Reader?, prefer? : Bool) -> Unit
+pub fn Extensions::tree_processor(Self, (Node) -> Node?, prefer? : Bool) -> Unit
+
+pub(all) enum FindVerdict {
+  Accept
+  Reject
+  Prune
+  Stop
+  Skip
+}
+
+pub(all) struct Footnote {
+  index : Int
+  id : String?
+  text : String
+} derive(@debug.Debug)
+
+pub(all) enum HeaderOption {
+  NoHeader
+  ExplicitHeader
+  ImplicitHeader
+  UnsetHeader
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ImageReference {
+  target : String
+  imagesdir : String?
+} derive(@debug.Debug)
+
+pub(all) struct IncludeProcessor {
+  handles : (Node, String) -> Bool
+  process : (Node, Reader, String, Attributes) -> Unit
+}
+
+pub(all) struct InlineMacroProcessor {
+  name : String
+  config : ExtensionConfig
+  process : (Node, String, Attributes) -> InlineResult?
+}
+
+pub(all) enum InlineResult {
+  InlineNode(Node)
+  InlineText(String)
+}
+
+pub(all) struct LogMessage {
+  severity : Severity
+  text : String
+  source_location : Cursor?
+  include_location : Cursor?
+} derive(@debug.Debug)
+pub fn LogMessage::to_string(Self) -> String
+
+pub struct Logger {
+  mut level : Severity
+  mut max_severity : Severity?
+  // private fields
+}
+pub fn Logger::add(Self, LogMessage) -> Unit
+pub fn Logger::is_debug(Self) -> Bool
+pub fn Logger::is_info(Self) -> Bool
+pub fn Logger::memory(Array[LogMessage]) -> Self
+pub fn Logger::new((LogMessage) -> Unit, level? : Severity) -> Self
+pub fn Logger::null() -> Self
+pub fn Logger::set_level(Self, Severity) -> Unit
+
+pub struct MemoryVfs {
+  files : Map[String, Bytes]
+  working_dir : String
+  home_dir : String
+}
+pub fn MemoryVfs::add_bytes(Self, String, Bytes) -> Unit
+pub fn MemoryVfs::add_text(Self, String, String) -> Unit
+pub fn MemoryVfs::new(cwd? : String, home? : String) -> Self
+pub impl Vfs for MemoryVfs
+
+pub(all) struct Node {
+  mut context : Context
+  mut node_name : String
+  attributes : Attributes
+  mut id : String?
+  blocks : Array[Node]
+  mut content_model : ContentModel
+  mut level : Int
+  mut numeral : String?
+  mut source_location : Cursor?
+  mut style : String?
+  mut subs : Array[Sub]
+  mut lines : Array[String]
+  mut index : Int
+  mut sectname : String?
+  mut special : Bool
+  mut numbered : Numbered
+  mut marker : String?
+  dlist_items : Array[DlistItem]
+  mut inline_type : String?
+  mut target : String?
+  // private fields
+}
+pub fn Node::add_role(Self, String) -> Bool
+pub fn Node::alt(Self) -> String
+pub fn Node::append(Self, Self) -> Unit
+pub fn Node::apply_header_subs(Self, String) -> String
+pub fn Node::apply_normal_subs(Self, String) -> String
+pub fn Node::apply_reftext_subs(Self, String) -> String
+pub fn Node::apply_subs(Self, String, Array[Sub]) -> String
+pub fn Node::apply_subs_lines(Self, Array[String], Array[Sub]) -> Array[String]
+pub fn Node::apply_title_subs(Self, String) -> String
+pub fn Node::assign_caption(Self, String?, caption_context? : String) -> Unit
+pub fn Node::assign_numeral(Self, Self) -> Unit
+pub fn Node::attr(Self, String, default? : String, inherited? : Bool, fallback_name? : String) -> String?
+pub fn Node::attribute_locked(Self, String) -> Bool
+pub fn Node::author(Self) -> String?
+pub fn Node::authors(Self) -> Array[Author]
+pub fn Node::backend(Self) -> String
+pub fn Node::base_dir(Self) -> String
+pub fn Node::callouts(Self) -> Callouts
+pub fn Node::caption(Self) -> String?
+pub fn Node::captioned_title(Self) -> String
+pub fn Node::catalog(Self) -> Catalog
+pub fn Node::cell_data(Self) -> CellData
+pub fn Node::cell_lines(Self) -> Array[String]
+pub fn Node::cell_paragraphs(Self) -> Array[String]
+pub fn Node::colspan(Self) -> Int?
+pub fn Node::column(Self) -> Self?
+pub fn Node::columns(Self) -> Array[Self]
+pub fn Node::commit_subs(Self) -> Unit
+pub fn Node::compat_mode(Self) -> Bool
+pub fn Node::content(Self) -> String
+pub fn Node::convert(Self) -> String
+pub fn Node::convert_with(Self, standalone? : Bool, outfile? : String, outdir? : String) -> String
+pub fn Node::converter(Self) -> &Converter
+pub fn Node::counter(Self, String, seed? : String) -> String
+pub fn Node::delete_attribute(Self, String) -> Bool
+pub fn Node::doc_source(Self) -> String?
+pub fn Node::docinfo(Self, location? : String, suffix? : String) -> String
+pub fn Node::doctitle(Self, use_fallback? : Bool, sanitize? : Bool) -> String?
+pub fn Node::doctitle_partitioned(Self, use_fallback? : Bool, sanitize? : Bool, separator? : String) -> DocTitle?
+pub fn Node::doctype(Self) -> String
+pub fn Node::document(Self) -> Self
+pub fn Node::enabled_options(Self) -> Array[String]
+pub fn Node::expand_subs(Self, String, subject? : String) -> Array[Sub]?
+pub fn Node::extensions(Self) -> Extensions?
+pub fn Node::file(Self) -> String?
+pub fn Node::find_by(Self, context? : Context, style? : String, role? : String, id? : String, traverse_documents? : Bool, filter? : (Self) -> FindVerdict) -> Array[Self]
+pub fn Node::first_section(Self) -> Self?
+pub fn Node::fold_first(Self) -> Unit
+pub fn Node::footnotes(Self) -> Array[Footnote]
+pub fn Node::generate_data_uri(Self, String, asset_dir_key? : String) -> String
+pub fn Node::generate_id(Self) -> String
+pub fn Node::has_attr(Self, String, expected? : String, inherited? : Bool) -> Bool
+pub fn Node::has_blocks(Self) -> Bool
+pub fn Node::has_docinfo_processors(Self, location? : String) -> Bool
+pub fn Node::has_extensions(Self) -> Bool
+pub fn Node::has_footnotes(Self) -> Bool
+pub fn Node::has_header(Self) -> Bool
+pub fn Node::has_option(Self, String) -> Bool
+pub fn Node::has_reftext(Self) -> Bool
+pub fn Node::has_role(Self, String) -> Bool
+pub fn Node::has_sections(Self) -> Bool
+pub fn Node::has_sub(Self, Sub) -> Bool
+pub fn Node::has_text(Self) -> Bool
+pub fn Node::has_title(Self) -> Bool
+pub fn Node::header(Self) -> Self?
+pub fn Node::icon_uri(Self, String) -> String
+pub fn Node::image_uri(Self, String, asset_dir_key? : String?) -> String
+pub fn Node::increment_and_store_counter(Self, String, Self) -> String
+pub fn Node::inner_document(Self) -> Self?
+pub fn Node::is_basebackend(Self, String) -> Bool
+pub fn Node::is_block(Self) -> Bool
+pub fn Node::is_compound(Self) -> Bool
+pub fn Node::is_embedded(Self) -> Bool
+pub fn Node::is_inline(Self) -> Bool
+pub fn Node::is_list(Self) -> Bool
+pub fn Node::is_multipart(Self) -> Bool
+pub fn Node::is_nested(Self) -> Bool
+pub fn Node::is_outline(Self) -> Bool
+pub fn Node::is_parsed(Self) -> Bool
+pub fn Node::is_simple(Self) -> Bool
+pub fn Node::items(Self) -> Array[Self]
+pub fn Node::lineno(Self) -> Int?
+pub fn Node::list_marker_keyword(Self, list_type? : String) -> String?
+pub fn Node::media_uri(Self, String, asset_dir_key? : String?) -> String
+pub fn Node::new_block(Self, Context, content_model? : ContentModel, subs? : BlockSubs, source? : Array[String], source_text? : String, attributes? : Attributes) -> Self
+pub fn Node::new_inline(Self, Context, text? : String, id? : String, type_? : String, target? : String, attributes? : Attributes) -> Self
+pub fn Node::new_list(Self, Context, attributes? : Attributes) -> Self
+pub fn Node::new_list_item(Self, text? : String) -> Self
+pub fn Node::new_section(Self?, level? : Int, numbered? : Bool, attributes? : Attributes) -> Self
+pub fn Node::new_table(Self, Attributes) -> Self
+pub fn Node::next_adjacent_block(Self) -> Self?
+pub fn Node::nofooter(Self) -> Bool
+pub fn Node::noheader(Self) -> Bool
+pub fn Node::normalize_asset_path(Self, String, asset_name? : String, autocorrect? : Bool) -> String
+pub fn Node::normalize_system_path(Self, String, start? : String, jail? : String, target_name? : String) -> String
+pub fn Node::normalize_system_path_checked(Self, String, start? : String, jail? : String, target_name? : String, recover? : Bool) -> String raise SecurityError
+pub fn Node::normalize_web_path(Self, String, start? : String, preserve_uri_target? : Bool) -> String
+pub fn Node::notitle(Self) -> Bool
+pub fn Node::number(Self) -> AttrVal
+pub fn Node::options(Self) -> Options
+pub fn Node::outfilesuffix(Self) -> String
+pub fn Node::parent(Self) -> Self?
+pub fn Node::parent_document(Self) -> Self?
+pub fn Node::parse(Self, data? : Array[String]) -> Self
+pub fn Node::parse_attributes(Self, String, Array[String?], unescape_input? : Bool, sub_input? : Bool, sub_result? : Bool, into? : Attributes) -> Attributes
+pub fn Node::path_resolver(Self) -> PathResolver
+pub fn Node::playback_attributes(Self, Attributes) -> Unit
+pub fn Node::raw_text(Self) -> String?
+pub fn Node::raw_title(Self) -> String?
+pub fn Node::read_asset(Self, String, normalize? : Bool, warn_on_failure? : Bool, label? : String) -> String?
+pub fn Node::read_contents(Self, String, start? : String, normalize? : Bool, warn_on_failure? : Bool, warn_if_empty? : Bool, label? : String) -> String?
+pub fn Node::reftext(Self) -> String?
+pub fn Node::register_footnote(Self, Footnote) -> Unit
+pub fn Node::register_image(Self, String) -> Unit
+pub fn Node::register_link(Self, String) -> Unit
+pub fn Node::register_ref(Self, String, Self) -> Bool
+pub fn Node::reindex_sections(Self) -> Unit
+pub fn Node::remove_attr(Self, String) -> AttrVal?
+pub fn Node::remove_role(Self, String) -> Bool
+pub fn Node::remove_sub(Self, Sub) -> Unit
+pub fn Node::resolve_block_subs(Self, String, Array[Sub]?, String) -> Array[Sub]
+pub fn Node::resolve_id(Self, String) -> String?
+pub fn Node::resolve_pass_subs(Self, String, subject? : String) -> Array[Sub]
+pub fn Node::resolve_subs(Self, String, type_? : String, defaults? : Array[Sub], subject? : String) -> Array[Sub]
+pub fn Node::revdate(Self) -> String?
+pub fn Node::role(Self) -> String?
+pub fn Node::role_is(Self, expected? : String) -> Bool
+pub fn Node::roles(Self) -> Array[String]
+pub fn Node::rows(Self) -> TableRows
+pub fn Node::rowspan(Self) -> Int?
+pub fn Node::safe(Self) -> Int
+pub fn Node::sections(Self) -> Array[Self]
+pub fn Node::sectnum(Self, delimiter? : String, append? : String?) -> String
+pub fn Node::set_attr(Self, String, value? : AttrVal, overwrite? : Bool) -> Bool
+pub fn Node::set_attribute(Self, String, value? : String) -> String?
+pub fn Node::set_caption(Self, String?) -> Unit
+pub fn Node::set_context(Self, Context) -> Unit
+pub fn Node::set_header_attribute(Self, String, value? : String, overwrite? : Bool) -> Bool
+pub fn Node::set_id(Self, String?) -> Unit
+pub fn Node::set_option(Self, String) -> Unit
+pub fn Node::set_parent(Self, Self) -> Unit
+pub fn Node::set_role(Self, String) -> Unit
+pub fn Node::set_text(Self, String?) -> Unit
+pub fn Node::set_title(Self, String?) -> Unit
+pub fn Node::source(Self) -> String
+pub fn Node::source_lines(Self) -> Array[String]?
+pub fn Node::sourcemap(Self) -> Bool
+pub fn Node::sub_attributes(Self, String, attribute_missing? : String, drop_line_ignore? : Bool) -> String
+pub fn Node::sub_callouts(Self, String) -> String
+pub fn Node::sub_macros(Self, String) -> String
+pub fn Node::sub_post_replacements(Self, String) -> String
+pub fn Node::sub_quotes(Self, String) -> String
+pub fn Node::sub_replacements(Self, String) -> String
+pub fn Node::sub_source(Self, String, Bool) -> String
+pub fn Node::syntax_highlighter(Self) -> &SyntaxHighlighter?
+pub fn Node::table(Self) -> Self?
+pub fn Node::table_data(Self) -> TableData
+pub fn Node::text(Self) -> String?
+pub fn Node::title(Self) -> String?
+pub fn Node::update_attributes(Self, Attributes) -> Unit
+pub fn Node::vfs(Self) -> &Vfs
+pub fn Node::xreftext(Self, xrefstyle? : String) -> String?
+
+pub struct NullVfs {
+  // private fields
+}
+pub fn NullVfs::new(cwd? : String) -> &Vfs
+pub impl Vfs for NullVfs
+
+pub(all) enum Numbered {
+  NotNumbered
+  Numbered
+  NumberedChapter
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Options {
+  mut attributes : Array[(String, AttrVal)]
+  mut safe : Int?
+  mut backend : String?
+  mut doctype : String?
+  mut standalone : Bool?
+  mut base_dir : String?
+  mut to_file : String?
+  mut to_dir : String?
+  mut mkdirs : Bool
+  mut sourcemap : Bool
+  mut parse_header_only : Bool
+  mut catalog_assets : Bool
+  mut parse : Bool
+  mut input_mtime : Int64?
+  mut converter : &Converter?
+  mut extensions : Extensions?
+  mut vfs : &Vfs?
+  mut syntax_highlighter_factory : ((String, String, Node) -> &SyntaxHighlighter?)?
+  mut parent : Node?
+  mut cursor : Cursor?
+}
+pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs) -> Self
+
+pub struct PathResolver {
+  mut working_dir : String
+  // private fields
+}
+pub fn PathResolver::descends_from(Self, String, String) -> Int?
+pub fn PathResolver::expand_path(Self, String) -> String
+pub fn PathResolver::is_absolute(Self, String) -> Bool
+pub fn PathResolver::is_root(Self, String) -> Bool
+pub fn PathResolver::is_unc(Self, String) -> Bool
+pub fn PathResolver::is_web_root(Self, String) -> Bool
+pub fn PathResolver::new(working_dir? : String) -> Self
+pub fn PathResolver::partition_path(Self, String, web? : Bool) -> (Array[String], String?)
+pub fn PathResolver::posixify(Self, String?) -> String
+pub fn PathResolver::relative_path(Self, String, String) -> String
+pub fn PathResolver::system_path(Self, String?, start? : String, jail? : String, target_name? : String, recover? : Bool) -> String raise SecurityError
+pub fn PathResolver::web_path(Self, String, start? : String) -> String
+
+pub(all) struct Postprocessor {
+  process : (Node, String) -> String
+}
+
+pub(all) struct Preprocessor {
+  process : (Node, Reader) -> Reader?
+}
+
+pub struct Reader {
+  source_lines : Array[String]
+  mut process_lines : Bool
+  mut unterminated : Bool
+  // private fields
+}
+pub fn Reader::advance(Self) -> Bool
+pub fn Reader::cursor(Self) -> Cursor
+pub fn Reader::cursor_at_line(Self, Int) -> Cursor
+pub fn Reader::cursor_at_mark(Self) -> Cursor
+pub fn Reader::cursor_at_prev_line(Self) -> Cursor
+pub fn Reader::cursor_before_mark(Self) -> Cursor
+pub fn Reader::dir(Self) -> String
+pub fn Reader::discard_save(Self) -> Unit
+pub fn Reader::file(Self) -> String?
+pub fn Reader::from_string(String, cursor? : Cursor) -> Self
+pub fn Reader::has_more_lines(Self) -> Bool
+pub fn Reader::include_depth(Self) -> Int
+pub fn Reader::is_empty(Self) -> Bool
+pub fn Reader::line_info(Self) -> String
+pub fn Reader::lineno(Self) -> Int
+pub fn Reader::lines(Self) -> Array[String]
+pub fn Reader::mark(Self) -> Cursor
+pub fn Reader::new(Array[String], cursor? : Cursor, normalize? : Bool) -> Self
+pub fn Reader::new_preprocessor(Node, Array[String], cursor? : Cursor, normalize? : Bool) -> Self
+pub fn Reader::next_line_empty(Self) -> Bool
+pub fn Reader::path(Self) -> String
+pub fn Reader::peek_line(Self, direct? : Bool) -> String?
+pub fn Reader::peek_lines(Self, num? : Int, direct? : Bool) -> Array[String]
+pub fn Reader::push_include_lines(Self, Array[String], file? : String, path? : String, lineno? : Int, attributes? : Attributes) -> Unit
+pub fn Reader::read(Self) -> String
+pub fn Reader::read_line(Self) -> String?
+pub fn Reader::read_lines(Self) -> Array[String]
+pub fn Reader::read_lines_until(Self, terminator? : String, skip_processing? : Bool, break_on_blank_lines? : Bool, break_on_list_continuation? : Bool, skip_line_comments? : Bool, skip_first_line? : Bool, read_last_line? : Bool, preserve_last_line? : Bool, context? : String?, cursor? : Cursor, cursor_at_mark? : Bool, break_if? : (String) -> Bool) -> Array[String]
+pub fn Reader::replace_next_line(Self, String) -> Bool
+pub fn Reader::restore_save(Self) -> Unit
+pub fn Reader::save(Self) -> Unit
+pub fn Reader::shift(Self) -> String?
+pub fn Reader::skip_blank_lines(Self) -> Int?
+pub fn Reader::skip_comment_lines(Self) -> Unit
+pub fn Reader::skip_line_comments(Self) -> Array[String]
+pub fn Reader::source(Self) -> String
+pub fn Reader::string(Self) -> String
+pub fn Reader::terminate(Self) -> Unit
+pub fn Reader::unshift_line(Self, String) -> Unit
+pub fn Reader::unshift_lines(Self, Array[String]) -> Unit
+
+pub(all) enum Severity {
+  Debug
+  Info
+  Warn
+  Error
+  Fatal
+  Unknown
+} derive(Eq, @debug.Debug)
+pub fn Severity::label(Self) -> String
+pub fn Severity::to_int(Self) -> Int
+
+pub(all) enum Sub {
+  SpecialCharacters
+  Quotes
+  Attributes
+  Replacements
+  Macros
+  PostReplacements
+  Callouts
+  Highlight
+} derive(Eq, Hash, @debug.Debug)
+pub fn Sub::name(Self) -> String
+
+pub struct TableData {
+  rows : TableRows
+  mut columns : Array[Node]
+  mut has_header_option : HeaderOption
+}
+
+pub struct TableRows {
+  mut head : Array[Array[Node]]
+  mut body : Array[Array[Node]]
+  mut foot : Array[Array[Node]]
+}
+
+pub(all) struct TreeProcessor {
+  process : (Node) -> Node?
+}
+
+// Type aliases
+pub type ConverterFactory = (String, String?, Node) -> &Converter
+
+pub type SyntaxHighlighterFactory = (String, String, Node) -> &SyntaxHighlighter?
+
+// Traits
+pub(open) trait Converter {
+  fn convert(Self, Node, String) -> String
+  fn backend_traits(Self) -> BackendTraits
+}
+
+pub(open) trait SyntaxHighlighter {
+  fn name(Self) -> String
+  fn handles_highlighting(Self) -> Bool
+  fn format(Self, Node, String?, Map[String, String]) -> String
+  fn has_docinfo(Self, String) -> Bool
+  fn docinfo(Self, String, Node, Map[String, String]) -> String
+  fn highlight(Self, Node, String, String, Map[String, String]) -> String
+}
+
+pub(open) trait Vfs {
+  fn read(Self, String) -> Bytes?
+  fn is_file(Self, String) -> Bool
+  fn is_dir(Self, String) -> Bool
+  fn cwd(Self) -> String
+  fn home(Self) -> String
+}

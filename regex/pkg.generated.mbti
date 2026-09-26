@@ -28,6 +28,7 @@ pub fn MatchData::expand(Self, String) -> String
 pub fn MatchData::group(Self, Int) -> String?
 pub fn MatchData::groups(Self) -> Array[String?]
 pub fn MatchData::has(Self, Int) -> Bool
+pub fn MatchData::has_names(Self) -> Bool
 pub fn MatchData::matched(Self) -> String
 pub fn MatchData::named(Self, String) -> String?
 pub fn MatchData::post_match(Self) -> String

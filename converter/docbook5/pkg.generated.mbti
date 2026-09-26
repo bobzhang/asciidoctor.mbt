@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/converter/docbook5"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn register() -> Unit
+
+// Errors
+
+// Types and methods
+pub struct DocBook5Converter {
+  // private fields
+}
+pub fn DocBook5Converter::new(backend? : String) -> Self
+pub impl @core.Converter for DocBook5Converter
+
+// Type aliases
+
+// Traits
