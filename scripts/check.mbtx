@@ -1,0 +1,39 @@
+// Full validation: type-check (all targets), unit tests (wasm-gc, native, js),
+// golden parity, and with --corpus a byte-for-byte comparison with Ruby over
+// the corpora in .repos/.
+//
+// Usage: moon run --target native scripts/check.mbtx -- [--corpus]
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+async fn step(cmd : String, args : Array[String]) -> Unit {
+  println("$ \{cmd} \{args.join(" ")}")
+  let (code, out) = @process.collect_output_merged(cmd, args)
+  let lines = out.text().split("\n").map(l => l.to_owned()).filter(l => l != "").collect()
+  // show the last lines (summaries) of each step
+  let start = if lines.length() > 3 { lines.length() - 3 } else { 0 }
+  for l in lines[start:] {
+    println("  \{l}")
+  }
+  if code != 0 {
+    fail("step failed: \{cmd} \{args.join(" ")}")
+  }
+}
+
+///|
+async fn main {
+  let corpus = @env.args().contains("--corpus")
+  step("moon", ["check", "--target", "all"])
+  step("moon", ["test"])
+  step("moon", ["test", "--target", "native"])
+  step("moon", ["test", "--target", "js"])
+  step("moon", ["build", "--target", "native", "cmd/golden"])
+  step("_build/native/debug/build/cmd/golden/golden.exe", [])
+  if corpus {
+    step("moon", ["run", "--target", "native", "scripts/corpus.mbtx"])
+  }
+}

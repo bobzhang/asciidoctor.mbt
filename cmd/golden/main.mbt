@@ -313,6 +313,7 @@ async fn main {
   let args = @env.args()
   let mut verbose = false
   let mut trace = false
+  let mut prune = false
   let mut only = -1
   let mut filter : String? = None
   let mut max_failures = 20
@@ -322,6 +323,7 @@ async fn main {
     match args[i] {
       "-v" => verbose = true
       "-t" => trace = true
+      "--prune-known" => prune = true
       "-k" => {
         i += 1
         only = @rb.to_i(args.get(i).unwrap_or("-1"))
@@ -437,6 +439,27 @@ async fn main {
   println(
     "known failures: \{total.failures.length() - unexpected.length()}, unexpected failures: \{unexpected.length()}\{if files_given_is_all { ", known now passing: \{fixed}" } else { "" }}",
   )
+  if prune && files_given_is_all && fixed > 0 {
+    // drop entries that now pass, keeping comments and order
+    let kept = []
+    for line in known_text.split("\n") {
+      let line = line.to_owned()
+      if line.has_prefix("#") || line == "" {
+        kept.push(line)
+      } else if failed_keys.contains(@rb.partition(line, "\t").2) {
+        kept.push(line)
+      }
+    }
+    while kept.length() > 0 && kept[kept.length() - 1] == "" {
+      kept.pop() |> ignore
+    }
+    @fs.write_file(
+      "tests/golden/known_failures.txt",
+      kept.join("\n") + "\n",
+      create_mode=CreateOrTruncate,
+    )
+    println("pruned \{fixed} entries from tests/golden/known_failures.txt")
+  }
   for idx, f in unexpected {
     if idx >= max_failures {
       break

@@ -108,7 +108,7 @@ fn DocBook5Converter::dispatch(
     "inline_menu" => convert_inline_menu(node)
     "inline_quoted" => self.convert_inline_quoted(node)
     _ => {
-      warn("no converter handler for transform: \{transform}")
+      warn("missing convert handler for \{node.node_name} node in docbook5 backend (Asciidoctor::Converter::DocBook5Converter)")
       ""
     }
   }

@@ -80,7 +80,7 @@ pub impl @core.Converter for ManPageConverter with fn convert(
     _ => {
       @core.logger().add({
         severity: Warn,
-        text: "no converter handler for transform: \{transform}",
+        text: "missing convert handler for \{node.node_name} node in manpage backend (Asciidoctor::Converter::ManPageConverter)",
         source_location: None,
         include_location: None,
       })

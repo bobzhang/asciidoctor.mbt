@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 # Golden-fixture harvester.
 #
-# Loaded before an upstream test file (see scripts/harvest.sh). Records, for every
+# Loaded before an upstream test file (see scripts/harvest.mbtx). Records, for every
 # top-level Asciidoctor::Document created during a test:
 #   - the source text and the load options (JSON-safe subset)
 #   - a canonical dump of the parsed AST (after Document#parse)

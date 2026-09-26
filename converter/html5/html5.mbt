@@ -97,7 +97,7 @@ pub impl @core.Converter for Html5Converter with fn convert(
     _ => {
       @core.logger().add({
         severity: Warn,
-        text: "no converter handler for transform: \{transform}",
+        text: "missing convert handler for \{node.node_name} node in html5 backend (Asciidoctor::Converter::Html5Converter)",
         source_location: None,
         include_location: None,
       })

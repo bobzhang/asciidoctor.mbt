@@ -167,7 +167,7 @@ parser async would slow it and infect every API. Instead:
 * Milestones 0–6 done: regex engine (4,929-case Ruby differential oracle passes), Ruby helpers, core model,
   reader/preprocessor, attribute lists, substitutions, parser, HTML5 converter, client-side highlighters
   (highlight.js, prettify, html-pipeline), facade `load`/`convert`.
-* Golden harness: `scripts/harvest.sh` (runs upstream suite with `scripts/harvest/harvest.rb`) records
+* Golden harness: `scripts/harvest.mbtx` (runs upstream suite with `scripts/harvest/harvest.rb`) records
   2,901 documents (source, options, Compliance overrides, files read, AST snapshot, outputs, messages).
   `moon run cmd/golden --target native` replays them.
 * Parity: AST 2426/2532, HTML output 1427/1542 (skipped: DocBook/manpage backends, extension registries,
@@ -185,7 +185,7 @@ parser async would slow it and infect every API. Instead:
 * Parity: AST 2506/2612, output 1699/1819; **0 unexpected failures** — the remaining 226 are listed and
   categorized in `tests/golden/known_failures.txt` (Ruby extension DSL 78, server-side highlighters 91,
   remote URIs 13, API mutation 11, misc 3).
-* Real-world check: `scripts/corpus_compare.sh` — all 100 files of the Asciidoctor documentation convert
+* Real-world check: `scripts/corpus.mbtx` — all 100 files of the Asciidoctor documentation convert
   byte-identically to Ruby (HTML and warnings).
 * Performance (release native): 38k-line document converts in 0.19s CPU vs Ruby 0.58s; wall time is
   dominated by a fixed ~0.36s startup/teardown latency of the `moonbitlang/async` runtime (an empty

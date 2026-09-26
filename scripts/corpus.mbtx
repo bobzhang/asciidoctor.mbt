@@ -1,0 +1,133 @@
+// Byte-for-byte comparison with Ruby Asciidoctor over AsciiDoc corpora
+// (output and warnings), for one or more backends.
+//
+// Usage: moon run --target native scripts/corpus.mbtx -- [options] [DIR...]
+//   -b BACKEND     html5, docbook5 or manpage (repeatable; default: all three)
+//   --standalone   compare standalone documents instead of embedded output
+//   -v             print the name of each differing file
+// Without DIR, every corpus found under .repos/ is used.
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+let known_corpora : Array[String] = [
+  ".repos/asciidoctor/docs", ".repos/asciidoctor-pdf", ".repos/asciidoctor-diagram",
+  ".repos/asciidoctor-epub3", ".repos/asciidoctorj",
+]
+
+///|
+async fn collect_adoc(dir : String, out : Array[String]) -> Unit {
+  let entries = @fs.readdir(dir, sort=true) catch { _ => return }
+  for name in entries {
+    let path = "\{dir}/\{name}"
+    match (@fs.kind(path) catch { _ => continue }) {
+      Directory => collect_adoc(path, out)
+      Regular => if name.has_suffix(".adoc") { out.push(path) }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn dirname(path : String) -> String {
+  match path.rev_find("/") {
+    Some(i) => path.unsafe_substring(start=0, end=i)
+    None => "."
+  }
+}
+
+///|
+async fn run_one(cmd : String, args : Array[String], cwd : String) -> (String, String) {
+  let (_, out, err) = @process.collect_output(
+    cmd,
+    args,
+    cwd~,
+    extra_env={ "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" },
+  )
+  (out.text(), err.text())
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let backends = []
+  let dirs = []
+  let mut standalone = false
+  let mut verbose = false
+  let mut i = 1
+  while i < args.length() {
+    match args[i] {
+      "-b" => {
+        i += 1
+        backends.push(args[i])
+      }
+      "--standalone" => standalone = true
+      "-v" => verbose = true
+      "--" => ()
+      a => dirs.push(a)
+    }
+    i += 1
+  }
+  if backends.is_empty() {
+    backends.push_iter(["html5", "docbook5", "manpage"].iter())
+  }
+  let root = @fs.realpath(".")
+  if dirs.is_empty() {
+    for d in known_corpora {
+      if (@fs.exists(d) catch { _ => false }) {
+        dirs.push(d)
+      }
+    }
+  }
+  let (code, _, _) = @process.collect_output("moon", ["build", "--target", "native", "cmd/asciidoctor"])
+  if code != 0 {
+    fail("build failed")
+  }
+  let bin = "\{root}/_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe"
+  let ruby_lib = "\{root}/.repos/asciidoctor/lib"
+  let ruby_bin = "\{root}/.repos/asciidoctor/bin/asciidoctor"
+  for backend in backends {
+    for dir in dirs {
+      let files = []
+      collect_adoc(@fs.realpath(dir), files)
+      let mut same = 0
+      let diffs = []
+      // convert files concurrently in small batches
+      let batch = 8
+      let mut start = 0
+      while start < files.length() {
+        let end = if start + batch < files.length() { start + batch } else { files.length() }
+        let results : Array[(String, Bool)] = []
+        @async.with_task_group(group => {
+          for f in files[start:end] {
+            group.spawn_bg(() => {
+              let common = ["-S", "safe", "-b", backend, "-o", "-"]
+              let opts = if standalone { common } else { common + ["-s"] }
+              let rb = run_one("ruby", ["-I", ruby_lib, ruby_bin, ..opts, f], dirname(f))
+              let mbt = run_one(bin, [..opts, f], dirname(f))
+              results.push((f, rb == mbt))
+            })
+          }
+        })
+        for r in results {
+          if r.1 {
+            same += 1
+          } else {
+            diffs.push(r.0)
+          }
+        }
+        start = end
+      }
+      println("\{backend}\t\{dir}\tidentical: \{same} / \{files.length()}")
+      if verbose {
+        for d in diffs {
+          println("  DIFF \{d}")
+        }
+      }
+    }
+  }
+}

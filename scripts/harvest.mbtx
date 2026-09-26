@@ -1,0 +1,58 @@
+// Regenerates the golden fixtures in tests/golden/ by running the upstream
+// Ruby test suite with scripts/harvest/harvest.rb loaded.
+// Requires Ruby with minitest and nokogiri; installs rouge/coderay/asciimath
+// into .repos/gems on first use.
+//
+// Usage: moon run --target native scripts/harvest.mbtx -- [test/xxx_test.rb...]
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+async fn main {
+  let root = @fs.realpath(".")
+  let up = "\{root}/.repos/asciidoctor"
+  let gem_home = "\{root}/.repos/gems"
+  let (_, gempath, _) = @process.collect_output("gem", ["env", "gempath"])
+  let env = {
+    "GEM_HOME": gem_home,
+    "GEM_PATH": "\{gem_home}:\{gempath.text().trim().to_owned()}",
+    "SOURCE_DATE_EPOCH": "1700000000",
+    "TZ": "UTC",
+  }
+  let has_rouge = (@fs.readdir("\{gem_home}/gems") catch { _ => [] })
+    .iter()
+    .any(g => g.has_prefix("rouge-"))
+  if !has_rouge {
+    @process.run(
+      "gem",
+      ["install", "--no-document", "rouge:~>3.0", "coderay:~>1.1.0", "asciimath:~>2.0"],
+      extra_env=env,
+    )
+    |> ignore
+  }
+  @fs.mkdir("\{root}/tests/golden", recursive=true, allow_exist=true)
+  let args = @env.args()[1:].to_array().filter(a => a != "--")
+  let tests = if args.is_empty() {
+    @fs.readdir("\{up}/test", sort=true).filter(n => n.has_suffix("_test.rb")).map(n => "test/\{n}")
+  } else {
+    args
+  }
+  for t in tests {
+    let name = t.rev_find("/").map(i => t.unsafe_substring(start=i + 1, end=t.length())).unwrap_or(t)
+    let name = name.unsafe_substring(start=0, end=name.length() - "_test.rb".length())
+    let test_env = env.copy()
+    test_env["HARVEST_OUT"] = "\{root}/tests/golden/\{name}.jsonl"
+    let (_, out) = @process.collect_output_merged(
+      "ruby",
+      ["-Ilib", "-Itest", "-r\{root}/scripts/harvest/harvest.rb", t],
+      cwd=up,
+      extra_env=test_env,
+    )
+    let summary = out.text().split("\n").filter(l => l.contains("runs,")).map(l => l.to_owned()).collect()
+    println("\{name}: \{summary.join(" ")}")
+  }
+}
