@@ -1,5 +1,6 @@
 import {
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/converter/html5",
+  "bobzhang/asciidoctor/converter/manpage",
   "bobzhang/asciidoctor/internal/rb",
 }
