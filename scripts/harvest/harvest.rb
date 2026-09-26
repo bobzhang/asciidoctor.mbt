@@ -134,6 +134,7 @@ module Harvest
           h[k.to_s] = v unless v == Harvest::COMPLIANCE_DEFAULTS[k]
         end
         rec['compliance'] = compliance unless compliance.empty?
+        rec['source_date_epoch'] = ENV['SOURCE_DATE_EPOCH'] unless ENV['SOURCE_DATE_EPOCH'] == '1700000000'
         rec['source_lines'] = data if Array === data
         Harvest.active.push rec
       end

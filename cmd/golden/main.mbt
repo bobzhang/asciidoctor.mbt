@@ -197,6 +197,14 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
       }
     _ => ()
   }
+  @core.set_source_date_epoch(
+    Some(
+      match rec.get("source_date_epoch") {
+        Some(String(s)) => @rb.to_i(s).to_int64()
+        _ => 1700000000L
+      },
+    ),
+  )
   @core.reset_compliance()
   match rec.get("compliance") {
     Some(Object(c)) =>
