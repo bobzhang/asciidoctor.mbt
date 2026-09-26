@@ -108,10 +108,13 @@ pub fn rootname(filename : String) -> String {
 ///|
 /// Last path segment, optionally without extension (Ruby `Helpers.basename`).
 pub fn basename(filename : String, drop_ext? : Bool = false) -> String {
-  let trimmed = if filename.length() > 1 && filename.has_suffix("/") {
-    @rb.chop(filename)
-  } else {
-    filename
+  // File.basename strips all trailing slashes; a path of only slashes is "/"
+  let mut trimmed = filename
+  while trimmed.length() > 1 && trimmed.has_suffix("/") {
+    trimmed = @rb.chop(trimmed)
+  }
+  if trimmed == "/" {
+    return trimmed
   }
   let base = match trimmed.rev_find("/") {
     Some(i) => @rb.from(trimmed, i + 1)
