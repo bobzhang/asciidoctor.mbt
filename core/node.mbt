@@ -301,6 +301,12 @@ pub fn Node::role_is(self : Node, expected? : String) -> Bool {
 }
 
 ///|
+/// Sets (or clears) the id of this node (Ruby `node.id = value`).
+pub fn Node::set_id(self : Node, id : String?) -> Unit {
+  self.id = id
+}
+
+///|
 pub fn Node::set_role(self : Node, names : String) -> Unit {
   self.attributes.set_str("role", names)
 }

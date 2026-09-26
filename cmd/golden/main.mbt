@@ -71,7 +71,7 @@ fn build_options(
   let o = @core.Options::new()
   o.vfs = Some(ctx.vfs)
   for k, v in opts {
-    if v is Object(m) && m.contains("__unsupported__") {
+    if k != "input_mtime" && v is Object(m) && m.contains("__unsupported__") {
       raise Unsupported("option \{k}")
     }
     match k {

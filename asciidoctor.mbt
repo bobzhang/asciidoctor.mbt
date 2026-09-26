@@ -55,6 +55,7 @@ pub fn parse_attributes_option(attrs : String) -> Array[(String, AttrVal)] {
 fn ensure_converters() -> Unit {
   @html5.register()
   @manpage.register()
+  @docbook5.register()
 }
 
 ///|
