@@ -1,0 +1,5 @@
+import {
+  "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor/converter/html5",
+  "bobzhang/asciidoctor/internal/rb",
+}

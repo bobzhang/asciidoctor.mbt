@@ -38,7 +38,7 @@ fn Catalog::new() -> Catalog {
 
 ///|
 /// Options for loading/converting a document (Ruby options Hash).
-pub struct Options {
+pub(all) struct Options {
   /// Attribute overrides in order; `Nil` unsets, `Bool(false)` soft-unsets,
   /// a trailing `@` on a string value or name makes it soft.
   mut attributes : Array[(String, AttrVal)]

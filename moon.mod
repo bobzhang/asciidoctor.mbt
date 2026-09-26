@@ -11,3 +11,7 @@ license = "MIT"
 keywords = [ "asciidoc", "asciidoctor", "markup" ]
 
 description = "A port of Asciidoctor (AsciiDoc processor) to MoonBit"
+
+import {
+  "moonbitlang/async@0.22.4",
+}
