@@ -3,6 +3,7 @@
 # tests/regex/regexes.json) with Ruby over a corpus of AsciiDoc lines/paragraphs and
 # writes regex/oracle_test.mbt with expected capture offsets (in UTF-16 code units).
 require 'json'
+require 'zlib'
 ROOT = File.expand_path '..', __dir__
 UP = File.join ROOT, '.repos/asciidoctor'
 regexes = JSON.parse File.read(File.join(ROOT, 'tests/regex/regexes.json'))
@@ -74,14 +75,60 @@ regexes.each do |r|
   (hits + misses).each { |s, o, a| cases << [src, multi ? 'm' : '', s, o, a] }
   # seeded random inputs built from the pattern's punctuation plus word chars,
   # whitespace, newlines and non-ASCII characters
-  rng = Random.new(src.hash & 0xffffffff)
-  alphabet = (src.scan(/[^\w\s\\]/).uniq + %w(a b Z 9 _ é 😀) + [' ', ' ', "\t", "\n", 'x', 'y']).uniq
+  # (deterministic seed so that regenerating only changes what actually changed)
+  rng = Random.new(Zlib.crc32(src))
+  alphabet = (src.scan(/[^\w\s\\]/).uniq + %w(a b Z 9 _ é 😀 𝒜) + [' ', ' ', "\t", "\n", 'x', 'y']).uniq
   20.times do
     str = Array.new(rng.rand(0..24)) { alphabet[rng.rand(alphabet.size)] }.join
     m = rx.match str
     all = []
     str.scan(rx) { all.concat offsets($~, str); all << -2 }
     cases << [src, multi ? 'm' : '', str, m && offsets(m, str), all]
+  end
+end
+
+# Hand-picked patterns exercising supplementary characters (matches must never
+# start or end inside a surrogate pair), the i/x flags, inline options and less
+# common escapes, run over inputs full of astral and case-variant characters.
+EXTRA_PATTERNS = [
+  ['[^😀]', ''], ['.', ''], ['.', 'm'], ['\b', ''], ['\B', ''], ['\bx', ''], ['x\b', ''],
+  ['(?<=😀)x', ''], ['(?<=[^😀])x', ''], ['(?<!😀).', ''], ['(?<=.)', ''], ['(?<=^.).', ''],
+  ['(?<=\p{Word})\p{Word}', ''], ['', ''], ['x*', ''], ['(?:)', ''], ['\p{Word}+', ''],
+  ['[😀-😂]+', ''], ['(.)\1', ''], ['^.', ''], ['.$', ''], ['\W', ''], ['[^a]', ''], ['[^a]*?', ''],
+  ['\S+', ''], ['[^\p{Word}]', ''], ['\u{1F600}', ''], ['[\u{1F600}-\u{1F602}]', ''],
+  ['(?=😀)', ''], ['(?!😀)', ''], ['.(?=.)', ''], ['(?>.*)😀', ''], ['.*?😀', ''], ['😀+?', ''],
+  ['k', 'i'], ['K', 'i'], ['[a-z]+', 'i'], ['[^a]', 'i'], ['[^k]', 'i'], ['(a)\1', 'i'], ['(.)\1', 'i'],
+  ['\p{Lower}+', 'i'], ['\p{Upper}', 'i'], ['\p{Lu}', 'i'], ['\p{Ll}', 'i'], ['𐐀', 'i'], ['[𐐀-𐐅]', 'i'],
+  ['σ', 'i'], ['Σ+', 'i'], ['ǅ', 'i'], ['ß', 'i'], ['é', 'i'], ['\w+', 'i'], ['[\w]+', 'i'],
+  ['abc', 'i'], ['ABC', 'i'], ['a.c', 'mi'], ['(?<n>b)\k<n>', 'i'],
+  ['a b # c', 'x'], ["a b # c\n c", 'x'], ['[ a]+', 'x'], ['a\ b', 'x'], ['a +', 'x'], ['a{2 }', 'x'],
+  ['a(?i)b|c', ''], ['(a(?i)b)c', ''], ['(?i:a)b', ''], ['(?x) a  b', ''], ['(?x: a b ) c', ''],
+  ['(?i)a(?-i)b', ''], ['(?mi)a.', ''], ['(?i-m)a.', 'm'], ['(?i)k|x', ''], ["(?x)a#b\nc", ''],
+  ['a\Kb', ''], ['a\K', ''], ['\R', ''], ['\R+', ''], ['\101', ''], ['\cA', ''], ['\C-a', ''],
+  ['\xC3\xA9', ''], ['[\xC3\xA9]', ''], ['\10', ''], ['(a)?\1b', ''], ['(?<n>a)(b)\k<n>', ''],
+  ["(?'n'x)\\k'n'", ''], ['(a)\k<-1>', ''], ['(a)\k<1>', ''], ['[[:punct:]]+', ''], ['\p{Punct}+', ''],
+  ['[[:upper:]]', ''], ['\p{Lu}', ''], ['\p{Upper}', ''], ['[[:digit:]]+', ''], ['\p{L}+', ''],
+  ['[[:xdigit:]]+', ''], ['[[:cntrl:]]', ''], ['\p{ASCII}+', ''], ['\p{Alpha}\p{^Alpha}', ''],
+  ['a**', ''], ['x{2}+', ''], ['x{2}?', ''], ['x{,2}', ''], ['(?#comment)x', ''],
+]
+EXTRA_INPUTS = [
+  '😀x', 'x😀', 'a😀b😀c', '😀😀', '𝒜bc 𝒜', 'x😀😀y', "KkK", 'ABC abc', 'aA', '😀😀a',
+  'STRAẞE straße', '𐐀𐐨𐐁', 'ΣσςΣ', 'ǅǆǄ', "a\r\nb\nc", "\x01A", 'éÉ', 'ab', 'aab', 'aB', 'AbC',
+  'x b', 'a b', 'ab c', 'aa', 'a+', '$+<', 'Ⅰi', '٣٤', 'xxxx', 'x{,2}', '😀😁😂😃', 'a😀', "😀\n😀",
+  'AB', 'Ab', 'aBc', 'abc', 'aBC', 'ac', 'c', 'A', 'b', 'a', '',
+]
+EXTRA_PATTERNS.each do |src, fl|
+  opts = (fl.include?('i') ? Regexp::IGNORECASE : 0) | (fl.include?('x') ? Regexp::EXTENDED : 0) |
+         (fl.include?('m') ? Regexp::MULTILINE : 0)
+  rx = Regexp.new(src, opts)
+  rng = Random.new(Zlib.crc32(src + fl))
+  alphabet = %w(a b A K k 😀 𝒜 é 𐐀 𐐨 ß σ Σ) + [' ', "\n", 'x', "K"]
+  randoms = Array.new(12) { Array.new(rng.rand(0..12)) { alphabet[rng.rand(alphabet.size)] }.join }
+  (EXTRA_INPUTS + randoms).uniq.each do |str|
+    m = rx.match str
+    all = []
+    str.scan(rx) { all.concat offsets($~, str); all << -2 }
+    cases << [src, fl, str, m && offsets(m, str), all]
   end
 end
 File.open(File.join(ROOT, 'regex/oracle_test.mbt'), 'w') do |f|
@@ -108,16 +155,17 @@ File.open(File.join(ROOT, 'regex/oracle_test.mbt'), 'w') do |f|
     ///|
     test "regex oracle: agrees with Ruby on Asciidoctor patterns" {
       let failures = []
-      let mut last_src = ""
+      let mut last_key = ""
       let mut last_re : @regex.Regex? = None
       let oracle_cases = oracle_cases()
       for c in oracle_cases {
         let (src, flags, input, expected, expected_all) = c
-        if src != last_src {
-          last_src = src
+        let key = "/\\{src}/\\{flags}"
+        if key != last_key {
+          last_key = key
           last_re = Some(@regex.compile(src, flags~))
         }
-        guard! last_re is Some(re)
+        guard last_re is Some(re) else { fail("unreachable") }
         let actual = match re.find(input) {
           Some(m) => Some(Array::makei(m.size() * 2, i => if i % 2 == 0 { m.begin(i=i / 2) } else { m.end(i=i / 2) }))
           None => None
