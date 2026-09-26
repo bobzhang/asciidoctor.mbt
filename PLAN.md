@@ -95,7 +95,9 @@ parser async would slow it and infect every API. Instead:
    (fast, pure) pipeline; every miss is recorded; asynchronously load all missed paths with
    `@fs.read_file` (recording non-existent ones as absent); rerun until no new misses.
    Rounds ≈ include nesting depth + 1. The final run sees every file it asks for, so output is exact.
-3. Output writing (`to_file`, `to_dir`, `mkdirs`, copying stylesheets) happens in `io/` after conversion.
+3. Output writing (`to_file`, `to_dir`, `mkdirs`, copying stylesheets, man page `.so` pages) happens
+   in `io/` after conversion. `io/convert.mbt` (`convert_source`, wrapped by `convert`/`convert_file`)
+   is the single port of convert.rb + `Document#write`; `cmd/asciidoctor` only ports cli/.
 
 ## 5. Regex engine (`regex/`)
 

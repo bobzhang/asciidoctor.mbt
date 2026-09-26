@@ -541,10 +541,6 @@ test "error messages of the invoker" {
     ),
     content="asciidoctor: ERROR: doctype must be set to manpage when using manpage backend (RuntimeError)",
   )
-  inspect(
-    error_message(
-      CliIOError("input file and output file cannot be the same: /d/x"),
-    ),
-    content="input file and output file cannot be the same: /d/x",
-  )
+  // other errors (`@io.IOError`, `@core.SecurityError`) print their message;
+  // scripts/cli_parity.mbtx compares them with Ruby
 }

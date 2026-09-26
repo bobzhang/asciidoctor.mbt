@@ -38,6 +38,15 @@ async fn read_text(path : String) -> String {
 }
 
 ///|
+/// The names in a directory, sorted (shorter names first) and separated by
+/// spaces.
+async fn listing(dir : String) -> String {
+  let names = @fs.readdir(dir)
+  names.sort()
+  names.join(" ")
+}
+
+///|
 fn safe_options(
   safe? : Int = @core.SAFE_SAFE,
   attributes? : Array[(String, @core.AttrVal)] = [],
@@ -373,5 +382,212 @@ async test "to_dir with and without mkdirs" {
       msg,
       content="input file and output file cannot be the same: $TMP/main.adoc",
     )
+  })
+}
+
+///|
+async test "a string is written to an explicit file, standalone" {
+  with_tmp(dir => {
+    let options = safe_options(base_dir=dir)
+    // by default a string is only converted
+    let output = @io.convert("= Title\n\ncontent\n", options~)
+    assert_false(output.contains("<html"))
+    let conversion = @io.convert_source(
+      Text("= Title\n\ncontent\n"),
+      options~,
+      destination=File("\{dir}/out/doc.html"),
+      mkdirs=true,
+    )
+    inspect(
+      rel(dir, conversion.outfile.unwrap_or("")),
+      content="$TMP/out/doc.html",
+    )
+    inspect(conversion.document.doctitle().unwrap_or(""), content="Title")
+    let written = read_text("\{dir}/out/doc.html")
+    assert_eq(written, conversion.output)
+    assert_true(written.has_prefix("<!DOCTYPE html>"))
+    // no file attributes for a string
+    assert_true(conversion.document.attr("docfile") is None)
+  })
+}
+
+///|
+async test "a missing converter raises before anything is written" {
+  with_tmp(dir => {
+    write("\{dir}/main.adoc", "= Main\n:backend: nope\n\ncontent\n")
+    let attempt = async fn(destination : @io.Destination) -> String {
+      try
+        @io.convert_file(
+          "\{dir}/main.adoc",
+          options=safe_options(safe=@core.SAFE_UNSAFE),
+          destination~,
+          mkdirs=true,
+        )
+      catch {
+        @core.MissingConverter(_) as e => e.to_string()
+        e => raise e
+      } noraise {
+        _ => "no error"
+      }
+    }
+    let missing = "asciidoctor: FAILED: missing converter for backend 'nope'. Processing aborted."
+    inspect(attempt(Default), content=missing)
+    inspect(attempt(File("\{dir}/out/main.html")), content=missing)
+    inspect(attempt(Stdout), content=missing)
+    inspect(attempt(File("/dev/null")), content=missing)
+    assert_false(@fs.exists("\{dir}/main.html"))
+    // not even the target directory is created
+    assert_false(@fs.exists("\{dir}/out"))
+    // the backend option, and conversion from a string
+    let msg = try
+      @io.convert("content", options=@core.Options::new(backend="nope"))
+    catch {
+      e => e.to_string()
+    } noraise {
+      _ => "no error"
+    }
+    inspect(msg, content=missing)
+  })
+}
+
+///|
+async test "a conversion error raises after the target directory is created" {
+  with_tmp(dir => {
+    // Ruby creates the directory before converting; the manpage converter
+    // then fails for a document that is not a man page
+    let msg = try
+      @io.convert(
+        "= Title\n:backend: manpage\n\ntext",
+        options=@core.Options::new(safe=@core.SAFE_UNSAFE, base_dir=dir),
+        destination=File("\{dir}/man/main.1"),
+        mkdirs=true,
+      )
+    catch {
+      @core.ConversionFailed(msg) => msg
+      e => raise e
+    } noraise {
+      _ => "no error"
+    }
+    inspect(
+      msg,
+      content="asciidoctor: ERROR: doctype must be set to manpage when using manpage backend",
+    )
+    assert_true(@fs.exists("\{dir}/man"))
+    assert_false(@fs.exists("\{dir}/man/main.1"))
+  })
+}
+
+///|
+async test "file attributes override the user's attributes" {
+  with_tmp(dir => {
+    write(
+      "\{dir}/doc.adoc",
+      "{docname}|{docfile}|{docdir}|{docfilesuffix}|{outfile}|{outdir}\n",
+    )
+    let attributes : Array[(String, @core.AttrVal)] = [
+      ("docname", Str("X")),
+      ("docfile", Str("Y")),
+      ("docdir", Str("Z")),
+      ("docfilesuffix", Str(".txt")),
+      ("outfile", Str("O")),
+      ("outdir", Str("D")),
+    ]
+    let options = safe_options(attributes~, standalone=false)
+    // not written: outfile and outdir keep the user's values
+    let output = @io.convert_file(
+      "\{dir}/doc.adoc",
+      options~,
+      destination=NoWrite,
+    )
+    inspect(
+      rel(dir, output),
+      content=(
+        #|<div class="paragraph">
+        #|<p>doc|$TMP/doc.adoc|$TMP|.adoc|O|D</p>
+        #|</div>
+      ),
+    )
+    // written: the output location overrides outfile and outdir
+    @io.convert_file("\{dir}/doc.adoc", options~) |> ignore
+    inspect(
+      rel(dir, read_text("\{dir}/doc.html")),
+      content=(
+        #|<div class="paragraph">
+        #|<p>doc|$TMP/doc.adoc|$TMP|.adoc|$TMP/doc.html|$TMP</p>
+        #|</div>
+      ),
+    )
+    // load_file sets the same attributes
+    let doc = @io.load_file("\{dir}/doc.adoc", options~)
+    inspect(doc.attr("docname").unwrap_or(""), content="doc")
+  })
+}
+
+///|
+async test "a man page gets a .so page for each alternate name" {
+  with_tmp(dir => {
+    write(
+      "\{dir}/cmd.adoc",
+      "= cmd(8)\n:doctype: manpage\n\n== NAME\n\ncmd, alt-one, alt-two - does things\n\n== SYNOPSIS\n\n*cmd*\n",
+    )
+    let options = @core.Options::new(backend="manpage", base_dir=dir)
+    @io.convert_file("\{dir}/cmd.adoc", options~) |> ignore
+    inspect(
+      listing(dir),
+      content=(
+        #|cmd.8 cmd.adoc alt-one.8 alt-two.8
+      ),
+    )
+    inspect(read_text("\{dir}/alt-one.8"), content=".so cmd.8")
+    assert_true(read_text("\{dir}/cmd.8").contains(".TH \"CMD\" \"8\""))
+    // an explicit target names the redirect
+    @io.convert_file(
+      "\{dir}/cmd.adoc",
+      options~,
+      destination=File("\{dir}/man/tool.8"),
+      mkdirs=true,
+    )
+    |> ignore
+    inspect(
+      listing("\{dir}/man"),
+      content=(
+        #|tool.8 alt-one.8 alt-two.8
+      ),
+    )
+    inspect(read_text("\{dir}/man/alt-two.8"), content=".so tool.8")
+  })
+}
+
+///|
+async test "timings record every phase" {
+  with_tmp(dir => {
+    write("\{dir}/main.adoc", "= Main\n\ncontent\n")
+    // a clock that advances one second per reading
+    let ticks = Ref(0.0)
+    let clock = () => {
+      ticks.val += 1.0
+      ticks.val
+    }
+    let timings = @core.Timings::new(clock)
+    let options = @core.Options::new(base_dir=dir, timings~)
+    @io.convert_file("\{dir}/main.adoc", options~) |> ignore
+    assert_true(@fs.exists("\{dir}/main.html"))
+    // reading the file counts toward the read phase, as in Ruby
+    assert_true(timings.read().unwrap_or(0.0) >= 2.0)
+    assert_true(timings.parse() is Some(_))
+    assert_true(timings.convert() is Some(_))
+    assert_true(timings.write() is Some(_))
+    // from a string, without writing
+    let timings = @core.Timings::new(clock)
+    @io.convert("content", options=@core.Options::new(timings~)) |> ignore
+    assert_true(timings.read_parse_convert() is Some(_))
+    assert_true(timings.write() is None)
+    // load_file records read and parse
+    let timings = @core.Timings::new(clock)
+    @io.load_file("\{dir}/main.adoc", options=@core.Options::new(timings~))
+    |> ignore
+    assert_true(timings.read() is Some(_))
+    assert_true(timings.parse() is Some(_))
+    assert_true(timings.convert() is None)
   })
 }

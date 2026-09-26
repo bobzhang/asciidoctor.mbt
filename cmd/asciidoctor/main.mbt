@@ -1,6 +1,6 @@
 // The `asciidoctor` command line interface (Ruby `Asciidoctor::Cli`): option
-// parsing is in options.mbt, the conversion driver in convert.mbt; this file
-// is the invoker (Ruby `Cli::Invoker`).
+// parsing is in options.mbt; this file is the invoker (Ruby `Cli::Invoker`).
+// The conversion itself (Ruby `Asciidoctor.convert`) is `@io.convert_source`.
 
 ///|
 async fn write_err(s : String) -> Unit {
@@ -163,10 +163,10 @@ async fn invoke(opts : CliOptions) -> Int {
     }
   }
   // every file output creates the missing directories
-  let (to_file, mkdirs) : (ToFile, Bool) = match outfile {
-    Some("-") => (Stream, false)
-    Some(f) => (Path(f), true)
-    None => (Derived, true)
+  let (destination, mkdirs) : (@io.Destination, Bool) = match outfile {
+    Some("-") => (Stdout, false)
+    Some(f) => (File(f), true)
+    None => (Default, true)
   }
   let messages : Array[@core.LogMessage] = []
   let logger = if opts.verbose == 0 {
@@ -210,11 +210,11 @@ async fn invoke(opts : CliOptions) -> Int {
   }
   let cwd = @env.current_dir().unwrap_or("/")
   let abs_srcdir = opts.source_dir.map(d => @core.expand_path_from(cwd, d))
-  let convert_one = async fn(input : CliInput, subject : String) {
+  let convert_one = async fn(source : @io.Source, subject : String) {
     let options = new_options()
     let mut to_dir = opts.destination_dir
-    match (input, abs_srcdir, to_dir) {
-      (InputFile(path), Some(srcdir), Some(d)) => {
+    match (source, abs_srcdir, to_dir) {
+      (Path(path), Some(srcdir), Some(d)) => {
         let abs_indir = @core.dirname(@core.expand_path_from(cwd, path))
         if abs_indir.has_prefix(srcdir + "/") {
           to_dir = Some(d + @rb.from(abs_indir, srcdir.length()))
@@ -222,7 +222,8 @@ async fn invoke(opts : CliOptions) -> Int {
       }
       _ => ()
     }
-    convert_input(input, options, to_file~, to_dir~, mkdirs~)
+    @io.convert_source(source, options~, destination~, to_dir?, mkdirs~)
+    |> ignore
     flush_messages()
     if options.timings is Some(t) {
       write_err(t.report(subject~))
@@ -231,10 +232,10 @@ async fn invoke(opts : CliOptions) -> Int {
   try {
     if stdin {
       let text = @stdio.stdin.read_all().text()
-      convert_one(Stdin(text), "-")
+      convert_one(Text(text), "-")
     } else {
       for infile in infiles {
-        convert_one(InputFile(infile), infile)
+        convert_one(Path(infile), infile)
       }
     }
   } catch {

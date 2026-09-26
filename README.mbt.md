@@ -110,7 +110,11 @@ test "inline macro extension" {
 
 `@io.convert_file(path)` reads the input, resolves includes, docinfo files and assets from the file
 system (asynchronously, then reruns the pure pipeline until every requested file is available) and
-writes the output next to the input, like `Asciidoctor.convert_file`.
+writes the output next to the input, like `Asciidoctor.convert_file`. `@io.convert_source` is the
+general driver behind it (Ruby `Asciidoctor.convert`): a file or a string (e.g. standard input),
+written next to the input, to an explicit file or directory (jailed in safe mode), to standard output
+or not at all; it copies stylesheets (`linkcss` + `copycss`), writes the `.so` pages of a man page's
+alternate names, and returns the document and its output. The CLI is a thin invoker on top of it.
 
 Run the CLI straight from [mooncakes.io](https://mooncakes.io/docs/bobzhang/asciidoctor) with
 `moonx`, or build it from a checkout (`io` and the CLI run on the `native` and `wasm` targets):
@@ -158,7 +162,7 @@ itself crashes or has no handler.
 | `internal/rb/` | Ruby-compatible string and number helpers (strip, split, succ, `Float#to_s`, Unicode case mapping) |
 | `core/` | document model, reader/preprocessor, parser, substitutions, extensions API, converter interface |
 | `converter/html5`, `converter/docbook5`, `converter/manpage` | converters |
-| `io/` | async file-system integration (`load_file`, `convert_file`) |
+| `io/` | async file-system integration (`load_file`, `convert_file`, `convert_source`) |
 | `cmd/asciidoctor` | CLI |
 | `cmd/golden`, `scripts/` | golden harvesting/replay, regex oracle, corpus comparison |
 
@@ -171,6 +175,7 @@ Scripts are MoonBit scripts (`.mbtx`), run with `moon run --target native`. The 
 moon run --target native scripts/check.mbtx               # check/test on all targets + golden parity
 moon run --target native scripts/check.mbtx -- --corpus   # also compare the corpora with Ruby
 moon run --target native scripts/corpus.mbtx -- -v        # corpus comparison only
+moon run --target native scripts/cli_parity.mbtx -- -v    # CLI vs Ruby: exit code, stdout, stderr, files
 moon run --target native scripts/harvest.mbtx             # regenerate goldens (needs Ruby + nokogiri)
 moon run --target native cmd/golden -- -v -n 20           # golden replay with failure details
 moon run --target native cmd/golden -- --prune-known      # drop fixed entries from known_failures.txt

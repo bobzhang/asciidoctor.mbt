@@ -6,9 +6,11 @@ import {
 }
 
 // Values
-pub async fn convert(String, options? : @core.Options) -> String
+pub async fn convert(String, options? : @core.Options, destination? : Destination, to_dir? : String, mkdirs? : Bool) -> String
 
 pub async fn convert_file(String, options? : @core.Options, destination? : Destination, to_dir? : String, mkdirs? : Bool) -> String
+
+pub async fn convert_source(Source, options? : @core.Options, destination? : Destination, to_dir? : String, mkdirs? : Bool) -> Conversion
 
 pub async fn load(String, options? : @core.Options, prefetch_conversion? : Bool) -> @core.Node
 
@@ -28,6 +30,12 @@ pub suberror IOError {
 pub impl Show for IOError
 
 // Types and methods
+pub struct Conversion {
+  document : @core.Node
+  output : String
+  outfile : String?
+}
+
 pub(all) enum Destination {
   Default
   File(String)
@@ -42,6 +50,11 @@ pub fn FsVfs::add(Self, String, Bytes) -> Unit
 pub async fn FsVfs::fetch(Self, String) -> Unit
 pub fn FsVfs::new(cwd? : String, home? : String) -> Self
 pub impl @core.Vfs for FsVfs
+
+pub(all) enum Source {
+  Path(String)
+  Text(String)
+}
 
 // Type aliases
 

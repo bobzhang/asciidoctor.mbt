@@ -1,0 +1,272 @@
+// Compares the CLI with Ruby Asciidoctor's `asciidoctor` command: exit code,
+// standard output, standard error and the files written, for a set of command
+// lines (output destinations, safe-mode jails, stylesheet copying, manpage
+// alternate pages, standard input, timings, errors).
+//
+// Usage: moon run --target native scripts/cli_parity.mbtx -- [-v] [--dir DIR]
+//   -v         print the outputs of the differing cases
+//   --dir DIR  work in DIR (default: a new temporary directory, removed after)
+// Each case runs in its own fresh copy of the fixtures (`CASE/work` is the
+// working directory); `{CASE}` in an argument stands for the case directory.
+// Paths and timing figures are normalized before comparing.
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+let fixtures : Array[(String, String)] = [
+  ("a.adoc", "= Document Title\nAuthor Name\n\nA paragraph.\n\n== Section\n\nMore text.\n"),
+  ("b.adoc", "= Unknown Backend\n:backend: nope\n\ncontent\n"),
+  ("c.adoc", "= Attributes\n\n{docname} {docfile} {docfilesuffix} {docdir} {outfile} {outdir}\n"),
+  (
+    "m.adoc",
+    "= cmd(1)\n:doctype: manpage\n:manmanual: Manual\n:mansource: Source\n\n== NAME\n\ncmd, alt-one, alt-two - does things\n\n== SYNOPSIS\n\n*cmd* [_OPTION_]...\n\n== DESCRIPTION\n\nDoes things.\n",
+  ),
+  ("p.adoc", "= Not A Man Page\n:backend: manpage\n\ntext\n"),
+  ("w.adoc","= Warnings\n\ninclude::missing.adoc[]\n\nafter\n"),
+  ("custom.css", "p { color: red; }\n"),
+  ("src/sub/d.adoc", "= Nested\n\nnested content\n"),
+]
+
+///|
+struct Case {
+  args : Array[String]
+  stdin : String? // fixture fed to standard input
+}
+
+///|
+let cases : Array[Case] = [
+  { args: ["a.adoc"], stdin: None },
+  { args: ["-o", "-", "a.adoc"], stdin: None },
+  { args: ["-s", "-o", "-", "a.adoc"], stdin: None },
+  { args: ["-D", "out", "a.adoc"], stdin: None },
+  { args: ["-o", "sub/x.html", "a.adoc"], stdin: None },
+  { args: ["-D", "out", "-o", "deep/x.html", "a.adoc"], stdin: None },
+  { args: ["-o", "/dev/null", "a.adoc"], stdin: None },
+  { args: ["-o", "/dev/null", "b.adoc"], stdin: None },
+  { args: ["-o", "a.adoc", "a.adoc"], stdin: None },
+  { args: ["-b", "docbook", "a.adoc"], stdin: None },
+  { args: ["-b", "manpage", "m.adoc"], stdin: None },
+  { args: ["-b", "manpage", "-D", "man", "m.adoc"], stdin: None },
+  { args: ["-b", "manpage", "-o", "-", "m.adoc"], stdin: None },
+  { args: ["-b", "manpage", "-o", "sub/a.1", "a.adoc"], stdin: None },
+  { args: ["-b", "manpage", "-d", "article", "-o", "sub/a.1", "a.adoc"], stdin: None },
+  { args: ["-b", "manpage", "-d", "article", "-o", "-", "a.adoc"], stdin: None },
+  { args: ["-o", "sub/p.1", "p.adoc"], stdin: None },
+  { args: ["-o", "sub/p.1", "-"], stdin: Some("p.adoc") },
+  { args: ["-b", "nope", "a.adoc"], stdin: None },
+  { args: ["-b", "nope", "-o", "sub/x.html", "a.adoc"], stdin: None },
+  { args: ["b.adoc"], stdin: None },
+  { args: ["-o", "-", "b.adoc"], stdin: None },
+  { args: ["-a", "linkcss", "-a", "copycss", "a.adoc"], stdin: None },
+  {
+    args: [
+      "-a", "linkcss", "-a", "copycss", "-a", "stylesheet=custom.css", "-a", "stylesdir=css",
+      "-D", "out", "a.adoc",
+    ],
+    stdin: None,
+  },
+  {
+    args: [
+      "-a", "linkcss", "-a", "copycss=missing.css", "-a", "stylesheet=s.css", "a.adoc",
+    ],
+    stdin: None,
+  },
+  { args: ["-a", "linkcss", "-a", "copycss", "-o", "-", "a.adoc"], stdin: None },
+  { args: ["-"], stdin: Some("a.adoc") },
+  { args: ["-s", "-"], stdin: Some("c.adoc") },
+  { args: ["-o", "out/stdin.html", "-"], stdin: Some("a.adoc") },
+  { args: ["-D", "out", "-"], stdin: Some("a.adoc") },
+  { args: ["-S", "safe", "-o", "{CASE}/x.html", "a.adoc"], stdin: None },
+  { args: ["-S", "safe", "-o", "../x.html", "a.adoc"], stdin: None },
+  { args: ["-S", "safe", "-D", "..", "a.adoc"], stdin: None },
+  { args: ["-S", "unsafe", "-o", "../x.html", "a.adoc"], stdin: None },
+  { args: ["-S", "safe", "-o", "html/x.html", "a.adoc"], stdin: None },
+  { args: ["-t", "a.adoc"], stdin: None },
+  { args: ["-t", "-o", "-", "a.adoc", "c.adoc"], stdin: None },
+  { args: ["-t", "-"], stdin: Some("a.adoc") },
+  { args: ["-t", "-b", "manpage", "m.adoc"], stdin: None },
+  {
+    args: [
+      "-s", "-a", "docname=X", "-a", "docfile=Y", "-a", "outfile=Z", "-a", "outdir=W", "-o",
+      "-", "c.adoc",
+    ],
+    stdin: None,
+  },
+  {
+    args: [
+      "-s", "-a", "docname=X", "-a", "docfile=Y", "-a", "docdir=V", "-a", "outfile=Z", "-a",
+      "outdir=W", "-o", "o/c.html", "c.adoc",
+    ],
+    stdin: None,
+  },
+  { args: ["-s", "-a", "docname=X", "-a", "outfile=Z", "-o", "-", "-"], stdin: Some("c.adoc") },
+  { args: ["a.adoc", "c.adoc", "m.adoc"], stdin: None },
+  { args: ["-R", "src", "-D", "out", "src/sub/d.adoc"], stdin: None },
+  { args: ["-D", "out", "src/sub/d.adoc"], stdin: None },
+  { args: ["missing.adoc"], stdin: None },
+  { args: ["w.adoc"], stdin: None },
+  { args: ["--failure-level", "WARN", "-o", "-", "w.adoc"], stdin: None },
+  { args: ["-q", "w.adoc"], stdin: None },
+  { args: ["-B", "src", "-o", "-", "w.adoc"], stdin: None },
+]
+
+///|
+fn dirname(path : String) -> String {
+  match path.rev_find("/") {
+    Some(i) => path.unsafe_substring(start=0, end=i)
+    None => "."
+  }
+}
+
+///|
+async fn setup(dir : String) -> Unit {
+  for fixture in fixtures {
+    let (path, content) = fixture
+    let full = "\{dir}/work/\{path}"
+    @fs.mkdir(dirname(full), recursive=true, allow_exist=true)
+    @fs.write_file(full, content, create_mode=CreateOrTruncate)
+  }
+}
+
+///|
+/// The files and directories under `dir` that are not (unchanged) fixtures,
+/// with the contents of the files.
+async fn written_files(dir : String, rel : String, out : Array[(String, String)]) -> Unit {
+  for name in @fs.readdir(dir, include_hidden=true, sort=true) {
+    let path = "\{dir}/\{name}"
+    let relpath = if rel == "" { name } else { "\{rel}/\{name}" }
+    match @fs.kind(path, follow_symlink=false) {
+      Directory => {
+        if !fixtures.iter().any(f => "work/\{f.0}".has_prefix(relpath + "/")) {
+          out.push((relpath + "/", ""))
+        }
+        written_files(path, relpath, out)
+      }
+      _ => {
+        let content = @fs.read_file(path).text()
+        let fixture = fixtures.search_by(f => "work/\{f.0}" == relpath)
+        if !(fixture is Some(i) && fixtures[i].1 == content) {
+          out.push((relpath, content))
+        }
+      }
+    }
+  }
+}
+
+///|
+/// Replaces the case directory with `{CASE}` and timing figures with `N`.
+fn normalize(s : String, case_dir : String) -> String {
+  let s = s.replace_all(old=case_dir, new="{CASE}")
+  s
+  .split("\n")
+  .map(line => {
+    let line = line.to_owned()
+    if line.has_prefix("  Time to ") || line.has_prefix("  Total time ") {
+      match line.find(": ") {
+        Some(i) => line.unsafe_substring(start=0, end=i) + ": N"
+        None => line
+      }
+    } else {
+      line
+    }
+  })
+  .collect()
+  .join("\n")
+}
+
+///|
+/// Runs one side of a case and describes the result.
+async fn run_case(cmd : Array[String], case : Case, case_dir : String) -> String {
+  setup(case_dir)
+  let work = "\{case_dir}/work"
+  let args = [..cmd[1:], ..case.args.map(a => a.replace_all(old="{CASE}", new=case_dir))]
+  let stdin_path = match case.stdin {
+    Some(f) => "\{work}/\{f}"
+    None => "/dev/null"
+  }
+  let (code, out, err) = @process.collect_output(
+    cmd[0],
+    args,
+    cwd=work,
+    stdin=@process.redirect_from_file(stdin_path),
+    extra_env={ "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" },
+  )
+  let files = []
+  written_files(case_dir, "", files)
+  let buf = StringBuilder()
+  buf.write_string("exit: \{code}\n")
+  buf.write_string("--- stdout\n\{out.text()}\n")
+  buf.write_string("--- stderr\n\{err.text()}\n")
+  for f in files {
+    buf.write_string("--- file \{f.0}\n\{f.1}\n")
+  }
+  normalize(buf.to_string(), case_dir)
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let mut verbose = false
+  let mut dir : String? = None
+  let mut i = 1
+  while i < args.length() {
+    match args[i] {
+      "-v" => verbose = true
+      "--dir" => {
+        i += 1
+        dir = Some(args[i])
+      }
+      "--" => ()
+      a => fail("unknown argument: \{a}")
+    }
+    i += 1
+  }
+  let root = @fs.realpath(".")
+  let (code, _, err) = @process.collect_output(
+    "moon",
+    ["build", "--target", "native", "cmd/asciidoctor"],
+  )
+  if code != 0 {
+    fail("build failed: \{err.text()}")
+  }
+  let mbt = ["\{root}/_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe"]
+  let ruby = [
+    "ruby", "-I", "\{root}/.repos/asciidoctor/lib", "\{root}/.repos/asciidoctor/bin/asciidoctor",
+  ]
+  let base = match dir {
+    Some(d) => {
+      @fs.mkdir(d, recursive=true, allow_exist=true)
+      @fs.realpath(d)
+    }
+    None => @fs.realpath(@fs.tmpdir(prefix="cli-parity"))
+  }
+  defer {
+    if dir is None {
+      @fs.rmdir(base, recursive=true)
+    }
+  }
+  let mut same = 0
+  let diffs = []
+  for n, case in cases {
+    let rb = run_case(ruby, case, "\{base}/\{n}/ruby")
+    let mb = run_case(mbt, case, "\{base}/\{n}/mbt")
+    let line = "asciidoctor \{case.args.join(" ")}\{match case.stdin { Some(f) => " < \{f}"; None => "" }}"
+    if rb == mb {
+      same += 1
+    } else {
+      diffs.push(line)
+      println("DIFF \{line}")
+      if verbose {
+        println("=== ruby\n\{rb}\n=== mbt\n\{mb}")
+      }
+    }
+  }
+  println("identical: \{same} / \{cases.length()}")
+  if !diffs.is_empty() {
+    fail("\{diffs.length()} command lines differ")
+  }
+}
