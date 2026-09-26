@@ -894,6 +894,13 @@ pub fn Node::has_extensions(self : Node) -> Bool {
 }
 
 ///|
+/// The reader of the document (Ruby `Document#reader`); None before the
+/// document has a source.
+pub fn Node::reader(self : Node) -> Reader? {
+  self.doc().reader
+}
+
+///|
 /// The normalized source of the document.
 pub fn Node::doc_source(self : Node) -> String? {
   self.doc().reader.map(r => r.source())

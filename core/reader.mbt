@@ -1307,9 +1307,9 @@ fn Reader::preprocess_include_directive(
     return false
   }
   let parsed_attrs = doc.parse_attributes(attrlist_s, [], sub_input=true)
-  let (inc_path, relpath) = match
+  let (inc_path, target_type, relpath) = match
     self.resolve_include_path(expanded_target, attrlist, parsed_attrs) {
-    IncludeResolved(p, r) => (p, r)
+    IncludeResolved(p, t, r) => (p, t, r)
     IncludeHandled(b) => return b
   }
   let encoding = parsed_attrs.str("encoding")
@@ -1392,7 +1392,7 @@ fn Reader::preprocess_include_directive(
   }
   let unresolved = fn() {
     log_error(
-      "include file not readable: \{inc_path}",
+      "include \{target_type} not readable: \{inc_path}",
       source_location=self.cursor(),
     )
     self.replace_next_line(
@@ -1518,14 +1518,14 @@ fn Reader::preprocess_include_directive(
                     Some(idx) => {
                       tag_stack.remove(idx) |> ignore
                       log_warn(
-                        "mismatched end tag (expected '\{active_tag.unwrap_or("")}' but found '\{this_tag}') at line \{inc_lineno} of include file: \{inc_path}",
+                        "mismatched end tag (expected '\{active_tag.unwrap_or("")}' but found '\{this_tag}') at line \{inc_lineno} of include \{target_type}: \{inc_path}",
                         source_location=self.cursor(),
                         include_location=include_cursor,
                       )
                     }
                     None =>
                       log_warn(
-                        "unexpected end tag '\{this_tag}' at line \{inc_lineno} of include file: \{inc_path}",
+                        "unexpected end tag '\{this_tag}' at line \{inc_lineno} of include \{target_type}: \{inc_path}",
                         source_location=self.cursor(),
                         include_location=include_cursor,
                       )
@@ -1565,7 +1565,7 @@ fn Reader::preprocess_include_directive(
           }
           for t in tag_stack {
             log_warn(
-              "detected unclosed tag '\{t.0}' starting at line \{t.2} of include file: \{inc_path}",
+              "detected unclosed tag '\{t.0}' starting at line \{t.2} of include \{target_type}: \{inc_path}",
               source_location=self.cursor(),
               include_location=self.create_include_cursor(
                 inc_path,
@@ -1579,7 +1579,7 @@ fn Reader::preprocess_include_directive(
             .map(t => t.0)
           if !missing.is_empty() {
             log_warn(
-              "tag\{if missing.length() > 1 { "s" } else { "" }} '\{missing.join(", ")}' not found in include file: \{inc_path}",
+              "tag\{if missing.length() > 1 { "s" } else { "" }} '\{missing.join(", ")}' not found in include \{target_type}: \{inc_path}",
               source_location=self.cursor(),
             )
           }
@@ -1636,7 +1636,8 @@ fn each_line(content : String) -> Array[String] {
 
 ///|
 priv enum IncludeResolution {
-  IncludeResolved(String, String)
+  /// (path or URI, target type "file" or "uri", path relative to the base dir)
+  IncludeResolved(String, String, String)
   IncludeHandled(Bool)
 }
 
@@ -1670,7 +1671,7 @@ fn Reader::resolve_include_path(
         self.replace_next_line("link:\{t}[\{link_attrlist}]"),
       )
     }
-    return IncludeResolved(target, target)
+    return IncludeResolved(target, "uri", target)
   }
   let inc_path = doc.normalize_system_path(
     target,
@@ -1698,7 +1699,7 @@ fn Reader::resolve_include_path(
     }
   }
   let relpath = doc.path_resolver().relative_path(inc_path, doc.base_dir())
-  IncludeResolved(inc_path, relpath)
+  IncludeResolved(inc_path, "file", relpath)
 }
 
 ///|

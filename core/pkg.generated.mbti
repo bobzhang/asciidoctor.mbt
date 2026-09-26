@@ -125,6 +125,8 @@ pub fn reset_compliance() -> Unit
 
 pub fn resolve_lines_to_highlight(String, String, start? : Int) -> Array[Int]
 
+pub fn restore_process_state(Array[String]) -> Unit
+
 pub fn roman_to_int(String) -> Int
 
 pub fn rootname(String) -> String
@@ -138,6 +140,8 @@ pub fn set_logger(Logger) -> Logger
 pub fn set_now_epoch(() -> Int64) -> Unit
 
 pub fn set_source_date_epoch(Int64?) -> Unit
+
+pub fn snapshot_process_state() -> Array[String]
 
 pub fn sub_placeholder(String, String) -> String
 
@@ -632,6 +636,7 @@ pub fn Node::raw_text(Self) -> String?
 pub fn Node::raw_title(Self) -> String?
 pub fn Node::read_asset(Self, String, normalize? : Bool, warn_on_failure? : Bool, label? : String) -> String?
 pub fn Node::read_contents(Self, String, start? : String, normalize? : Bool, warn_on_failure? : Bool, warn_if_empty? : Bool, label? : String) -> String?
+pub fn Node::reader(Self) -> Reader?
 pub fn Node::reftext(Self) -> String?
 pub fn Node::register_footnote(Self, Footnote) -> Unit
 pub fn Node::register_image(Self, String) -> Unit
