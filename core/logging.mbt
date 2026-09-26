@@ -78,10 +78,13 @@ pub fn Logger::null() -> Logger {
 }
 
 ///|
-/// A logger that records every message into `messages`.
+/// A logger that records every message into `messages`. Like Ruby's
+/// `MemoryLogger`, its level is `Unknown`; unlike Ruby, `is_debug`/`is_info`
+/// report true so that callers capturing messages for later replay (see
+/// `io.run_with_files`) see debug and info messages too.
 pub fn Logger::memory(messages : Array[LogMessage]) -> Logger {
   {
-    level: Debug,
+    level: Unknown,
     max_severity: None,
     sink: m => messages.push(m),
     record_all: true,

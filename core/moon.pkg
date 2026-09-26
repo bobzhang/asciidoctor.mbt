@@ -5,4 +5,8 @@ import {
   "moonbitlang/core/env",
 }
 
+import {
+  "bobzhang/asciidoctor",
+} for "test"
+
 warnings = "-implicit_impl_as_method"
