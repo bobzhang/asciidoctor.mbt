@@ -5,6 +5,11 @@
 /// Semantics follow Ruby: `^`/`$` are always line anchors, the `m` flag makes
 /// `.` match newlines (dot-all), `\w`/`\d`/`\s` are ASCII-only while `\b` and
 /// `\p{Word}` are Unicode-aware, and an unset group never matches a backreference.
+/// Matching works on code points: a match never starts or ends inside a
+/// surrogate pair, even though offsets are reported in UTF-16 code units.
+///
+/// Each search operation runs under a step budget (see `compile`); the `try_*`
+/// methods raise `RegexTimeout` when it is exhausted, the other methods abort.
 pub struct Regex {
   source : String
   priv prog : FixedArray[Inst]
@@ -17,6 +22,47 @@ pub struct Regex {
   priv first : FirstSet?
   priv required : FixedArray[Int]
   priv lead : (Int, Int, Int)?
+  priv step_limit : Int
+}
+
+///|
+/// Raised when a search exceeds its backtracking step budget (the analogue of
+/// Ruby's `Regexp::TimeoutError`). `limit` is the budget that was exhausted.
+pub suberror RegexTimeout {
+  RegexTimeout(pattern~ : String, limit~ : Int)
+} derive(Debug)
+
+///|
+pub extend RegexTimeout with Debug::{to_repr}
+
+///|
+/// Minimum step budget of one search operation.
+const STEP_FLOOR = 10_000_000
+
+///|
+/// Budget cap (keeps the counter within 32 bits).
+const STEP_CAP = 0x7FFF_0000
+
+///|
+/// The step budget of a search operation over `len` code units.
+///
+/// The default is `10M + (len + 1) * (len + 16 * program size)`: a scan costs
+/// about `len * program size` steps and quadratic backtracking (which Ruby
+/// completes, if slowly) about `len * len`, so both fit with ample headroom,
+/// while exponential blowups exhaust it quickly. On the Asciidoctor corpus
+/// the worst search used under 50 steps per code unit.
+fn Regex::step_limit_for(self : Regex, len : Int) -> Int {
+  if self.step_limit > 0 {
+    return self.step_limit
+  }
+  let n = len.to_int64() + 1L
+  let limit = STEP_FLOOR.to_int64() +
+    n * (n + 16L * self.prog.length().to_int64())
+  if limit >= STEP_CAP.to_int64() {
+    STEP_CAP
+  } else {
+    limit.to_int()
+  }
 }
 
 ///|
@@ -26,21 +72,51 @@ pub fn Regex::to_string(self : Regex) -> String {
 }
 
 ///|
-/// Compiles `pattern`. `flags` may contain `m` (dot-all, Ruby's meaning).
+/// Compiles `pattern`. `flags` may contain Ruby's options: `m` (dot-all),
+/// `i` (ignore case, using Unicode simple case folding; multi-character folds
+/// such as `ß` = `ss` are not supported) and `x` (extended: whitespace and
+/// `#` comments outside classes are ignored). Any other flag is an error.
+/// The inline forms `(?imx-imx)` and `(?imx-imx:...)` are supported too.
+///
+/// `step_limit` bounds the backtracking work of each search operation (a
+/// step is one branch or one sub-match); 0 selects the default, which is
+/// generous (10M steps plus roughly the square of the input length, see
+/// `step_limit_for`) so that it only trips on catastrophic backtracking.
+///
+/// Patterns that Onigmo rejects, or that would exceed internal limits
+/// (group nesting beyond 256, programs beyond 1M instructions), raise
+/// `RegexError`.
 ///
 /// ```mbt check
 /// test {
 ///   let re = @regex.compile("(\\w+)@(\\w+)")
 ///   guard re.find("mail: joe@example") is Some(m) else { fail("no match") }
 ///   debug_inspect(m.group(2), content="Some(\"example\")")
+///   inspect(@regex.compile("HELLO", flags="i").matches("hello"), content="true")
 /// }
 /// ```
 pub fn compile(
   pattern : String,
   flags? : String = "",
+  step_limit? : Int = 0,
 ) -> Regex raise RegexError {
-  let dotall = flags.contains("m")
-  let (node, ncaps, names) = parse_pattern(pattern, dotall)
+  let mut dotall = false
+  let mut icase = false
+  let mut extended = false
+  for ch in flags {
+    match ch {
+      'm' => dotall = true
+      'i' => icase = true
+      'x' => extended = true
+      _ =>
+        raise RegexError(
+          pattern~,
+          pos=0,
+          message="unknown regexp option: \{ch}",
+        )
+    }
+  }
+  let (node, ncaps, names) = parse_pattern(pattern, dotall, icase, extended)
   let c : Compiler = {
     prog: [],
     classes: [],
@@ -77,13 +153,22 @@ pub fn compile(
     },
     required: FixedArray::from_array(required_units(node)),
     lead: lead_literal(node),
+    step_limit: if step_limit > 0 {
+      step_limit
+    } else {
+      0
+    },
   }
 }
 
 ///|
 /// Like `compile` but aborts on an invalid pattern. Intended for literal patterns.
-pub fn re(pattern : String, flags? : String = "") -> Regex {
-  compile(pattern, flags~) catch {
+pub fn re(
+  pattern : String,
+  flags? : String = "",
+  step_limit? : Int = 0,
+) -> Regex {
+  compile(pattern, flags~, step_limit~) catch {
     RegexError(message~, pos~, ..) =>
       abort("invalid regex /\{pattern}/ at \{pos}: \{message}")
   }
@@ -188,23 +273,49 @@ pub fn MatchData::size(self : MatchData) -> Int {
 }
 
 ///|
-fn Regex::try_at(self : Regex, vm : Vm, pos : Int) -> MatchData? {
+fn Regex::timeout(self : Regex, vm : Vm) -> RegexTimeout {
+  RegexTimeout(pattern=self.source, limit=vm.limit)
+}
+
+///|
+/// Aborts on an exhausted step budget (for the non-raising API).
+fn[T] timeout_abort(err : RegexTimeout) -> T {
+  let RegexTimeout(pattern~, limit~) = err
+  abort("regex /\{pattern}/ exceeded its step limit (\{limit} steps)")
+}
+
+///|
+/// Tries a match starting exactly at `pos` (a code point boundary).
+fn Regex::try_at(
+  self : Regex,
+  vm : Vm,
+  pos : Int,
+) -> MatchData? raise RegexTimeout {
   vm.caps.fill(-1)
   let e = vm.run(0, pos, -1)
   if e >= 0 {
     let offsets = vm.caps.copy()
-    offsets[0] = pos
+    // group 0's start is only set in advance by \K
+    if offsets[0] < 0 {
+      offsets[0] = pos
+    }
     offsets[1] = e
     Some({ input: vm.input, offsets, names: self.names, })
+  } else if vm.timed_out {
+    raise self.timeout(vm)
   } else {
     None
   }
 }
 
 ///|
-/// Matches only at position `pos` (like Ruby's `\G`-anchored match).
-pub fn Regex::match_at(self : Regex, s : String, pos : Int) -> MatchData? {
-  if pos < 0 || pos > s.length() {
+/// Like `match_at`, but raises `RegexTimeout` when the step budget runs out.
+pub fn Regex::try_match_at(
+  self : Regex,
+  s : String,
+  pos : Int,
+) -> MatchData? raise RegexTimeout {
+  if pos < 0 || pos > s.length() || splits_pair(s, pos) {
     return None
   }
   let vm = Vm::new(self, s)
@@ -213,9 +324,36 @@ pub fn Regex::match_at(self : Regex, s : String, pos : Int) -> MatchData? {
 }
 
 ///|
-fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
+/// Matches only at position `pos` (like Ruby's `\G`-anchored match). There is
+/// no match at an offset inside a surrogate pair.
+pub fn Regex::match_at(self : Regex, s : String, pos : Int) -> MatchData? {
+  self.try_match_at(s, pos) catch {
+    e => timeout_abort(e)
+  }
+}
+
+///|
+/// Whether a match can start at `pos` according to the first-unit prefilter.
+fn FirstSet::admits(self : FirstSet, s : String, pos : Int) -> Bool {
+  let c = s[pos].to_int()
+  if c < 128 {
+    self.ascii[c]
+  } else {
+    self.non_ascii && !splits_pair(s, pos)
+  }
+}
+
+///|
+/// Finds the first match starting at a code point boundary at or after `start`.
+fn Regex::find_with(
+  self : Regex,
+  vm : Vm,
+  start : Int,
+) -> MatchData? raise RegexTimeout {
   let s = vm.input
   let len = s.length()
+  // an offset inside a surrogate pair means the next code point boundary
+  let start = if splits_pair(s, start) { start + 1 } else { start }
   vm.search_start = start
   // prefilter: every required code unit must occur at or after `start`
   for u in self.required {
@@ -250,9 +388,10 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
   }
   let mut pos = start
   match self.lead {
-    Some((unit, min_off, max_off)) if self.anchor == NoAnchor => {
+    Some((unit, min_off, max_off)) => {
       // jump from one occurrence of the literal to the next; only starts
-      // within [q - max_off, q - min_off] can place the literal at q
+      // within [q - max_off, q - min_off] can place the literal at q. The
+      // literal is a BMP non-surrogate, so `q` is always a boundary.
       while true {
         let mut q = pos + min_off
         while q < len && s[q].to_int() != unit {
@@ -266,15 +405,8 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
         let mut st = from
         while st <= to {
           let possible = match self.first {
-            Some(first) => {
-              let c = s[st].to_int()
-              if c < 128 {
-                first.ascii[c]
-              } else {
-                first.non_ascii
-              }
-            }
-            None => true
+            Some(first) => first.admits(s, st)
+            None => !splits_pair(s, st)
           }
           if possible {
             match self.try_at(vm, st) {
@@ -288,14 +420,16 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
       }
       return None
     }
-    _ => ()
+    None => ()
   }
   match self.first {
-    Some(first) =>
+    Some(first) => {
+      // (the hottest loop of every search: `admits`, inlined)
+      let ascii = first.ascii
+      let non_ascii = first.non_ascii
       while pos < len {
         let c = s[pos].to_int()
-        let possible = if c < 128 { first.ascii[c] } else { first.non_ascii }
-        if possible {
+        if (if c < 128 { ascii[c] } else { non_ascii && !splits_pair(s, pos) }) {
           match self.try_at(vm, pos) {
             Some(m) => return Some(m)
             None => ()
@@ -303,11 +437,14 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
         }
         pos += 1
       }
+    }
     None =>
       while pos <= len {
-        match self.try_at(vm, pos) {
-          Some(m) => return Some(m)
-          None => ()
+        if !splits_pair(s, pos) {
+          match self.try_at(vm, pos) {
+            Some(m) => return Some(m)
+            None => ()
+          }
         }
         pos += 1
       }
@@ -316,12 +453,25 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
 }
 
 ///|
-/// Finds the first match at or after `start` (Ruby's `String#match(re, start)`).
-pub fn Regex::find(self : Regex, s : String, start? : Int = 0) -> MatchData? {
+/// Like `find`, but raises `RegexTimeout` when the step budget runs out.
+pub fn Regex::try_find(
+  self : Regex,
+  s : String,
+  start? : Int = 0,
+) -> MatchData? raise RegexTimeout {
   if start < 0 || start > s.length() {
     return None
   }
   self.find_with(Vm::new(self, s), start)
+}
+
+///|
+/// Finds the first match at or after `start` (Ruby's `String#match(re, start)`).
+/// A `start` inside a surrogate pair is rounded up to the next code point.
+pub fn Regex::find(self : Regex, s : String, start? : Int = 0) -> MatchData? {
+  self.try_find(s, start~) catch {
+    e => timeout_abort(e)
+  }
 }
 
 ///|
@@ -344,8 +494,12 @@ fn cp_width(s : String, pos : Int) -> Int {
 }
 
 ///|
-/// All successive non-overlapping matches (Ruby's `scan`).
-pub fn Regex::find_all(self : Regex, s : String) -> Array[MatchData] {
+/// Like `find_all`, but raises `RegexTimeout` when the step budget (shared by
+/// the whole scan) runs out.
+pub fn Regex::try_find_all(
+  self : Regex,
+  s : String,
+) -> Array[MatchData] raise RegexTimeout {
   let out = []
   let vm = Vm::new(self, s)
   let len = s.length()
@@ -371,12 +525,22 @@ pub fn Regex::find_all(self : Regex, s : String) -> Array[MatchData] {
 }
 
 ///|
-fn Regex::replace_impl(
+/// All successive non-overlapping matches (Ruby's `scan`).
+pub fn Regex::find_all(self : Regex, s : String) -> Array[MatchData] {
+  self.try_find_all(s) catch {
+    e => timeout_abort(e)
+  }
+}
+
+///|
+/// Like `replace` (or `replace_first` when `once` is true), but raises
+/// `RegexTimeout` when the step budget (shared by the whole operation) runs out.
+pub fn Regex::try_replace(
   self : Regex,
   s : String,
   f : (MatchData) -> String,
-  once : Bool,
-) -> String {
+  once? : Bool = false,
+) -> String raise RegexTimeout {
   let vm = Vm::new(self, s)
   let len = s.length()
   let mut pos = 0
@@ -434,7 +598,9 @@ pub fn Regex::replace(
   s : String,
   f : (MatchData) -> String,
 ) -> String {
-  self.replace_impl(s, f, false)
+  self.try_replace(s, f) catch {
+    e => timeout_abort(e)
+  }
 }
 
 ///|
@@ -444,7 +610,9 @@ pub fn Regex::replace_first(
   s : String,
   f : (MatchData) -> String,
 ) -> String {
-  self.replace_impl(s, f, true)
+  self.try_replace(s, f, once=true) catch {
+    e => timeout_abort(e)
+  }
 }
 
 ///|
@@ -530,13 +698,13 @@ pub fn Regex::sub(self : Regex, s : String, template : String) -> String {
 }
 
 ///|
-/// Ruby's `String#split(re, limit)`. With `limit == 0` (default) trailing
-/// empty strings are removed; captured groups are included in the result.
-pub fn Regex::split(
+/// Like `split`, but raises `RegexTimeout` when the step budget (shared by the
+/// whole operation) runs out.
+pub fn Regex::try_split(
   self : Regex,
   s : String,
   limit? : Int = 0,
-) -> Array[String] {
+) -> Array[String] raise RegexTimeout {
   let out : Array[String] = []
   let len = s.length()
   if len == 0 {
@@ -587,4 +755,17 @@ pub fn Regex::split(
     }
   }
   out
+}
+
+///|
+/// Ruby's `String#split(re, limit)`. With `limit == 0` (default) trailing
+/// empty strings are removed; captured groups are included in the result.
+pub fn Regex::split(
+  self : Regex,
+  s : String,
+  limit? : Int = 0,
+) -> Array[String] {
+  self.try_split(s, limit~) catch {
+    e => timeout_abort(e)
+  }
 }
