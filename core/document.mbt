@@ -59,6 +59,8 @@ pub(all) struct Options {
   mut converter : &Converter?
   mut extensions : Extensions?
   mut vfs : &Vfs?
+  /// Records the time spent in each phase (Ruby `:timings` option).
+  mut timings : Timings?
   mut syntax_highlighter_factory : ((String, String, Node) -> &SyntaxHighlighter?)?
   // nested document support
   mut parent : Node?
@@ -83,6 +85,7 @@ pub fn Options::new(
   converter? : &Converter,
   extensions? : Extensions,
   vfs? : &Vfs,
+  timings? : Timings,
 ) -> Options {
   {
     attributes,
@@ -102,6 +105,7 @@ pub fn Options::new(
     converter,
     extensions,
     vfs,
+    timings,
     syntax_highlighter_factory: None,
     parent: None,
     cursor: None,
@@ -141,6 +145,8 @@ struct DocData {
   mut reftexts : Map[String, String]?
   vfs : &Vfs
   docinfo_processor_extensions : Map[String, Bool]
+  /// the error that aborted processing (see `Node::abort_processing`)
+  mut error : Error?
 }
 
 ///|
@@ -265,6 +271,7 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
         reftexts: None,
         vfs: pdd.vfs,
         docinfo_processor_extensions: {},
+        error: None,
       }
     }
     None => {
@@ -327,6 +334,7 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
         reftexts: None,
         vfs,
         docinfo_processor_extensions: {},
+        error: None,
       }
     }
   }
@@ -542,6 +550,11 @@ pub fn Node::parse(self : Node, data? : Array[String]) -> Node {
   if dd.parsed {
     return self
   }
+  if self.processing_error() is Some(_) {
+    // Ruby raises before parsing (e.g. missing converter)
+    dd.parsed = true
+    return self
+  }
   let mut doc = self
   match data {
     Some(d) => {
@@ -565,7 +578,13 @@ pub fn Node::parse(self : Node, data? : Array[String]) -> Node {
   match exts {
     Some(e) =>
       for p in e.preprocessors() {
-        match (p.process)(self, dd.reader.unwrap()) {
+        match
+          ((p.process)(self, dd.reader.unwrap()) catch {
+            e => {
+              self.abort_processing(e)
+              None
+            }
+          }) {
           Some(r) => dd.reader = Some(r)
           None => ()
         }
@@ -581,7 +600,13 @@ pub fn Node::parse(self : Node, data? : Array[String]) -> Node {
   match exts {
     Some(e) =>
       for t in e.tree_processors() {
-        match (t.process)(doc) {
+        match
+          ((t.process)(doc) catch {
+            e => {
+              doc.abort_processing(e)
+              None
+            }
+          }) {
           Some(result) if result.context == Document &&
             !physical_equal(result, doc) => doc = result
           _ => ()
@@ -1559,9 +1584,10 @@ fn Node::update_backend_attributes(
   let traits = match converter {
     Some(c) => c.backend_traits()
     None => {
-      // no converter registered: derive traits from the backend name
-      let t = derive_backend_traits(new_backend)
-      t
+      // no converter registered: Ruby raises NotImplementedError here; record
+      // the error (processing stops) and derive traits from the backend name
+      self.abort_processing(MissingConverter(new_backend))
+      derive_backend_traits(new_backend)
     }
   }
   match traits.htmlsyntax {
@@ -1700,8 +1726,19 @@ pub fn Node::convert_with(
   outdir? : String,
 ) -> String {
   let dd = self.doc()
+  let timings = if dd.parent_document is None {
+    dd.options.timings
+  } else {
+    None
+  }
+  if timings is Some(t) {
+    t.start("convert")
+  }
   if !dd.parsed {
     self.parse() |> ignore
+  }
+  if self.processing_error() is Some(_) {
+    return ""
   }
   if dd.safe < SAFE_SERVER && (outfile is Some(_) || outdir is Some(_)) {
     match outfile {
@@ -1744,10 +1781,18 @@ pub fn Node::convert_with(
     match dd.extensions {
       Some(e) =>
         for p in e.postprocessors() {
-          output = (p.process)(self, output)
+          output = (p.process)(self, output) catch {
+            e => {
+              self.abort_processing(e)
+              output
+            }
+          }
         }
       None => ()
     }
+  }
+  if timings is Some(t) {
+    t.record("convert")
   }
   output
 }
@@ -1821,7 +1866,13 @@ pub fn Node::docinfo(
       let procs = e.docinfo_processors_for(location)
       if !procs.is_empty() {
         for p in procs {
-          match (p.process)(self) {
+          match
+            ((p.process)(self) catch {
+              e => {
+                self.abort_processing(e)
+                None
+              }
+            }) {
             Some(s) => content.push(s)
             None => ()
           }

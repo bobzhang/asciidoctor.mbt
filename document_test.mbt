@@ -1401,3 +1401,61 @@ test "should allow docdate to be overridden" {
     content="Some(\"2015-01-01 03:04:05 UTC\")",
   )
 }
+
+// ---------------------------------------------------------------------------
+// Document > Timing report
+
+///|
+test "print_report does not lose precision" {
+  let timings = @core.Timings::new(() => 0.0)
+  timings.set("read", 0.00001)
+  timings.set("parse", 0.00003)
+  timings.set("convert", 0.00005)
+  inspect(
+    timings.report(),
+    content=(
+      #|  Time to read and parse source: 0.00004
+      #|  Time to convert document: 0.00005
+      #|  Total time (read, parse and convert): 0.00009
+      #|
+    ),
+  )
+}
+
+///|
+test "print_report should print 0 for untimed phases" {
+  inspect(
+    @core.Timings::new(() => 0.0).report(),
+    content=(
+      #|  Time to read and parse source: 0.00000
+      #|  Time to convert document: 0.00000
+      #|  Total time (read, parse and convert): 0.00000
+      #|
+    ),
+  )
+}
+
+///|
+test "timings are recorded for each step when load and convert are called separately" {
+  // a fake clock that advances one millisecond per reading
+  let mut now = 0.0
+  let timings = @core.Timings::new(() => {
+    now += 0.001
+    now
+  })
+  let doc = @asciidoctor.load(
+    "= Title\n\ntext",
+    options=@core.Options::new(timings~),
+  )
+  doc.convert() |> ignore
+  inspect(
+    timings.report(),
+    content=(
+      #|  Time to read and parse source: 0.00200
+      #|  Time to convert document: 0.00100
+      #|  Total time (read, parse and convert): 0.00300
+      #|
+    ),
+  )
+  debug_inspect(timings.write(), content="None")
+}

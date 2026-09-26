@@ -1,60 +1,6 @@
-// The `asciidoctor` command line interface (Ruby `Asciidoctor::Cli`).
-
-///|
-let usage : String =
-  #|Usage: asciidoctor [OPTION]... FILE...
-  #|Convert the AsciiDoc input FILE(s) to the backend output format (e.g., HTML 5, DocBook 5, etc.)
-  #|Unless specified otherwise, the output is written to a file whose name is derived from the input file.
-  #|Application log messages are printed to STDERR.
-  #|
-  #|Input options:
-  #|    -b, --backend BACKEND            set backend output format: [html5, xhtml5, docbook5, manpage] (default: html5)
-  #|    -d, --doctype DOCTYPE            document type to use when converting document: [article, book, manpage, inline] (default: article)
-  #|    -e, --embedded                   suppress enclosing document structure and output an embedded document (default: false)
-  #|    -o, --out-file FILE              output file (default: based on path of input file); use - to output to STDOUT
-  #|        --safe                       set safe mode level to safe (default: unsafe)
-  #|    -S, --safe-mode SAFE_MODE        set safe mode level explicitly: [unsafe, safe, server, secure] (default: unsafe)
-  #|        --sourcemap                  add source location information to each parsed block (default: false)
-  #|    -s, --no-header-footer           suppress enclosing document structure and output an embedded document (default: false)
-  #|    -n, --section-numbers            auto-number section titles in the HTML backend; disabled by default
-  #|    -a, --attribute name[=value]     a document attribute to set in the form of name, name!, or name=value pair
-  #|    -B, --base-dir DIR               base directory containing the document and resources (default: directory of source file)
-  #|    -D, --destination-dir DIR        destination output directory (default: directory of source file)
-  #|        --log-level LEVEL            set minimum level of log messages that get logged: [DEBUG, INFO, WARN, ERROR, FATAL] (default: WARN)
-  #|        --failure-level LEVEL        set minimum log level that yields a non-zero exit code: [INFO, WARN, ERROR, FATAL] (default: FATAL)
-  #|    -q, --quiet                      silence application log messages and script warnings (default: false)
-  #|    -v, --verbose                    show all application log messages, including DEBUG and INFO levels (default: false)
-  #|    -h, --help                       print this help message
-  #|    -V, --version                    display the version
-  #|
-
-///|
-fn parse_level(s : String) -> @core.Severity? {
-  match @rb.upcase(s) {
-    "DEBUG" => Some(Debug)
-    "INFO" => Some(Info)
-    "WARN" | "WARNING" => Some(Warn)
-    "ERROR" => Some(Error)
-    "FATAL" => Some(Fatal)
-    _ => None
-  }
-}
-
-///|
-priv struct CliOptions {
-  mut backend : String?
-  mut doctype : String?
-  attributes : Array[(String, @core.AttrVal)]
-  mut out_file : String?
-  mut safe : Int
-  mut standalone : Bool
-  mut sourcemap : Bool
-  mut base_dir : String?
-  mut destination_dir : String?
-  mut log_level : @core.Severity
-  mut failure_level : @core.Severity
-  inputs : Array[String]
-}
+// The `asciidoctor` command line interface (Ruby `Asciidoctor::Cli`): option
+// parsing is in options.mbt, the conversion driver in convert.mbt; this file
+// is the invoker (Ruby `Cli::Invoker`).
 
 ///|
 async fn write_err(s : String) -> Unit {
@@ -64,106 +10,98 @@ async fn write_err(s : String) -> Unit {
 ///|
 async fn main {
   let args = @env.args()
-  let opts : CliOptions = {
-    backend: None,
-    doctype: None,
-    attributes: [],
-    out_file: None,
-    safe: @core.SAFE_UNSAFE,
-    standalone: true,
-    sourcemap: false,
-    base_dir: None,
-    destination_dir: None,
-    log_level: Warn,
-    failure_level: Fatal,
-    inputs: [],
+  let code = run(args[1:].to_owned())
+  if code != 0 {
+    c_exit(code)
   }
-  let mut i = 1
-  let next_arg = fn(name : String) -> String raise {
-    i += 1
-    match args.get(i) {
-      Some(v) => v
-      None => fail("missing argument: \{name}")
+}
+
+///|
+/// Runs the command line and returns the exit code.
+async fn run(args : Array[String]) -> Int {
+  let command = parse_args(args) catch {
+    CliError(msg) => {
+      write_err(msg + "\n")
+      @stdio.stdout.write(usage)
+      return 1
     }
   }
-  while i < args.length() {
-    let arg = args[i]
-    match arg {
-      "-h" | "--help" => {
-        @stdio.stdout.write(usage)
-        return
+  match command {
+    Help(topic) => help(topic)
+    Version => {
+      @stdio.stdout.write(version_text())
+      0
+    }
+    Usage => {
+      write_err(usage)
+      1
+    }
+    Convert(opts) => {
+      for notice in opts.notices {
+        write_err(notice + "\n")
       }
-      "-V" | "--version" => {
-        @stdio.stdout.write(
-          "Asciidoctor \{@core.VERSION} [https://asciidoctor.org] (MoonBit port)\n",
-        )
-        return
-      }
-      "-b" | "--backend" => opts.backend = Some(next_arg(arg))
-      "-d" | "--doctype" => opts.doctype = Some(next_arg(arg))
-      "-e" | "--embedded" | "-s" | "--no-header-footer" =>
-        opts.standalone = false
-      "-o" | "--out-file" => opts.out_file = Some(next_arg(arg))
-      "--safe" => opts.safe = @core.SAFE_SAFE
-      "-S" | "--safe-mode" => {
-        let v = next_arg(arg)
-        opts.safe = match @core.safe_mode_value_for_name(v) {
-          Some(s) => s
-          None => fail("invalid safe mode: \{v}")
+      match check_inputs(opts) {
+        Some(msg) => {
+          write_err(msg)
+          return 1
         }
+        None => ()
       }
-      "--sourcemap" => opts.sourcemap = true
-      "-n" | "--section-numbers" => opts.attributes.push(("sectnums", Str("")))
-      "-a" | "--attribute" => {
-        let v = next_arg(arg)
-        let (name, sep, value) = @rb.partition(v, "=")
-        opts.attributes.push(
-          (name, if sep == "" { Str("") } else { Str(value) }),
-        )
-      }
-      "-B" | "--base-dir" => opts.base_dir = Some(next_arg(arg))
-      "-D" | "--destination-dir" => opts.destination_dir = Some(next_arg(arg))
-      "--log-level" =>
-        opts.log_level = parse_level(next_arg(arg)).unwrap_or(Warn)
-      "--failure-level" =>
-        opts.failure_level = parse_level(next_arg(arg)).unwrap_or(Fatal)
-      "-q" | "--quiet" => opts.log_level = Unknown
-      "-v" | "--verbose" => opts.log_level = Debug
-      "-w" | "--warnings" | "-t" | "--timings" | "--trace" => ()
-      _ =>
-        if arg.has_prefix("-a") && arg.length() > 2 {
-          let v = @rb.from(arg, 2)
-          let (name, sep, value) = @rb.partition(v, "=")
-          opts.attributes.push(
-            (name, if sep == "" { Str("") } else { Str(value) }),
+      invoke(opts)
+    }
+  }
+}
+
+///|
+/// `-h TOPIC`: the man page and the syntax overview are not bundled with the
+/// port, so those topics fail like Ruby does when the files are missing.
+async fn help(topic : String?) -> Int {
+  match topic {
+    Some("manpage") =>
+      match @env.get_env_var("ASCIIDOCTOR_MANPAGE_PATH") {
+        Some(path) if !path.has_suffix(".gz") && @fs.exists(path) => {
+          @stdio.stdout.write(@rb.chomp(@fs.read_file(path).text()) + "\n")
+          0
+        }
+        Some(path) => {
+          write_err("asciidoctor: FAILED: manual page not found: \{path}\n")
+          1
+        }
+        None => {
+          write_err(
+            "asciidoctor: FAILED: manual page not found; try `man asciidoctor`\n",
           )
-        } else if arg.has_prefix("-") && arg != "-" {
-          write_err("asciidoctor: invalid option: \{arg}\n")
-          @stdio.stderr.write(usage)
-          c_exit(1)
-        } else {
-          opts.inputs.push(arg)
+          1
         }
+      }
+    Some("syntax") => {
+      write_err(
+        "asciidoctor: FAILED: syntax page not found; visit https://asciidoctor.org/docs\n",
+      )
+      1
     }
-    i += 1
+    _ => {
+      @stdio.stdout.write(usage)
+      0
+    }
   }
-  if opts.inputs.is_empty() {
-    @stdio.stderr.write(usage)
-    c_exit(1)
-  }
-  for input in opts.inputs {
+}
+
+///|
+/// Checks the input files and the options the port cannot honor (Ruby
+/// `Options#parse!` after parsing). Returns the error to print.
+async fn check_inputs(opts : CliOptions) -> String? {
+  for input in opts.input_files {
     guard input != "-" else { continue }
     if !@fs.exists(input) {
-      write_err("asciidoctor: FAILED: input file \{input} is missing\n")
-      c_exit(1)
+      return Some("asciidoctor: FAILED: input file \{input} is missing\n")
     }
     match @fs.kind(input) {
       Regular | Pipe =>
         if !@fs.can_read(input) {
-          write_err(
+          return Some(
             "asciidoctor: FAILED: input file \{input} is not readable\n",
           )
-          c_exit(1)
         }
       kind => {
         let ftype = match kind {
@@ -174,15 +112,76 @@ async fn main {
           SymLink => "link"
           _ => "unknown"
         }
-        write_err(
+        return Some(
           "asciidoctor: FAILED: input path \{input} is a \{ftype}, not a file\n",
         )
-        c_exit(1)
       }
     }
   }
+  let trace_hint = if opts.trace {
+    ""
+  } else {
+    "  Use --trace to show backtrace\n"
+  }
+  if !opts.template_dirs.is_empty() {
+    // Ruby: the tilt gem is required; the port has no template support
+    return Some(
+      "asciidoctor: FAILED: 'tilt' could not be loaded\n  Custom converter templates are not supported by the MoonBit port\n\{trace_hint}",
+    )
+  }
+  // Ruby libraries (-r) cannot be loaded by the port
+  match opts.requires.get(0) {
+    Some(path) =>
+      Some("asciidoctor: FAILED: '\{path}' could not be loaded\n\{trace_hint}")
+    None => None
+  }
+}
+
+///|
+/// The message Ruby's invoker prints for an error that aborted the run.
+fn error_message(e : Error) -> String {
+  match e {
+    // Ruby RuntimeErrors are printed with their class
+    @core.ConversionFailed(msg) => "\{msg} (RuntimeError)"
+    @core.SecurityError(msg) => msg
+    e => e.to_string()
+  }
+}
+
+///|
+/// Converts the input files (Ruby `Invoker#invoke!`) and returns the exit code.
+async fn invoke(opts : CliOptions) -> Int {
+  let infiles = opts.input_files
+  let mut outfile = opts.output_file
+  let mut stdin = false
+  if infiles.length() == 1 {
+    if infiles[0] == "-" {
+      outfile = Some(outfile.unwrap_or("-"))
+      stdin = true
+    } else if (@fs.kind(infiles[0]) catch { _ => Regular }) is Pipe {
+      outfile = Some(outfile.unwrap_or("-"))
+    }
+  }
+  // every file output creates the missing directories
+  let (to_file, mkdirs) : (ToFile, Bool) = match outfile {
+    Some("-") => (Stream, false)
+    Some(f) => (Path(f), true)
+    None => (Derived, true)
+  }
   let messages : Array[@core.LogMessage] = []
-  let logger = @core.Logger::new(m => messages.push(m), level=opts.log_level)
+  let logger = if opts.verbose == 0 {
+    @core.Logger::null()
+  } else {
+    let default_level : @core.Severity = if opts.verbose == 2 {
+      Debug
+    } else {
+      Warn
+    }
+    @core.Logger::new(
+      m => messages.push(m),
+      level=opts.log_level.unwrap_or(default_level),
+    )
+  }
   @core.set_logger(logger) |> ignore
   @core.set_utc_offset(@localtime.utc_offset)
   match @env.get_env_var("SOURCE_DATE_EPOCH") {
@@ -191,48 +190,66 @@ async fn main {
   }
   let flush_messages = async fn() {
     for m in messages {
-      @stdio.stderr.write(@core.format_log_message(m) + "\n")
+      write_err(@core.format_log_message(m) + "\n")
     }
     messages.clear()
   }
-  for input in opts.inputs {
-    let options = @core.Options::new(
-      attributes=opts.attributes.copy(),
+  let new_options = fn() {
+    @core.Options::new(
+      attributes=opts.attributes.map(a => (a.0, @core.AttrVal::Str(a.1))),
       safe=opts.safe,
-      backend?=opts.backend,
-      doctype?=opts.doctype,
       standalone=opts.standalone,
       base_dir?=opts.base_dir,
       sourcemap=opts.sourcemap,
+      timings?=if opts.timings {
+        Some(@core.Timings::new(monotonic_seconds))
+      } else {
+        None
+      },
     )
-    if input == "-" {
-      let text = @stdio.stdin.read_all().text()
-      let output = @io.convert(text, options~)
-      match opts.out_file {
-        Some(f) if f != "-" =>
-          @fs.write_file(f, output, create_mode=CreateOrTruncate)
-        _ => @stdio.stdout.write(@rb.chomp(output) + "\n")
+  }
+  let cwd = @env.current_dir().unwrap_or("/")
+  let abs_srcdir = opts.source_dir.map(d => @core.expand_path_from(cwd, d))
+  let convert_one = async fn(input : CliInput, subject : String) {
+    let options = new_options()
+    let mut to_dir = opts.destination_dir
+    match (input, abs_srcdir, to_dir) {
+      (InputFile(path), Some(srcdir), Some(d)) => {
+        let abs_indir = @core.dirname(@core.expand_path_from(cwd, path))
+        if abs_indir.has_prefix(srcdir + "/") {
+          to_dir = Some(d + @rb.from(abs_indir, srcdir.length()))
+        }
       }
-    } else {
-      let destination : @io.Destination = match opts.out_file {
-        Some("-") => Stdout
-        Some(f) => File(f)
-        None => Default
-      }
-      @io.convert_file(
-        input,
-        options~,
-        destination~,
-        to_dir?=opts.destination_dir,
-        mkdirs=opts.destination_dir is Some(_),
-      )
-      |> ignore
+      _ => ()
     }
+    convert_input(input, options, to_file~, to_dir~, mkdirs~)
     flush_messages()
+    if options.timings is Some(t) {
+      write_err(t.report(subject~))
+    }
+  }
+  try {
+    if stdin {
+      let text = @stdio.stdin.read_all().text()
+      convert_one(Stdin(text), "-")
+    } else {
+      for infile in infiles {
+        convert_one(InputFile(infile), infile)
+      }
+    }
+  } catch {
+    e => {
+      flush_messages()
+      write_err(error_message(e) + "\n")
+      if !opts.trace {
+        write_err("  Use --trace to show backtrace\n")
+      }
+      return 1
+    }
   }
   match logger.max_severity {
-    Some(s) if s.to_int() >= opts.failure_level.to_int() => c_exit(1)
-    _ => ()
+    Some(s) if s.to_int() >= opts.failure_level.to_int() => 1
+    _ => 0
   }
 }
 

@@ -74,7 +74,13 @@ pub fn Node::sub_macros(self : Node, text : String) -> String {
             }
             None => ()
           }
-          match (ext.process)(self, target.unwrap_or(""), attributes) {
+          match
+            ((ext.process)(self, target.unwrap_or(""), attributes) catch {
+              e => {
+                self.abort_processing(e)
+                None
+              }
+            }) {
             Some(InlineNode(replacement)) => {
               match replacement.attributes.remove_str("subs") {
                 Some(inline_subs) =>

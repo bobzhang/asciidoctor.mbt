@@ -24,43 +24,43 @@ pub fn ExtensionConfig::new(
 
 ///|
 pub(all) struct Preprocessor {
-  process : (Node, Reader) -> Reader?
+  process : (Node, Reader) -> Reader? raise
 }
 
 ///|
 pub(all) struct TreeProcessor {
-  process : (Node) -> Node?
+  process : (Node) -> Node? raise
 }
 
 ///|
 pub(all) struct Postprocessor {
-  process : (Node, String) -> String
+  process : (Node, String) -> String raise
 }
 
 ///|
 pub(all) struct DocinfoProcessor {
   location : String
-  process : (Node) -> String?
+  process : (Node) -> String? raise
 }
 
 ///|
 pub(all) struct IncludeProcessor {
   handles : (Node, String) -> Bool
-  process : (Node, Reader, String, Attributes) -> Unit
+  process : (Node, Reader, String, Attributes) -> Unit raise
 }
 
 ///|
 pub(all) struct BlockProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, Reader, Attributes) -> Node?
+  process : (Node, Reader, Attributes) -> Node? raise
 }
 
 ///|
 pub(all) struct BlockMacroProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, String, Attributes) -> Node?
+  process : (Node, String, Attributes) -> Node? raise
 }
 
 ///|
@@ -74,7 +74,7 @@ pub(all) enum InlineResult {
 pub(all) struct InlineMacroProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, String, Attributes) -> InlineResult?
+  process : (Node, String, Attributes) -> InlineResult? raise
 }
 
 ///|
@@ -157,7 +157,7 @@ pub fn Extensions::activate(self : Extensions, doc : Node) -> Extensions {
 /// Registers a preprocessor. With `prefer`, it runs before the others.
 pub fn Extensions::preprocessor(
   self : Extensions,
-  process : (Node, Reader) -> Reader?,
+  process : (Node, Reader) -> Reader? raise,
   prefer? : Bool = false,
 ) -> Unit {
   let p : Preprocessor = { process, }
@@ -172,7 +172,7 @@ pub fn Extensions::preprocessor(
 /// Registers a tree processor; returning a document replaces the document.
 pub fn Extensions::tree_processor(
   self : Extensions,
-  process : (Node) -> Node?,
+  process : (Node) -> Node? raise,
   prefer? : Bool = false,
 ) -> Unit {
   let p : TreeProcessor = { process, }
@@ -187,7 +187,7 @@ pub fn Extensions::tree_processor(
 /// Registers a postprocessor (transforms the converted output).
 pub fn Extensions::postprocessor(
   self : Extensions,
-  process : (Node, String) -> String,
+  process : (Node, String) -> String raise,
   prefer? : Bool = false,
 ) -> Unit {
   let p : Postprocessor = { process, }
@@ -202,7 +202,7 @@ pub fn Extensions::postprocessor(
 /// Registers an include processor.
 pub fn Extensions::include_processor(
   self : Extensions,
-  process : (Node, Reader, String, Attributes) -> Unit,
+  process : (Node, Reader, String, Attributes) -> Unit raise,
   handles? : (Node, String) -> Bool = (_, _) => true,
   prefer? : Bool = false,
 ) -> Unit {
@@ -218,7 +218,7 @@ pub fn Extensions::include_processor(
 /// Registers a docinfo processor for `location` (`head` or `footer`).
 pub fn Extensions::docinfo_processor(
   self : Extensions,
-  process : (Node) -> String?,
+  process : (Node) -> String? raise,
   location? : String = "head",
   prefer? : Bool = false,
 ) -> Unit {
@@ -236,7 +236,7 @@ pub fn Extensions::docinfo_processor(
 pub fn Extensions::block(
   self : Extensions,
   name : String,
-  process : (Node, Reader, Attributes) -> Node?,
+  process : (Node, Reader, Attributes) -> Node? raise,
   contexts? : Array[Context] = [Open, Paragraph],
   content_model? : ContentModel = Compound,
   positional_attrs? : Array[String] = [],
@@ -259,11 +259,14 @@ pub fn Extensions::block(
 pub fn Extensions::block_macro(
   self : Extensions,
   name : String,
-  process : (Node, String, Attributes) -> Node?,
+  process : (Node, String, Attributes) -> Node? raise,
   content_model? : ContentModel = Attributes,
   positional_attrs? : Array[String] = [],
   default_attrs? : Array[(String, String)] = [],
-) -> Unit {
+) -> Unit raise ArgumentError {
+  if !macro_name_rx.matches(name) {
+    raise ArgumentError("invalid name for block macro: \{name}")
+  }
   self.block_macro_map[name] = {
     name,
     config: ExtensionConfig::new(
@@ -281,13 +284,16 @@ pub fn Extensions::block_macro(
 pub fn Extensions::inline_macro(
   self : Extensions,
   name : String,
-  process : (Node, String, Attributes) -> InlineResult?,
+  process : (Node, String, Attributes) -> InlineResult? raise,
   format? : String,
   regexp? : @regex.Regex,
   content_model? : ContentModel = Attributes,
   positional_attrs? : Array[String] = [],
   default_attrs? : Array[(String, String)] = [],
-) -> Unit {
+) -> Unit raise ArgumentError {
+  if regexp is None && !macro_name_rx.matches(name) {
+    raise ArgumentError("invalid name for inline macro: \{name}")
+  }
   self.inline_macro_map[name] = {
     name,
     config: ExtensionConfig::new(
@@ -493,11 +499,14 @@ pub fn create_list_item(parent : Node, text? : String) -> Node {
 
 ///|
 /// Creates an image block; `attrs` must contain `target`.
-pub fn create_image_block(parent : Node, attrs : Attributes) -> Node {
-  let target = match attrs.str("target") {
-    Some(t) => t
-    None =>
-      abort("Unable to create an image block, target attribute is required")
+pub fn create_image_block(
+  parent : Node,
+  attrs : Attributes,
+) -> Node raise ArgumentError {
+  guard attrs.str("target") is Some(target) else {
+    raise ArgumentError(
+      "Unable to create an image block, target attribute is required",
+    )
   }
   if !attrs.truthy("alt") {
     let default_alt = basename(target, drop_ext=true)

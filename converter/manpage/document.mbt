@@ -5,12 +5,12 @@ fn ManPageConverter::convert_document(
 ) -> String {
   ignore(self)
   if !node.has_attr("mantitle") {
-    @core.logger().add({
-      severity: Error,
-      text: "asciidoctor: ERROR: doctype must be set to manpage when using manpage backend",
-      source_location: None,
-      include_location: None,
-    })
+    // Ruby raises a RuntimeError
+    node.abort_processing(
+      @core.ConversionFailed(
+        "asciidoctor: ERROR: doctype must be set to manpage when using manpage backend",
+      ),
+    )
     return ""
   }
   let mantitle = invalid_section_id_chars_rx.gsub(a(node, "mantitle"), "")

@@ -459,7 +459,13 @@ fn next_block(
                             attributes.set_str(d.0, d.1)
                           }
                         }
-                        match (extension.process)(parent, target, attributes) {
+                        match
+                          ((extension.process)(parent, target, attributes) catch {
+                            e => {
+                              parent.abort_processing(e)
+                              None
+                            }
+                          }) {
                           Some(b) if !physical_equal(b, parent) => {
                             attributes.replace(b.attributes)
                             block = Some(b)
@@ -1247,7 +1253,13 @@ fn build_block(
         Some(r) => r
         None => Reader::new(lines.unwrap_or([]))
       }
-      match (ext.process)(parent, r, attributes.copy()) {
+      match
+        ((ext.process)(parent, r, attributes.copy()) catch {
+          e => {
+            parent.abort_processing(e)
+            None
+          }
+        }) {
         Some(b) if !physical_equal(b, parent) => {
           attributes.replace(b.attributes)
           if b.content_model == Compound && !b.lines.is_empty() {

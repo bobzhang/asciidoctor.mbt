@@ -3,6 +3,7 @@ package "bobzhang/asciidoctor/core"
 
 import {
   "bobzhang/asciidoctor/regex",
+  "moonbitlang/core/builtin",
   "moonbitlang/core/debug",
 }
 
@@ -35,7 +36,7 @@ pub fn create_block(Node, Context, Array[String]?, Attributes, content_model? : 
 
 pub fn create_example_block(Node, Array[String]?, Attributes) -> Node
 
-pub fn create_image_block(Node, Attributes) -> Node
+pub fn create_image_block(Node, Attributes) -> Node raise ArgumentError
 
 pub fn create_inline(Node, Context, String?, type_? : String, target? : String, id? : String, attributes? : Attributes) -> Node
 
@@ -153,9 +154,21 @@ pub fn unregister_all_global_extensions() -> Unit
 
 pub let verbatim_subs : Array[Sub]
 
-pub fn[T] with_memory_logger(() -> T) -> (T, Array[LogMessage])
+pub fn[T] with_memory_logger(() -> T raise?) -> (T, Array[LogMessage]) raise?
 
 // Errors
+pub(all) suberror ArgumentError {
+  ArgumentError(String)
+}
+pub impl Show for ArgumentError
+
+pub(all) suberror ProcessingError {
+  MissingConverter(String)
+  ConversionFailed(String)
+}
+pub fn ProcessingError::message(Self) -> String
+pub impl Show for ProcessingError
+
 pub suberror SecurityError {
   SecurityError(String)
 } derive(@debug.Debug)
@@ -241,13 +254,13 @@ pub(all) struct BackendTraits {
 pub(all) struct BlockMacroProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, String, Attributes) -> Node?
+  process : (Node, String, Attributes) -> Node? raise
 }
 
 pub(all) struct BlockProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, Reader, Attributes) -> Node?
+  process : (Node, Reader, Attributes) -> Node? raise
 }
 
 pub(all) enum BlockSubs {
@@ -402,7 +415,7 @@ pub fn DocTitle::new(String, sanitize? : Bool, separator? : String) -> Self
 
 pub(all) struct DocinfoProcessor {
   location : String
-  process : (Node) -> String?
+  process : (Node) -> String? raise
 }
 
 pub(all) struct ExtensionConfig {
@@ -421,15 +434,15 @@ pub struct Extensions {
 }
 pub fn Extensions::activate(Self, Node) -> Self
 pub fn Extensions::add_group(Self, (Self) -> Unit) -> Unit
-pub fn Extensions::block(Self, String, (Node, Reader, Attributes) -> Node?, contexts? : Array[Context], content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
-pub fn Extensions::block_macro(Self, String, (Node, String, Attributes) -> Node?, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
-pub fn Extensions::docinfo_processor(Self, (Node) -> String?, location? : String, prefer? : Bool) -> Unit
-pub fn Extensions::include_processor(Self, (Node, Reader, String, Attributes) -> Unit, handles? : (Node, String) -> Bool, prefer? : Bool) -> Unit
-pub fn Extensions::inline_macro(Self, String, (Node, String, Attributes) -> InlineResult?, format? : String, regexp? : @regex.Regex, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
+pub fn Extensions::block(Self, String, (Node, Reader, Attributes) -> Node? raise, contexts? : Array[Context], content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit
+pub fn Extensions::block_macro(Self, String, (Node, String, Attributes) -> Node? raise, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit raise ArgumentError
+pub fn Extensions::docinfo_processor(Self, (Node) -> String? raise, location? : String, prefer? : Bool) -> Unit
+pub fn Extensions::include_processor(Self, (Node, Reader, String, Attributes) -> Unit raise, handles? : (Node, String) -> Bool, prefer? : Bool) -> Unit
+pub fn Extensions::inline_macro(Self, String, (Node, String, Attributes) -> InlineResult? raise, format? : String, regexp? : @regex.Regex, content_model? : ContentModel, positional_attrs? : Array[String], default_attrs? : Array[(String, String)]) -> Unit raise ArgumentError
 pub fn Extensions::new(group? : (Self) -> Unit) -> Self
-pub fn Extensions::postprocessor(Self, (Node, String) -> String, prefer? : Bool) -> Unit
-pub fn Extensions::preprocessor(Self, (Node, Reader) -> Reader?, prefer? : Bool) -> Unit
-pub fn Extensions::tree_processor(Self, (Node) -> Node?, prefer? : Bool) -> Unit
+pub fn Extensions::postprocessor(Self, (Node, String) -> String raise, prefer? : Bool) -> Unit
+pub fn Extensions::preprocessor(Self, (Node, Reader) -> Reader? raise, prefer? : Bool) -> Unit
+pub fn Extensions::tree_processor(Self, (Node) -> Node? raise, prefer? : Bool) -> Unit
 
 pub(all) enum FindVerdict {
   Accept
@@ -459,13 +472,13 @@ pub(all) struct ImageReference {
 
 pub(all) struct IncludeProcessor {
   handles : (Node, String) -> Bool
-  process : (Node, Reader, String, Attributes) -> Unit
+  process : (Node, Reader, String, Attributes) -> Unit raise
 }
 
 pub(all) struct InlineMacroProcessor {
   name : String
   config : ExtensionConfig
-  process : (Node, String, Attributes) -> InlineResult?
+  process : (Node, String, Attributes) -> InlineResult? raise
 }
 
 pub(all) enum InlineResult {
@@ -528,6 +541,7 @@ pub(all) struct Node {
   mut target : String?
   // private fields
 }
+pub fn Node::abort_processing(Self, Error) -> Unit
 pub fn Node::add_role(Self, String) -> Bool
 pub fn Node::alt(Self) -> String
 pub fn Node::append(Self, Self) -> Unit
@@ -621,7 +635,7 @@ pub fn Node::new_table(Self, Attributes) -> Self
 pub fn Node::next_adjacent_block(Self) -> Self?
 pub fn Node::nofooter(Self) -> Bool
 pub fn Node::noheader(Self) -> Bool
-pub fn Node::normalize_asset_path(Self, String, asset_name? : String, autocorrect? : Bool) -> String
+pub fn Node::normalize_asset_path(Self, String, asset_name? : String, autocorrect? : Bool) -> String raise SecurityError
 pub fn Node::normalize_system_path(Self, String, start? : String, jail? : String, target_name? : String) -> String
 pub fn Node::normalize_system_path_checked(Self, String, start? : String, jail? : String, target_name? : String, recover? : Bool) -> String raise SecurityError
 pub fn Node::normalize_web_path(Self, String, start? : String, preserve_uri_target? : Bool) -> String
@@ -635,6 +649,7 @@ pub fn Node::parse(Self, data? : Array[String]) -> Self
 pub fn Node::parse_attributes(Self, String, Array[String?], unescape_input? : Bool, sub_input? : Bool, sub_result? : Bool, into? : Attributes) -> Attributes
 pub fn Node::path_resolver(Self) -> PathResolver
 pub fn Node::playback_attributes(Self, Attributes) -> Unit
+pub fn Node::processing_error(Self) -> Error?
 pub fn Node::raw_text(Self) -> String?
 pub fn Node::raw_title(Self) -> String?
 pub fn Node::read_asset(Self, String, normalize? : Bool, warn_on_failure? : Bool, label? : String) -> String?
@@ -724,11 +739,12 @@ pub(all) struct Options {
   mut converter : &Converter?
   mut extensions : Extensions?
   mut vfs : &Vfs?
+  mut timings : Timings?
   mut syntax_highlighter_factory : ((String, String, Node) -> &SyntaxHighlighter?)?
   mut parent : Node?
   mut cursor : Cursor?
 }
-pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs) -> Self
+pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs, timings? : Timings) -> Self
 
 pub struct PathResolver {
   mut working_dir : String
@@ -748,11 +764,11 @@ pub fn PathResolver::system_path(Self, String?, start? : String, jail? : String,
 pub fn PathResolver::web_path(Self, String, start? : String) -> String
 
 pub(all) struct Postprocessor {
-  process : (Node, String) -> String
+  process : (Node, String) -> String raise
 }
 
 pub(all) struct Preprocessor {
-  process : (Node, Reader) -> Reader?
+  process : (Node, Reader) -> Reader? raise
 }
 
 pub struct Reader {
@@ -837,8 +853,25 @@ pub struct TableRows {
   mut foot : Array[Array[Node]]
 }
 
+pub struct Timings {
+  // private fields
+}
+pub fn Timings::convert(Self) -> Double?
+pub fn Timings::new(() -> Double) -> Self
+pub fn Timings::parse(Self) -> Double?
+pub fn Timings::read(Self) -> Double?
+pub fn Timings::read_parse(Self) -> Double?
+pub fn Timings::read_parse_convert(Self) -> Double?
+pub fn Timings::record(Self, String) -> Unit
+pub fn Timings::report(Self, subject? : String) -> String
+pub fn Timings::set(Self, String, Double) -> Unit
+pub fn Timings::start(Self, String) -> Unit
+pub fn Timings::time(Self, Array[String]) -> Double?
+pub fn Timings::total(Self) -> Double?
+pub fn Timings::write(Self) -> Double?
+
 pub(all) struct TreeProcessor {
-  process : (Node) -> Node?
+  process : (Node) -> Node? raise
 }
 
 // Type aliases
