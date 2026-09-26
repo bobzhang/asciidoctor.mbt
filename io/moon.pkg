@@ -2,6 +2,7 @@ import {
   "bobzhang/asciidoctor",
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/internal/rb",
+  "bobzhang/asciidoctor/internal/localtime",
   "moonbitlang/async/fs",
   "moonbitlang/async/os_error",
   "moonbitlang/async/stdio",

@@ -208,6 +208,7 @@ async fn[T] fixpoint(
   max_rounds : Int,
   replay~ : Bool,
 ) -> T {
+  use_system_time_zone()
   let process_state = @core.snapshot_process_state()
   for round = 1; ; round = round + 1 {
     vfs.misses.clear()
@@ -637,5 +638,19 @@ async fn copy_stylesheet(
       if !is_regular_file(dest) {
         doc.read_asset(src, warn_on_failure=true, label="stylesheet") |> ignore
       }
+  }
+}
+
+///|
+let system_time_zone_installed : Ref[Bool] = { val: false, }
+
+///|
+/// Date attributes (`localdatetime`, `docdatetime`, ...) use the system time
+/// zone, as in Ruby. The first `@io` conversion installs it in the core with
+/// `@core.set_utc_offset`; a later call to `@core.set_utc_offset` overrides it.
+fn use_system_time_zone() -> Unit {
+  if !system_time_zone_installed.val {
+    system_time_zone_installed.val = true
+    @core.set_utc_offset(@localtime.utc_offset)
   }
 }
