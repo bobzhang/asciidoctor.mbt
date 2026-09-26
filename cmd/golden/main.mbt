@@ -331,7 +331,8 @@ async fn main {
     i += 1
   }
   let cwd = @fs.realpath(".")
-  let root = "\{cwd}/.repos/asciidoctor"
+  // resolve symlinks so worktrees that link .repos see the harvested absolute paths
+  let root = @fs.realpath("\{cwd}/.repos/asciidoctor")
   let home = @env.get_env_var("HOME").unwrap_or("/")
   let vfs = @core.MemoryVfs::new(cwd=root, home~)
   load_dir(vfs, "\{root}/test/fixtures")
