@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/regex"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compile(String, flags? : String) -> Regex raise RegexError
+
+pub fn re(String, flags? : String) -> Regex
+
+// Errors
+pub suberror RegexError {
+  RegexError(pattern~ : String, pos~ : Int, message~ : String)
+} derive(@debug.Debug)
+pub fn RegexError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub struct MatchData {
+  input : String
+  // private fields
+}
+pub fn MatchData::at(Self, Int) -> String
+pub fn MatchData::begin(Self, i? : Int) -> Int
+pub fn MatchData::end(Self, i? : Int) -> Int
+pub fn MatchData::expand(Self, String) -> String
+pub fn MatchData::group(Self, Int) -> String?
+pub fn MatchData::groups(Self) -> Array[String?]
+pub fn MatchData::has(Self, Int) -> Bool
+pub fn MatchData::matched(Self) -> String
+pub fn MatchData::named(Self, String) -> String?
+pub fn MatchData::post_match(Self) -> String
+pub fn MatchData::pre_match(Self) -> String
+pub fn MatchData::size(Self) -> Int
+
+pub struct Regex {
+  source : String
+  // private fields
+}
+pub fn Regex::find(Self, String, start? : Int) -> MatchData?
+pub fn Regex::find_all(Self, String) -> Array[MatchData]
+pub fn Regex::group_count(Self) -> Int
+pub fn Regex::gsub(Self, String, String) -> String
+pub fn Regex::match_at(Self, String, Int) -> MatchData?
+pub fn Regex::matches(Self, String) -> Bool
+pub fn Regex::replace(Self, String, (MatchData) -> String) -> String
+pub fn Regex::replace_first(Self, String, (MatchData) -> String) -> String
+pub fn Regex::split(Self, String, limit? : Int) -> Array[String]
+pub fn Regex::sub(Self, String, String) -> String
+pub fn Regex::to_string(Self) -> String
+
+// Type aliases
+
+// Traits

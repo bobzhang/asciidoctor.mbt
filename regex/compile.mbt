@@ -1,0 +1,332 @@
+///|
+priv enum Inst {
+  Unit(Int) // one UTF-16 code unit
+  AnyChar(Bool) // `.`, dot-all?
+  Set(Int) // index into classes
+  Split(Int, Int) // try first, push second
+  Jmp(Int)
+  Save(Int)
+  Assert(AssertKind)
+  Backref(Int)
+  Look(Int, Bool, Bool, Int, Int, Bool) // sub index, ahead?, negated?, min width, max width (-1 unbounded), sub writes state?
+  Atomic(Int, Bool) // sub index, sub writes state?
+  Mark(Int) // regs[r] = pos
+  Progress(Int) // fail unless pos > regs[r]
+  SubEnd // end of a (sub)program
+}
+
+///|
+priv struct Compiler {
+  prog : Array[Inst]
+  classes : Array[CharClass]
+  sub_nodes : Array[Node]
+  sub_starts : Array[Int]
+  mut nregs : Int
+  names : Map[String, Int]
+  pattern : String
+}
+
+///|
+fn nullable(node : Node) -> Bool {
+  match node {
+    Empty | Assert(_) | Look(_, _, _) => true
+    Char(_) | Any(_) | Class(_) => false
+    Concat(items) => items.iter().all(nullable)
+    Alt(items) => items.iter().any(nullable)
+    Group(_, n) | Atomic(n) => nullable(n)
+    Repeat(n, min, _, _) => min == 0 || nullable(n)
+    Backref(_) | NamedBackref(_) => true
+  }
+}
+
+///|
+/// Whether the node contains capture groups (so a sub-run must snapshot state).
+fn writes_state(node : Node) -> Bool {
+  match node {
+    Empty
+    | Assert(_)
+    | Char(_)
+    | Any(_)
+    | Class(_)
+    | Backref(_)
+    | NamedBackref(_) => false
+    Concat(items) | Alt(items) => items.iter().any(writes_state)
+    Group(Some(_), _) => true
+    Group(None, n) | Atomic(n) | Look(n, _, _) => writes_state(n)
+    Repeat(n, _, max, _) => (max < 0 && nullable(n)) || writes_state(n)
+  }
+}
+
+///|
+/// Minimum and maximum width in UTF-16 code units (-1 = unbounded).
+fn width(node : Node) -> (Int, Int) {
+  match node {
+    Empty | Assert(_) | Look(_, _, _) => (0, 0)
+    Char(cp) => if cp >= 0x10000 { (2, 2) } else { (1, 1) }
+    Any(_) | Class(_) => (1, 2)
+    Concat(items) => {
+      let mut lo = 0
+      let mut hi = 0
+      for it in items {
+        let (a, b) = width(it)
+        lo += a
+        hi = if hi < 0 || b < 0 { -1 } else { hi + b }
+      }
+      (lo, hi)
+    }
+    Alt(items) => {
+      let mut lo = -1
+      let mut hi = 0
+      for it in items {
+        let (a, b) = width(it)
+        lo = if lo < 0 || a < lo { a } else { lo }
+        hi = if hi < 0 || b < 0 { -1 } else if b > hi { b } else { hi }
+      }
+      (if lo < 0 { 0 } else { lo }, hi)
+    }
+    Group(_, n) | Atomic(n) => width(n)
+    Repeat(n, min, max, _) => {
+      let (a, b) = width(n)
+      (a * min, if max < 0 || b < 0 { -1 } else { b * max })
+    }
+    Backref(_) | NamedBackref(_) => (0, -1)
+  }
+}
+
+///|
+fn Compiler::emit(self : Compiler, inst : Inst) -> Int {
+  self.prog.push(inst)
+  self.prog.length() - 1
+}
+
+///|
+fn Compiler::pc(self : Compiler) -> Int {
+  self.prog.length()
+}
+
+///|
+fn Compiler::add_sub(self : Compiler, node : Node) -> Int {
+  self.sub_nodes.push(node)
+  self.sub_nodes.length() - 1
+}
+
+///|
+fn Compiler::compile(self : Compiler, node : Node) -> Unit raise RegexError {
+  match node {
+    Empty => ()
+    Char(cp) =>
+      if cp >= 0x10000 {
+        let v = cp - 0x10000
+        self.emit(Unit(0xD800 + (v >> 10))) |> ignore
+        self.emit(Unit(0xDC00 + (v & 0x3FF))) |> ignore
+      } else {
+        self.emit(Unit(cp)) |> ignore
+      }
+    Any(dotall) => self.emit(AnyChar(dotall)) |> ignore
+    Class(cls) => {
+      cls.prepare()
+      self.classes.push(cls)
+      self.emit(Set(self.classes.length() - 1)) |> ignore
+    }
+    Concat(items) =>
+      for it in items {
+        self.compile(it)
+      }
+    Alt(items) => {
+      let jumps = []
+      for i, it in items {
+        if i < items.length() - 1 {
+          let split = self.emit(Split(0, 0))
+          self.compile(it)
+          jumps.push(self.emit(Jmp(0)))
+          self.prog[split] = Split(split + 1, self.pc())
+        } else {
+          self.compile(it)
+        }
+      }
+      let end = self.pc()
+      for j in jumps {
+        self.prog[j] = Jmp(end)
+      }
+    }
+    Group(Some(i), n) => {
+      self.emit(Save(2 * i)) |> ignore
+      self.compile(n)
+      self.emit(Save(2 * i + 1)) |> ignore
+    }
+    Group(None, n) => self.compile(n)
+    Assert(k) => self.emit(Assert(k)) |> ignore
+    Backref(n) => self.emit(Backref(n)) |> ignore
+    NamedBackref(name) =>
+      match self.names.get(name) {
+        Some(n) => self.emit(Backref(n)) |> ignore
+        None =>
+          raise RegexError(
+            pattern=self.pattern,
+            pos=0,
+            message="undefined name <\{name}> reference",
+          )
+      }
+    Look(n, ahead, neg) => {
+      let (lo, hi) = width(n)
+      let sub = self.add_sub(n)
+      self.emit(Look(sub, ahead, neg, lo, hi, writes_state(n))) |> ignore
+    }
+    Atomic(n) => {
+      let sub = self.add_sub(n)
+      self.emit(Atomic(sub, writes_state(n))) |> ignore
+    }
+    Repeat(n, min, max, Possessive) =>
+      self.compile(Atomic(Repeat(n, min, max, Greedy)))
+    Repeat(n, min, max, greed) => {
+      for _ in 0..<min {
+        self.compile(n)
+      }
+      if max < 0 {
+        let loop_pc = self.emit(Split(0, 0))
+        let body = self.pc()
+        let check = nullable(n)
+        let reg = self.nregs
+        if check {
+          self.nregs += 1
+          self.emit(Mark(reg)) |> ignore
+        }
+        self.compile(n)
+        if check {
+          self.emit(Progress(reg)) |> ignore
+        }
+        self.emit(Jmp(loop_pc)) |> ignore
+        let end = self.pc()
+        self.prog[loop_pc] = if greed == Greedy {
+          Split(body, end)
+        } else {
+          Split(end, body)
+        }
+      } else if max > min {
+        let splits = []
+        for _ in min..<max {
+          splits.push(self.emit(Split(0, 0)))
+          self.compile(n)
+        }
+        let end = self.pc()
+        for s in splits {
+          self.prog[s] = if greed == Greedy {
+            Split(s + 1, end)
+          } else {
+            Split(end, s + 1)
+          }
+        }
+      }
+    }
+  }
+}
+
+///|
+/// A set of possible first code units of a match (conservative).
+priv struct FirstSet {
+  ascii : FixedArray[Bool]
+  non_ascii : Bool
+}
+
+///|
+fn FirstSet::all() -> FirstSet? {
+  None
+}
+
+///|
+fn union_first(a : FirstSet?, b : FirstSet?) -> FirstSet? {
+  match (a, b) {
+    (Some(x), Some(y)) => {
+      let t = FixedArray::make(128, false)
+      for i in 0..<128 {
+        t[i] = x.ascii[i] || y.ascii[i]
+      }
+      Some({ ascii: t, non_ascii: x.non_ascii || y.non_ascii, })
+    }
+    _ => None
+  }
+}
+
+///|
+fn empty_first() -> FirstSet? {
+  Some({ ascii: FixedArray::make(128, false), non_ascii: false, })
+}
+
+///|
+/// Returns the possible first code units and whether the node is nullable.
+fn first_info(node : Node) -> (FirstSet?, Bool) {
+  match node {
+    Empty | Assert(_) | Look(_, _, _) => (empty_first(), true)
+    Char(cp) => {
+      let s = { ascii: FixedArray::make(128, false), non_ascii: cp >= 128, }
+      if cp < 128 {
+        s.ascii[cp] = true
+      }
+      (Some(s), false)
+    }
+    Any(_) => (FirstSet::all(), false)
+    Class(cls) => {
+      cls.prepare()
+      let s = { ascii: FixedArray::make(128, false), non_ascii: true, }
+      for i in 0..<128 {
+        s.ascii[i] = cls.ascii[i]
+      }
+      (Some(s), false)
+    }
+    Concat(items) => {
+      let mut acc = empty_first()
+      let mut all_nullable = true
+      for it in items {
+        let (f, n) = first_info(it)
+        acc = union_first(acc, f)
+        if !n {
+          all_nullable = false
+          break
+        }
+      }
+      (acc, all_nullable)
+    }
+    Alt(items) => {
+      let mut acc = empty_first()
+      let mut any_nullable = false
+      for it in items {
+        let (f, n) = first_info(it)
+        acc = union_first(acc, f)
+        any_nullable = any_nullable || n
+      }
+      (acc, any_nullable)
+    }
+    Group(_, n) | Atomic(n) => first_info(n)
+    Repeat(n, min, _, _) => {
+      let (f, nl) = first_info(n)
+      (f, nl || min == 0)
+    }
+    Backref(_) | NamedBackref(_) => (FirstSet::all(), true)
+  }
+}
+
+///|
+priv enum Anchor {
+  NoAnchor
+  TextStart // \A
+  LineStart // ^
+} derive(Eq)
+
+///|
+fn leading_anchor(node : Node) -> Anchor {
+  match node {
+    Assert(BeginText) => TextStart
+    Assert(BeginLine) => LineStart
+    Concat(items) if items.length() > 0 => leading_anchor(items[0])
+    Group(_, n) | Atomic(n) => leading_anchor(n)
+    Alt(items) => {
+      let first = leading_anchor(items[0])
+      if items.iter().all(fn(it) { leading_anchor(it) == first }) {
+        first
+      } else {
+        NoAnchor
+      }
+    }
+    _ => NoAnchor
+  }
+}
