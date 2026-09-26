@@ -206,7 +206,8 @@ parser async would slow it and infect every API. Instead:
 * Harvest fails when an upstream test fails; installs tilt/haml/slim/erubi/open-uri-cached so
   converter_test and invoker_test run completely (invoker records now replay at document level).
   options_test and helpers_test create no documents, so they have no records.
-* Parity: AST 2584/2693, output 1753/1875, messages 2615/2691; 0 unexpected failures.
+* Parity: AST 2584/2693, output 1753/1875, messages 2615/2691; 0 unexpected failures (AST 2582 after
+  unknown backends started raising: two more custom-converter tests).
 
 
 ### 2026-09-26 (release + architecture review)
