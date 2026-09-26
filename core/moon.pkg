@@ -5,4 +5,8 @@ import {
   "moonbitlang/core/env",
 }
 
+import {
+  "bobzhang/asciidoctor/converter/html5",
+} for "test"
+
 warnings = "-implicit_impl_as_method"

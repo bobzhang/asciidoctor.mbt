@@ -982,6 +982,8 @@ fn parse_header_metadata(reader : Reader, document : Node?) -> Attributes {
           author_metadata = None
         } else {
           da.set("authorcount", Int(0))
+          // Ruby keeps author_metadata ({ 'authorcount' => 0 }) in the result
+          author_metadata = Some(am)
         }
       } else {
         da.update(am)
