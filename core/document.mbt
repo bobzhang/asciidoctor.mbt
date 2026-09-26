@@ -560,7 +560,7 @@ pub fn Node::parse(self : Node, data? : Array[String]) -> Node {
   let exts = if dd.parent_document is None { dd.extensions } else { None }
   match exts {
     Some(e) =>
-      for p in e.preprocessors {
+      for p in e.preprocessors() {
         match (p.process)(self, dd.reader.unwrap()) {
           Some(r) => dd.reader = Some(r)
           None => ()
@@ -576,7 +576,7 @@ pub fn Node::parse(self : Node, data? : Array[String]) -> Node {
   self.restore_attributes()
   match exts {
     Some(e) =>
-      for t in e.tree_processors {
+      for t in e.tree_processors() {
         match (t.process)(doc) {
           Some(result) if result.context == Document &&
             !physical_equal(result, doc) => doc = result
@@ -1699,7 +1699,7 @@ pub fn Node::convert_with(
   if dd.parent_document is None {
     match dd.extensions {
       Some(e) =>
-        for p in e.postprocessors {
+        for p in e.postprocessors() {
           output = (p.process)(self, output)
         }
       None => ()

@@ -1271,7 +1271,7 @@ fn Reader::preprocess_include_directive(
   }
   match doc.extensions() {
     Some(exts) =>
-      for ext in exts.include_processors {
+      for ext in exts.include_processors() {
         if (ext.handles)(doc, expanded_target) {
           self.shift() |> ignore
           (ext.process)(

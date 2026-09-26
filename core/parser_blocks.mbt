@@ -197,11 +197,11 @@ fn next_block(
   }
   let extensions = document.extensions()
   let block_extensions = match extensions {
-    Some(e) => !e.block_processors.is_empty()
+    Some(e) => e.has_blocks()
     None => false
   }
   let block_macro_extensions = match extensions {
-    Some(e) => !e.block_macros.is_empty()
+    Some(e) => e.has_block_macros()
     None => false
   }
   reader.mark() |> ignore

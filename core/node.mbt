@@ -10,7 +10,7 @@ pub(all) struct DlistItem {
 /// AbstractBlock, Document, Section, Block, List, ListItem, Table,
 /// Table::Column, Table::Cell, Inline) is flattened into this one struct; the
 /// `context` tells which fields are meaningful.
-pub struct Node {
+pub(all) struct Node {
   mut context : Context
   mut node_name : String
   priv mut parent_ : Node?

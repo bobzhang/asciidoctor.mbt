@@ -24,8 +24,8 @@ pub fn Node::sub_macros(self : Node, text : String) -> String {
   let mut text = text
   // extension inline macros
   match doc.extensions() {
-    Some(exts) if !exts.inline_macros.is_empty() =>
-      for ext in exts.inline_macros {
+    Some(exts) if !exts.inline_macros().is_empty() =>
+      for ext in exts.inline_macros() {
         let rx = match ext.config.regexp {
           Some(r) => r
           None => inline_macro_regexp(ext.name, ext.config.format)
@@ -532,12 +532,13 @@ fn inline_macro_regexp(name : String, format : String?) -> @regex.Regex {
   match inline_macro_rx_cache.get(key) {
     Some(r) => r
     None => {
-      let src = if format == Some("short") {
-        "\\\\?\{name}:\\[((?:\\\\\\]|[^\\]])*?)\\]"
+      // Ruby: /\\?#{name}:#{format == :short ? '(){0}' : '(\S+?)'}\[(|#{CC_ANY}*?[^\\])\]/
+      let target_group = if format == Some("short") {
+        "(){0}"
       } else {
-        "\\\\?\{name}:(\\S+?)\\[((?:\\\\\\]|[^\\]])*?)\\]"
+        "(\\S+?)"
       }
-      let r = @regex.re(src)
+      let r = @regex.re("\\\\?\{name}:\{target_group}\\[(|.*?[^\\\\])\\]")
       inline_macro_rx_cache[key] = r
       r
     }
