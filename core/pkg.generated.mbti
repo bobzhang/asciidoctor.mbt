@@ -141,6 +141,8 @@ pub fn set_now_epoch(() -> Int64) -> Unit
 
 pub fn set_source_date_epoch(Int64?) -> Unit
 
+pub fn set_utc_offset((Int64) -> Int) -> Unit
+
 pub fn snapshot_process_state() -> Array[String]
 
 pub fn sub_placeholder(String, String) -> String

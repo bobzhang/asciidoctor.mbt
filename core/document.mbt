@@ -1367,7 +1367,7 @@ fn fill_datetime_attributes(attrs : Attributes, input_mtime : Int64?) -> Unit {
     Some(e) => e
     None => now_epoch()
   }
-  let (date, year, time) = format_epoch(now)
+  let (date, year, time) = format_epoch(now, in_local_zone=sde is None)
   let localdate = match attrs.str("localdate") {
     Some(d) => {
       if !attrs.truthy("localyear") {
@@ -1395,7 +1395,7 @@ fn fill_datetime_attributes(attrs : Attributes, input_mtime : Int64?) -> Unit {
         None => now
       }
   }
-  let (ddate, dyear, dtime) = format_epoch(doc_epoch)
+  let (ddate, dyear, dtime) = format_epoch(doc_epoch, in_local_zone=sde is None)
   let docdate = match attrs.str("docdate") {
     Some(d) => {
       if !attrs.truthy("docyear") {
@@ -1439,14 +1439,33 @@ pub fn set_now_epoch(f : () -> Int64) -> Unit {
 }
 
 ///|
+/// Hook returning the local time zone's offset from UTC (seconds) at a given
+/// epoch second; the default is UTC.
+let utc_offset_ref : Ref[(Int64) -> Int] = { val: _ => 0, }
+
+///|
+/// Sets the local time zone used for `localtime`, `doctime` and friends (the
+/// core defaults to UTC; `@io` and the CLI install the system time zone).
+/// `offset(epoch)` returns the offset from UTC in seconds at `epoch`.
+pub fn set_utc_offset(offset : (Int64) -> Int) -> Unit {
+  utc_offset_ref.val = offset
+}
+
+///|
 /// Sets (or clears) SOURCE_DATE_EPOCH (reproducible builds).
 pub fn set_source_date_epoch(epoch : Int64?) -> Unit {
   source_date_epoch_ref.val = epoch
 }
 
 ///|
-/// Formats epoch seconds (UTC) as (YYYY-MM-DD, YYYY, HH:MM:SS UTC).
-fn format_epoch(secs : Int64) -> (String, String, String) {
+/// Formats `secs` as Ruby's `%F`, `%Y` and `%T %z` (or `%T UTC` when the
+/// offset is zero); `in_local_zone` applies the local time zone, otherwise UTC.
+fn format_epoch(
+  secs : Int64,
+  in_local_zone~ : Bool,
+) -> (String, String, String) {
+  let offset = if in_local_zone { (utc_offset_ref.val)(secs) } else { 0 }
+  let secs = secs + offset.to_int64()
   let days = (secs / 86400L).to_int()
   let rem = (secs % 86400L).to_int()
   // civil from days (Howard Hinnant)
@@ -1462,7 +1481,13 @@ fn format_epoch(secs : Int64) -> (String, String, String) {
   let y = if m <= 2 { y + 1 } else { y }
   let pad = fn(n : Int) { if n < 10 { "0\{n}" } else { n.to_string() } }
   let date = "\{y}-\{pad(m)}-\{pad(d)}"
-  let time = "\{pad(rem / 3600)}:\{pad(rem % 3600 / 60)}:\{pad(rem % 60)} UTC"
+  let zone = if offset == 0 {
+    "UTC"
+  } else {
+    let a = offset.abs() / 60
+    "\{if offset < 0 { "-" } else { "+" }}\{pad(a / 60)}\{pad(a % 60)}"
+  }
+  let time = "\{pad(rem / 3600)}:\{pad(rem % 3600 / 60)}:\{pad(rem % 60)} \{zone}"
   (date, y.to_string(), time)
 }
 
