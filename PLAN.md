@@ -193,6 +193,19 @@ parser async would slow it and infect every API. Instead:
   async-runtime cost.)
 * Tests pass on native, wasm-gc and js.
 
+### 2026-09-26 (golden harness hardening)
+* Replay compares log messages (severity, text, source location) as a third category; the harvester
+  records only messages emitted while a document is created/parsed/converted, plus the logger level
+  (it gates `info?`/`debug?` messages; replayed with `Logger::recording`).
+* Machine independence: harvested paths use `$ROOT`/`$TMPDIR`/`$HOME` placeholders; replay uses a fixed
+  fake home and never reads `$HOME`. Each record gets its own VFS overlay and fresh process state.
+* Known failures are keyed per record (`<KIND> <test>@<record>[.<conversion>]`); malformed records are
+  errors; `tests/golden/record_counts.txt` guards against golden files losing records.
+* Harvest fails when an upstream test fails; installs tilt/haml/slim/erubi/open-uri-cached so
+  converter_test and invoker_test run completely (invoker records now replay at document level).
+  options_test and helpers_test create no documents, so they have no records.
+* Parity: AST 2584/2693, output 1753/1875, messages 2615/2691; 0 unexpected failures.
+
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
 2. Server-side syntax highlighting adapter interface is in place; a Rouge-compatible lexer set is out of

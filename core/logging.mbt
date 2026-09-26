@@ -60,6 +60,7 @@ pub struct Logger {
   mut max_severity : Severity?
   priv sink : (LogMessage) -> Unit
   priv record_all : Bool
+  priv report_all : Bool
 }
 
 ///|
@@ -68,13 +69,19 @@ pub fn Logger::new(
   sink : (LogMessage) -> Unit,
   level? : Severity = Warn,
 ) -> Logger {
-  { level, max_severity: None, sink, record_all: false, }
+  { level, max_severity: None, sink, record_all: false, report_all: false, }
 }
 
 ///|
 /// A logger that discards messages but tracks the maximum severity.
 pub fn Logger::null() -> Logger {
-  { level: Unknown, max_severity: None, sink: _ => (), record_all: false, }
+  {
+    level: Unknown,
+    max_severity: None,
+    sink: _ => (),
+    record_all: false,
+    report_all: false,
+  }
 }
 
 ///|
@@ -88,6 +95,24 @@ pub fn Logger::memory(messages : Array[LogMessage]) -> Logger {
     max_severity: None,
     sink: m => messages.push(m),
     record_all: true,
+    report_all: true,
+  }
+}
+
+///|
+/// A logger that records every message into `messages` (whatever its
+/// severity, like a hook on Ruby's `Logger#add`) while `is_debug`/`is_info`
+/// answer according to `level`, as for a Ruby logger with that level.
+pub fn Logger::recording(
+  messages : Array[LogMessage],
+  level~ : Severity,
+) -> Logger {
+  {
+    level,
+    max_severity: None,
+    sink: m => messages.push(m),
+    record_all: true,
+    report_all: false,
   }
 }
 
@@ -116,12 +141,12 @@ pub fn Logger::set_level(self : Logger, level : Severity) -> Unit {
 
 ///|
 pub fn Logger::is_debug(self : Logger) -> Bool {
-  self.record_all || self.level.to_int() <= 0
+  self.report_all || self.level.to_int() <= 0
 }
 
 ///|
 pub fn Logger::is_info(self : Logger) -> Bool {
-  self.record_all || self.level.to_int() <= 1
+  self.report_all || self.level.to_int() <= 1
 }
 
 ///|
