@@ -1,0 +1,2 @@
+{"test":"Minitest::Test::TestPathResolver::TestSystemPaths#test_should_resolve_relative_path_relative_to_base_dir_in_unsafe_mode","source":null,"options":{"base_dir":"$ROOT/test/fixtures/base","safe":0},"source_lines":[]}
+{"test":"Minitest::Test::TestPathResolver::TestSystemPaths#test_should_resolve_absolute_path_as_absolute_in_unsafe_mode","source":null,"options":{"base_dir":"$ROOT/test/fixtures/base","safe":0},"source_lines":[]}
