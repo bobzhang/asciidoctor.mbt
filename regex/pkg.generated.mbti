@@ -6,15 +6,20 @@ import {
 }
 
 // Values
-pub fn compile(String, flags? : String) -> Regex raise RegexError
+pub fn compile(String, flags? : String, step_limit? : Int) -> Regex raise RegexError
 
-pub fn re(String, flags? : String) -> Regex
+pub fn re(String, flags? : String, step_limit? : Int) -> Regex
 
 // Errors
 pub suberror RegexError {
   RegexError(pattern~ : String, pos~ : Int, message~ : String)
 } derive(@debug.Debug)
 pub fn RegexError::to_repr(Self) -> @debug.Repr
+
+pub suberror RegexTimeout {
+  RegexTimeout(pattern~ : String, limit~ : Int)
+} derive(@debug.Debug)
+pub fn RegexTimeout::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub struct MatchData {
@@ -50,6 +55,11 @@ pub fn Regex::replace_first(Self, String, (MatchData) -> String) -> String
 pub fn Regex::split(Self, String, limit? : Int) -> Array[String]
 pub fn Regex::sub(Self, String, String) -> String
 pub fn Regex::to_string(Self) -> String
+pub fn Regex::try_find(Self, String, start? : Int) -> MatchData? raise RegexTimeout
+pub fn Regex::try_find_all(Self, String) -> Array[MatchData] raise RegexTimeout
+pub fn Regex::try_match_at(Self, String, Int) -> MatchData? raise RegexTimeout
+pub fn Regex::try_replace(Self, String, (MatchData) -> String, once? : Bool) -> String raise RegexTimeout
+pub fn Regex::try_split(Self, String, limit? : Int) -> Array[String] raise RegexTimeout
 
 // Type aliases
 

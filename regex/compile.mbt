@@ -7,13 +7,18 @@ priv enum Inst {
   Jmp(Int)
   Save(Int)
   Assert(AssertKind)
-  Backref(Int)
+  Backref(Int, Bool) // group, ignore case?
   Look(Int, Bool, Bool, Int, Int, Bool) // sub index, ahead?, negated?, min width, max width (-1 unbounded), sub writes state?
   Atomic(Int, Bool) // sub index, sub writes state?
   Mark(Int) // regs[r] = pos
   Progress(Int) // fail unless pos > regs[r]
   SubEnd // end of a (sub)program
 }
+
+///|
+/// Upper bound on compiled program size: counted repeats are expanded, so
+/// nested intervals like `(?:a{1000}){1000}` would otherwise exhaust memory.
+const MAX_PROGRAM = 1_000_000
 
 ///|
 priv struct Compiler {
@@ -35,7 +40,7 @@ fn nullable(node : Node) -> Bool {
     Alt(items) => items.iter().any(nullable)
     Group(_, n) | Atomic(n) => nullable(n)
     Repeat(n, min, _, _) => min == 0 || nullable(n)
-    Backref(_) | NamedBackref(_) => true
+    Backref(_, _) | NamedBackref(_, _) | Keep => true
   }
 }
 
@@ -48,10 +53,10 @@ fn writes_state(node : Node) -> Bool {
     | Char(_)
     | Any(_)
     | Class(_)
-    | Backref(_)
-    | NamedBackref(_) => false
+    | Backref(_, _)
+    | NamedBackref(_, _) => false
     Concat(items) | Alt(items) => items.iter().any(writes_state)
-    Group(Some(_), _) => true
+    Group(Some(_), _) | Keep => true
     Group(None, n) | Atomic(n) | Look(n, _, _) => writes_state(n)
     Repeat(n, _, max, _) => (max < 0 && nullable(n)) || writes_state(n)
   }
@@ -61,7 +66,7 @@ fn writes_state(node : Node) -> Bool {
 /// Minimum and maximum width in UTF-16 code units (-1 = unbounded).
 fn width(node : Node) -> (Int, Int) {
   match node {
-    Empty | Assert(_) | Look(_, _, _) => (0, 0)
+    Empty | Assert(_) | Look(_, _, _) | Keep => (0, 0)
     Char(cp) => if cp >= 0x10000 { (2, 2) } else { (1, 1) }
     Any(_) | Class(_) => (1, 2)
     Concat(items) => {
@@ -89,12 +94,19 @@ fn width(node : Node) -> (Int, Int) {
       let (a, b) = width(n)
       (a * min, if max < 0 || b < 0 { -1 } else { b * max })
     }
-    Backref(_) | NamedBackref(_) => (0, -1)
+    Backref(_, _) | NamedBackref(_, _) => (0, -1)
   }
 }
 
 ///|
-fn Compiler::emit(self : Compiler, inst : Inst) -> Int {
+fn Compiler::emit(self : Compiler, inst : Inst) -> Int raise RegexError {
+  if self.prog.length() >= MAX_PROGRAM {
+    raise RegexError(
+      pattern=self.pattern,
+      pos=0,
+      message="pattern too large (compiled program exceeds \{MAX_PROGRAM} instructions)",
+    )
+  }
   self.prog.push(inst)
   self.prog.length() - 1
 }
@@ -156,10 +168,11 @@ fn Compiler::compile(self : Compiler, node : Node) -> Unit raise RegexError {
     }
     Group(None, n) => self.compile(n)
     Assert(k) => self.emit(Assert(k)) |> ignore
-    Backref(n) => self.emit(Backref(n)) |> ignore
-    NamedBackref(name) =>
+    Keep => self.emit(Save(0)) |> ignore
+    Backref(n, icase) => self.emit(Backref(n, icase)) |> ignore
+    NamedBackref(name, icase) =>
       match self.names.get(name) {
-        Some(n) => self.emit(Backref(n)) |> ignore
+        Some(n) => self.emit(Backref(n, icase)) |> ignore
         None =>
           raise RegexError(
             pattern=self.pattern,
@@ -180,7 +193,12 @@ fn Compiler::compile(self : Compiler, node : Node) -> Unit raise RegexError {
       self.compile(Atomic(Repeat(n, min, max, Greedy)))
     Repeat(n, min, max, greed) => {
       for _ in 0..<min {
+        let before = self.pc()
         self.compile(n)
+        if self.pc() == before {
+          // `n` emits nothing (e.g. `(?:){100000}`): further copies would too
+          break
+        }
       }
       if max < 0 {
         let loop_pc = self.emit(Split(0, 0))
@@ -256,7 +274,7 @@ fn empty_first() -> FirstSet? {
 /// Returns the possible first code units and whether the node is nullable.
 fn first_info(node : Node) -> (FirstSet?, Bool) {
   match node {
-    Empty | Assert(_) | Look(_, _, _) => (empty_first(), true)
+    Empty | Assert(_) | Look(_, _, _) | Keep => (empty_first(), true)
     Char(cp) => {
       let s = { ascii: FixedArray::make(128, false), non_ascii: cp >= 128, }
       if cp < 128 {
@@ -301,7 +319,7 @@ fn first_info(node : Node) -> (FirstSet?, Bool) {
       let (f, nl) = first_info(n)
       (f, nl || min == 0)
     }
-    Backref(_) | NamedBackref(_) => (FirstSet::all(), true)
+    Backref(_, _) | NamedBackref(_, _) => (FirstSet::all(), true)
   }
 }
 
@@ -354,8 +372,10 @@ fn required_units(node : Node) -> Array[Int] {
       if items.is_empty() {
         return []
       }
-      let first = required_units(items[0])
-      first.filter(u => items.iter().all(it => required_units(it).contains(u)))
+      // compute each branch once (recomputing per unit is exponential in the
+      // nesting depth of alternations)
+      let sets = items.map(required_units)
+      sets[0].filter(u => sets.iter().all(s => s.contains(u)))
     }
     _ => []
   }

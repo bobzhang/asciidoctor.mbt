@@ -1,5 +1,5 @@
 ///|
-/// Backtracking matcher state for one search over one input.
+/// Backtracking matcher state for one search operation over one input.
 priv struct Vm {
   prog : FixedArray[Inst]
   classes : FixedArray[CharClass]
@@ -10,20 +10,29 @@ priv struct Vm {
   regs : FixedArray[Int]
   stack : Array[Int] // triples: (kind, a, b)
   mut search_start : Int
+  // remaining step budget; a step is one branch (Split) or one (sub)program run
+  mut fuel : Int
+  limit : Int
+  mut timed_out : Bool
 }
 
 ///|
 fn Vm::new(re : Regex, input : String) -> Vm {
+  let len = input.length()
+  let limit = re.step_limit_for(len)
   {
     prog: re.prog,
     classes: re.classes,
     sub_starts: re.sub_starts,
     input,
-    len: input.length(),
+    len,
     caps: FixedArray::make(2 * (re.ncaps + 1), -1),
     regs: FixedArray::make(re.nregs, -1),
     stack: [],
     search_start: 0,
+    fuel: limit,
+    limit,
+    timed_out: false,
   }
 }
 
@@ -35,6 +44,18 @@ const KIND_CAP = 1
 
 ///|
 const KIND_REG = 2
+
+///|
+/// Whether `pos` lies between the two code units of a surrogate pair of `s`.
+/// Matches never start or end there: Ruby matches on code points.
+fn splits_pair(s : String, pos : Int) -> Bool {
+  pos > 0 &&
+  pos < s.length() &&
+  s[pos].to_int() >= 0xDC00 &&
+  s[pos].to_int() <= 0xDFFF &&
+  s[pos - 1].to_int() >= 0xD800 &&
+  s[pos - 1].to_int() <= 0xDBFF
+}
 
 ///|
 /// Decodes the code point at `pos`; returns (cp, width). `pos` must be < len.
@@ -77,6 +98,47 @@ fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
       (before != after) == (kind == WordBoundary)
     }
     SearchStart => pos == self.search_start
+  }
+}
+
+///|
+/// Matches the text of capture `[s, e)` at `pos`; returns the end or -1.
+fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
+  let input = self.input
+  let len = self.len
+  let end = if !icase {
+    let l = e - s
+    if pos + l > len {
+      return -1
+    }
+    for i in 0..<l {
+      if input[s + i] != input[pos + i] {
+        return -1
+      }
+    }
+    pos + l
+  } else {
+    let mut i = s
+    let mut j = pos
+    while i < e {
+      if j >= len {
+        return -1
+      }
+      let (a, wa) = self.cp_at(i)
+      let (b, wb) = self.cp_at(j)
+      if !fold_eq(a, b) {
+        return -1
+      }
+      i += wa
+      j += wb
+    }
+    j
+  }
+  // a capture ending in an unpaired lead surrogate must not end mid-pair here
+  if splits_pair(input, end) {
+    -1
+  } else {
+    end
   }
 }
 
@@ -134,7 +196,17 @@ fn Vm::restore(
 /// Executes the program from `pc0` at `pos0`. Returns the end position of the
 /// first successful path, or -1. If `target >= 0`, the program must end exactly
 /// at `target` (used for lookbehind).
+///
+/// Every run and every branch consumes one unit of `fuel`; when it runs out,
+/// `timed_out` is set and -1 is returned all the way up. Recursion (for
+/// lookaround and atomic groups) is bounded by the syntactic nesting depth,
+/// which the parser limits.
 fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
+  self.fuel -= 1
+  if self.fuel < 0 {
+    self.timed_out = true
+    return -1
+  }
   let base = self.stack.length()
   let prog = self.prog
   let input = self.input
@@ -186,6 +258,12 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           ok = false
         }
       Split(a, b) => {
+        self.fuel -= 1
+        if self.fuel < 0 {
+          self.timed_out = true
+          self.stack.truncate(base)
+          return -1
+        }
         self.push(KIND_BRANCH, b, pos)
         pc = a
       }
@@ -201,7 +279,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         } else {
           ok = false
         }
-      Backref(n) => {
+      Backref(n, icase) => {
         let s = if 2 * n + 1 < self.caps.length() {
           self.caps[2 * n]
         } else {
@@ -211,20 +289,12 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         if s < 0 || e < 0 {
           ok = false
         } else {
-          let l = e - s
-          if pos + l > len {
+          let r = self.backref(s, e, pos, icase)
+          if r < 0 {
             ok = false
           } else {
-            let mut i = 0
-            while i < l && input[s + i] == input[pos + i] {
-              i += 1
-            }
-            if i == l {
-              pc += 1
-              pos += l
-            } else {
-              ok = false
-            }
+            pc += 1
+            pos = r
           }
         }
       }
@@ -251,23 +321,30 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           }
           let mut found = false
           let mut start = pos - minw
-          while start >= lowest {
-            let r = if neg {
-              let cs = self.caps.copy()
-              let rs = self.regs.copy()
-              let r = self.run(self.sub_starts[sub], start, pos)
-              self.restore(cs, rs)
-              r
-            } else {
-              self.run_sub(sub, start, pos, writes)
-            }
-            if r >= 0 {
-              found = true
-              break
+          while start >= lowest && !self.timed_out {
+            // candidate starts are code point boundaries only
+            if !splits_pair(input, start) {
+              let r = if neg {
+                let cs = self.caps.copy()
+                let rs = self.regs.copy()
+                let r = self.run(self.sub_starts[sub], start, pos)
+                self.restore(cs, rs)
+                r
+              } else {
+                self.run_sub(sub, start, pos, writes)
+              }
+              if r >= 0 {
+                found = true
+                break
+              }
             }
             start -= 1
           }
           found
+        }
+        if self.timed_out {
+          self.stack.truncate(base)
+          return -1
         }
         if matched != neg {
           pc += 1
@@ -280,6 +357,9 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         if r >= 0 {
           pc += 1
           pos = r
+        } else if self.timed_out {
+          self.stack.truncate(base)
+          return -1
         } else {
           ok = false
         }

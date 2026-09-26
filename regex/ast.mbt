@@ -1,11 +1,27 @@
 ///|
-/// Error raised when a pattern cannot be compiled.
+/// Error raised when a pattern (or a flag string) cannot be compiled.
 pub suberror RegexError {
   RegexError(pattern~ : String, pos~ : Int, message~ : String)
 } derive(Debug)
 
 ///|
 pub extend RegexError with Debug::{to_repr}
+
+///|
+/// Maximum group nesting depth accepted by the parser (Onigmo's limit is 4096;
+/// ours is lower so that the recursive parser/compiler/matcher stay well within
+/// the host stack on every backend).
+const MAX_NESTING = 200
+
+///|
+/// Maximum depth of the syntax tree (groups, alternations, stacked quantifiers).
+/// The compiler and its analyses recurse over the tree; measured stack
+/// exhaustion starts around depth 600 on wasm and 960 on js/wasm-gc.
+const MAX_TREE_DEPTH = 300
+
+///|
+/// Largest repeat count in `{n,m}` (same as Onigmo's ONIG_MAX_REPEAT_NUM).
+const MAX_REPEAT = 100000
 
 ///|
 /// A character-set item. Code points are Unicode scalar values.
@@ -29,7 +45,14 @@ priv enum Prop {
   Digit
   Upper
   Lower
-  Punct
+  Letter // \p{L}
+  UppercaseLetter // \p{Lu}
+  LowercaseLetter // \p{Ll}
+  Punct // \p{Punct}: general category P
+  PosixPunct // [[:punct:]]: P plus the ASCII symbols $+<=>^`|~
+  XDigit
+  Cntrl
+  Ascii
   Any
 }
 
@@ -37,8 +60,19 @@ priv enum Prop {
 priv struct CharClass {
   items : Array[ClassItem]
   negated : Bool
+  // case-insensitive: literal ranges and cased properties match case variants
+  icase : Bool
   // ASCII fast path: bit set for code points 0..127, computed after parsing
   mut ascii : FixedArray[Bool]
+}
+
+///|
+fn CharClass::new(
+  items : Array[ClassItem],
+  negated? : Bool = false,
+  icase? : Bool = false,
+) -> CharClass {
+  { items, negated, icase, ascii: FixedArray::make(0, false), }
 }
 
 ///|
@@ -64,10 +98,11 @@ priv enum Node {
   Group(Int?, Node) // capture index (1-based) or non-capturing
   Repeat(Node, Int, Int, Greed) // min, max (-1 = unbounded)
   Assert(AssertKind)
-  Backref(Int)
-  NamedBackref(String)
+  Backref(Int, Bool) // group, ignore case?
+  NamedBackref(String, Bool) // name, ignore case?
   Look(Node, Bool, Bool) // ahead?, negated?
   Atomic(Node)
+  Keep // \K: the reported match starts here
 }
 
 ///|
@@ -84,6 +119,15 @@ priv struct Parser {
   mut ncaps : Int
   names : Map[String, Int]
   mut dotall : Bool
+  mut icase : Bool
+  mut extended : Bool
+  mut depth : Int
+  // Onigmo: once a pattern has named groups, plain groups do not capture and
+  // numbered backreferences are rejected
+  named_only : Bool
+  mut plain_caps : Bool
+  numbered_refs : Array[(Int, Int)] // (group, source position)
+  lookbehinds : Array[(Node, Int)] // (body, source position)
 }
 
 ///|
@@ -116,31 +160,136 @@ fn Parser::peek_at(self : Parser, off : Int) -> Int {
 }
 
 ///|
-/// Reads one code point (combining surrogate pairs).
-fn Parser::next_cp(self : Parser) -> Int {
+/// Reads one code point (combining surrogate pairs). Unpaired surrogates in
+/// the pattern are rejected, so literals never split a surrogate pair.
+fn Parser::next_cp(self : Parser) -> Int raise RegexError {
   let c = self.src[self.pos].to_int()
-  self.pos += 1
-  if c >= 0xD800 && c <= 0xDBFF && self.pos < self.src.length() {
-    let d = self.src[self.pos].to_int()
+  if c >= 0xD800 && c <= 0xDBFF && self.pos + 1 < self.src.length() {
+    let d = self.src[self.pos + 1].to_int()
     if d >= 0xDC00 && d <= 0xDFFF {
-      self.pos += 1
+      self.pos += 2
       return 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00)
     }
   }
+  if c >= 0xD800 && c <= 0xDFFF {
+    raise self.fail("invalid multibyte character")
+  }
+  self.pos += 1
   c
+}
+
+///|
+/// In extended mode (`x`), skips whitespace and `#` comments between tokens.
+fn Parser::skip_extended(self : Parser) -> Unit {
+  if !self.extended {
+    return
+  }
+  while !self.eof() {
+    let c = self.peek()
+    if c == ' ' || (c >= 0x09 && c <= 0x0D) {
+      self.pos += 1
+    } else if c == '#' {
+      while !self.eof() && self.peek() != '\n' {
+        self.pos += 1
+      }
+    } else {
+      break
+    }
+  }
+}
+
+///|
+/// A literal code point, expanded to its case variants under `i`.
+fn Parser::literal(self : Parser, cp : Int) -> Node {
+  if self.icase && fold_next_of(cp) != cp {
+    let items = [Range(cp, cp)]
+    let mut c = fold_next_of(cp)
+    while c != cp {
+      items.push(Range(c, c))
+      c = fold_next_of(c)
+    }
+    Class(CharClass::new(items))
+  } else {
+    Char(cp)
+  }
 }
 
 ///|
 fn parse_pattern(
   src : String,
   dotall : Bool,
+  icase : Bool,
+  extended : Bool,
 ) -> (Node, Int, Map[String, Int]) raise RegexError {
-  let p = { src, pos: 0, ncaps: 0, names: {}, dotall, }
-  let node = p.parse_alt()
-  if !p.eof() {
-    raise p.fail("unmatched ')'")
+  let run = fn(named_only : Bool) -> (Parser, Node) raise RegexError {
+    let p : Parser = {
+      src,
+      pos: 0,
+      ncaps: 0,
+      names: {},
+      dotall,
+      icase,
+      extended,
+      depth: 0,
+      named_only,
+      plain_caps: false,
+      numbered_refs: [],
+      lookbehinds: [],
+    }
+    let node = p.parse_alt()
+    if !p.eof() {
+      raise p.fail("unmatched close parenthesis")
+    }
+    (p, node)
+  }
+  let (p, node) = {
+    let (p, node) = run(false)
+    if !p.names.is_empty() && (p.plain_caps || !p.numbered_refs.is_empty()) {
+      run(true)
+    } else {
+      (p, node)
+    }
+  }
+  for r in p.numbered_refs {
+    let (n, pos) = r
+    if n > p.ncaps {
+      raise RegexError(pattern=src, pos~, message="invalid backref number/name")
+    }
+  }
+  check_tree_depth(src, node)
+  // Onigmo requires bounded look-behind; unbounded ones are rejected
+  for lb in p.lookbehinds {
+    let (n, pos) = lb
+    if width(n).1 < 0 {
+      raise RegexError(
+        pattern=src,
+        pos~,
+        message="invalid pattern in look-behind",
+      )
+    }
   }
   (node, p.ncaps, p.names)
+}
+
+///|
+/// Rejects syntax trees deeper than `MAX_TREE_DEPTH` (iteratively, so that the
+/// check itself cannot exhaust the stack).
+fn check_tree_depth(src : String, node : Node) -> Unit raise RegexError {
+  let stack = [(node, 1)]
+  while stack.pop() is Some((n, d)) {
+    if d > MAX_TREE_DEPTH {
+      raise RegexError(pattern=src, pos=0, message="parse depth limit over")
+    }
+    match n {
+      Concat(items) | Alt(items) =>
+        for it in items {
+          stack.push((it, d + 1))
+        }
+      Group(_, x) | Atomic(x) | Look(x, _, _) | Repeat(x, _, _, _) =>
+        stack.push((x, d + 1))
+      _ => ()
+    }
+  }
 }
 
 ///|
@@ -160,13 +309,16 @@ fn Parser::parse_alt(self : Parser) -> Node raise RegexError {
 ///|
 fn Parser::parse_concat(self : Parser) -> Node raise RegexError {
   let items : Array[Node] = []
-  while !self.eof() {
+  while true {
+    self.skip_extended()
+    if self.eof() {
+      break
+    }
     let c = self.peek()
     if c == '|' || c == ')' {
       break
     }
     let atom = self.parse_atom()
-    guard atom is Some(atom) else { continue }
     items.push(self.parse_quantifiers(atom))
   }
   match items.length() {
@@ -178,10 +330,18 @@ fn Parser::parse_concat(self : Parser) -> Node raise RegexError {
 
 ///|
 /// Parses quantifiers following an atom (possibly several, e.g. `a{2}?`).
-fn Parser::parse_quantifiers(self : Parser, atom : Node) -> Node {
+fn Parser::parse_quantifiers(
+  self : Parser,
+  atom : Node,
+) -> Node raise RegexError {
   let mut node = atom
-  while !self.eof() {
+  while true {
+    self.skip_extended()
+    if self.eof() {
+      break
+    }
     let c = self.peek()
+    let qstart = self.pos
     let (min, max) = if c == '*' {
       self.pos += 1
       (0, -1)
@@ -199,7 +359,11 @@ fn Parser::parse_quantifiers(self : Parser, atom : Node) -> Node {
     } else {
       break
     }
-    let greed = if self.peek() == '?' {
+    // Ruby syntax: a fixed interval `{n}` is greedy only, so `x{2}?` is
+    // `(?:x{2})?` (the `?` is left for the next iteration)
+    let fixed = c == '{' &&
+      !self.src.unsafe_substring(start=qstart, end=self.pos).contains(",")
+    let greed = if self.peek() == '?' && !fixed {
       self.pos += 1
       Lazy
     } else if self.peek() == '+' && c != '{' {
@@ -208,7 +372,7 @@ fn Parser::parse_quantifiers(self : Parser, atom : Node) -> Node {
     } else {
       Greedy
     }
-    if node is (Assert(_) | Look(_, _, _)) {
+    if node is (Assert(_) | Look(_, _, _) | Keep) {
       // Onigmo allows quantified anchors; treat `x?`-like as optional.
       node = if min == 0 { Empty } else { node }
       continue
@@ -222,14 +386,17 @@ fn Parser::parse_quantifiers(self : Parser, atom : Node) -> Node {
 /// Tries to parse `{n}`, `{n,}`, `{,m}` or `{n,m}` at the current position.
 /// Returns None (without consuming) if it is not a valid interval, in which
 /// case Ruby treats `{` as a literal.
-fn Parser::try_interval(self : Parser) -> (Int, Int)? {
+fn Parser::try_interval(self : Parser) -> (Int, Int)? raise RegexError {
   let save = self.pos
   self.pos += 1
-  let read_int = fn() -> Int? {
+  let read_int = fn() -> Int? raise RegexError {
     let start = self.pos
     let mut n = 0
     while self.peek() >= '0' && self.peek() <= '9' {
       n = n * 10 + (self.peek() - '0')
+      if n > MAX_REPEAT {
+        raise self.fail("too big number for repeat range")
+      }
       self.pos += 1
     }
     if self.pos == start {
@@ -252,7 +419,13 @@ fn Parser::try_interval(self : Parser) -> (Int, Int)? {
     let hi = read_int()
     if self.peek() == '}' && (lo is Some(_) || hi is Some(_)) {
       self.pos += 1
-      Some((lo.unwrap_or(0), hi.unwrap_or(-1)))
+      let lo = lo.unwrap_or(0)
+      match hi {
+        Some(h) if h < lo =>
+          raise self.fail("upper is smaller than lower in repeat range")
+        _ => ()
+      }
+      Some((lo, hi.unwrap_or(-1)))
     } else {
       None
     }
@@ -266,37 +439,48 @@ fn Parser::try_interval(self : Parser) -> (Int, Int)? {
 }
 
 ///|
-fn Parser::parse_atom(self : Parser) -> Node? raise RegexError {
+fn Parser::parse_atom(self : Parser) -> Node raise RegexError {
   let c = self.peek()
   match c {
-    '(' => Some(self.parse_group())
+    '(' => self.parse_group()
     '[' => {
       self.pos += 1
-      Some(Class(self.parse_class()))
+      let cls = self.parse_class()
+      match cls {
+        // Onigmo turns a one-character class into a string, which (unlike a
+        // class) case-folds characters in U+0080..U+00FF too
+        { items: [Range(lo, hi)], negated: false, icase: true, .. } if lo == hi =>
+          self.literal(lo)
+        _ => Class(cls)
+      }
     }
     '.' => {
       self.pos += 1
-      Some(Any(self.dotall))
+      Any(self.dotall)
     }
     '^' => {
       self.pos += 1
-      Some(Assert(BeginLine))
+      Assert(BeginLine)
     }
     '$' => {
       self.pos += 1
-      Some(Assert(EndLine))
+      Assert(EndLine)
     }
-    '\\' => Some(self.parse_escape())
+    '\\' => self.parse_escape()
     '*' | '+' | '?' =>
       raise self.fail("target of repeat operator is not specified")
-    _ => Some(Char(self.next_cp()))
+    _ => self.literal(self.next_cp())
   }
 }
 
 ///|
 fn Parser::parse_group(self : Parser) -> Node raise RegexError {
+  self.depth += 1
+  if self.depth > MAX_NESTING {
+    raise self.fail("parse depth limit over")
+  }
   self.pos += 1 // (
-  if self.peek() == '?' {
+  let node = if self.peek() == '?' {
     self.pos += 1
     let c = self.peek()
     match c {
@@ -318,23 +502,25 @@ fn Parser::parse_group(self : Parser) -> Node raise RegexError {
         self.expect_close()
         Atomic(n)
       }
-      '<' => {
-        let c2 = self.peek_at(1)
-        if c2 == '=' || c2 == '!' {
-          self.pos += 2
-          let n = self.parse_alt()
-          self.expect_close()
-          Look(n, false, c2 == '!')
-        } else {
-          self.pos += 1
-          let name = self.read_name('>')
-          self.ncaps += 1
-          let idx = self.ncaps
-          self.names[name] = idx
-          let n = self.parse_alt()
-          self.expect_close()
-          Group(Some(idx), n)
-        }
+      '<' if self.peek_at(1) == '=' || self.peek_at(1) == '!' => {
+        let start = self.pos - 2
+        let neg = self.peek_at(1) == '!'
+        self.pos += 2
+        let n = self.parse_alt()
+        self.expect_close()
+        // validated once the tree depth is known to be safe
+        self.lookbehinds.push((n, start))
+        Look(n, false, neg)
+      }
+      '<' | '\'' => {
+        self.pos += 1
+        let name = self.read_group_name(if c == '<' { '>' } else { '\'' })
+        self.ncaps += 1
+        let idx = self.ncaps
+        self.names[name] = idx
+        let n = self.parse_alt()
+        self.expect_close()
+        Group(Some(idx), n)
       }
       '#' => {
         // comment group
@@ -346,46 +532,62 @@ fn Parser::parse_group(self : Parser) -> Node raise RegexError {
       }
       _ => self.parse_flag_group()
     }
+  } else if self.named_only {
+    let n = self.parse_alt()
+    self.expect_close()
+    Group(None, n)
   } else {
+    self.plain_caps = true
     self.ncaps += 1
     let idx = self.ncaps
     let n = self.parse_alt()
     self.expect_close()
     Group(Some(idx), n)
   }
+  self.depth -= 1
+  node
 }
 
 ///|
-/// Parses `(?m)`, `(?-m)`, `(?m:...)`; only the `m` (dot-all) flag is supported.
+/// Parses option groups: `(?imx-imx)` applies to the rest of the enclosing
+/// group (including later alternatives, as in Onigmo), `(?imx-imx:...)` to its
+/// body only.
 fn Parser::parse_flag_group(self : Parser) -> Node raise RegexError {
-  let saved = self.dotall
+  let saved_dotall = self.dotall
+  let saved_icase = self.icase
+  let saved_extended = self.extended
+  let restore = fn() {
+    self.dotall = saved_dotall
+    self.icase = saved_icase
+    self.extended = saved_extended
+  }
   let mut on = true
-  while !self.eof() {
+  while true {
     match self.peek() {
-      'm' => {
-        self.dotall = on
-        self.pos += 1
-      }
-      '-' => {
-        on = false
-        self.pos += 1
-      }
+      'm' => self.dotall = on
+      'i' => self.icase = on
+      'x' => self.extended = on
+      '-' if on => on = false
       ':' => {
         self.pos += 1
         let n = self.parse_alt()
         self.expect_close()
-        self.dotall = saved
+        restore()
         return Group(None, n)
       }
       ')' => {
-        // flags apply to the rest of the enclosing group
         self.pos += 1
-        return Empty
+        let n = self.parse_alt()
+        restore()
+        return Group(None, n)
       }
-      _ => raise self.fail("unsupported group option")
+      'a' | 'd' | 'u' => raise self.fail("unsupported group option")
+      -1 => raise self.fail("end pattern in group")
+      _ => raise self.fail("undefined group option")
     }
+    self.pos += 1
   }
-  raise self.fail("end pattern in group")
+  Empty
 }
 
 ///|
@@ -411,7 +613,43 @@ fn Parser::read_name(self : Parser, close : Int) -> String raise RegexError {
 }
 
 ///|
+/// Reads a group name: word characters, not starting with a digit.
+fn Parser::read_group_name(
+  self : Parser,
+  close : Int,
+) -> String raise RegexError {
+  let start = self.pos
+  let name = self.read_name(close)
+  let valid = name != "" &&
+    !(name[0] >= '0' && name[0] <= '9') &&
+    name.iter().all(ch => is_unicode_word(ch.to_int()))
+  if !valid {
+    self.pos = start
+    raise self.fail("invalid group name <\{name}>")
+  }
+  name
+}
+
+///|
+/// `\R`: `(?>\r\n|[\n\v\f\r\u0085  ])`.
+fn linebreak() -> Node {
+  Atomic(
+    Alt([
+      Concat([Char('\r'), Char('\n')]),
+      Class(
+        CharClass::new([
+          Range(0x0A, 0x0D),
+          Range(0x85, 0x85),
+          Range(0x2028, 0x2029),
+        ]),
+      ),
+    ]),
+  )
+}
+
+///|
 fn Parser::parse_escape(self : Parser) -> Node raise RegexError {
+  let start = self.pos
   self.pos += 1 // backslash
   if self.eof() {
     raise self.fail("too short escape sequence")
@@ -442,33 +680,106 @@ fn Parser::parse_escape(self : Parser) -> Node raise RegexError {
       self.pos += 1
       Assert(SearchStart)
     }
+    'K' => {
+      self.pos += 1
+      Keep
+    }
+    'R' => {
+      self.pos += 1
+      linebreak()
+    }
+    'X' => raise self.fail("\\X (extended grapheme cluster) is not supported")
+    'g' => raise self.fail("\\g (subexpression call) is not supported")
     '1'..='9' => {
+      let digits = self.pos
       let mut n = 0
       while self.peek() >= '0' && self.peek() <= '9' {
-        n = n * 10 + (self.peek() - '0')
+        if n <= MAX_REPEAT {
+          n = n * 10 + (self.peek() - '0')
+        }
         self.pos += 1
       }
-      Backref(n)
+      if n <= 9 || n <= self.ncaps {
+        if self.named_only {
+          self.pos = start
+          raise self.fail("numbered backref/call is not allowed. (use name)")
+        }
+        self.numbered_refs.push((n, start))
+        Backref(n, self.icase)
+      } else {
+        // not a group number: an octal escape (or a literal 8/9)
+        self.pos = digits
+        self.literal(self.parse_char_escape())
+      }
     }
     'k' => {
       self.pos += 1
-      if self.peek() != '<' {
-        raise self.fail("invalid backref")
+      let close : Int = match self.peek() {
+        '<' => '>'
+        '\'' => '\''
+        _ => raise self.fail("invalid backref number/name")
       }
       self.pos += 1
-      NamedBackref(self.read_name('>'))
+      let name = self.read_name(close)
+      match parse_int_opt(name) {
+        Some(n) => {
+          let idx = if n < 0 { self.ncaps + n + 1 } else { n }
+          if idx <= 0 || n == 0 {
+            self.pos = start
+            raise self.fail("invalid backref number/name")
+          }
+          if self.named_only {
+            self.pos = start
+            raise self.fail("numbered backref/call is not allowed. (use name)")
+          }
+          self.numbered_refs.push((idx, start))
+          Backref(idx, self.icase)
+        }
+        None => NamedBackref(name, self.icase)
+      }
     }
     _ =>
       match self.parse_class_escape() {
-        Some(item) =>
-          Class({
-            items: [item],
-            negated: false,
-            ascii: FixedArray::make(0, false),
-          })
-        None => Char(self.parse_char_escape())
+        Some(item) => Class(CharClass::new([item], icase=self.icase))
+        None => self.literal(self.parse_char_escape())
       }
   }
+}
+
+///|
+/// Parses `[+-]digits`; None if `s` is not an integer.
+fn parse_int_opt(s : String) -> Int? {
+  if s == "" {
+    return None
+  }
+  let neg = s[0] == '-'
+  let from = if neg || s[0] == '+' { 1 } else { 0 }
+  if from >= s.length() {
+    return None
+  }
+  let mut n = 0
+  for i in from..<s.length() {
+    let d = s[i].to_int() - '0'
+    if d < 0 || d > 9 {
+      return None
+    }
+    if n <= MAX_REPEAT {
+      n = n * 10 + d
+    }
+  }
+  Some(if neg { -n } else { n })
+}
+
+///|
+/// Normalizes a property name like Onigmo: case, spaces, `_` and `-` are ignored.
+fn normalize_prop_name(name : String) -> String {
+  let sb = StringBuilder()
+  for ch in name.to_lower() {
+    if ch != ' ' && ch != '_' && ch != '-' {
+      sb.write_char(ch)
+    }
+  }
+  sb.to_string()
 }
 
 ///|
@@ -498,16 +809,22 @@ fn Parser::parse_class_escape(self : Parser) -> ClassItem? raise RegexError {
         self.pos += 1
       }
       let name = self.read_name('}')
-      let prop = match name.to_lower() {
-        "alpha" | "l" | "letter" => Prop::Alpha
+      let prop = match normalize_prop_name(name) {
+        "alpha" | "alphabetic" => Prop::Alpha
         "alnum" => Alnum
         "word" => Word
         "blank" => Blank
-        "space" => Space
-        "digit" | "nd" => Digit
-        "upper" | "lu" => Upper
-        "lower" | "ll" => Lower
-        "punct" | "p" => Punct
+        "space" | "whitespace" => Space
+        "digit" | "nd" | "decimalnumber" => Digit
+        "upper" | "uppercase" => Upper
+        "lower" | "lowercase" => Lower
+        "l" | "letter" => Letter
+        "lu" | "uppercaseletter" => UppercaseLetter
+        "ll" | "lowercaseletter" => LowercaseLetter
+        "punct" | "p" | "punctuation" => Punct
+        "xdigit" | "asciihexdigit" => XDigit
+        "cntrl" | "cc" | "control" => Cntrl
+        "ascii" => Ascii
         "any" => Any
         _ => raise self.fail("invalid character property name {\{name}}")
       }
@@ -517,6 +834,46 @@ fn Parser::parse_class_escape(self : Parser) -> ClassItem? raise RegexError {
   }
   self.pos += 1
   Some(item)
+}
+
+///|
+/// Whether the escape at `self.pos` (just after a backslash) denotes a set.
+fn Parser::at_class_escape(self : Parser) -> Bool {
+  let c = self.peek()
+  c == 'd' ||
+  c == 'D' ||
+  c == 's' ||
+  c == 'S' ||
+  c == 'w' ||
+  c == 'W' ||
+  c == 'h' ||
+  c == 'H' ||
+  c == 'p' ||
+  c == 'P'
+}
+
+///|
+fn Parser::check_scalar(self : Parser, cp : Int) -> Int raise RegexError {
+  if cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF) {
+    raise self.fail("invalid Unicode range")
+  }
+  cp
+}
+
+///|
+/// Reads up to `max` octal digits (at least `min`).
+fn Parser::read_octal(self : Parser, max : Int) -> Int raise RegexError {
+  let mut n = 0
+  let mut i = 0
+  while i < max && self.peek() >= '0' && self.peek() <= '7' {
+    n = n * 8 + (self.peek() - '0')
+    self.pos += 1
+    i += 1
+  }
+  if n >= 0x80 {
+    raise self.fail("invalid multibyte escape")
+  }
+  n
 }
 
 ///|
@@ -531,58 +888,59 @@ fn Parser::parse_char_escape(self : Parser) -> Int raise RegexError {
     'v' => 0x0B
     'a' => 0x07
     'e' => 0x1B
-    '0' => {
-      // octal \0, \0nn
-      let mut n = 0
-      let mut i = 0
-      while i < 2 && self.peek() >= '0' && self.peek() <= '7' {
-        n = n * 8 + (self.peek() - '0')
-        self.pos += 1
-        i += 1
-      }
-      n
+    '0' => self.read_octal(2)
+    '1'..='7' => {
+      self.pos -= 1
+      self.read_octal(3)
     }
-    'x' => self.read_hex(2, braces=true)
-    'u' => self.read_hex(4, braces=true)
+    'x' => self.read_hex_bytes()
+    'u' => self.read_unicode()
+    'c' => self.read_control()
+    'C' => {
+      if self.peek() != '-' {
+        raise self.fail("invalid control-code syntax")
+      }
+      self.pos += 1
+      self.read_control()
+    }
+    'M' => raise self.fail("too short escaped multibyte character")
     _ => c
   }
 }
 
 ///|
-fn Parser::read_hex(
-  self : Parser,
-  digits : Int,
-  braces~ : Bool,
-) -> Int raise RegexError {
-  let hex = fn(c : Int) -> Int {
-    if c >= '0' && c <= '9' {
-      c - '0'
-    } else if c >= 'a' && c <= 'f' {
-      c - 'a' + 10
-    } else if c >= 'A' && c <= 'F' {
-      c - 'A' + 10
-    } else {
-      -1
-    }
+/// `\cX` / `\C-X`: the control character for X.
+fn Parser::read_control(self : Parser) -> Int raise RegexError {
+  if self.eof() {
+    raise self.fail("too short control escape")
   }
-  if braces && self.peek() == '{' {
-    self.pos += 1
-    let mut n = 0
-    while self.peek() != '}' {
-      let d = hex(self.peek())
-      if d < 0 {
-        raise self.fail("invalid Unicode escape")
-      }
-      n = n * 16 + d
-      self.pos += 1
-    }
-    self.pos += 1
-    return n
+  let c = self.next_cp()
+  if c >= 128 {
+    raise self.fail("invalid control-code syntax")
   }
+  c & 0x9F
+}
+
+///|
+fn hex_digit(c : Int) -> Int {
+  if c >= '0' && c <= '9' {
+    c - '0'
+  } else if c >= 'a' && c <= 'f' {
+    c - 'a' + 10
+  } else if c >= 'A' && c <= 'F' {
+    c - 'A' + 10
+  } else {
+    -1
+  }
+}
+
+///|
+/// Reads the 1-2 hex digits of a `\x` escape.
+fn Parser::read_hex_byte(self : Parser) -> Int raise RegexError {
   let mut n = 0
   let mut i = 0
-  while i < digits && hex(self.peek()) >= 0 {
-    n = n * 16 + hex(self.peek())
+  while i < 2 && hex_digit(self.peek()) >= 0 {
+    n = n * 16 + hex_digit(self.peek())
     self.pos += 1
     i += 1
   }
@@ -593,8 +951,79 @@ fn Parser::read_hex(
 }
 
 ///|
+/// `\xHH`; bytes >= 0x80 must form a UTF-8 sequence of `\xHH` escapes.
+fn Parser::read_hex_bytes(self : Parser) -> Int raise RegexError {
+  let b0 = self.read_hex_byte()
+  if b0 < 0x80 {
+    return b0
+  }
+  let (extra, init) = if b0 >= 0xC2 && b0 <= 0xDF {
+    (1, b0 & 0x1F)
+  } else if b0 >= 0xE0 && b0 <= 0xEF {
+    (2, b0 & 0x0F)
+  } else if b0 >= 0xF0 && b0 <= 0xF4 {
+    (3, b0 & 0x07)
+  } else {
+    raise self.fail("invalid multibyte escape")
+  }
+  let mut cp = init
+  for _ in 0..<extra {
+    if self.peek() != '\\' || self.peek_at(1) != 'x' {
+      raise self.fail("too short multibyte code string")
+    }
+    self.pos += 2
+    let b = self.read_hex_byte()
+    if b < 0x80 || b > 0xBF {
+      raise self.fail("invalid multibyte escape")
+    }
+    cp = (cp << 6) | (b & 0x3F)
+  }
+  let min = if extra == 1 { 0x80 } else if extra == 2 { 0x800 } else { 0x10000 }
+  if cp < min {
+    raise self.fail("invalid multibyte escape")
+  }
+  self.check_scalar(cp)
+}
+
+///|
+/// `\uHHHH` or `\u{H...}` (a single code point).
+fn Parser::read_unicode(self : Parser) -> Int raise RegexError {
+  if self.peek() == '{' {
+    self.pos += 1
+    let mut n = 0
+    let mut digits = 0
+    while hex_digit(self.peek()) >= 0 {
+      if n <= 0x10FFFF {
+        n = n * 16 + hex_digit(self.peek())
+      }
+      self.pos += 1
+      digits += 1
+    }
+    if self.peek() != '}' || digits == 0 {
+      raise self.fail("invalid Unicode escape")
+    }
+    self.pos += 1
+    return self.check_scalar(n)
+  }
+  let mut n = 0
+  for _ in 0..<4 {
+    let d = hex_digit(self.peek())
+    if d < 0 {
+      raise self.fail("invalid Unicode escape")
+    }
+    n = n * 16 + d
+    self.pos += 1
+  }
+  self.check_scalar(n)
+}
+
+///|
 /// Parses a bracket expression; `self.pos` is just after `[`.
 fn Parser::parse_class(self : Parser) -> CharClass raise RegexError {
+  self.depth += 1
+  if self.depth > MAX_NESTING {
+    raise self.fail("parse depth limit over")
+  }
   let mut negated = false
   if self.peek() == '^' {
     negated = true
@@ -635,7 +1064,10 @@ fn Parser::parse_class(self : Parser) -> CharClass raise RegexError {
           "digit" => Digit
           "upper" => Upper
           "lower" => Lower
-          "punct" => Punct
+          "punct" => PosixPunct
+          "xdigit" => XDigit
+          "cntrl" => Cntrl
+          "ascii" => Ascii
           _ => raise self.fail("invalid POSIX bracket type")
         }
         items.push(Prop(prop, neg))
@@ -651,6 +1083,9 @@ fn Parser::parse_class(self : Parser) -> CharClass raise RegexError {
     // single char or escape
     let lo = if c == '\\' {
       self.pos += 1
+      if self.eof() {
+        raise self.fail("premature end of char-class")
+      }
       match self.parse_class_escape() {
         Some(item) => {
           items.push(item)
@@ -672,7 +1107,12 @@ fn Parser::parse_class(self : Parser) -> CharClass raise RegexError {
       self.pos += 1
       let hi = if self.peek() == '\\' {
         self.pos += 1
+        if self.at_class_escape() {
+          raise self.fail("char-class value at end of range")
+        }
         self.parse_char_escape()
+      } else if self.peek() == '[' {
+        raise self.fail("char-class value at end of range")
       } else {
         self.next_cp()
       }
@@ -684,6 +1124,6 @@ fn Parser::parse_class(self : Parser) -> CharClass raise RegexError {
       items.push(Range(lo, lo))
     }
   }
-  let cls = { items, negated, ascii: FixedArray::make(0, false), }
-  cls
+  self.depth -= 1
+  CharClass::new(items, negated~, icase=self.icase)
 }
