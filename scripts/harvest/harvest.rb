@@ -24,6 +24,7 @@ $LOAD_PATH.unshift File.join(HARVEST_ROOT, 'lib')
 require 'asciidoctor'
 require 'asciidoctor/extensions'
 require 'minitest'
+require_relative 'pygments_path'
 
 module Harvest
   OUT = File.open(ENV.fetch('HARVEST_OUT'), 'w')
@@ -232,7 +233,8 @@ module Harvest
 
   module LoggerHook
     def add severity, message = nil, progname = nil, &block
-      if (rec = Harvest.current.last)
+      # ignore plain loggers other than Asciidoctor's (e.g. pygments.rb's)
+      if (rec = Harvest.current.last) && !(instance_of?(::Logger) && !equal?(Asciidoctor::LoggerManager.logger))
         msg = message || (block ? block.call : progname)
         entry = { 'severity' => (severity || ::Logger::Severity::UNKNOWN) }
         if msg.respond_to?(:[]) && msg.respond_to?(:key?) && !(::String === msg)

@@ -21,6 +21,6 @@
 216	tests/golden/attributes.jsonl
 104	tests/golden/extensions.jsonl
 57	tests/golden/paragraphs.jsonl
-419	tests/golden/substitutions.jsonl
+420	tests/golden/substitutions.jsonl
 3	tests/golden/attribute_list.jsonl
-73	tests/golden/syntax_highlighter.jsonl
+83	tests/golden/syntax_highlighter.jsonl

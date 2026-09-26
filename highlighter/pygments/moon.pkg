@@ -1,0 +1,14 @@
+import {
+  "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor/regex",
+  "bobzhang/asciidoctor/internal/rb",
+  "bobzhang/pygments" @py,
+  "bobzhang/pygments/lexers" @py_lexers,
+  "bobzhang/pygments/styles" @py_styles,
+}
+
+import {
+  "bobzhang/asciidoctor",
+} for "test"
+
+warnings = "-implicit_impl_as_method"

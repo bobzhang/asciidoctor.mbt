@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/highlighter/pygments"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn adapter(name? : String) -> &@core.SyntaxHighlighter
+
+pub fn read_stylesheet(String?) -> String
+
+pub fn register() -> Unit
+
+pub fn stylesheet_basename(String?) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

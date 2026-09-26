@@ -4,10 +4,15 @@
 // Usage: moon run --target native scripts/corpus.mbtx -- [options] [DIR...]
 //   -b BACKEND     html5, docbook5 or manpage (repeatable; default: all three)
 //   --standalone   compare standalone documents instead of embedded output
+//   --pygments     highlight source blocks with Pygments (-a
+//                  source-highlighter=pygments; Ruby runs pygments.rb from
+//                  .repos/gems with Python Pygments 2.21, see harvest.mbtx)
+//   -a ATTR        pass an attribute to both sides (repeatable)
 //   -v             print the name of each differing file
 // Differences listed in tests/corpus_known_diffs.txt ("BACKEND<TAB>PATH",
-// paths relative to the repository root) are tolerated; any other difference
-// makes the script fail.
+// where BACKEND is suffixed with "+pygments" in Pygments mode; paths relative
+// to the repository root) are tolerated; any other difference makes the
+// script fail.
 // Without DIR, every corpus found under .repos/ is used.
 import {
   "moonbitlang/async@0.22.4",
@@ -44,15 +49,20 @@ fn dirname(path : String) -> String {
 }
 
 ///|
-async fn run_one(cmd : String, args : Array[String], cwd : String) -> (Int, String, String) {
-  let (code, out, err) = @process.collect_output(
-    cmd,
-    args,
-    cwd~,
-    extra_env={ "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" },
-  )
+async fn run_one(
+  cmd : String,
+  args : Array[String],
+  cwd : String,
+  env : Map[String, String],
+) -> (Int, String, String) {
+  let (code, out, err) = @process.collect_output(cmd, args, cwd~, extra_env=env)
   (code, out.text(), err.text())
 }
+
+///|
+/// The Python Pygments release bobzhang/pygments ports, which pygments.rb
+/// runs for the Ruby side with --pygments (installed by scripts/harvest.mbtx).
+let oracle_pygments : String = ".repos/python/pygments-2.21.0"
 
 ///|
 async fn main {
@@ -60,6 +70,8 @@ async fn main {
   let backends = []
   let dirs = []
   let mut standalone = false
+  let mut pygments = false
+  let attrs = []
   let mut verbose = false
   let mut i = 1
   while i < args.length() {
@@ -69,6 +81,11 @@ async fn main {
         backends.push(args[i])
       }
       "--standalone" => standalone = true
+      "--pygments" => pygments = true
+      "-a" => {
+        i += 1
+        attrs.push(args[i])
+      }
       "-v" => verbose = true
       "--" => ()
       a => dirs.push(a)
@@ -93,6 +110,29 @@ async fn main {
   let bin = "\{root}/_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe"
   let ruby_lib = "\{root}/.repos/asciidoctor/lib"
   let ruby_bin = "\{root}/.repos/asciidoctor/bin/asciidoctor"
+  let env = { "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" }
+  let ruby_env = env.copy()
+  let ruby_args = ["-I", ruby_lib]
+  let attr_args = []
+  for a in attrs {
+    attr_args.push_iter(["-a", a].iter())
+  }
+  if pygments {
+    // pygments.rb (in .repos/gems) running Python Pygments 2.21
+    if !(@fs.exists("\{root}/\{oracle_pygments}/pygments") catch { _ => false }) {
+      fail(
+        "\{oracle_pygments} is missing: run scripts/harvest.mbtx, which installs pygments.rb and Pygments",
+      )
+    }
+    let (_, gempath, _) = @process.collect_output("gem", ["env", "gempath"])
+    ruby_env["GEM_PATH"] = "\{root}/.repos/gems:\{gempath.text().trim()}"
+    ruby_env["ORACLE_PYGMENTS_PATH"] = "\{root}/\{oracle_pygments}"
+    ruby_args.push_iter(["-r", "\{root}/scripts/harvest/pygments_path.rb"].iter())
+    attr_args.push_iter(["-a", "source-highlighter=pygments"].iter())
+  }
+  ruby_args.push(ruby_bin)
+  // the label of the configuration in tests/corpus_known_diffs.txt
+  let mode = if pygments { "+pygments" } else { "" }
   let known : Set[String] = Set([])
   let known_text = @fs.read_file("tests/corpus_known_diffs.txt").text() catch {
     _ => ""
@@ -106,7 +146,9 @@ async fn main {
   for backend in backends {
     for dir in dirs {
       let files = []
-      collect_adoc(@fs.realpath(dir), files)
+      // report paths under DIR as given (.repos may be a symlink in a worktree)
+      let real_dir = @fs.realpath(dir)
+      collect_adoc(real_dir, files)
       let mut same = 0
       let diffs = []
       // convert files concurrently in small batches
@@ -118,10 +160,10 @@ async fn main {
         @async.with_task_group(group => {
           for f in files[start:end] {
             group.spawn_bg(() => {
-              let common = ["-S", "safe", "-b", backend, "-o", "-"]
+              let common = ["-S", "safe", "-b", backend, "-o", "-", ..attr_args]
               let opts = if standalone { common } else { common + ["-s"] }
-              let rb = run_one("ruby", ["-I", ruby_lib, ruby_bin, ..opts, f], dirname(f))
-              let mbt = run_one(bin, [..opts, f], dirname(f))
+              let rb = run_one("ruby", [..ruby_args, ..opts, f], dirname(f), ruby_env)
+              let mbt = run_one(bin, [..opts, f], dirname(f), env)
               results.push((f, rb == mbt))
             })
           }
@@ -130,16 +172,16 @@ async fn main {
           if r.1 {
             same += 1
           } else {
-            diffs.push(relative(root, r.0))
+            diffs.push(relative(root, dir + r.0.unsafe_substring(start=real_dir.length(), end=r.0.length())))
           }
         }
         start = end
       }
-      println("\{backend}\t\{dir}\tidentical: \{same} / \{files.length()}")
+      println("\{backend}\{mode}\t\{dir}\tidentical: \{same} / \{files.length()}")
       for d in diffs {
-        let is_known = known.contains("\{backend}\t\{d}")
+        let is_known = known.contains("\{backend}\{mode}\t\{d}")
         if !is_known {
-          unexpected.push("\{backend}\t\{d}")
+          unexpected.push("\{backend}\{mode}\t\{d}")
         }
         if verbose || !is_known {
           println("  DIFF \{d}\{if is_known { " (known)" } else { "" }}")

@@ -14,4 +14,5 @@ description = "A port of Asciidoctor (AsciiDoc processor) to MoonBit"
 
 import {
   "moonbitlang/async@0.22.4",
+  "bobzhang/pygments@0.1.1",
 }

@@ -1,6 +1,7 @@
 // Regenerates the golden fixtures in tests/golden/ by running the upstream
 // Ruby test suite with scripts/harvest/harvest.rb loaded.
-// Requires Ruby with minitest and nokogiri; installs rouge/coderay/asciimath
+// Requires Ruby with minitest and nokogiri (and python3 for pygments.rb);
+// installs rouge/coderay/asciimath, pygments.rb
 // and the template engines used by converter_test.rb (tilt/haml/slim/erubi)
 // into .repos/gems on first use.
 //
@@ -30,6 +31,71 @@ let gems : Array[(String, String)] = [
 ]
 
 ///|
+/// pygments.rb for the Pygments tests (they only run when PYGMENTS_VERSION is
+/// set). 5.0.0 is the latest release; it vendors Python Pygments 2.20.0 and
+/// runs `python3` (>= 3.9). Installed with --force because its gemspec asks
+/// for Ruby >= 2.7 while it works on the Ruby 2.6 that macOS ships.
+let pygments_rb_version : String = "5.0.0"
+
+///|
+/// The Python Pygments release bobzhang/pygments ports. It is installed from
+/// PyPI into .repos/python and used instead of the vendored copy (see
+/// scripts/harvest/pygments_path.rb), so the oracle runs exactly the ported
+/// release (2.21 renders quotes literally and changed the monokai colors).
+let python_pygments_version : String = "2.21.0"
+
+///|
+/// Installs Python Pygments for pygments.rb if needed and returns the
+/// directory to use as PYGMENTS_PATH.
+async fn install_python_pygments(root : String) -> String {
+  let dir = "\{root}/.repos/python/pygments-\{python_pygments_version}"
+  if !(@fs.exists("\{dir}/pygments") catch { _ => false }) {
+    let code = @process.run("python3", [
+      "-m", "pip", "install", "--no-deps", "--target", dir, "pygments==\{python_pygments_version}",
+    ])
+    if code != 0 {
+      fail("pip install failed: pygments==\{python_pygments_version}")
+    }
+  }
+  dir
+}
+
+///|
+/// Upstream tests that fail with current Pygments releases because they
+/// assert the output of older ones (whitespace tokens, the table layout of
+/// line numbers, colors of the default style, escaped quotes). The documents
+/// are recorded all the same; Ruby's output is the oracle.
+let known_upstream_failures : Array[String] = [
+  "TestPygments#test_should_not_hardcode_inline_styles_on_lineno_div_and_pre_elements_when_linenums_are_enabled_in_table_mode",
+  "TestPygments#test_should_restore_callout_marks_to_correct_lines_if_table_line_numbering_is_enabled",
+  "TestPygments#test_should_gracefully_fallback_to_default_style_if_specified_style_not_recognized",
+  "TestPygments#test_should_restore_isolated_callout_mark_on_last_line_of_source",
+  "TestPygments#test_should_line_highlight_specified_lines",
+]
+
+///|
+/// The failed or errored tests of a minitest run (`Class#test_name`, without
+/// the enclosing modules).
+fn failed_tests(output : String) -> Array[String] {
+  let lines = output.split("\n").map(l => l.to_owned()).collect()
+  let names = []
+  for i, line in lines {
+    if (line.has_suffix(") Failure:") || line.has_suffix(") Error:")) &&
+      i + 1 < lines.length() {
+      let next = lines[i + 1]
+      let end = next.find(" [").unwrap_or(next.length())
+      let full = next.unsafe_substring(start=0, end~)
+      let start = match full.rev_find("::") {
+        Some(j) => j + 2
+        None => 0
+      }
+      names.push(full.unsafe_substring(start~, end=full.length()))
+    }
+  }
+  names
+}
+
+///|
 async fn main {
   let root = @fs.realpath(".")
   let up = @fs.realpath("\{root}/.repos/asciidoctor")
@@ -40,6 +106,8 @@ async fn main {
     "GEM_PATH": "\{gem_home}:\{gempath.text().trim().to_owned()}",
     "SOURCE_DATE_EPOCH": "1700000000",
     "TZ": "UTC",
+    "PYGMENTS_VERSION": pygments_rb_version,
+    "ORACLE_PYGMENTS_PATH": install_python_pygments(root),
   }
   let installed = @fs.readdir("\{gem_home}/gems") catch { _ => [] }
   let missing = gems
@@ -53,6 +121,18 @@ async fn main {
     )
     if code != 0 {
       fail("gem install failed: \{missing.join(" ")}")
+    }
+  }
+  if !installed.contains("pygments.rb-\{pygments_rb_version}") {
+    let code = @process.run(
+      "gem",
+      [
+        "install", "--no-document", "--force", "pygments.rb", "-v", pygments_rb_version,
+      ],
+      extra_env=env,
+    )
+    if code != 0 {
+      fail("gem install failed: pygments.rb \{pygments_rb_version}")
     }
   }
   @fs.mkdir("\{root}/tests/golden", recursive=true, allow_exist=true)
@@ -78,8 +158,16 @@ async fn main {
     let summary = text.split("\n").filter(l => l.contains("runs,")).map(l => l.to_owned()).collect()
     println("\{name}: \{summary.join(" ")}")
     if code != 0 {
-      println(text)
-      failed.push("\{name} (exit \{code})")
+      let failures = failed_tests(text)
+      let unknown = failures.filter(f => !known_upstream_failures.contains(f))
+      if failures.is_empty() || !unknown.is_empty() {
+        println(text)
+        failed.push("\{name} (exit \{code})")
+      } else {
+        println(
+          "\{name}: \{failures.length()} known upstream failure(s) (Pygments version)",
+        )
+      }
     }
   }
   if !failed.is_empty() {

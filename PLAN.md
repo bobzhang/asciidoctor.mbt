@@ -8,7 +8,7 @@ Upstream: `.repos/asciidoctor` (asciidoctor/asciidoctor @ `30fb8cd`, Ruby, ~19.3
 | Topic | Decision |
 |---|---|
 | Module | `bobzhang/asciidoctor` |
-| v1 scope | Core (reader/parser/substitutions/model) + HTML5 at byte-exact parity; then DocBook5 and manpage; then extensions API + CLI. Skip Ruby-only syntax highlighters (rouge/pygments/coderay) and Tilt templates; keep highlight.js/prettify (pure HTML output). |
+| v1 scope | Core (reader/parser/substitutions/model) + HTML5 at byte-exact parity; then DocBook5 and manpage; then extensions API + CLI. Skip Ruby-only syntax highlighters (rouge/pygments/coderay) and Tilt templates; keep highlight.js/prettify (pure HTML output). Later: Pygments via the MoonBit port `bobzhang/pygments` (optional package). |
 | Regex | Own backtracking regex engine (Onigmo/Ruby-syntax subset) over UTF-16, so the ~100 named regexes in `rx.rb` and ~200 inline `sub/gsub/match` sites can be ported nearly verbatim. Hot paths get hand-written scanners later, verified differentially against the regex. |
 | IO | `moonbitlang/async` (native + wasm). Core stays **synchronous and pure**; all file access goes through a `Vfs` interface (see §4). |
 | VCS | git; `.repos/` ignored. |
@@ -51,6 +51,7 @@ core/  (package "asciidoctor/core" – the engine; many small files)
   syntax_highlighter.mbt      trait + highlight.js/prettify adapters
   extensions.mbt              typed callback registries (later phase)
 converter/html5/              html5.rb (+ stylesheets data embedded as string constants)
+highlighter/pygments/         syntax_highlighter/pygments.rb on bobzhang/pygments (optional)
 converter/docbook5/           docbook5.rb
 converter/manpage/            manpage.rb
 asciidoctor/ (root pkg)       facade: load/convert/load_file/convert_file, default converter wiring
@@ -232,16 +233,44 @@ parser async would slow it and infect every API. Instead:
   - date attributes use the local time zone like Ruby (`@core.set_utc_offset`, installed by `io` and the
     CLI via `internal/localtime`; wasm stays UTC); LICENSE with upstream attribution.
 
+### 2026-09-26 (server-side highlighting with Pygments)
+* Highlighter contract completed (`core/syntax_highlighter.mbt`, Ruby syntax_highlighter.rb): typed
+  `HighlightOptions` (callouts, css_mode, highlight_lines, number_lines, start_line_number, style),
+  `FormatOptions`, `DocinfoOptions`; `highlight` returns the source offset; `writes_stylesheet` /
+  `write_stylesheet` (the files are written by `io`'s conversion driver next to `asciidoctor.css`);
+  default methods (Ruby `SyntaxHighlighter::Base`, `format_source`). `highlight_source` follows
+  substitutors.rb: callouts are extracted before highlighting and restored after it (with the offset),
+  line numbering/highlighted lines/CSS mode/style options, passthrough placeholders repaired.
+* `highlighter/pygments`: port of syntax_highlighter/pygments.rb on `bobzhang/pygments@0.1.1` (lexer
+  lookup by exact alias with the text fallback, PHP `startinline` unless `mixed`, class vs style CSS,
+  table vs inline line numbers, `hl_lines`, `linenostart`, `pygments-<style>.css` embedded or linked
+  and written with linkcss+copycss). Optional: the root facade does not link it; the CLI and the golden
+  runner call `@pygments.register()`, which replaces the "pygments.rb unavailable" fallback.
+* Oracle: pygments.rb 5.0.0 (latest; vendors Pygments 2.20.0) runs Python Pygments 2.21.0 from PyPI
+  (`scripts/harvest/pygments_path.rb`, `ORACLE_PYGMENTS_PATH`), i.e. exactly the ported release. With
+  the vendored 2.20.0 only Pygments changes differ (2.21 no longer escapes quotes in token text, new
+  monokai colors): 391/506 corpus documents identical (html5 standalone). The harvest sets
+  PYGMENTS_VERSION; 5 upstream Pygments tests assert the output of older Pygments releases and are
+  tolerated by harvest.mbtx (their documents are recorded all the same).
+* Parity: 11 new golden records (10 Pygments tests + 1 substitutions test), all passing: AST
+  2593/2704, output 1763/1885, messages 2626/2702, 0 unexpected. Corpus with `--pygments` (html5):
+  506/506 embedded and standalone, also with pygments-css=style, line numbers on every block
+  (`source-linenums-option`, table and inline) and monokai; `cli_parity.mbtx` covers the stylesheet
+  files written with linkcss+copycss (57/57).
+* Binary size: the CLI links all lexers (native release 3.4 MB → 21.6 MB, wasm release 1.3 MB →
+  11.2 MB); to be addressed later.
+
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
-2. Server-side syntax highlighting adapter interface is in place; a Rouge-compatible lexer set is out of
-   scope for now.
+2. Server-side syntax highlighting: Pygments is ported (`highlighter/pygments`); Rouge and CodeRay are
+   not. Reduce the size of the CLI (lexers on demand, or a smaller lexer set).
 3. Profile hot paths (block attribute line, quote regexes) and add scanners where the regex engine
    dominates; add memoization to the regex VM if pathological patterns appear.
 4. ~~Raise an error for backends without a registered converter~~ (done: `ProcessingError::MissingConverter`).
 5. Remaining review items (`docs/review-2026-09-26-codex.md`): an explicit processing context instead of
    process-global logger/registries/compliance; tighter `Node` invariants (kind-specific payloads);
-   public table-construction API; `CompositeConverter` chain semantics; highlighter adapter options
-   (callout extraction, line numbers, offsets); `Writer` abstraction; template converters (excluded).
+   public table-construction API; `CompositeConverter` chain semantics; ~~highlighter adapter options
+   (callout extraction, line numbers, offsets)~~ (done); `Writer` abstraction; template converters
+   (excluded).
 6. Consider splitting the async `io`/CLI into a separate module so pure-library users do not depend on
    `moonbitlang/async`.

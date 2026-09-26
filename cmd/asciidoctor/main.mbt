@@ -9,6 +9,8 @@ async fn write_err(s : String) -> Unit {
 
 ///|
 async fn main {
+  // server-side syntax highlighting (`-a source-highlighter=pygments`)
+  @pygments.register()
   let args = @env.args()
   let code = run(args[1:].to_owned())
   if code != 0 {

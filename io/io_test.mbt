@@ -291,6 +291,122 @@ async fn attempt(
 }
 
 ///|
+let pygments_source : String =
+  #|= Main
+  #|
+  #|[source,ruby]
+  #|----
+  #|puts 'Hello'
+  #|----
+
+///|
+async test "linkcss and copycss write the stylesheet of the syntax highlighter" {
+  @pygments.register()
+  with_tmp(dir => {
+    write("\{dir}/main.adoc", pygments_source)
+    let options = safe_options(attributes=[
+      ("linkcss", Str("")),
+      ("copycss", Str("")),
+      ("source-highlighter", Str("pygments")),
+    ])
+    let output = @io.convert_file("\{dir}/main.adoc", options~)
+    assert_true(
+      output.contains(
+        "<link rel=\"stylesheet\" href=\"./pygments-default.css\">",
+      ),
+    )
+    inspect(
+      listing(dir),
+      content=(
+        #|main.adoc main.html asciidoctor.css pygments-default.css
+      ),
+    )
+    assert_eq(
+      read_text("\{dir}/pygments-default.css"),
+      @pygments.read_stylesheet(None),
+    )
+  })
+}
+
+///|
+async test "the highlighter stylesheet goes to stylesdir next to a user stylesheet" {
+  @pygments.register()
+  with_tmp(dir => {
+    write("\{dir}/main.adoc", pygments_source)
+    write("\{dir}/custom.css", "p { color: red; }\n")
+    let options = safe_options(
+      attributes=[
+        ("linkcss", Str("")),
+        ("copycss", Str("")),
+        ("stylesheet", Str("custom.css")),
+        ("stylesdir", Str("css")),
+        ("source-highlighter", Str("pygments")),
+        ("pygments-style", Str("monokai")),
+      ],
+      base_dir=dir,
+    )
+    let output = @io.convert_file(
+      "\{dir}/main.adoc",
+      options~,
+      to_dir="\{dir}/out",
+      mkdirs=true,
+    )
+    assert_true(
+      output.contains(
+        "<link rel=\"stylesheet\" href=\"css/pygments-monokai.css\">",
+      ),
+    )
+    inspect(
+      listing("\{dir}/out/css"),
+      content="custom.css pygments-monokai.css",
+    )
+    let css = read_text("\{dir}/out/css/pygments-monokai.css")
+    assert_eq(css, @pygments.read_stylesheet(Some("monokai")))
+    assert_true(
+      css.has_prefix("pre.pygments .hll { background-color: #49483e }"),
+    )
+  })
+}
+
+///|
+async test "no highlighter stylesheet without class-based highlighting" {
+  @pygments.register()
+  with_tmp(dir => {
+    // inline styles (pygments-css=style) need no stylesheet
+    write("\{dir}/main.adoc", pygments_source)
+    let options = safe_options(attributes=[
+      ("linkcss", Str("")),
+      ("copycss", Str("")),
+      ("source-highlighter", Str("pygments")),
+      ("pygments-css", Str("style")),
+    ])
+    let output = @io.convert_file("\{dir}/main.adoc", options~)
+    assert_false(output.contains("pygments-default.css"))
+    inspect(
+      listing(dir),
+      content=(
+        #|main.adoc main.html asciidoctor.css
+      ),
+    )
+    // no source block was highlighted
+    write("\{dir}/plain.adoc", "= Plain\n\ntext\n")
+    let options = safe_options(attributes=[
+      ("linkcss", Str("")),
+      ("copycss", Str("")),
+      ("stylesheet", Nil),
+      ("source-highlighter", Str("pygments")),
+    ])
+    @io.convert_file("\{dir}/plain.adoc", options~) |> ignore
+    inspect(
+      listing(dir),
+      content=(
+        #|main.adoc main.html plain.adoc plain.html asciidoctor.css
+      ),
+    )
+  })
+}
+
+///|
 async test "safe mode confines explicit destinations to the base dir" {
   with_tmp(dir => {
     write("\{dir}/work/main.adoc", "= Main\n\ncontent\n")

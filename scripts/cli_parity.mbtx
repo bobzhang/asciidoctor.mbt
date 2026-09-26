@@ -28,6 +28,10 @@ let fixtures : Array[(String, String)] = [
   ("p.adoc", "= Not A Man Page\n:backend: manpage\n\ntext\n"),
   ("w.adoc","= Warnings\n\ninclude::missing.adoc[]\n\nafter\n"),
   ("custom.css", "p { color: red; }\n"),
+  (
+    "s.adoc",
+    "= Source\n\n[source,ruby,linenums,highlight=2]\n----\nrequire 'app' # <1>\nputs \"<Hello>\" # <2>\n----\n<1> Load\n<2> Greet\n\n[source,python]\n----\nprint(1)\n----\n",
+  ),
   ("src/sub/d.adoc", "= Nested\n\nnested content\n"),
 ]
 
@@ -112,7 +116,45 @@ let cases : Array[Case] = [
   { args: ["--failure-level", "WARN", "-o", "-", "w.adoc"], stdin: None },
   { args: ["-q", "w.adoc"], stdin: None },
   { args: ["-B", "src", "-o", "-", "w.adoc"], stdin: None },
+  // server-side syntax highlighting with Pygments (embedded or linked
+  // stylesheet, stylesheet files written with linkcss + copycss)
+  { args: ["-a", "source-highlighter=pygments", "s.adoc"], stdin: None },
+  { args: ["-a", "source-highlighter=pygments", "-s", "-o", "-", "s.adoc"], stdin: None },
+  {
+    args: ["-a", "source-highlighter=pygments", "-a", "linkcss", "-a", "copycss", "s.adoc"],
+    stdin: None,
+  },
+  {
+    args: [
+      "-a", "source-highlighter=pygments", "-a", "pygments-style=monokai", "-a", "linkcss", "-a",
+      "copycss", "-a", "stylesheet=custom.css", "-a", "stylesdir=css", "-D", "out", "s.adoc",
+    ],
+    stdin: None,
+  },
+  {
+    args: [
+      "-a", "source-highlighter=pygments", "-a", "pygments-style=nope", "-a", "linkcss", "-a",
+      "copycss", "-a", "stylesheet!", "s.adoc",
+    ],
+    stdin: None,
+  },
+  {
+    args: [
+      "-a", "source-highlighter=pygments", "-a", "pygments-css=style", "-a",
+      "pygments-linenums-mode=inline", "-a", "linkcss", "-a", "copycss", "s.adoc",
+    ],
+    stdin: None,
+  },
+  {
+    args: ["-a", "source-highlighter=pygments", "-a", "linkcss", "-a", "copycss", "-o", "-", "s.adoc"],
+    stdin: None,
+  },
 ]
+
+///|
+/// The Python Pygments release bobzhang/pygments ports, which pygments.rb
+/// runs for the Ruby side (installed by scripts/harvest.mbtx).
+let oracle_pygments : String = ".repos/python/pygments-2.21.0"
 
 ///|
 fn dirname(path : String) -> String {
@@ -180,7 +222,12 @@ fn normalize(s : String, case_dir : String) -> String {
 
 ///|
 /// Runs one side of a case and describes the result.
-async fn run_case(cmd : Array[String], case : Case, case_dir : String) -> String {
+async fn run_case(
+  cmd : Array[String],
+  case : Case,
+  case_dir : String,
+  env : Map[String, String],
+) -> String {
   setup(case_dir)
   let work = "\{case_dir}/work"
   let args = [..cmd[1:], ..case.args.map(a => a.replace_all(old="{CASE}", new=case_dir))]
@@ -193,7 +240,7 @@ async fn run_case(cmd : Array[String], case : Case, case_dir : String) -> String
     args,
     cwd=work,
     stdin=@process.redirect_from_file(stdin_path),
-    extra_env={ "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" },
+    extra_env=env,
   )
   let files = []
   written_files(case_dir, "", files)
@@ -234,8 +281,20 @@ async fn main {
     fail("build failed: \{err.text()}")
   }
   let mbt = ["\{root}/_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe"]
+  // pygments.rb (in .repos/gems) running Python Pygments 2.21
+  if !(@fs.exists("\{root}/\{oracle_pygments}/pygments") catch { _ => false }) {
+    fail(
+      "\{oracle_pygments} is missing: run scripts/harvest.mbtx, which installs pygments.rb and Pygments",
+    )
+  }
+  let (_, gempath, _) = @process.collect_output("gem", ["env", "gempath"])
+  let env = { "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" }
+  let ruby_env = env.copy()
+  ruby_env["GEM_PATH"] = "\{root}/.repos/gems:\{gempath.text().trim()}"
+  ruby_env["ORACLE_PYGMENTS_PATH"] = "\{root}/\{oracle_pygments}"
   let ruby = [
-    "ruby", "-I", "\{root}/.repos/asciidoctor/lib", "\{root}/.repos/asciidoctor/bin/asciidoctor",
+    "ruby", "-I", "\{root}/.repos/asciidoctor/lib", "-r", "\{root}/scripts/harvest/pygments_path.rb",
+    "\{root}/.repos/asciidoctor/bin/asciidoctor",
   ]
   let base = match dir {
     Some(d) => {
@@ -252,8 +311,8 @@ async fn main {
   let mut same = 0
   let diffs = []
   for n, case in cases {
-    let rb = run_case(ruby, case, "\{base}/\{n}/ruby")
-    let mb = run_case(mbt, case, "\{base}/\{n}/mbt")
+    let rb = run_case(ruby, case, "\{base}/\{n}/ruby", ruby_env)
+    let mb = run_case(mbt, case, "\{base}/\{n}/mbt", env)
     let line = "asciidoctor \{case.args.join(" ")}\{match case.stdin { Some(f) => " < \{f}"; None => "" }}"
     if rb == mb {
       same += 1

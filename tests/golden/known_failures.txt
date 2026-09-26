@@ -4,7 +4,7 @@
 # (--prune-known drops entries that pass; --update-known rewrites the list, keeping categories).
 # Categories:
 #   extension-dsl       uses Ruby extension DSL/global registrations (ported scenarios live in extensions_test.mbt)
-#   server-highlighter  needs Rouge/CodeRay/Pygments (server-side syntax highlighting is not ported)
+#   server-highlighter  needs Rouge/CodeRay (only the Pygments server-side adapter is ported: highlighter/pygments)
 #   remote              needs the Ruby suite's local HTTP server (remote includes/images/stylesheets)
 #   api-mutation        the Ruby test mutates the model via API between load and convert
 #   io-write            asserts files written by Asciidoctor.convert (covered by io/ + CLI)

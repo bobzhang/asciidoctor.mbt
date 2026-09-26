@@ -11,6 +11,7 @@ import {
 
 import {
   "moonbitlang/async",
+  "bobzhang/asciidoctor/highlighter/pygments",
 } for "test"
 
 supported_targets = "native+wasm"

@@ -1,5 +1,6 @@
 import {
   "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor/highlighter/pygments",
   "bobzhang/asciidoctor/io",
   "bobzhang/asciidoctor/internal/rb",
   "bobzhang/asciidoctor/internal/localtime",

@@ -315,7 +315,8 @@ async fn is_regular_file(path : String) -> Bool {
 ///|
 /// Copies the stylesheet next to the output when `linkcss` and `copycss` are
 /// set (Ruby `Asciidoctor.convert`): the default stylesheet, or the user
-/// stylesheet (read from `copycss` if it names a file).
+/// stylesheet (read from `copycss` if it names a file), and the stylesheet of
+/// the syntax highlighter (e.g. `pygments-default.css`) if it writes one.
 async fn copy_stylesheet(
   doc : @core.Node,
   vfs : FsVfs,
@@ -337,7 +338,11 @@ async fn copy_stylesheet(
     Some(ss) => (false, !@core.is_uriish(ss))
     None => (false, false)
   }
-  guard copy_default || copy_user else { return }
+  let syntax_hl = match doc.syntax_highlighter() {
+    Some(hl) if hl.writes_stylesheet(doc) => Some(hl)
+    _ => None
+  }
+  guard copy_default || copy_user || syntax_hl is Some(_) else { return }
   let jail = if doc.safe() >= @core.SAFE_SAFE { Some(outdir) } else { None }
   let stylesoutdir = doc.normalize_system_path(
     stylesdir.unwrap_or(""),
@@ -357,8 +362,31 @@ async fn copy_stylesheet(
       @core.primary_stylesheet_data,
       create_mode=CreateOrTruncate,
     )
-    return
+  } else if copy_user {
+    copy_user_stylesheet(doc, vfs, stylesoutdir, jail, mkdirs)
   }
+  // Ruby `syntax_hl.write_stylesheet doc, stylesoutdir`
+  if syntax_hl is Some(hl) {
+    for file in hl.write_stylesheet(doc) {
+      @fs.write_file(
+        file_join(stylesoutdir, file.0),
+        file.1,
+        create_mode=CreateOrTruncate,
+      )
+    }
+  }
+}
+
+///|
+/// Copies the user stylesheet (the `stylesheet` attribute, read from
+/// `copycss` if it names a file) into the stylesheet output directory.
+async fn copy_user_stylesheet(
+  doc : @core.Node,
+  vfs : FsVfs,
+  stylesoutdir : String,
+  jail : String?,
+  mkdirs : Bool,
+) -> Unit {
   let stylesheet = doc.attr("stylesheet").unwrap_or("")
   let src = match doc.attr("copycss") {
     Some("") | None => doc.normalize_system_path(stylesheet)

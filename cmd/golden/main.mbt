@@ -601,6 +601,8 @@ async fn main {
     }
     i += 1
   }
+  // server-side highlighting with Pygments (the Ruby oracle has pygments.rb)
+  @pygments.register()
   @core.set_source_date_epoch(Some(1700000000L))
   let cwd = @fs.realpath(".")
   // resolve symlinks so worktrees that link .repos see the same paths
