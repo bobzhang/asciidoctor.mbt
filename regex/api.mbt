@@ -142,6 +142,12 @@ pub fn MatchData::named(self : MatchData, name : String) -> String? {
 }
 
 ///|
+/// Whether the pattern has named groups.
+pub fn MatchData::has_names(self : MatchData) -> Bool {
+  !self.names.is_empty()
+}
+
+///|
 /// Start offset of group `i` (-1 if unset).
 pub fn MatchData::begin(self : MatchData, i? : Int = 0) -> Int {
   self.offsets[2 * i]

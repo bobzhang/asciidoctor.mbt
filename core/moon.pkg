@@ -1,0 +1,5 @@
+import {
+  "bobzhang/asciidoctor/regex",
+  "bobzhang/asciidoctor/internal/rb",
+  "moonbitlang/core/encoding/utf8",
+}
