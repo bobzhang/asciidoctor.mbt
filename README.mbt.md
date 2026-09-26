@@ -32,10 +32,9 @@ Options mirror Ruby's options hash:
 ```mbt check
 ///|
 test "options" {
-  let options = @core.Options::new(
-    backend="docbook5",
-    attributes=[("product", Str("MoonBit"))],
-  )
+  let options = @core.Options::new(backend="docbook5", attributes=[
+    ("product", Str("MoonBit")),
+  ])
   inspect(
     @asciidoctor.convert("Hello from {product}.", options~),
     content=(
@@ -83,7 +82,12 @@ test "inline macro extension" {
     let label = "\{target}(\{attrs.pos_str(1).unwrap_or("")})"
     Some(
       InlineNode(
-        @core.create_anchor(parent, Some(label), "link", target="\{target}.html"),
+        @core.create_anchor(
+          parent,
+          Some(label),
+          "link",
+          target="\{target}.html",
+        ),
       ),
     )
   })

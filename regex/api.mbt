@@ -15,6 +15,8 @@ pub struct Regex {
   priv names : Map[String, Int]
   priv anchor : Anchor
   priv first : FirstSet?
+  priv required : FixedArray[Int]
+  priv lead : (Int, Int, Int)?
 }
 
 ///|
@@ -73,6 +75,8 @@ pub fn compile(
     } else {
       first
     },
+    required: FixedArray::from_array(required_units(node)),
+    lead: lead_literal(node),
   }
 }
 
@@ -213,6 +217,16 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
   let s = vm.input
   let len = s.length()
   vm.search_start = start
+  // prefilter: every required code unit must occur at or after `start`
+  for u in self.required {
+    let mut i = start
+    while i < len && s[i].to_int() != u {
+      i += 1
+    }
+    if i >= len {
+      return None
+    }
+  }
   match self.anchor {
     TextStart => return if start == 0 { self.try_at(vm, 0) } else { None }
     LineStart => {
@@ -235,6 +249,47 @@ fn Regex::find_with(self : Regex, vm : Vm, start : Int) -> MatchData? {
     NoAnchor => ()
   }
   let mut pos = start
+  match self.lead {
+    Some((unit, min_off, max_off)) if self.anchor == NoAnchor => {
+      // jump from one occurrence of the literal to the next; only starts
+      // within [q - max_off, q - min_off] can place the literal at q
+      while true {
+        let mut q = pos + min_off
+        while q < len && s[q].to_int() != unit {
+          q += 1
+        }
+        if q >= len {
+          return None
+        }
+        let from = if q - max_off > pos { q - max_off } else { pos }
+        let to = q - min_off
+        let mut st = from
+        while st <= to {
+          let possible = match self.first {
+            Some(first) => {
+              let c = s[st].to_int()
+              if c < 128 {
+                first.ascii[c]
+              } else {
+                first.non_ascii
+              }
+            }
+            None => true
+          }
+          if possible {
+            match self.try_at(vm, st) {
+              Some(m) => return Some(m)
+              None => ()
+            }
+          }
+          st += 1
+        }
+        pos = to + 1
+      }
+      return None
+    }
+    _ => ()
+  }
   match self.first {
     Some(first) =>
       while pos < len {

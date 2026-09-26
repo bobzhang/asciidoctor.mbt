@@ -330,3 +330,60 @@ fn leading_anchor(node : Node) -> Anchor {
     _ => NoAnchor
   }
 }
+
+///|
+/// Code units that must occur in every match (used as a fast prefilter).
+fn required_units(node : Node) -> Array[Int] {
+  match node {
+    Char(cp) => if cp < 0x10000 { [cp] } else { [] }
+    Concat(items) => {
+      let out = []
+      for it in items {
+        for u in required_units(it) {
+          if !out.contains(u) {
+            out.push(u)
+          }
+        }
+      }
+      out
+    }
+    Group(_, n) | Atomic(n) => required_units(n)
+    Repeat(n, min, _, _) => if min > 0 { required_units(n) } else { [] }
+    Alt(items) => {
+      // intersection of all branches
+      if items.is_empty() {
+        return []
+      }
+      let first = required_units(items[0])
+      first.filter(u => items.iter().all(it => required_units(it).contains(u)))
+    }
+    _ => []
+  }
+}
+
+///|
+/// A mandatory literal code unit at a bounded offset from the match start:
+/// (unit, min offset, max offset). Lets the search jump between occurrences.
+fn lead_literal(node : Node) -> (Int, Int, Int)? {
+  let items = match node {
+    Concat(items) => items
+    Group(_, Concat(items)) => items
+    _ => return None
+  }
+  let mut lo = 0
+  let mut hi = 0
+  for it in items {
+    match it {
+      Char(cp) if cp < 0x10000 => return Some((cp, lo, hi))
+      _ => {
+        let (a, b) = width(it)
+        if b < 0 {
+          return None
+        }
+        lo += a
+        hi += b
+      }
+    }
+  }
+  None
+}
