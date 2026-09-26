@@ -1,12 +1,10 @@
 import {
-  "bobzhang/asciidoctor" @adoc,
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/io",
   "bobzhang/asciidoctor/internal/rb",
   "bobzhang/asciidoctor/internal/localtime",
   "moonbitlang/async",
   "moonbitlang/async/fs",
-  "moonbitlang/async/os_error",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
 }
