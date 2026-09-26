@@ -136,7 +136,7 @@ DSL (equivalent scenarios are tested in `extensions_test.mbt`), server-side synt
 (Rouge, CodeRay, Pygments — the client-side highlight.js, prettify and html-pipeline adapters are
 supported; the server-side ones behave as Ruby does when their gems are missing), remote URIs, and
 tests that mutate the model through the Ruby API before converting (those are hand-ported in
-`api_test.mbt`). About 580 hand-ported API tests cover the reader, parser, substitutions, path
+`api_test.mbt`). About 860 hand-ported API tests cover the reader, parser, substitutions, path
 resolver, attribute lists, logging and the document API.
 
 In addition, 506 real-world documents (the Asciidoctor, asciidoctor-pdf, -diagram, -epub3 and
