@@ -75,6 +75,8 @@ server-highlighter	MSG Minitest::Test::TestInvoker#test_should_copy_default_styl
 api-mutation	OUT Minitest::Test::TestSections::TestSectionNumbering#test_should_allow_sections_to_be_renumbered_using_numeral_or_deprecated_number_property@0.0
 custom-converter	AST Minitest::Test::TestConverter::TestCustomConverters#test_should_use_basebackend_to_compute_filetype_and_outfilesuffix@0
 custom-converter	AST Minitest::Test::TestConverter::TestCustomConverters#test_should_use_converter_registered_for_backend@0
+custom-converter	AST Minitest::Test::TestConverter::TestCustomConverters#test_should_warn_when_convert_method_for_node_is_missing@0
+custom-converter	AST Minitest::Test::TestConverter::TestCustomConverters#test_should_default_to_catch_all_converter@0
 api-mutation	OUT Minitest::Test::TestAttributes::TestAssignment#test_set_attr_should_set_header_attribute_in_loaded_document@0.0
 extension-dsl	AST Minitest::Test::TestExtensions::TestIntegration#test_should_yield_to_document_processor_block_if_block_has_non_zero_arity@0
 extension-dsl	OUT Minitest::Test::TestExtensions::TestIntegration#test_should_yield_to_document_processor_block_if_block_has_non_zero_arity@0.0
