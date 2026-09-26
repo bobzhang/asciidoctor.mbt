@@ -89,7 +89,7 @@ fn dump_node(node : @core.Node) -> Json {
           _ => ()
         }
       }
-      pairs.sort_by((x, y) => x.0.compare(y.0))
+      pairs.sort_by((x, y) => @rb.lex_compare(x.0, y.0))
       d["attributes"] = Json::array(
         pairs.map(p => Json::array([Json::string(p.0), attr_json(p.1)])),
       )

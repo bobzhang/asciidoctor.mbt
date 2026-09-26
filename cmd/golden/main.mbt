@@ -12,6 +12,8 @@ priv struct Ctx {
   vfs : @core.MemoryVfs
   verbose : Bool
   filter : String?
+  trace : Bool
+  only : Int
 }
 
 ///|
@@ -156,6 +158,9 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
     None => ()
   }
   stats.records += 1
+  if ctx.trace {
+    println("RUN \{test_name}")
+  }
   let opts_json = match rec.get("options") {
     Some(Object(m)) => m
     _ => {}
@@ -199,6 +204,10 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
       if actual == expected {
         stats.ast_pass += 1
       } else {
+        if ctx.trace {
+          println("EXPECTED AST: \{expected}")
+          println("ACTUAL AST:   \{actual}")
+        }
         stats.failures.push(
           "AST \{test_name}\n\{first_diff(expected.replace_all(old=",", new=",\n"), actual.replace_all(old=",", new=",\n"))}",
         )
@@ -257,6 +266,8 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
 async fn main {
   let args = @env.args()
   let mut verbose = false
+  let mut trace = false
+  let mut only = -1
   let mut filter : String? = None
   let mut max_failures = 20
   let files = []
@@ -264,6 +275,11 @@ async fn main {
   while i < args.length() {
     match args[i] {
       "-v" => verbose = true
+      "-t" => trace = true
+      "-k" => {
+        i += 1
+        only = @rb.to_i(args.get(i).unwrap_or("-1"))
+      }
       "-f" => {
         i += 1
         filter = args.get(i)
@@ -288,7 +304,7 @@ async fn main {
       }
     }
   }
-  let ctx = { root, vfs, verbose, filter, }
+  let ctx = { root, vfs, verbose, filter, trace, only, }
   let total : Stats = {
     records: 0,
     skipped: 0,
@@ -311,9 +327,14 @@ async fn main {
       out_pass: 0,
       failures: [],
     }
+    let mut rec_idx = -1
     for line in text.split("\n") {
       let line = line.to_string()
       if line == "" {
+        continue
+      }
+      rec_idx += 1
+      if ctx.only >= 0 && rec_idx != ctx.only {
         continue
       }
       let rec = @json.parse(line) catch { _ => continue }

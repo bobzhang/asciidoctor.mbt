@@ -646,3 +646,18 @@ pub fn rjust(s : String, width : Int, pad? : Char = ' ') -> String {
   sb.write_string(s)
   sb.to_string()
 }
+
+///|
+/// Lexicographic comparison by code units (Ruby `String#<=>` for ASCII/BMP text).
+/// Note MoonBit's `String::compare` orders by length first.
+pub fn lex_compare(a : String, b : String) -> Int {
+  let n = if a.length() < b.length() { a.length() } else { b.length() }
+  for i in 0..<n {
+    let x = a[i].to_int()
+    let y = b[i].to_int()
+    if x != y {
+      return x - y
+    }
+  }
+  a.length() - b.length()
+}

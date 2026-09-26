@@ -914,7 +914,7 @@ fn compare_expr(lhs : ExprVal, op : String, rhs : ExprVal) -> Bool raise {
       }
     _ => {
       let c = match (lhs, rhs) {
-        (EStr(a), EStr(b)) => a.compare(b)
+        (EStr(a), EStr(b)) => @rb.lex_compare(a, b)
         _ =>
           match (num(lhs), num(rhs)) {
             (Some(a), Some(b)) => a.compare(b)

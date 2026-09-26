@@ -803,22 +803,31 @@ pub fn Node::resolve_id(self : Node, text : String) -> String? {
     None =>
       if dd.parsed {
         let accum = {}
+        dd.reftexts = Some(accum)
         for id, ref_ in dd.catalog.refs {
           match ref_.xreftext() {
             Some(x) => if !accum.contains(x) { accum[x] = id }
             None => ()
           }
         }
-        dd.reftexts = Some(accum)
         accum.get(text)
       } else {
+        // publish a partial map so recursive lookups terminate (Ruby semantics)
+        let accum : Map[String, String] = {}
+        dd.reftexts = Some(accum)
         let mut resolved = None
         for id, ref_ in dd.catalog.refs {
-          if ref_.xreftext() == Some(text) {
+          let xreftext = ref_.xreftext()
+          if xreftext == Some(text) {
             resolved = Some(id)
             break
           }
+          match xreftext {
+            Some(x) => if !accum.contains(x) { accum[x] = id }
+            None => ()
+          }
         }
+        dd.reftexts = None
         resolved
       }
   }
@@ -1495,7 +1504,10 @@ fn Node::update_backend_attributes(
   } else if !self.attribute_locked("outfilesuffix") {
     attrs.set_str("outfilesuffix", traits.outfilesuffix)
   }
-  dd.converter = converter
+  dd.converter = match converter {
+    Some(c) => Some(c)
+    None => Some(({ traits, } : NullConverter))
+  }
   match attrs.str("filetype") {
     Some(ft) => attrs.remove("filetype-\{ft}") |> ignore
     None => ()
