@@ -59,6 +59,8 @@ pub(all) struct Options {
   mut converter : &Converter?
   mut extensions : Extensions?
   mut vfs : &Vfs?
+  /// Records the time spent in each phase (Ruby `:timings` option).
+  mut timings : Timings?
   mut syntax_highlighter_factory : ((String, String, Node) -> &SyntaxHighlighter?)?
   // nested document support
   mut parent : Node?
@@ -83,6 +85,7 @@ pub fn Options::new(
   converter? : &Converter,
   extensions? : Extensions,
   vfs? : &Vfs,
+  timings? : Timings,
 ) -> Options {
   {
     attributes,
@@ -102,6 +105,7 @@ pub fn Options::new(
     converter,
     extensions,
     vfs,
+    timings,
     syntax_highlighter_factory: None,
     parent: None,
     cursor: None,
@@ -1722,6 +1726,14 @@ pub fn Node::convert_with(
   outdir? : String,
 ) -> String {
   let dd = self.doc()
+  let timings = if dd.parent_document is None {
+    dd.options.timings
+  } else {
+    None
+  }
+  if timings is Some(t) {
+    t.start("convert")
+  }
   if !dd.parsed {
     self.parse() |> ignore
   }
@@ -1778,6 +1790,9 @@ pub fn Node::convert_with(
         }
       None => ()
     }
+  }
+  if timings is Some(t) {
+    t.record("convert")
   }
   output
 }

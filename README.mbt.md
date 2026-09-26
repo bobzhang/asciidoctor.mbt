@@ -120,8 +120,10 @@ moonx bobzhang/asciidoctor/cmd/asciidoctor@latest -b html5 -a toc doc.adoc
 moon run --target native cmd/asciidoctor -- -b html5 -a toc doc.adoc
 ```
 
-The CLI supports the common Ruby options (`-b`, `-d`, `-a`, `-s`/`-e`, `-o`, `-D`, `-B`, `-S`, `-n`,
-`--log-level`, `--failure-level`, `-q`, `-v`).
+The CLI accepts Ruby's options with OptionParser's syntax (`--backend=html5`, abbreviations such
+as `--back`, clustered short options such as `-sn`, `--`) and reports errors and exit codes like
+Ruby, including `-t` timings, `-R`/`-D` output directories and standard input (`-`). Custom
+templates (`-T`) and Ruby libraries (`-r`) are not supported.
 
 ## Status
 

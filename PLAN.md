@@ -199,4 +199,4 @@ parser async would slow it and infect every API. Instead:
    scope for now.
 3. Profile hot paths (block attribute line, quote regexes) and add scanners where the regex engine
    dominates; add memoization to the regex VM if pathological patterns appear.
-4. Raise an error for backends without a registered converter (Ruby raises NotImplementedError).
+4. ~~Raise an error for backends without a registered converter~~ (done: `ProcessingError::MissingConverter`).

@@ -738,11 +738,12 @@ pub(all) struct Options {
   mut converter : &Converter?
   mut extensions : Extensions?
   mut vfs : &Vfs?
+  mut timings : Timings?
   mut syntax_highlighter_factory : ((String, String, Node) -> &SyntaxHighlighter?)?
   mut parent : Node?
   mut cursor : Cursor?
 }
-pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs) -> Self
+pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs, timings? : Timings) -> Self
 
 pub struct PathResolver {
   mut working_dir : String
@@ -850,6 +851,23 @@ pub struct TableRows {
   mut body : Array[Array[Node]]
   mut foot : Array[Array[Node]]
 }
+
+pub struct Timings {
+  // private fields
+}
+pub fn Timings::convert(Self) -> Double?
+pub fn Timings::new(() -> Double) -> Self
+pub fn Timings::parse(Self) -> Double?
+pub fn Timings::read(Self) -> Double?
+pub fn Timings::read_parse(Self) -> Double?
+pub fn Timings::read_parse_convert(Self) -> Double?
+pub fn Timings::record(Self, String) -> Unit
+pub fn Timings::report(Self, subject? : String) -> String
+pub fn Timings::set(Self, String, Double) -> Unit
+pub fn Timings::start(Self, String) -> Unit
+pub fn Timings::time(Self, Array[String]) -> Double?
+pub fn Timings::total(Self) -> Double?
+pub fn Timings::write(Self) -> Double?
 
 pub(all) struct TreeProcessor {
   process : (Node) -> Node? raise

@@ -75,15 +75,25 @@ fn ensure_converters() -> Unit {
 /// left unparsed; `convert` raises it.
 pub fn load(input : String, options? : Options = Options::new()) -> Node {
   ensure_converters()
-  let doc = @core.new_document(
-    Some(@core.prepare_source_string(input)),
-    options,
-  )
-  if options.parse {
-    doc.parse()
-  } else {
-    doc
+  if options.timings is Some(t) {
+    t.start("read")
   }
+  let lines = @core.prepare_source_string(input)
+  load_prepared(lines, options)
+}
+
+///|
+fn load_prepared(lines : Array[String], options : Options) -> Node {
+  if options.timings is Some(t) {
+    t.record("read")
+    t.start("parse")
+  }
+  let doc = @core.new_document(Some(lines), options)
+  let doc = if options.parse { doc.parse() } else { doc }
+  if options.timings is Some(t) {
+    t.record("parse")
+  }
+  doc
 }
 
 ///|
@@ -93,12 +103,10 @@ pub fn load_lines(
   options? : Options = Options::new(),
 ) -> Node {
   ensure_converters()
-  let doc = @core.new_document(Some(lines), options)
-  if options.parse {
-    doc.parse()
-  } else {
-    doc
+  if options.timings is Some(t) {
+    t.start("read")
   }
+  load_prepared(lines, options)
 }
 
 ///|
