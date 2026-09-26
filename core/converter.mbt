@@ -152,6 +152,28 @@ let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = {
   "highlight.js": (_, _, _) => Some(ClientHighlighter::new(HighlightJs)),
   "prettify": (_, _, _) => Some(ClientHighlighter::new(Prettify)),
   "html-pipeline": (_, _, _) => Some(ClientHighlighter::new(HtmlPipeline)),
+  // server-side highlighters behave as in Ruby when their gem is missing
+  "rouge": (_, _, _) => Some(ClientHighlighter::new(Unavailable("rouge"))),
+  "coderay": (_, _, _) => Some(ClientHighlighter::new(Unavailable("coderay"))),
+  "pygments": (_, _, _) => Some(ClientHighlighter::new(Unavailable("pygments"))),
+}
+
+///|
+/// Ruby warns once per process when a highlighter's gem cannot be loaded.
+let unavailable_warned : Map[String, Bool] = Map([])
+
+///|
+fn warn_unavailable(name : String) -> Unit {
+  if unavailable_warned.contains(name) {
+    return
+  }
+  unavailable_warned[name] = true
+  let msg = match name {
+    "pygments" =>
+      "optional gem 'pygments.rb' is not available (reason: cannot load 'pygments'). Functionality disabled."
+    _ => "optional gem '\{name}' is not available. Functionality disabled."
+  }
+  log_warn(msg)
 }
 
 ///|
@@ -159,6 +181,7 @@ priv enum ClientKind {
   HighlightJs
   Prettify
   HtmlPipeline
+  Unavailable(String) // rouge, coderay, pygments without their Ruby gems
 }
 
 ///|
@@ -178,6 +201,7 @@ impl SyntaxHighlighter for ClientHighlighter with fn name(self) {
     HighlightJs => "highlightjs"
     Prettify => "prettify"
     HtmlPipeline => "html-pipeline"
+    Unavailable(n) => n
   }
 }
 
@@ -203,7 +227,7 @@ impl SyntaxHighlighter for ClientHighlighter with fn has_docinfo(
   _location,
 ) {
   match self.kind {
-    HtmlPipeline => false
+    HtmlPipeline | Unavailable(_) => false
     _ => true
   }
 }
@@ -221,6 +245,16 @@ impl SyntaxHighlighter for ClientHighlighter with fn format(
     None => ""
   }
   match self.kind {
+    Unavailable(n) => {
+      warn_unavailable(n)
+      let pre_class = if n == "coderay" { "CodeRay" } else { n }
+      let pre_class = if nowrap {
+        "\{pre_class} highlight nowrap"
+      } else {
+        "\{pre_class} highlight"
+      }
+      "<pre class=\"\{pre_class}\"><code\{data_lang}>\{node.content()}</code></pre>"
+    }
     HtmlPipeline => {
       let lang_attr = match lang {
         Some(l) => " lang=\"\{l}\""
@@ -309,7 +343,7 @@ impl SyntaxHighlighter for ClientHighlighter with fn docinfo(
         "<script src=\"\{base_url}/run_prettify.min.js\"></script>"
       }
     }
-    HtmlPipeline => ""
+    HtmlPipeline | Unavailable(_) => ""
   }
 }
 
