@@ -328,7 +328,11 @@ fn parse_list_item(
   let (item_lines, item_marks) = read_lines_for_list_item(
     reader, list_type, sibling_trait, has_text,
   )
-  let list_item_reader = Reader::new_marked(item_lines, item_marks, cursor=block_cursor)
+  let list_item_reader = Reader::new_marked(
+    item_lines,
+    item_marks,
+    cursor=block_cursor,
+  )
   if list_item_reader.has_more_lines() {
     if sourcemap_assignment_deferred {
       list_item.source_location = Some(block_cursor)

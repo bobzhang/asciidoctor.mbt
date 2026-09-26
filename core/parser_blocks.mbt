@@ -337,7 +337,9 @@ fn next_block(
                 if target.contains("{") {
                   let expanded = b.sub_attributes(target)
                   if expanded == "" &&
-                    doc_attrs.str("attribute-missing").unwrap_or(compliance.attribute_missing) ==
+                    doc_attrs
+                    .str("attribute-missing")
+                    .unwrap_or(compliance.attribute_missing) ==
                     "drop-line" &&
                     b.sub_attributes(
                       target + " ",
@@ -420,7 +422,9 @@ fn next_block(
                         if target.contains("{") {
                           let expanded = parent.sub_attributes(target)
                           if expanded == "" &&
-                            doc_attrs.str("attribute-missing").unwrap_or(compliance.attribute_missing) ==
+                            doc_attrs
+                            .str("attribute-missing")
+                            .unwrap_or(compliance.attribute_missing) ==
                             "drop-line" &&
                             parent.sub_attributes(
                               target + " ",

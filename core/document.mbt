@@ -54,7 +54,8 @@ pub(all) struct Options {
   mut parse_header_only : Bool
   mut catalog_assets : Bool
   mut parse : Bool
-  mut input_mtime : String? // unused placeholder; dates come from attributes
+  /// Modification time of the input file (seconds since epoch), for docdate/doctime.
+  mut input_mtime : Int64?
   mut converter : &Converter?
   mut extensions : Extensions?
   mut vfs : &Vfs?
@@ -498,7 +499,7 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
         "iconsdir",
         Str("\{attrs.str("imagesdir").unwrap_or("./images")}/icons"),
       )
-      fill_datetime_attributes(attrs)
+      fill_datetime_attributes(attrs, options.input_mtime)
       dd.extensions = match options.extensions {
         Some(e) => Some(e.activate(doc))
         None =>
@@ -1341,8 +1342,13 @@ fn Node::save_attributes(self : Node) -> Unit {
 ///|
 /// Assigns localdate, localtime, docdate, ... (Ruby `fill_datetime_attributes`).
 /// The current time comes from the `SOURCE_DATE_EPOCH`-like hook `now_epoch`.
-fn fill_datetime_attributes(attrs : Attributes) -> Unit {
-  let (date, year, time) = format_epoch(now_epoch())
+fn fill_datetime_attributes(attrs : Attributes, input_mtime : Int64?) -> Unit {
+  let sde = source_date_epoch_ref.val
+  let now = match sde {
+    Some(e) => e
+    None => now_epoch()
+  }
+  let (date, year, time) = format_epoch(now)
   let localdate = match attrs.str("localdate") {
     Some(d) => {
       if !attrs.truthy("localyear") {
@@ -1362,6 +1368,15 @@ fn fill_datetime_attributes(attrs : Attributes) -> Unit {
   attrs.set_default("localtime", Str(time))
   let localtime = attrs.str("localtime").unwrap_or("")
   attrs.set_default("localdatetime", Str("\{localdate} \{localtime}"))
+  let doc_epoch = match sde {
+    Some(e) => e
+    None =>
+      match input_mtime {
+        Some(m) => m
+        None => now
+      }
+  }
+  let (ddate, dyear, dtime) = format_epoch(doc_epoch)
   let docdate = match attrs.str("docdate") {
     Some(d) => {
       if !attrs.truthy("docyear") {
@@ -1373,21 +1388,25 @@ fn fill_datetime_attributes(attrs : Attributes) -> Unit {
       d
     }
     None => {
-      attrs.set_str("docdate", date)
-      attrs.set_default("docyear", Str(year))
-      date
+      attrs.set_str("docdate", ddate)
+      attrs.set_default("docyear", Str(dyear))
+      ddate
     }
   }
-  attrs.set_default("doctime", Str(time))
+  attrs.set_default("doctime", Str(dtime))
   let doctime = attrs.str("doctime").unwrap_or("")
   attrs.set_default("docdatetime", Str("\{docdate} \{doctime}"))
 }
 
 ///|
-/// Hook returning the current time as seconds since the epoch (UTC).
-/// Defaults to SOURCE_DATE_EPOCH semantics with a fixed value; embedders can
-/// override it with `set_now_epoch`.
-let now_epoch_ref : Ref[() -> Int64] = { val: () => 1700000000L, }
+/// Hook returning the current time in seconds since the epoch (UTC).
+let now_epoch_ref : Ref[() -> Int64] = {
+  val: () => (@env.now() / 1000UL).reinterpret_as_int64(),
+}
+
+///|
+/// SOURCE_DATE_EPOCH: when set, pins both local and document dates.
+let source_date_epoch_ref : Ref[Int64?] = { val: None, }
 
 ///|
 fn now_epoch() -> Int64 {
@@ -1398,6 +1417,12 @@ fn now_epoch() -> Int64 {
 /// Sets the clock used for date attributes.
 pub fn set_now_epoch(f : () -> Int64) -> Unit {
   now_epoch_ref.val = f
+}
+
+///|
+/// Sets (or clears) SOURCE_DATE_EPOCH (reproducible builds).
+pub fn set_source_date_epoch(epoch : Int64?) -> Unit {
+  source_date_epoch_ref.val = epoch
 }
 
 ///|

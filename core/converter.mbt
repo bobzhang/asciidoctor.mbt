@@ -173,7 +173,7 @@ fn ClientHighlighter::new(kind : ClientKind) -> &SyntaxHighlighter {
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with name(self) {
+impl SyntaxHighlighter for ClientHighlighter with fn name(self) {
   match self.kind {
     HighlightJs => "highlightjs"
     Prettify => "prettify"
@@ -182,12 +182,12 @@ impl SyntaxHighlighter for ClientHighlighter with name(self) {
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with handles_highlighting(_self) {
+impl SyntaxHighlighter for ClientHighlighter with fn handles_highlighting(_self) {
   false
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with highlight(
+impl SyntaxHighlighter for ClientHighlighter with fn highlight(
   _self,
   _node,
   source,
@@ -198,7 +198,10 @@ impl SyntaxHighlighter for ClientHighlighter with highlight(
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with has_docinfo(self, _location) {
+impl SyntaxHighlighter for ClientHighlighter with fn has_docinfo(
+  self,
+  _location,
+) {
   match self.kind {
     HtmlPipeline => false
     _ => true
@@ -206,7 +209,12 @@ impl SyntaxHighlighter for ClientHighlighter with has_docinfo(self, _location) {
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with format(self, node, lang, opts) {
+impl SyntaxHighlighter for ClientHighlighter with fn format(
+  self,
+  node,
+  lang,
+  opts,
+) {
   let nowrap = opts.contains("nowrap")
   let data_lang = match lang {
     Some(l) => " data-lang=\"\{l}\""
@@ -251,7 +259,12 @@ impl SyntaxHighlighter for ClientHighlighter with format(self, node, lang, opts)
 }
 
 ///|
-impl SyntaxHighlighter for ClientHighlighter with docinfo(self, location, doc, opts) {
+impl SyntaxHighlighter for ClientHighlighter with fn docinfo(
+  self,
+  location,
+  doc,
+  opts,
+) {
   let cdn_base_url = opts.get("cdn_base_url").unwrap_or("")
   let slash = opts.get("self_closing_tag_slash").unwrap_or("")
   match self.kind {
@@ -260,13 +273,16 @@ impl SyntaxHighlighter for ClientHighlighter with docinfo(self, location, doc, o
         .attr("highlightjsdir", default="\{cdn_base_url}/highlight.js/9.18.3")
         .unwrap_or("")
       if location == "head" {
-        let theme = doc.attr("highlightjs-theme", default="github").unwrap_or("github")
+        let theme = doc
+          .attr("highlightjs-theme", default="github")
+          .unwrap_or("github")
         "<link rel=\"stylesheet\" href=\"\{base_url}/styles/\{theme}.min.css\"\{slash}>"
       } else {
         let langs = if doc.has_attr("highlightjs-languages") {
-          @rb
-          .split(doc.attr("highlightjs-languages").unwrap_or(""), ",")
-          .map(l => "<script src=\"\{base_url}/languages/\{@rb.lstrip(l)}.min.js\"></script>\n")
+          @rb.split(doc.attr("highlightjs-languages").unwrap_or(""), ",")
+          .map(l => {
+            "<script src=\"\{base_url}/languages/\{@rb.lstrip(l)}.min.js\"></script>\n"
+          })
           .join("")
         } else {
           ""
@@ -279,8 +295,11 @@ impl SyntaxHighlighter for ClientHighlighter with docinfo(self, location, doc, o
         .attr("prettifydir", default="\{cdn_base_url}/prettify/r298")
         .unwrap_or("")
       if location == "head" {
-        let theme = doc.attr("prettify-theme", default="prettify").unwrap_or("prettify")
-        let theme_url = if theme.has_prefix("http://") || theme.has_prefix("https://") {
+        let theme = doc
+          .attr("prettify-theme", default="prettify")
+          .unwrap_or("prettify")
+        let theme_url = if theme.has_prefix("http://") ||
+          theme.has_prefix("https://") {
           theme
         } else {
           "\{base_url}/\{theme}.min.css"

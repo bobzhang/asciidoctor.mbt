@@ -214,7 +214,8 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
             @core.compliance.shorthand_property_syntax = v is True
           ("natural_xrefs", _) => @core.compliance.natural_xrefs = v is True
           ("markdown_syntax", _) => @core.compliance.markdown_syntax = v is True
-          ("attribute_missing", String(s)) => @core.compliance.attribute_missing = s
+          ("attribute_missing", String(s)) =>
+            @core.compliance.attribute_missing = s
           ("attribute_undefined", String(s)) =>
             @core.compliance.attribute_undefined = s
           ("unique_id_start_index", Number(n, ..)) =>
@@ -330,6 +331,7 @@ async fn main {
     }
     i += 1
   }
+  @core.set_source_date_epoch(Some(1700000000L))
   let cwd = @fs.realpath(".")
   // resolve symlinks so worktrees that link .repos see the harvested absolute paths
   let root = @fs.realpath("\{cwd}/.repos/asciidoctor")

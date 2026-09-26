@@ -130,7 +130,11 @@ pub fn Reader::new(
 
 ///|
 /// Creates a reader whose lines carry list-continuation markers.
-fn Reader::new_marked(data : Array[String], marks : Array[Bool], cursor? : Cursor) -> Reader {
+fn Reader::new_marked(
+  data : Array[String],
+  marks : Array[Bool],
+  cursor? : Cursor,
+) -> Reader {
   let r = Reader::new(data, cursor?)
   if marks.iter().any(m => m) {
     let m = marks.copy()
@@ -1208,7 +1212,9 @@ fn Reader::preprocess_include_directive(
   let attrlist_s = attrlist.unwrap_or("")
   let mut expanded_target = target
   if target.contains("{") {
-    let attr_missing = doc.attributes.str("attribute-missing").unwrap_or(compliance.attribute_missing)
+    let attr_missing = doc.attributes
+      .str("attribute-missing")
+      .unwrap_or(compliance.attribute_missing)
     expanded_target = doc.sub_attributes(
       target,
       attribute_missing=if attr_missing == "warn" {

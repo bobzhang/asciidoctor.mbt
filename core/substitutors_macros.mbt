@@ -377,7 +377,13 @@ pub fn Node::sub_macros(self : Node, text : String) -> String {
       None => false
     }) {
     text = inline_biblio_anchor_rx.replace_first(text, m => {
-      Node::new_inline(self, Anchor, text?=m.group(2), type_="bibref", id=m.at(1)).convert()
+      Node::new_inline(
+        self,
+        Anchor,
+        text?=m.group(2),
+        type_="bibref",
+        id=m.at(1),
+      ).convert()
     })
   }
   if (found_square_bracket && text.contains("[[")) ||

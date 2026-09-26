@@ -2,4 +2,5 @@ import {
   "bobzhang/asciidoctor/regex",
   "bobzhang/asciidoctor/internal/rb",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
 }
