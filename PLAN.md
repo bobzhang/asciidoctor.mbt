@@ -160,3 +160,20 @@ parser async would slow it and infect every API. Instead:
 * Keep substitution order and passthrough extraction/restoration exactly (substitutors.rb:16, :80).
 * Frozen/shared strings: MoonBit strings are immutable – replace `<<`/`sub!` with builders.
 * Warnings text and `source_location` must match (tests assert log messages).
+
+## 9. Status log
+
+### 2026-09-26
+* Milestones 0–6 done: regex engine (4,929-case Ruby differential oracle passes), Ruby helpers, core model,
+  reader/preprocessor, attribute lists, substitutions, parser, HTML5 converter, client-side highlighters
+  (highlight.js, prettify, html-pipeline), facade `load`/`convert`.
+* Golden harness: `scripts/harvest.sh` (runs upstream suite with `scripts/harvest/harvest.rb`) records
+  2,901 documents (source, options, Compliance overrides, files read, AST snapshot, outputs, messages).
+  `moon run cmd/golden --target native` replays them.
+* Parity: AST 2426/2532, HTML output 1427/1542 (skipped: DocBook/manpage backends, extension registries,
+  custom converters). Remaining HTML failures are mostly server-side highlighters (Rouge/CodeRay/Pygments),
+  extensions, remote URIs (local HTTP server in the Ruby suite), and tests that mutate the model via API
+  between load and convert (need hand-ported tests).
+* Ruby quirks reproduced deliberately: list continuation placeholder identity (tracked as per-line marker
+  flags in Reader), implicit ordered-list style as Symbol (no `type` attr), `@reftexts` partial map during
+  `resolve_id`, Integer/Float distinction in table column widths.

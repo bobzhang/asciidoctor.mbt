@@ -371,7 +371,7 @@ fn Html5Converter::convert_listing(
       if nowrap {
         opts["nowrap"] = "true"
       }
-      hl.format(node, lang.unwrap_or(""), opts)
+      hl.format(node, lang, opts)
     }
     None => pre_open + node.content() + pre_close
   }

@@ -134,7 +134,7 @@ pub(open) trait SyntaxHighlighter {
   /// Whether the highlighter handles the listing itself (server-side).
   fn handles_highlighting(Self) -> Bool
   /// Formats the (already converted) source block.
-  fn format(Self, Node, String, Map[String, String]) -> String
+  fn format(Self, Node, String?, Map[String, String]) -> String
   /// Whether docinfo is emitted at the location (`head` or `footer`).
   fn has_docinfo(Self, String) -> Bool
   /// Docinfo markup for the location; opts: linkcss, cdn_base_url, self_closing_tag_slash.
@@ -147,7 +147,152 @@ pub(open) trait SyntaxHighlighter {
 pub type SyntaxHighlighterFactory = (String, String, Node) -> &SyntaxHighlighter?
 
 ///|
-let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = {}
+let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = {
+  "highlightjs": (_, _, _) => Some(ClientHighlighter::new(HighlightJs)),
+  "highlight.js": (_, _, _) => Some(ClientHighlighter::new(HighlightJs)),
+  "prettify": (_, _, _) => Some(ClientHighlighter::new(Prettify)),
+  "html-pipeline": (_, _, _) => Some(ClientHighlighter::new(HtmlPipeline)),
+}
+
+///|
+priv enum ClientKind {
+  HighlightJs
+  Prettify
+  HtmlPipeline
+}
+
+///|
+/// Client-side syntax highlighter adapters (highlight.js, prettify, html-pipeline).
+priv struct ClientHighlighter {
+  kind : ClientKind
+}
+
+///|
+fn ClientHighlighter::new(kind : ClientKind) -> &SyntaxHighlighter {
+  ({ kind, } : ClientHighlighter)
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with name(self) {
+  match self.kind {
+    HighlightJs => "highlightjs"
+    Prettify => "prettify"
+    HtmlPipeline => "html-pipeline"
+  }
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with handles_highlighting(_self) {
+  false
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with highlight(
+  _self,
+  _node,
+  source,
+  _lang,
+  _opts,
+) {
+  source
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with has_docinfo(self, _location) {
+  match self.kind {
+    HtmlPipeline => false
+    _ => true
+  }
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with format(self, node, lang, opts) {
+  let nowrap = opts.contains("nowrap")
+  let data_lang = match lang {
+    Some(l) => " data-lang=\"\{l}\""
+    None => ""
+  }
+  match self.kind {
+    HtmlPipeline => {
+      let lang_attr = match lang {
+        Some(l) => " lang=\"\{l}\""
+        None => ""
+      }
+      "<pre\{lang_attr}><code>\{node.content()}</code></pre>"
+    }
+    HighlightJs => {
+      let mut pre_class = if nowrap {
+        "highlightjs highlight nowrap"
+      } else {
+        "highlightjs highlight"
+      }
+      if node.has_attr("nohighlight-option") {
+        pre_class = pre_class.replace(old=" highlight", new="")
+      }
+      let code_class = "language-\{lang.unwrap_or("none")} hljs"
+      "<pre class=\"\{pre_class}\"><code class=\"\{code_class}\"\{data_lang}>\{node.content()}</code></pre>"
+    }
+    Prettify => {
+      let mut pre_class = if nowrap {
+        "prettyprint highlight nowrap"
+      } else {
+        "prettyprint highlight"
+      }
+      if node.has_option("linenums") {
+        pre_class = pre_class +
+          (match node.attr("start") {
+            Some(start) => " linenums:\{start}"
+            None => " linenums"
+          })
+      }
+      "<pre class=\"\{pre_class}\"><code\{data_lang}>\{node.content()}</code></pre>"
+    }
+  }
+}
+
+///|
+impl SyntaxHighlighter for ClientHighlighter with docinfo(self, location, doc, opts) {
+  let cdn_base_url = opts.get("cdn_base_url").unwrap_or("")
+  let slash = opts.get("self_closing_tag_slash").unwrap_or("")
+  match self.kind {
+    HighlightJs => {
+      let base_url = doc
+        .attr("highlightjsdir", default="\{cdn_base_url}/highlight.js/9.18.3")
+        .unwrap_or("")
+      if location == "head" {
+        let theme = doc.attr("highlightjs-theme", default="github").unwrap_or("github")
+        "<link rel=\"stylesheet\" href=\"\{base_url}/styles/\{theme}.min.css\"\{slash}>"
+      } else {
+        let langs = if doc.has_attr("highlightjs-languages") {
+          @rb
+          .split(doc.attr("highlightjs-languages").unwrap_or(""), ",")
+          .map(l => "<script src=\"\{base_url}/languages/\{@rb.lstrip(l)}.min.js\"></script>\n")
+          .join("")
+        } else {
+          ""
+        }
+        "<script src=\"\{base_url}/highlight.min.js\"></script>\n\{langs}<script>\nif (!hljs.initHighlighting.called) {\n  hljs.initHighlighting.called = true\n  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })\n}\n</script>"
+      }
+    }
+    Prettify => {
+      let base_url = doc
+        .attr("prettifydir", default="\{cdn_base_url}/prettify/r298")
+        .unwrap_or("")
+      if location == "head" {
+        let theme = doc.attr("prettify-theme", default="prettify").unwrap_or("prettify")
+        let theme_url = if theme.has_prefix("http://") || theme.has_prefix("https://") {
+          theme
+        } else {
+          "\{base_url}/\{theme}.min.css"
+        }
+        "<link rel=\"stylesheet\" href=\"\{theme_url}\"\{slash}>"
+      } else {
+        "<script src=\"\{base_url}/run_prettify.min.js\"></script>"
+      }
+    }
+    HtmlPipeline => ""
+  }
+}
 
 ///|
 /// Registers a syntax highlighter factory under the given names.
