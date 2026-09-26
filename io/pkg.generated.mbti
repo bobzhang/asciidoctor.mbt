@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/io"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub async fn convert(String, options? : @core.Options) -> String
+
+pub async fn convert_file(String, options? : @core.Options, destination? : Destination, to_dir? : String, mkdirs? : Bool) -> String
+
+pub async fn load(String, options? : @core.Options) -> @core.Node
+
+pub async fn load_file(String, options? : @core.Options) -> @core.Node
+
+pub async fn[T] run_with_files(FsVfs, () -> T, max_rounds? : Int) -> T
+
+// Errors
+
+// Types and methods
+pub(all) enum Destination {
+  Default
+  File(String)
+  Stdout
+  NoWrite
+}
+
+pub struct FsVfs {
+  // private fields
+}
+pub fn FsVfs::add(Self, String, Bytes) -> Unit
+pub async fn FsVfs::fetch(Self, String) -> Unit
+pub fn FsVfs::new(cwd? : String, home? : String) -> Self
+pub impl @core.Vfs for FsVfs
+
+// Type aliases
+
+// Traits

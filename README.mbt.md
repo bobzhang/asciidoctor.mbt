@@ -112,9 +112,12 @@ test "inline macro extension" {
 system (asynchronously, then reruns the pure pipeline until every requested file is available) and
 writes the output next to the input, like `Asciidoctor.convert_file`.
 
+Run the CLI straight from [mooncakes.io](https://mooncakes.io/docs/bobzhang/asciidoctor) with
+`moonx`, or build it from a checkout (`io` and the CLI run on the `native` and `wasm` targets):
+
 ```
-moon build --target native cmd/asciidoctor
-./_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe -b html5 -a toc doc.adoc
+moonx bobzhang/asciidoctor/cmd/asciidoctor@latest -b html5 -a toc doc.adoc
+moon run --target native cmd/asciidoctor -- -b html5 -a toc doc.adoc
 ```
 
 The CLI supports the common Ruby options (`-b`, `-d`, `-a`, `-s`/`-e`, `-o`, `-D`, `-B`, `-S`, `-n`,

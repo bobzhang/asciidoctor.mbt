@@ -151,6 +151,36 @@ async fn main {
     @stdio.stderr.write(usage)
     c_exit(1)
   }
+  for input in opts.inputs {
+    guard input != "-" else { continue }
+    if !@fs.exists(input) {
+      write_err("asciidoctor: FAILED: input file \{input} is missing\n")
+      c_exit(1)
+    }
+    match @fs.kind(input) {
+      Regular | Pipe =>
+        if !@fs.can_read(input) {
+          write_err(
+            "asciidoctor: FAILED: input file \{input} is not readable\n",
+          )
+          c_exit(1)
+        }
+      kind => {
+        let ftype = match kind {
+          Directory => "directory"
+          CharDevice => "characterSpecial"
+          BlockDevice => "blockSpecial"
+          Socket => "socket"
+          SymLink => "link"
+          _ => "unknown"
+        }
+        write_err(
+          "asciidoctor: FAILED: input path \{input} is a \{ftype}, not a file\n",
+        )
+        c_exit(1)
+      }
+    }
+  }
   let messages : Array[@core.LogMessage] = []
   let logger = @core.Logger::new(m => messages.push(m), level=opts.log_level)
   @core.set_logger(logger) |> ignore
@@ -206,4 +236,9 @@ async fn main {
 }
 
 ///|
+#cfg(target="native")
 extern "C" fn c_exit(code : Int) = "exit"
+
+///|
+#cfg(target="wasm")
+fn c_exit(code : Int) = "wasi_snapshot_preview1" "proc_exit"

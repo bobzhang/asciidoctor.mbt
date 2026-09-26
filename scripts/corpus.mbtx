@@ -5,6 +5,9 @@
 //   -b BACKEND     html5, docbook5 or manpage (repeatable; default: all three)
 //   --standalone   compare standalone documents instead of embedded output
 //   -v             print the name of each differing file
+// Differences listed in tests/corpus_known_diffs.txt ("BACKEND<TAB>PATH",
+// paths relative to the repository root) are tolerated; any other difference
+// makes the script fail.
 // Without DIR, every corpus found under .repos/ is used.
 import {
   "moonbitlang/async@0.22.4",
@@ -41,14 +44,14 @@ fn dirname(path : String) -> String {
 }
 
 ///|
-async fn run_one(cmd : String, args : Array[String], cwd : String) -> (String, String) {
-  let (_, out, err) = @process.collect_output(
+async fn run_one(cmd : String, args : Array[String], cwd : String) -> (Int, String, String) {
+  let (code, out, err) = @process.collect_output(
     cmd,
     args,
     cwd~,
     extra_env={ "SOURCE_DATE_EPOCH": "1700000000", "TZ": "UTC" },
   )
-  (out.text(), err.text())
+  (code, out.text(), err.text())
 }
 
 ///|
@@ -90,6 +93,16 @@ async fn main {
   let bin = "\{root}/_build/native/debug/build/cmd/asciidoctor/asciidoctor.exe"
   let ruby_lib = "\{root}/.repos/asciidoctor/lib"
   let ruby_bin = "\{root}/.repos/asciidoctor/bin/asciidoctor"
+  let known : Set[String] = Set([])
+  let known_text = @fs.read_file("tests/corpus_known_diffs.txt").text() catch {
+    _ => ""
+  }
+  for line in known_text.split("\n") {
+    if line != "" && !line.has_prefix("#") {
+      known.add(line.to_owned())
+    }
+  }
+  let unexpected = []
   for backend in backends {
     for dir in dirs {
       let files = []
@@ -117,17 +130,33 @@ async fn main {
           if r.1 {
             same += 1
           } else {
-            diffs.push(r.0)
+            diffs.push(relative(root, r.0))
           }
         }
         start = end
       }
       println("\{backend}\t\{dir}\tidentical: \{same} / \{files.length()}")
-      if verbose {
-        for d in diffs {
-          println("  DIFF \{d}")
+      for d in diffs {
+        let is_known = known.contains("\{backend}\t\{d}")
+        if !is_known {
+          unexpected.push("\{backend}\t\{d}")
+        }
+        if verbose || !is_known {
+          println("  DIFF \{d}\{if is_known { " (known)" } else { "" }}")
         }
       }
     }
+  }
+  if !unexpected.is_empty() {
+    fail("\{unexpected.length()} unexpected corpus differences")
+  }
+}
+
+///|
+fn relative(root : String, path : String) -> String {
+  if path.has_prefix(root + "/") {
+    path.unsafe_substring(start=root.length() + 1, end=path.length())
+  } else {
+    path
   }
 }

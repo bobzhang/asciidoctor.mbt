@@ -474,6 +474,12 @@ async fn main {
       println("---- \{f}")
     }
   }
+  if total.records == 0 {
+    fail("no golden records replayed")
+  }
+  if unexpected.length() > 0 {
+    fail("\{unexpected.length()} unexpected golden failures")
+  }
 }
 
 ///|

@@ -23,6 +23,14 @@ jobs:
       - name: Versions
         run: moon version --all
 
+      # golden replay maps harvested paths onto the pinned upstream checkout
+      - name: Checkout upstream Asciidoctor
+        uses: actions/checkout@v4
+        with:
+          repository: asciidoctor/asciidoctor
+          ref: 30fb8cd5f7145c57274b04524ceaa99812f830e0
+          path: .repos/asciidoctor
+
       - name: Fetch dependencies
         run: moon update
 
