@@ -308,7 +308,7 @@ fn DocBook5Converter::document_info_tag(
   }
   match abstract_block {
     Some(abs) => {
-      abs.set_option("root")
+      abs.set_option("root") |> ignore
       result.push(self.dispatch(abs, abs.node_name))
       abs.remove_attr("root-option") |> ignore
     }

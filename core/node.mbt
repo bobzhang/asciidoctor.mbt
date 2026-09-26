@@ -246,8 +246,14 @@ pub fn Node::has_option(self : Node, name : String) -> Bool {
 }
 
 ///|
-pub fn Node::set_option(self : Node, name : String) -> Unit {
-  self.attributes.set_str("\{name}-option", "")
+/// Ruby `set_option(name)`: returns false if the option was already set.
+pub fn Node::set_option(self : Node, name : String) -> Bool {
+  if self.attributes.truthy("\{name}-option") {
+    false
+  } else {
+    self.attributes.set_str("\{name}-option", "")
+    true
+  }
 }
 
 ///|
@@ -724,6 +730,10 @@ pub fn Node::reindex_sections(self : Node) -> Unit {
 /// Content of this block: converted children (compound), substituted text
 /// (simple), or substituted lines (verbatim/raw).
 pub fn Node::content(self : Node) -> String {
+  // Ruby `Inline#content` is an alias of `Inline#text`
+  if self.is_inline() {
+    return self.text_.unwrap_or("")
+  }
   match self.context {
     Document => {
       self.attributes.remove("title") |> ignore

@@ -374,9 +374,13 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
   }
   attr_overrides["asciidoctor"] = Str("")
   attr_overrides["asciidoctor-version"] = Str(VERSION)
-  let safe_mode_name = safe_mode_name_for_value(dd.safe).unwrap_or("")
-  attr_overrides["safe-mode-name"] = Str(safe_mode_name)
-  attr_overrides["safe-mode-\{safe_mode_name}"] = Str("")
+  // an unrecognized level has no name (Ruby: nil, which unsets the attribute)
+  let safe_mode_name = safe_mode_name_for_value(dd.safe)
+  attr_overrides["safe-mode-name"] = match safe_mode_name {
+    Some(n) => Str(n)
+    None => Nil
+  }
+  attr_overrides["safe-mode-\{safe_mode_name.unwrap_or("")}"] = Str("")
   attr_overrides["safe-mode-level"] = Int(dd.safe)
   or_set(attr_overrides, "max-include-depth", Int(64))
   or_set(attr_overrides, "allow-uri-read", Nil)
@@ -617,6 +621,12 @@ pub fn Node::doctype(self : Node) -> String {
 ///|
 pub fn Node::sourcemap(self : Node) -> Bool {
   self.doc().sourcemap
+}
+
+///|
+/// Ruby `Document#sourcemap=`: enables source mapping before parsing.
+pub fn Node::set_sourcemap(self : Node, value : Bool) -> Unit {
+  self.doc().sourcemap = value
 }
 
 ///|
@@ -1120,7 +1130,9 @@ pub fn Node::playback_attributes(
 }
 
 ///|
-fn Node::restore_attributes(self : Node) -> Unit {
+/// Restores the attributes to the snapshot taken at the end of the header
+/// (Ruby `Document#restore_attributes`).
+pub fn Node::restore_attributes(self : Node) -> Unit {
   let dd = self.doc()
   if dd.parent_document is None {
     dd.catalog.callouts.rewind()
