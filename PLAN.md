@@ -187,9 +187,10 @@ parser async would slow it and infect every API. Instead:
   remote URIs 13, API mutation 11, misc 3).
 * Real-world check: `scripts/corpus.mbtx` — all 100 files of the Asciidoctor documentation convert
   byte-identically to Ruby (HTML and warnings).
-* Performance (release native): 38k-line document converts in 0.19s CPU vs Ruby 0.58s; wall time is
-  dominated by a fixed ~0.36s startup/teardown latency of the `moonbitlang/async` runtime (an empty
-  `async fn main` shows the same), worth reporting upstream.
+* Performance (release native, after regex prefilters): 38k-line document converts in 0.14s wall /
+  0.13s CPU vs Ruby ~0.6s. (A ~0.4s delay seen earlier was macOS's one-time check of a freshly built
+  executable — it affects non-async binaries too and disappears on subsequent runs; it is not an
+  async-runtime cost.)
 * Tests pass on native, wasm-gc and js.
 
 ## 10. Next steps
@@ -198,4 +199,4 @@ parser async would slow it and infect every API. Instead:
    scope for now.
 3. Profile hot paths (block attribute line, quote regexes) and add scanners where the regex engine
    dominates; add memoization to the regex VM if pathological patterns appear.
-4. Report the async-runtime exit latency upstream; consider a sync fast path for stdin/stdout-only CLI use.
+4. Raise an error for backends without a registered converter (Ruby raises NotImplementedError).
