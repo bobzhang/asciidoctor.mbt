@@ -6,6 +6,7 @@ import {
   "moonbitlang/async/fs",
   "moonbitlang/core/json",
   "moonbitlang/core/env",
+  "moonbitlang/core/buffer",
 }
 
 supported_targets = "native"

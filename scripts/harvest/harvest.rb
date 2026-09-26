@@ -169,6 +169,40 @@ module Harvest
   end
   Asciidoctor::Document.prepend DocumentHook
 
+  def self.record_file path
+    return if Harvest.active.empty? || @recording
+    @recording = true
+    begin
+      path = path.to_path if path.respond_to? :to_path
+      return unless ::String === path && ::File.file?(path)
+      data = ::File.binread path
+      files = (Harvest.active.last['files'] ||= {})
+      files[Harvest.relpath(::File.absolute_path(path))] = [data].pack('m0')
+    rescue StandardError
+      nil
+    ensure
+      @recording = false
+    end
+  end
+
+  module FileHook
+    def read path, *args, &blk
+      Harvest.record_file path
+      super
+    end
+
+    def binread path, *args, &blk
+      Harvest.record_file path
+      super
+    end
+
+    def open path, *args, &blk
+      Harvest.record_file path if ::String === path || path.respond_to?(:to_path)
+      super
+    end
+  end
+  ::File.singleton_class.prepend FileHook
+
   module LoggerHook
     def add severity, message = nil, progname = nil, &block
       unless Harvest.active.empty?

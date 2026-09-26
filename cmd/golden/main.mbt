@@ -186,6 +186,17 @@ fn run_record(ctx : Ctx, rec : Map[String, Json], stats : Stats) -> Unit {
     stats.skipped += 1
     return
   }
+  match rec.get("files") {
+    Some(Object(files)) =>
+      for path, data in files {
+        match data {
+          String(b64) =>
+            ctx.vfs.add_bytes(subst_root(ctx, path), base64_decode(b64))
+          _ => ()
+        }
+      }
+    _ => ()
+  }
   @core.reset_compliance()
   match rec.get("compliance") {
     Some(Object(c)) =>
@@ -392,4 +403,39 @@ async fn main {
       println("---- \{f}")
     }
   }
+}
+
+///|
+fn base64_decode(s : String) -> Bytes {
+  let value = fn(c : Int) -> Int {
+    if c >= 'A' && c <= 'Z' {
+      c - 'A'
+    } else if c >= 'a' && c <= 'z' {
+      c - 'a' + 26
+    } else if c >= '0' && c <= '9' {
+      c - '0' + 52
+    } else if c == '+' {
+      62
+    } else if c == '/' {
+      63
+    } else {
+      -1
+    }
+  }
+  let out = @buffer.new()
+  let mut acc = 0
+  let mut bits = 0
+  for i in 0..<s.length() {
+    let v = value(s[i].to_int())
+    if v < 0 {
+      continue
+    }
+    acc = (acc << 6) | v
+    bits += 6
+    if bits >= 8 {
+      bits -= 8
+      out.write_byte(((acc >> bits) & 0xFF).to_byte())
+    }
+  }
+  out.to_bytes()
 }
