@@ -143,9 +143,12 @@ pub fn set_logger(l : Logger) -> Logger {
 
 ///|
 /// Runs `f` with a memory logger installed and returns the recorded messages.
-pub fn[T] with_memory_logger(f : () -> T) -> (T, Array[LogMessage]) {
+pub fn[T] with_memory_logger(
+  f : () -> T raise?,
+) -> (T, Array[LogMessage]) raise? {
   let messages = []
   let old = set_logger(Logger::memory(messages))
+  errdefer set_logger(old) |> ignore
   let r = f()
   set_logger(old) |> ignore
   (r, messages)

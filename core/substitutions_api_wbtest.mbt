@@ -8,10 +8,25 @@
 // the Ruby tests with the calls recorded).
 
 ///|
+/// Options with a converter that renders nothing: no converter package is
+/// linked into core's white-box tests, and a document without a converter
+/// is not processed (Ruby raises `NotImplementedError`).
+fn wb_options(
+  attributes? : Array[(String, AttrVal)] = [],
+  standalone? : Bool,
+) -> Options {
+  Options::new(
+    attributes~,
+    standalone?,
+    converter=({ traits: derive_backend_traits("html5"), } : NullConverter),
+  )
+}
+
+///|
 fn wb_block_from_string(src : String) -> Node {
   let doc = new_document(
     Some(prepare_source_string(src)),
-    Options::new(standalone=false),
+    wb_options(standalone=false),
   )
   doc.parse().blocks[0]
 }

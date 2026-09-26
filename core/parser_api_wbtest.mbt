@@ -74,7 +74,7 @@ fn parse_header_metadata_from(source : String, doc? : Node) -> Attributes {
 ///|
 /// Ruby test helper `empty_document`.
 fn empty_document(attributes? : Array[(String, AttrVal)] = []) -> Node {
-  new_document(Some([]), Options::new(attributes~))
+  new_document(Some([]), wb_options(attributes~))
 }
 
 ///|
@@ -401,7 +401,7 @@ test "adjust indentation handles empty lines gracefully" {
 ///|
 test "process_line returns nil if cursor advanced" {
   let input = "ifdef::asciidoctor[]\nAsciidoctor!\nendif::asciidoctor[]\n"
-  let doc = new_document(Some(prepare_source_string(input)), Options::new())
+  let doc = new_document(Some(prepare_source_string(input)), wb_options())
   let reader = doc.reader().unwrap()
   debug_inspect(reader.process_line(reader.lines()[0]), content="None")
 }
@@ -409,7 +409,7 @@ test "process_line returns nil if cursor advanced" {
 ///|
 test "process_line returns line if cursor not advanced" {
   let input = "content\nifdef::asciidoctor[]\nAsciidoctor!\nendif::asciidoctor[]\n"
-  let doc = new_document(Some(prepare_source_string(input)), Options::new())
+  let doc = new_document(Some(prepare_source_string(input)), wb_options())
   let reader = doc.reader().unwrap()
   debug_inspect(
     reader.process_line(reader.lines()[0]),
@@ -1383,7 +1383,7 @@ test "attribute entry overrides generated author initials" {
 
 ///|
 fn section_title_of(src : String) -> (String?, String?, String, Int, Bool) {
-  let doc = new_document(Some([]), Options::new())
+  let doc = new_document(Some([]), wb_options())
   parse_section_title(Reader::new(@rb.split(src, "\n")), doc, None)
 }
 
@@ -1480,7 +1480,7 @@ test "parse_colspecs" {
 fn attribute_entry_of(
   src : String,
 ) -> (Bool, Array[AttributeEntry], Array[String]) {
-  let doc = new_document(Some([]), Options::new())
+  let doc = new_document(Some([]), wb_options())
   let reader = Reader::new(@rb.split(src, "\n"))
   let attrs = Attributes::new()
   let r = process_attribute_entry(reader, Some(doc), Some(attrs), None)

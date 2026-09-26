@@ -358,13 +358,14 @@ pub fn Node::generate_data_uri(
 }
 
 ///|
-/// Ruby `normalize_asset_path`.
+/// Ruby `normalize_asset_path`. Raises `SecurityError` when the path is
+/// outside of the jail and `autocorrect` is false.
 pub fn Node::normalize_asset_path(
   self : Node,
   asset_ref : String,
   asset_name? : String = "path",
   autocorrect? : Bool = true,
-) -> String {
+) -> String raise SecurityError {
   // Ruby: normalize_system_path asset_ref, @document.base_dir, nil, ...
   // (jailed to the base dir unless the safe mode is UNSAFE)
   self.normalize_system_path_checked(
@@ -372,9 +373,7 @@ pub fn Node::normalize_asset_path(
     start=self.document().base_dir(),
     target_name=asset_name,
     recover=autocorrect,
-  ) catch {
-    SecurityError(msg) => abort(msg)
-  }
+  )
 }
 
 ///|

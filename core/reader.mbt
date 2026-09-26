@@ -1279,7 +1279,9 @@ fn Reader::preprocess_include_directive(
             self,
             expanded_target,
             doc.parse_attributes(attrlist_s, [], sub_input=true),
-          )
+          ) catch {
+            e => doc.abort_processing(e)
+          }
           return true
         }
       }

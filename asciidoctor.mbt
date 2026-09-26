@@ -52,14 +52,27 @@ pub fn parse_attributes_option(attrs : String) -> Array[(String, AttrVal)] {
 }
 
 ///|
+/// Registers the built-in converters unless a converter is already registered
+/// for their backend, so a converter the user registered for `html5`,
+/// `docbook5` or `manpage` takes precedence (Ruby `Converter.register`).
 fn ensure_converters() -> Unit {
-  @html5.register()
-  @manpage.register()
-  @docbook5.register()
+  if @core.lookup_converter("html5") is None {
+    @html5.register()
+  }
+  if @core.lookup_converter("manpage") is None {
+    @manpage.register()
+  }
+  if @core.lookup_converter("docbook5") is None {
+    @docbook5.register()
+  }
 }
 
 ///|
 /// Loads (parses) an AsciiDoc document from a string (Ruby `Asciidoctor.load`).
+///
+/// Where Ruby raises (e.g. no converter is registered for the backend), the
+/// document reports the error through `@core.Node::processing_error` and is
+/// left unparsed; `convert` raises it.
 pub fn load(input : String, options? : Options = Options::new()) -> Node {
   ensure_converters()
   let doc = @core.new_document(
@@ -91,6 +104,11 @@ pub fn load_lines(
 ///|
 /// Converts an AsciiDoc string (Ruby `Asciidoctor.convert` without file output).
 ///
+/// Raises the error that aborted processing, like Ruby: a `@core.ProcessingError`
+/// (`MissingConverter` when no converter is registered for the backend,
+/// `ConversionFailed` when the converter gives up) or an error raised by an
+/// extension (e.g. `@core.ArgumentError`).
+///
 /// ```mbt check
 /// test {
 ///   let html = @asciidoctor.convert("Hello, *World*!")
@@ -104,6 +122,21 @@ pub fn load_lines(
 ///   )
 /// }
 /// ```
-pub fn convert(input : String, options? : Options = Options::new()) -> String {
-  load(input, options~).convert()
+pub fn convert(
+  input : String,
+  options? : Options = Options::new(),
+) -> String raise {
+  let doc = load(input, options~)
+  check_processing_error(doc)
+  let output = doc.convert()
+  check_processing_error(doc)
+  output
+}
+
+///|
+fn check_processing_error(doc : Node) -> Unit raise {
+  match doc.processing_error() {
+    Some(e) => raise e
+    None => ()
+  }
 }

@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn convert(String, options? : @core.Options) -> String
+pub fn convert(String, options? : @core.Options) -> String raise
 
 pub fn load(String, options? : @core.Options) -> @core.Node
 
@@ -18,7 +18,7 @@ pub fn parse_attributes_option(String) -> Array[(String, @core.AttrVal)]
 
 pub fn set_logger(@core.Logger) -> @core.Logger
 
-pub fn[T] with_memory_logger(() -> T) -> (T, Array[@core.LogMessage])
+pub fn[T] with_memory_logger(() -> T raise?) -> (T, Array[@core.LogMessage]) raise?
 
 // Errors
 

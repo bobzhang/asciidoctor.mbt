@@ -2,7 +2,7 @@
 // with equivalent Ruby extensions (see PLAN.md, extensions section).
 
 ///|
-fn convert_with(src : String, exts : @core.Extensions) -> String {
+fn convert_with(src : String, exts : @core.Extensions) -> String raise {
   @asciidoctor.convert(
     src,
     options=@core.Options::new(safe=@core.SAFE_SAFE, extensions=exts),
