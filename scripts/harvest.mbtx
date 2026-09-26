@@ -1,7 +1,12 @@
 // Regenerates the golden fixtures in tests/golden/ by running the upstream
 // Ruby test suite with scripts/harvest/harvest.rb loaded.
 // Requires Ruby with minitest and nokogiri; installs rouge/coderay/asciimath
+// and the template engines used by converter_test.rb (tilt/haml/slim/erubi)
 // into .repos/gems on first use.
+//
+// Fails if an upstream test file fails (non-zero exit) under the harvester.
+// After harvesting, refresh tests/golden/record_counts.txt with
+// `_build/native/debug/build/cmd/golden/golden.exe --update-counts`.
 //
 // Usage: moon run --target native scripts/harvest.mbtx -- [test/xxx_test.rb...]
 import {
@@ -12,9 +17,22 @@ import {
 }
 
 ///|
+let gems : Array[(String, String)] = [
+  ("rouge-", "rouge:~>3.0"),
+  ("coderay-", "coderay:~>1.1.0"),
+  ("asciimath-", "asciimath:~>2.0"),
+  ("tilt-", "tilt:~>2.6.0"),
+  ("haml-", "haml:~>6.3.0"),
+  ("slim-", "slim:~>5.2.1"),
+  ("erubi-", "erubi:~>1.10"),
+  ("concurrent-ruby-", "concurrent-ruby:~>1.1"),
+  ("open-uri-cached-", "open-uri-cached:~>1.0.0"),
+]
+
+///|
 async fn main {
   let root = @fs.realpath(".")
-  let up = "\{root}/.repos/asciidoctor"
+  let up = @fs.realpath("\{root}/.repos/asciidoctor")
   let gem_home = "\{root}/.repos/gems"
   let (_, gempath, _) = @process.collect_output("gem", ["env", "gempath"])
   let env = {
@@ -23,36 +41,48 @@ async fn main {
     "SOURCE_DATE_EPOCH": "1700000000",
     "TZ": "UTC",
   }
-  let has_rouge = (@fs.readdir("\{gem_home}/gems") catch { _ => [] })
-    .iter()
-    .any(g => g.has_prefix("rouge-"))
-  if !has_rouge {
-    @process.run(
+  let installed = @fs.readdir("\{gem_home}/gems") catch { _ => [] }
+  let missing = gems
+    .filter(g => !installed.iter().any(i => i.has_prefix(g.0)))
+    .map(g => g.1)
+  if !missing.is_empty() {
+    let code = @process.run(
       "gem",
-      ["install", "--no-document", "rouge:~>3.0", "coderay:~>1.1.0", "asciimath:~>2.0"],
+      ["install", "--no-document", ..missing],
       extra_env=env,
     )
-    |> ignore
+    if code != 0 {
+      fail("gem install failed: \{missing.join(" ")}")
+    }
   }
   @fs.mkdir("\{root}/tests/golden", recursive=true, allow_exist=true)
-  let args = @env.args()[1:].to_array().filter(a => a != "--")
+  let args = @env.args()[1:].to_owned().filter(a => a != "--")
   let tests = if args.is_empty() {
     @fs.readdir("\{up}/test", sort=true).filter(n => n.has_suffix("_test.rb")).map(n => "test/\{n}")
   } else {
     args
   }
+  let failed = []
   for t in tests {
     let name = t.rev_find("/").map(i => t.unsafe_substring(start=i + 1, end=t.length())).unwrap_or(t)
     let name = name.unsafe_substring(start=0, end=name.length() - "_test.rb".length())
     let test_env = env.copy()
     test_env["HARVEST_OUT"] = "\{root}/tests/golden/\{name}.jsonl"
-    let (_, out) = @process.collect_output_merged(
+    let (code, out) = @process.collect_output_merged(
       "ruby",
       ["-Ilib", "-Itest", "-r\{root}/scripts/harvest/harvest.rb", t],
       cwd=up,
       extra_env=test_env,
     )
-    let summary = out.text().split("\n").filter(l => l.contains("runs,")).map(l => l.to_owned()).collect()
+    let text = out.text()
+    let summary = text.split("\n").filter(l => l.contains("runs,")).map(l => l.to_owned()).collect()
     println("\{name}: \{summary.join(" ")}")
+    if code != 0 {
+      println(text)
+      failed.push("\{name} (exit \{code})")
+    }
+  }
+  if !failed.is_empty() {
+    fail("upstream tests failed under the harvester: \{failed.join(", ")}")
   }
 }

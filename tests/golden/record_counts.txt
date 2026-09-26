@@ -1,0 +1,26 @@
+# Number of records in each golden file; cmd/golden fails if a file has fewer.
+# Regenerate with `golden.exe --update-counts` after harvesting.
+136	tests/golden/api.jsonl
+99	tests/golden/text.jsonl
+194	tests/golden/links.jsonl
+324	tests/golden/lists.jsonl
+2	tests/golden/paths.jsonl
+329	tests/golden/blocks.jsonl
+7	tests/golden/logger.jsonl
+21	tests/golden/parser.jsonl
+193	tests/golden/reader.jsonl
+137	tests/golden/tables.jsonl
+0	tests/golden/helpers.jsonl
+64	tests/golden/invoker.jsonl
+82	tests/golden/manpage.jsonl
+0	tests/golden/options.jsonl
+197	tests/golden/document.jsonl
+13	tests/golden/preamble.jsonl
+238	tests/golden/sections.jsonl
+42	tests/golden/converter.jsonl
+216	tests/golden/attributes.jsonl
+104	tests/golden/extensions.jsonl
+57	tests/golden/paragraphs.jsonl
+419	tests/golden/substitutions.jsonl
+3	tests/golden/attribute_list.jsonl
+73	tests/golden/syntax_highlighter.jsonl

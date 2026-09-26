@@ -490,6 +490,7 @@ pub fn Logger::is_info(Self) -> Bool
 pub fn Logger::memory(Array[LogMessage]) -> Self
 pub fn Logger::new((LogMessage) -> Unit, level? : Severity) -> Self
 pub fn Logger::null() -> Self
+pub fn Logger::recording(Array[LogMessage], level~ : Severity) -> Self
 pub fn Logger::set_level(Self, Severity) -> Unit
 
 pub struct MemoryVfs {

@@ -125,13 +125,14 @@ The CLI supports the common Ruby options (`-b`, `-d`, `-a`, `-s`/`-e`, `-o`, `-D
 
 ## Status
 
-Parity is measured against goldens harvested from the upstream Ruby test suite (2,901 documents with
-their options, the files they read, an AST snapshot and every conversion output):
+Parity is measured against goldens harvested from the upstream Ruby test suite (2,950 documents with
+their options, the files they read, an AST snapshot, every conversion output and the log messages):
 
 | | passing |
 |---|---|
-| AST snapshots | 2506 / 2612 |
-| converted outputs (HTML5, DocBook5, manpage) | 1705 / 1819 |
+| AST snapshots | 2584 / 2693 |
+| converted outputs (HTML5, DocBook5, manpage) | 1753 / 1875 |
+| log messages (severity, text, source location) | 2615 / 2691 |
 | unexpected failures | 0 |
 
 The remaining failures are catalogued in `tests/golden/known_failures.txt`: tests of Ruby's extension

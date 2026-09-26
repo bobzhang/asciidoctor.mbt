@@ -6,11 +6,20 @@
 #   - the source text and the load options (JSON-safe subset)
 #   - a canonical dump of the parsed AST (after Document#parse)
 #   - the converted output (if Document#convert is called)
-#   - every log message emitted while the document was active
+#   - every log message emitted while the document is being created, parsed or
+#     converted (messages emitted by the test itself, e.g. through node API calls
+#     after loading, are not recorded since the replay cannot reproduce them)
+#   - the logger level in effect, which decides whether info/debug messages are
+#     generated at all (logger.info? / logger.debug? guards)
 # Records are written as JSON lines to $HARVEST_OUT.
+#
+# Machine-specific paths are replaced by placeholders so that the goldens replay
+# anywhere: the upstream checkout by $ROOT, the temp dir by $TMPDIR and the home
+# dir by $HOME (see cmd/golden/main.mbt).
 require 'json'
+require 'tmpdir'
 
-HARVEST_ROOT = File.expand_path '../../.repos/asciidoctor', __dir__
+HARVEST_ROOT = File.realpath File.expand_path('../../.repos/asciidoctor', __dir__)
 $LOAD_PATH.unshift File.join(HARVEST_ROOT, 'lib')
 require 'asciidoctor'
 require 'asciidoctor/extensions'
@@ -19,10 +28,20 @@ require 'minitest'
 module Harvest
   OUT = File.open(ENV.fetch('HARVEST_OUT'), 'w')
   COMPLIANCE_DEFAULTS = Asciidoctor::Compliance.keys.each_with_object({}) {|k, h| h[k] = Asciidoctor::Compliance.send k }
+  # [literal path, placeholder], longest first so nested paths are replaced first
+  PLACEHOLDERS = [
+    [File.expand_path('../../.repos/asciidoctor', __dir__), '$ROOT'],
+    [HARVEST_ROOT, '$ROOT'],
+    [(File.realpath Dir.tmpdir), '$TMPDIR'],
+    [Dir.tmpdir, '$TMPDIR'],
+    [(File.realpath Dir.home), '$HOME'],
+    [Dir.home, '$HOME'],
+  ].uniq.sort_by {|(path, _)| -path.length }
   @test = nil
   @active = []
+  @current = []
   class << self
-    attr_accessor :test, :active
+    attr_accessor :test, :active, :current
 
     def json_safe val
       case val
@@ -34,15 +53,20 @@ module Harvest
       end
     end
 
-    def relpath path
-      path.is_a?(String) && path.start_with?(HARVEST_ROOT) ? path.sub(HARVEST_ROOT, '$ROOT') : path
-    end
-
     def options_for opts
       opts.each_with_object({}) do |(k, v), h|
-        k = k.to_s
-        v = relpath v if %w(base_dir to_dir to_file docdir).include?(k)
-        h[k] = json_safe v
+        h[k.to_s] = json_safe v
+      end
+    end
+
+    # Runs the block with rec receiving the log messages and file reads.
+    def within rec
+      return yield unless rec
+      @current.push rec
+      begin
+        yield
+      ensure
+        @current.pop
       end
     end
 
@@ -112,6 +136,7 @@ module Harvest
       rescue JSON::GeneratorError
         JSON.generate(scrub(rec).merge("scrubbed" => true), max_nesting: false)
       end
+      PLACEHOLDERS.each { |(path, placeholder)| json = json.gsub path, placeholder }
       OUT.puts json
       OUT.flush
     end
@@ -136,9 +161,10 @@ module Harvest
         rec['compliance'] = compliance unless compliance.empty?
         rec['source_date_epoch'] = ENV['SOURCE_DATE_EPOCH'] unless ENV['SOURCE_DATE_EPOCH'] == '1700000000'
         rec['source_lines'] = data if Array === data
+        rec['log_level'] = Asciidoctor::LoggerManager.logger.level
         Harvest.active.push rec
       end
-      super
+      Harvest.within(rec) { super }
       if rec
         @__harvest = rec
         rec['source'] = @reader.source_lines.join("\n") if Hash === rec['source'] && @reader
@@ -148,7 +174,7 @@ module Harvest
     end
 
     def parse data = nil
-      r = super
+      r = Harvest.within(@__harvest) { super }
       if (rec = @__harvest) && !rec['ast']
         begin
           rec['ast'] = JSON.parse(JSON.generate(Harvest.scrub(Harvest.dump_node(self)), max_nesting: false), max_nesting: false)
@@ -160,7 +186,7 @@ module Harvest
     end
 
     def convert opts = {}
-      out = super
+      out = Harvest.within(@__harvest) { super }
       if (rec = @__harvest)
         rec['converted'] ||= []
         rec['converted'] << { 'opts' => Harvest.json_safe(opts), 'backend' => @backend, 'standalone' => !(attr? 'embedded'), 'output' => out.is_a?(String) ? out : out.to_s }
@@ -171,14 +197,14 @@ module Harvest
   Asciidoctor::Document.prepend DocumentHook
 
   def self.record_file path
-    return if Harvest.active.empty? || @recording
+    return if (Harvest.active.empty? && Harvest.current.empty?) || @recording
     @recording = true
     begin
       path = path.to_path if path.respond_to? :to_path
       return unless ::String === path && ::File.file?(path)
       data = ::File.binread path
-      files = (Harvest.active.last['files'] ||= {})
-      files[Harvest.relpath(::File.absolute_path(path))] = [data].pack('m0')
+      files = ((Harvest.current.last || Harvest.active.last)['files'] ||= {})
+      files[::File.absolute_path(path)] = [data].pack('m0')
     rescue StandardError
       nil
     ensure
@@ -206,10 +232,18 @@ module Harvest
 
   module LoggerHook
     def add severity, message = nil, progname = nil, &block
-      unless Harvest.active.empty?
+      if (rec = Harvest.current.last)
         msg = message || (block ? block.call : progname)
-        text = msg.is_a?(Hash) || msg.respond_to?(:[]) && msg.respond_to?(:key?) ? { 'text' => msg[:text], 'source_location' => msg[:source_location]&.to_s } : msg.to_s
-        (Harvest.active.last['messages'] ||= []) << { 'severity' => severity, 'message' => text }
+        entry = { 'severity' => (severity || ::Logger::Severity::UNKNOWN) }
+        if msg.respond_to?(:[]) && msg.respond_to?(:key?) && !(::String === msg)
+          entry['message'] = msg[:text].to_s
+          entry['source_location'] = msg[:source_location].to_s if msg[:source_location]
+        else
+          entry['message'] = msg.to_s
+        end
+        (rec['messages'] ||= []) << entry
+        # pass the evaluated message on so a block is not called twice
+        return super severity, msg, progname if !message && block
       end
       super
     end
@@ -226,6 +260,7 @@ module Harvest
       super
       Harvest.active.each { |rec| Harvest.emit rec }
       Harvest.active.clear
+      Harvest.current.clear
       Harvest.test = nil
     end
   end
