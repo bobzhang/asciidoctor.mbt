@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor/internal/localtime"
+
+// Values
+pub fn utc_offset(Int64) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

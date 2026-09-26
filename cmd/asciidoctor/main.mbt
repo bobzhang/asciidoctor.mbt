@@ -184,6 +184,7 @@ async fn main {
   let messages : Array[@core.LogMessage] = []
   let logger = @core.Logger::new(m => messages.push(m), level=opts.log_level)
   @core.set_logger(logger) |> ignore
+  @core.set_utc_offset(@localtime.utc_offset)
   match @env.get_env_var("SOURCE_DATE_EPOCH") {
     Some(s) => @core.set_source_date_epoch(Some(@rb.to_i(s).to_int64()))
     None => ()

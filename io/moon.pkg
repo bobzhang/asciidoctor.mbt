@@ -3,10 +3,19 @@ import {
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/internal/rb",
   "moonbitlang/async/fs",
+  "moonbitlang/async/os_error",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
 }
 
+import {
+  "moonbitlang/async",
+} for "test"
+
 supported_targets = "native+wasm"
 
 warnings = "-implicit_impl_as_method"
+
+options(
+  "max-concurrent-tests": 1,
+)
