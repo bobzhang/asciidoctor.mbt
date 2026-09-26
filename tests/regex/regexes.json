@@ -1,0 +1,1927 @@
+[
+  {
+    "name": "AbstractBlock::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "AbstractBlock::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "AbstractBlock::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "AbstractBlock::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "AbstractBlock::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "AbstractNode::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "AbstractNode::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "AbstractNode::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "AbstractNode::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "AbstractNode::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "AdmonitionParagraphRx",
+    "source": "^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):[ \\t]+",
+    "options": 0
+  },
+  {
+    "name": "AnyListRx",
+    "source": "^(?:[ \\t]*(?:-|\\*\\**|\\.\\.*|\\u2022|\\d+\\.|[a-zA-Z]\\.|[IVXivx]+\\))[ \\t]|(?!//[^/])[ \\t]*[^ \\t].*?(?::::{0,2}|;;)(?:$|[ \\t])|<(?:\\d+|\\.)>[ \\t])",
+    "options": 16
+  },
+  {
+    "name": "AttributeEntryPassMacroRx",
+    "source": "\\Apass:([a-z]+(?:,[a-z-]+)*)?\\[(.*)\\]\\Z",
+    "options": 4
+  },
+  {
+    "name": "AttributeEntryRx",
+    "source": "^:(!?\\p{Word}[^:]*):(?:[ \\t]+(.*))?$",
+    "options": 16
+  },
+  {
+    "name": "AttributeList::BlankRx",
+    "source": "[ \\t]+",
+    "options": 0
+  },
+  {
+    "name": "AttributeList::BoundaryRx[1]",
+    "source": ".*?[^\\\\](?=\")",
+    "options": 0
+  },
+  {
+    "name": "AttributeList::BoundaryRx[3]",
+    "source": ".*?[^\\\\](?=')",
+    "options": 0
+  },
+  {
+    "name": "AttributeList::BoundaryRx[5]",
+    "source": ".*?(?=[ \\t]*(,|$))",
+    "options": 0
+  },
+  {
+    "name": "AttributeList::NameRx",
+    "source": "\\p{Word}[\\p{Word}-]*",
+    "options": 16
+  },
+  {
+    "name": "AttributeList::SkipRx[1]",
+    "source": "[ \\t]*(,|$)",
+    "options": 0
+  },
+  {
+    "name": "AttributeReferenceRx",
+    "source": "(\\\\)?\\{(\\p{Word}[\\p{Word}-]*|(set|counter2?):.+?)(\\\\)?\\}",
+    "options": 16
+  },
+  {
+    "name": "AtxSectionTitleRx",
+    "source": "^(=={0,5})[ \\t]+(.+?)(?:[ \\t]+\\1)?$",
+    "options": 0
+  },
+  {
+    "name": "AuthorDelimiterRx",
+    "source": ";(?: |$)",
+    "options": 0
+  },
+  {
+    "name": "AuthorInfoLineRx",
+    "source": "^(\\p{Word}[\\p{Word}\\-'.]*)(?: +(\\p{Word}[\\p{Word}\\-'.]*))?(?: +(\\p{Word}[\\p{Word}\\-'.]*))?(?: +<([^>]+)>)?$",
+    "options": 16
+  },
+  {
+    "name": "BlankLineRx",
+    "source": "\\n{2,}",
+    "options": 0
+  },
+  {
+    "name": "Block::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Block::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Block::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Block::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Block::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "BlockAnchorRx",
+    "source": "^\\[\\[(?:|([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+))?)\\]\\]$",
+    "options": 16
+  },
+  {
+    "name": "BlockAttributeLineRx",
+    "source": "^\\[(?:|[\\p{Word}.#%{,\"'].*|\\[(?:|[\\p{Alpha}_:][\\p{Word}\\-:.]*(?:, *.+)?)\\])\\]$",
+    "options": 16
+  },
+  {
+    "name": "BlockAttributeListRx",
+    "source": "^\\[(|[\\p{Word}.#%{,\"'].*)\\]$",
+    "options": 16
+  },
+  {
+    "name": "BlockMediaMacroRx",
+    "source": "^(image|video|audio)::(\\S|\\S.*?\\S)\\[(.+)?\\]$",
+    "options": 0
+  },
+  {
+    "name": "BlockTitleRx",
+    "source": "^\\.(\\.?[^ \\t.].*)$",
+    "options": 0
+  },
+  {
+    "name": "BlockTocMacroRx",
+    "source": "^toc::\\[(.+)?\\]$",
+    "options": 0
+  },
+  {
+    "name": "CalloutExtractRx",
+    "source": "((?://|#|--|;;) ?)?(\\\\)?<!?(|--)(\\d+|\\.)\\3>(?=(?: ?\\\\?<!?\\3(?:\\d+|\\.)\\3>)*$)",
+    "options": 0
+  },
+  {
+    "name": "CalloutListRx",
+    "source": "^<(\\d+|\\.)>[ \\t]+(.*)$",
+    "options": 0
+  },
+  {
+    "name": "CalloutScanRx",
+    "source": "\\\\?<!?(|--)(\\d+|\\.)\\1>(?=(?: ?\\\\?<!?\\1(?:\\d+|\\.)\\1>)*$)",
+    "options": 0
+  },
+  {
+    "name": "CalloutSourceRx",
+    "source": "((?://|#|--|;;) ?)?(\\\\)?&lt;!?(|--)(\\d+|\\.)\\3&gt;(?=(?: ?\\\\?&lt;!?\\3(?:\\d+|\\.)\\3&gt;)*$)",
+    "options": 0
+  },
+  {
+    "name": "CellSpecEndRx",
+    "source": "[ \\t]+(?:(\\d+(?:\\.\\d*)?|(?:\\d*\\.)?\\d+)([*+]))?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?([a-z])?$",
+    "options": 0
+  },
+  {
+    "name": "CellSpecStartRx",
+    "source": "^[ \\t]*(?:(\\d+(?:\\.\\d*)?|(?:\\d*\\.)?\\d+)([*+]))?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?([a-z])?$",
+    "options": 0
+  },
+  {
+    "name": "ColumnSpecRx",
+    "source": "^(?:(\\d+)\\*)?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?(\\d+%?|~)?([a-z])?$",
+    "options": 0
+  },
+  {
+    "name": "ConditionalDirectiveRx",
+    "source": "^(\\\\)?(ifdef|ifndef|ifeval|endif)::(\\S*?(?:([,+])\\S*?)?)\\[(.+)?\\]$",
+    "options": 0
+  },
+  {
+    "name": "CustomBlockMacroRx",
+    "source": "^(\\p{Word}[\\p{Word}-]*)::(|\\S|\\S.*?\\S)\\[(.+)?\\]$",
+    "options": 16
+  },
+  {
+    "name": "DescriptionListRx",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?)(:::{0,2}|;;)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "DescriptionListSiblingRx[1]",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?[^:]|[^ \\t:])(::)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "DescriptionListSiblingRx[3]",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?[^:]|[^ \\t:])(:::)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "DescriptionListSiblingRx[5]",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?[^:]|[^ \\t:])(::::)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "DescriptionListSiblingRx[7]",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?)(;;)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "Document::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Document::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Document::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Document::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Document::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "EscapedSpaceRx",
+    "source": "\\\\([ \\t\\n])",
+    "options": 0
+  },
+  {
+    "name": "EvalExpressionRx",
+    "source": "^(.+?) *([=!><]=|[><]) *(.+)$",
+    "options": 0
+  },
+  {
+    "name": "ExtAtxSectionTitleRx",
+    "source": "^(=={0,5}|#\\#{0,5})[ \\t]+(.+?)(?:[ \\t]+\\1)?$",
+    "options": 0
+  },
+  {
+    "name": "ExtLayoutBreakRx",
+    "source": "^(?:'{3,}|<{3,}|([-*_])( *)\\1\\2\\1)$",
+    "options": 0
+  },
+  {
+    "name": "HardLineBreakRx",
+    "source": "^(.*) \\+$",
+    "options": 0
+  },
+  {
+    "name": "IncludeDirectiveRx",
+    "source": "^(\\\\)?include::([^\\s\\[](?:[^\\[]*[^\\s\\[])?)\\[(.+)?\\]$",
+    "options": 0
+  },
+  {
+    "name": "Inline::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Inline::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Inline::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Inline::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Inline::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "InlineAnchorRx",
+    "source": "(\\\\)?(?:\\[\\[([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+?))? ?\\]\\]|anchor:([\\p{Alpha}_:][\\p{Word}\\-:.]*)\\[(?:\\]|(.*?[^\\\\])\\]))",
+    "options": 16
+  },
+  {
+    "name": "InlineAnchorScanRx",
+    "source": "(?:^|[^\\\\\\[])\\[\\[([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+?))? ?\\]\\]|(?:^|[^\\\\])anchor:([\\p{Alpha}_:][\\p{Word}\\-:.]*)\\[(?:\\]|(.*?[^\\\\])\\])",
+    "options": 16
+  },
+  {
+    "name": "InlineBiblioAnchorRx",
+    "source": "^\\[\\[\\[([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+?))?\\]\\]\\]",
+    "options": 16
+  },
+  {
+    "name": "InlineEmailRx",
+    "source": "([\\\\>:/])?\\p{Word}(?:&amp;|[\\p{Word}\\-.%+])*@\\p{Alnum}[\\p{Alnum}_\\-.]*\\.[a-zA-Z]{2,5}\\b",
+    "options": 16
+  },
+  {
+    "name": "InlineFootnoteMacroRx",
+    "source": "\\\\?footnote(?:(ref):|:([\\p{Word}-]+)?)\\[(?:|(.*?[^\\\\]))\\](?!</a>)",
+    "options": 20
+  },
+  {
+    "name": "InlineImageMacroRx",
+    "source": "\\\\?i(?:mage|con):([^:\\s\\[](?:[^\\n\\[]*[^\\s\\[])?)\\[(|.*?[^\\\\])\\]",
+    "options": 4
+  },
+  {
+    "name": "InlineIndextermMacroRx",
+    "source": "\\\\?(?:(indexterm2?):\\[(.*?[^\\\\])\\]|\\(\\((.+?)\\)\\)(?!\\)))",
+    "options": 4
+  },
+  {
+    "name": "InlineKbdBtnMacroRx",
+    "source": "(\\\\)?(kbd|btn):\\[(.*?[^\\\\])\\]",
+    "options": 4
+  },
+  {
+    "name": "InlineLinkMacroRx",
+    "source": "\\\\?(?:link|(mailto)):(|[^:\\s\\[][^\\s\\[]*)\\[(|.*?[^\\\\])\\]",
+    "options": 4
+  },
+  {
+    "name": "InlineLinkRx",
+    "source": "(^|link:|\\p{Blank}|\\\\?&lt;()|[>\\(\\)\\[\\];\"'])(\\\\?(?:https?|file|ftp|irc)://)(?:([^\\s\\[\\]]+)\\[(|.*?[^\\\\])\\]|\\2([^\\s]+?)&gt;|([^\\s\\[\\]<]*([^\\s,.?!\\[\\]<\\)])))",
+    "options": 20
+  },
+  {
+    "name": "InlineMenuMacroRx",
+    "source": "\\\\?menu:(\\p{Word}|[\\p{Word}&][^\\n\\[]*[^\\s\\[])\\[ *(?:|(.*?[^\\\\]))\\]",
+    "options": 20
+  },
+  {
+    "name": "InlineMenuRx",
+    "source": "\\\\?\"([\\p{Word}&][^\"]*?[ \\n]+&gt;[ \\n]+[^\"]*)\"",
+    "options": 16
+  },
+  {
+    "name": "InlinePassMacroRx",
+    "source": "(?:(?:(\\\\?)\\[([^\\[\\]]+)\\])?(\\\\{0,2})(\\+\\+\\+?|\\$\\$)(.*?)\\4|(\\\\?)pass:([a-z]+(?:,[a-z-]+)*)?\\[(|.*?[^\\\\])\\])",
+    "options": 4
+  },
+  {
+    "name": "InlinePassRx[3]",
+    "source": "((?:^|[^\\p{Word};:\\\\])(?=(\\[)|\\+)|\\\\(?=\\[)|(?=\\\\\\+))(?:\\2(x-|[^\\[\\]]+ x-)\\]|(?:\\[([^\\[\\]]+)\\])?(?=(\\\\)?\\+))(\\5?(\\+|`)(\\S|\\S.*?\\S)\\7)(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "InlinePassRx[7]",
+    "source": "(^|[^`\\p{Word}])(?:(\\Z)()|\\[([^\\[\\]]+)\\](?=(\\\\))?)?(\\5?(`)([^`\\s]|[^`\\s].*?\\S)\\7)(?![`\\p{Word}])",
+    "options": 20
+  },
+  {
+    "name": "InlineSectionAnchorRx",
+    "source": " (\\\\)?\\[\\[([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+))?\\]\\]$",
+    "options": 16
+  },
+  {
+    "name": "InlineStemMacroRx",
+    "source": "\\\\?(stem|(?:latex|ascii)math):([a-z]+(?:,[a-z-]+)*)?\\[(.*?[^\\\\])\\]",
+    "options": 4
+  },
+  {
+    "name": "InlineXrefMacroRx",
+    "source": "\\\\?(?:&lt;&lt;([\\p{Word}#/.:{].*?)&gt;&gt;|xref:([\\p{Word}#/.:{].*?)\\[(?:\\]|(.*?[^\\\\])\\]))",
+    "options": 20
+  },
+  {
+    "name": "InvalidAttributeNameCharsRx",
+    "source": "[^\\p{Word}-]",
+    "options": 16
+  },
+  {
+    "name": "InvalidSectionIdCharsRx",
+    "source": "<[^>]+>|&(?:[a-z][a-z]+\\d{0,2}|#\\d\\d\\d{0,4}|#x[\\da-f][\\da-f][\\da-f]{0,3});|[^ \\p{Word}\\-.]+?",
+    "options": 16
+  },
+  {
+    "name": "LeadingInlineAnchorRx",
+    "source": "^\\[\\[([\\p{Alpha}_:][\\p{Word}\\-:.]*)(?:, *(.+?))?\\]\\]",
+    "options": 16
+  },
+  {
+    "name": "List::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "List::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "List::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "List::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "List::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "ListItem::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "ListItem::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "ListItem::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "ListItem::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "ListItem::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "ListRxMap[1]",
+    "source": "^[ \\t]*(-|\\*\\**|\\u2022)[ \\t]+(.*)$",
+    "options": 16
+  },
+  {
+    "name": "ListRxMap[3]",
+    "source": "^[ \\t]*(\\.\\.*|\\d+\\.|[a-zA-Z]\\.|[IVXivx]+\\))[ \\t]+(.*)$",
+    "options": 0
+  },
+  {
+    "name": "ListRxMap[5]",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t].*?)(:::{0,2}|;;)(?:$|[ \\t]+(.*)$)",
+    "options": 0
+  },
+  {
+    "name": "ListRxMap[7]",
+    "source": "^<(\\d+|\\.)>[ \\t]+(.*)$",
+    "options": 0
+  },
+  {
+    "name": "LiteralParagraphRx",
+    "source": "^([ \\t]+.*)$",
+    "options": 0
+  },
+  {
+    "name": "MacroNameRx",
+    "source": "^\\p{Word}[\\p{Word}-]*$",
+    "options": 16
+  },
+  {
+    "name": "ManpageNamePurposeRx",
+    "source": "^(.+?) +- +(.+)$",
+    "options": 0
+  },
+  {
+    "name": "ManpageTitleVolnumRx",
+    "source": "^(.+?) *\\( *(.+?) *\\)$",
+    "options": 0
+  },
+  {
+    "name": "MarkdownThematicBreakRx",
+    "source": "^ {0,3}([-*_])( *)\\1\\2\\1$",
+    "options": 0
+  },
+  {
+    "name": "OrderedListMarkerRxMap[1]",
+    "source": "\\d+\\.",
+    "options": 0
+  },
+  {
+    "name": "OrderedListMarkerRxMap[3]",
+    "source": "[a-z]\\.",
+    "options": 0
+  },
+  {
+    "name": "OrderedListMarkerRxMap[5]",
+    "source": "[ivx]+\\)",
+    "options": 0
+  },
+  {
+    "name": "OrderedListMarkerRxMap[7]",
+    "source": "[A-Z]\\.",
+    "options": 0
+  },
+  {
+    "name": "OrderedListMarkerRxMap[9]",
+    "source": "[IVX]+\\)",
+    "options": 0
+  },
+  {
+    "name": "OrderedListRx",
+    "source": "^[ \\t]*(\\.\\.*|\\d+\\.|[a-zA-Z]\\.|[IVXivx]+\\))[ \\t]+(.*)$",
+    "options": 0
+  },
+  {
+    "name": "Parser::TabIndentRx",
+    "source": "^\\t+",
+    "options": 0
+  },
+  {
+    "name": "PathResolver::WindowsRootRx",
+    "source": "^(?:[a-zA-Z]:)?[\\\\/]",
+    "options": 0
+  },
+  {
+    "name": "QUOTE_SUBS[3]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?\\*\\*(.+?)\\*\\*",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[6]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?\\*(\\S|\\S.*?\\S)\\*(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[9]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?\"`(\\S|\\S.*?\\S)`\"(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[12]",
+    "source": "(^|[^\\p{Word};:`}])(?:\\[([^\\[\\]]+)\\])?'`(\\S|\\S.*?\\S)`'(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[15]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?``(.+?)``",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[18]",
+    "source": "(^|[^\\p{Word};:\"'`}])(?:\\[([^\\[\\]]+)\\])?`(\\S|\\S.*?\\S)`(?![\\p{Word}\"'`])",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[21]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?__(.+?)__",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[24]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?_(\\S|\\S.*?\\S)_(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[27]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?##(.+?)##",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[30]",
+    "source": "(^|[^\\p{Word}&;:}])(?:\\[([^\\[\\]]+)\\])?#(\\S|\\S.*?\\S)#(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[33]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?\\^(\\S+?)\\^",
+    "options": 0
+  },
+  {
+    "name": "QUOTE_SUBS[36]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?~(\\S+?)~",
+    "options": 0
+  },
+  {
+    "name": "QUOTE_SUBS[40]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?\\*\\*(.+?)\\*\\*",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[43]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?\\*(\\S|\\S.*?\\S)\\*(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[46]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?``(\\S|\\S.*?\\S)''(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[49]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?'(\\S|\\S.*?\\S)'(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[52]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?`(\\S|\\S.*?\\S)'(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[55]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?\\+\\+(.+?)\\+\\+",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[58]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?\\+(\\S|\\S.*?\\S)\\+(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[61]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?__(.+?)__",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[64]",
+    "source": "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?_(\\S|\\S.*?\\S)_(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[67]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?##(.+?)##",
+    "options": 4
+  },
+  {
+    "name": "QUOTE_SUBS[70]",
+    "source": "(^|[^\\p{Word}&;:}])(?:\\[([^\\[\\]]+)\\])?#(\\S|\\S.*?\\S)#(?!\\p{Word})",
+    "options": 20
+  },
+  {
+    "name": "QUOTE_SUBS[73]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?\\^(\\S+?)\\^",
+    "options": 0
+  },
+  {
+    "name": "QUOTE_SUBS[76]",
+    "source": "\\\\?(?:\\[([^\\[\\]]+)\\])?~(\\S+?)~",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[0]",
+    "source": "\\\\?\\(C\\)",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[3]",
+    "source": "\\\\?\\(R\\)",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[6]",
+    "source": "\\\\?\\(TM\\)",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[9]",
+    "source": "(?: |\\n|^|\\\\)--(?: |\\n|$)",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[12]",
+    "source": "(\\p{Word})\\\\?--(?=\\p{Word})",
+    "options": 16
+  },
+  {
+    "name": "REPLACEMENTS[15]",
+    "source": "\\\\?\\.\\.\\.",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[18]",
+    "source": "\\\\?`'",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[21]",
+    "source": "(\\p{Alnum})\\\\?'(?=\\p{Alpha})",
+    "options": 16
+  },
+  {
+    "name": "REPLACEMENTS[24]",
+    "source": "\\\\?-&gt;",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[27]",
+    "source": "\\\\?=&gt;",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[30]",
+    "source": "\\\\?&lt;-",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[33]",
+    "source": "\\\\?&lt;=",
+    "options": 0
+  },
+  {
+    "name": "REPLACEMENTS[36]",
+    "source": "\\\\?(&)amp;((?:[a-zA-Z][a-zA-Z]+\\d{0,2}|#\\d\\d\\d{0,4}|#x[\\da-fA-F][\\da-fA-F][\\da-fA-F]{0,3});)",
+    "options": 0
+  },
+  {
+    "name": "ReplaceableTextRx",
+    "source": "[&']|--|\\.\\.\\.|\\([CRT]M?\\)",
+    "options": 0
+  },
+  {
+    "name": "RevisionInfoLineRx",
+    "source": "^(?:[^\\d{]*(.*?),)? *(?!:)(.*?)(?: *(?!^),?: *(.*))?$",
+    "options": 0
+  },
+  {
+    "name": "Section::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Section::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Section::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Section::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Section::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "SectionLevelStyleRx",
+    "source": "^sect\\d$",
+    "options": 0
+  },
+  {
+    "name": "SetextSectionTitleRx",
+    "source": "^((?!\\.).*?\\p{Alnum}.*)$",
+    "options": 16
+  },
+  {
+    "name": "SpaceDelimiterRx",
+    "source": "([^\\\\])[ \\t\\n]+",
+    "options": 0
+  },
+  {
+    "name": "SubModifierSniffRx",
+    "source": "[+-]",
+    "options": 0
+  },
+  {
+    "name": "Substitutors::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Substitutors::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Substitutors::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Substitutors::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Substitutors::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "Table::Cell::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Table::Cell::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Table::Cell::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::Cell::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::Cell::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "Table::Column::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Table::Column::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Table::Column::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::Column::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::Column::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "Table::HighlightedPassSlotRx",
+    "source": "<span\\b[^>]*></span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*></span>",
+    "options": 16
+  },
+  {
+    "name": "Table::ParserContext::DELIMITERS[2]",
+    "source": "\\|",
+    "options": 0
+  },
+  {
+    "name": "Table::ParserContext::DELIMITERS[5]",
+    "source": ",",
+    "options": 0
+  },
+  {
+    "name": "Table::ParserContext::DELIMITERS[8]",
+    "source": ":",
+    "options": 0
+  },
+  {
+    "name": "Table::ParserContext::DELIMITERS[11]",
+    "source": "\\t",
+    "options": 0
+  },
+  {
+    "name": "Table::ParserContext::DELIMITERS[14]",
+    "source": "!",
+    "options": 0
+  },
+  {
+    "name": "Table::PassSlotRx",
+    "source": "(\\d+)",
+    "options": 16
+  },
+  {
+    "name": "Table::QuotedTextSniffRx[1]",
+    "source": "[*_`#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::QuotedTextSniffRx[3]",
+    "source": "[*'_+#^~]",
+    "options": 0
+  },
+  {
+    "name": "Table::SpecialCharsRx",
+    "source": "[<&>]",
+    "options": 0
+  },
+  {
+    "name": "TagDirectiveRx",
+    "source": "\\b(?:tag|(e)nd)::(\\S+?)\\[\\](?=$|[ \\r])",
+    "options": 4
+  },
+  {
+    "name": "TrailingDigitsRx",
+    "source": "\\d+$",
+    "options": 0
+  },
+  {
+    "name": "UnorderedListRx",
+    "source": "^[ \\t]*(-|\\*\\**|\\u2022)[ \\t]+(.*)$",
+    "options": 16
+  },
+  {
+    "name": "UriSniffRx",
+    "source": "\\A\\p{Alpha}[\\p{Alnum}.+-]+:/{0,2}",
+    "options": 16
+  },
+  {
+    "name": "XmlSanitizeRx",
+    "source": "<[^>]+>",
+    "options": 0
+  },
+  {
+    "name": "lib/asciidoctor.rb:449",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?\\*\\*(#{CC_ALL}+?)\\*\\*",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:451",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?\\*(\\S|\\S#{CC_ALL}*?\\S)\\*(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:453",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?\"`(\\S|\\S#{CC_ALL}*?\\S)`\"(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:455",
+    "source": "(^|[^#{CC_WORD};:`}])(?:#{QuoteAttributeListRxt})?'`(\\S|\\S#{CC_ALL}*?\\S)`'(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:457",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?``(#{CC_ALL}+?)``",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:459",
+    "source": "(^|[^#{CC_WORD};:\"'`}])(?:#{QuoteAttributeListRxt})?`(\\S|\\S#{CC_ALL}*?\\S)`(?![#{CC_WORD}\"'`])",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:461",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?__(#{CC_ALL}+?)__",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:463",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?_(\\S|\\S#{CC_ALL}*?\\S)_(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:465",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?##(#{CC_ALL}+?)##",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:467",
+    "source": "(^|[^#{CC_WORD}&;:}])(?:#{QuoteAttributeListRxt})?#(\\S|\\S#{CC_ALL}*?\\S)#(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:469",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?\\^(\\S+?)\\^",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:471",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?~(\\S+?)~",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:476",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?``(\\S|\\S#{CC_ALL}*?\\S)''(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:478",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?`(\\S|\\S#{CC_ALL}*?\\S)'(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:480",
+    "source": "\\\\?(?:#{QuoteAttributeListRxt})?\\+\\+(#{CC_ALL}+?)\\+\\+",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:482",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?\\+(\\S|\\S#{CC_ALL}*?\\S)\\+(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:488",
+    "source": "(^|[^#{CC_WORD};:}])(?:#{QuoteAttributeListRxt})?'(\\S|\\S#{CC_ALL}*?\\S)'(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:494",
+    "source": "\\\\?\\(C\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:496",
+    "source": "\\\\?\\(R\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:498",
+    "source": "\\\\?\\(TM\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:501",
+    "source": "(?: |\\n|^|\\\\)--(?: |\\n|$)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:503",
+    "source": "(#{CG_WORD})\\\\?--(?=#{CG_WORD})",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:505",
+    "source": "\\\\?\\.\\.\\.",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:507",
+    "source": "\\\\?`'",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:509",
+    "source": "(#{CG_ALNUM})\\\\?'(?=#{CG_ALPHA})",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor.rb:511",
+    "source": "\\\\?-&gt;",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:513",
+    "source": "\\\\?=&gt;",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:515",
+    "source": "\\\\?&lt;-",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:517",
+    "source": "\\\\?&lt;=",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor.rb:519",
+    "source": "\\\\?(&)amp;((?:[a-zA-Z][a-zA-Z]+\\d{0,2}|#\\d\\d\\d{0,4}|#x[\\da-fA-F][\\da-fA-F][\\da-fA-F]{0,3});)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:32",
+    "source": ".*?[^\\\\](?=\")",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:33",
+    "source": ".*?[^\\\\](?=')",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:34",
+    "source": ".*?(?=[ \\t]*(,|$))",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:44",
+    "source": "#{CG_WORD}[#{CC_WORD}-]*",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:46",
+    "source": "[ \\t]+",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/attribute_list.rb:49",
+    "source": "[ \\t]*(,|$)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/docbook5.rb:29",
+    "source": "^(#{CC_ANY}+?)(?: ((?:\\d{4}-)?\\d{4}))?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/docbook5.rb:30",
+    "source": "^image::?(\\S|\\S#{CC_ANY}*?\\S)\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:25",
+    "source": "<(?:a\\b[^>]*|/a)>",
+    "flags": ")",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:26",
+    "source": "^(?:<a id=\"[^\"]+\"></a>)+",
+    "flags": ")",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:27",
+    "source": " *\\\\\\n(?:\\\\?\\n)*|\\n\\n+",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:30",
+    "source": "^#{CC_ALL}*?(?=<svg[\\s>])",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:31",
+    "source": "^<svg(?:\\s[^>]*)?>",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:33",
+    "source": "\\A.*?(?=<svg[\\s>])",
+    "flags": "/m",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:34",
+    "source": "\\A<svg(?:\\s[^>]*)?>",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/html5.rb:36",
+    "source": "\\s(?:width|height|style)=([\"'])#{CC_ANY}*?\\1",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:23",
+    "source": "\\A\\\\|(#{ESC})?\\\\",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:24",
+    "source": "^\\.",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:25",
+    "source": "^(?:#{ESC}\\\\c\\n)?#{ESC}\\.((?:URL|MTO) \"#{CC_ANY}*?\" \"#{CC_ANY}*?\" )( |[^\\s]*)(#{CC_ANY}*?)(?: *#{ESC}\\\\c)?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:26",
+    "source": "(#{ESC}\\\\c) (#{ESC}\\.(?:URL|MTO) )",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:27",
+    "source": "</?(#{ESC}\\\\[^>]+)>",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:28",
+    "source": "&#8212;(?:&#8203;)?",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:29",
+    "source": "&#8230;(?:&#8203;)?",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:30",
+    "source": "#{CG_BLANK}*#{LF}#{CG_BLANK}*",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:31",
+    "source": "&#?[a-z\\d]+;|<",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:32",
+    "source": "(&#?[a-z\\d]+;|<#{ESC}\\\\f\\(CR.*?</#{ESC}\\\\fP>|<[^>]+>)|([^&<]+)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/converter/manpage.rb:701",
+    "source": "(^)?  +",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/extensions.rb:657",
+    "source": "\\\\?#{name}:#{format == :short ? '(){0}' : '(\\S+?)'}\\[(|#{CC_ANY}*?[^\\\\])\\]",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/parser.rb:35",
+    "source": "^\\t+",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/path_resolver.rb:114",
+    "source": "^(?:[a-zA-Z]:)?[\\\\/]",
+    "flags": ")",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:23",
+    "source": "^(#{CG_WORD}[#{CC_WORD}\\-'.]*)(?: +(#{CG_WORD}[#{CC_WORD}\\-'.]*))?(?: +(#{CG_WORD}[#{CC_WORD}\\-'.]*))?(?: +<([^>]+)>)?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:31",
+    "source": ";(?: |$)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:43",
+    "source": "^(?:[^\\d{]*(#{CC_ANY}*?),)? *(?!:)(#{CC_ANY}*?)(?: *(?!^),?: *(#{CC_ANY}*))?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:52",
+    "source": "^(#{CC_ANY}+?) *\\( *(#{CC_ANY}+?) *\\)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:60",
+    "source": "^(#{CC_ANY}+?) +- +(#{CC_ANY}+)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:76",
+    "source": "^(\\\\)?(ifdef|ifndef|ifeval|endif)::(\\S*?(?:([,+])\\S*?)?)\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:84",
+    "source": "^(#{CC_ANY}+?) *([=!><]=|[><]) *(#{CC_ANY}+)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:93",
+    "source": "^(\\\\)?include::([^\\s\\[](?:[^\\[]*[^\\s\\[])?)\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:108",
+    "source": "\\b(?:tag|(e)nd)::(\\S+?)\\[\\](?=$|[ \\r])",
+    "flags": "/m",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:125",
+    "source": "^:(!?#{CG_WORD}[^:]*):(?:[ \\t]+(#{CC_ANY}*))?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:128",
+    "source": "[^#{CC_WORD}-]",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:140",
+    "source": "^pass:([a-z]+(?:,[a-z-]+)*)?\\[(#{CC_ALL}*)\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:142",
+    "source": "\\Apass:([a-z]+(?:,[a-z-]+)*)?\\[(.*)\\]\\Z",
+    "flags": "/m",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:154",
+    "source": "(\\\\)?\\{(#{CG_WORD}[#{CC_WORD}-]*|(set|counter2?):#{CC_ANY}+?)(\\\\)?\\}",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:165",
+    "source": "^\\[\\[(?:|([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+))?)\\]\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:180",
+    "source": "^\\[(|[#{CC_WORD}.#%{,\"']#{CC_ANY}*)\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:185",
+    "source": "^\\[(?:|[#{CC_WORD}.#%{,\"']#{CC_ANY}*|\\[(?:|[#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*(?:, *#{CC_ANY}+)?)\\])\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:193",
+    "source": "^\\.(\\.?[^ \\t.]#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:202",
+    "source": "^(#{ADMONITION_STYLES.to_a.join '|'}):[ \\t]+",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:210",
+    "source": "^([ \\t]+#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:242",
+    "source": "^(=={0,5})[ \\t]+(#{CC_ANY}+?)(?:[ \\t]+\\1)?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:245",
+    "source": "^(=={0,5}|#\\#{0,5})[ \\t]+(#{CC_ANY}+?)(?:[ \\t]+\\1)?$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:249",
+    "source": "^((?!\\.)#{CC_ANY}*?#{CG_ALNUM}#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:258",
+    "source": " (\\\\)?\\[\\[([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+))?\\]\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:263",
+    "source": "<[^>]+>|&(?:[a-z][a-z]+\\d{0,2}|#\\d\\d\\d{0,4}|#x[\\da-f][\\da-f][\\da-f]{0,3});|[^ #{CC_WORD}\\-.]+?",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:267",
+    "source": "^sect\\d$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:275",
+    "source": "^(?:[ \\t]*(?:-|\\*\\**|\\.\\.*|\\u2022|\\d+\\.|[a-zA-Z]\\.|[IVXivx]+\\))[ \\t]|(?!//[^/])[ \\t]*[^ \\t]#{CC_ANY}*?(?::::{0,2}|;;)(?:$|[ \\t])|<(?:\\d+|\\.)>[ \\t])",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:285",
+    "source": "^[ \\t]*(-|\\*\\**|\\u2022)[ \\t]+(#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:301",
+    "source": "^[ \\t]*(\\.\\.*|\\d+\\.|[a-zA-Z]\\.|[IVXivx]+\\))[ \\t]+(#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:305",
+    "source": "\\d+\\.",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:306",
+    "source": "[a-z]\\.",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:307",
+    "source": "[ivx]+\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:308",
+    "source": "[A-Z]\\.",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:309",
+    "source": "[IVX]+\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:337",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t]#{CC_ANY}*?)(:::{0,2}|;;)(?:$|[ \\t]+(#{CC_ANY}*)$)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:342",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t]#{CC_ANY}*?[^:]|[^ \\t:])(::)(?:$|[ \\t]+(#{CC_ANY}*)$)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:343",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t]#{CC_ANY}*?[^:]|[^ \\t:])(:::)(?:$|[ \\t]+(#{CC_ANY}*)$)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:344",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t]#{CC_ANY}*?[^:]|[^ \\t:])(::::)(?:$|[ \\t]+(#{CC_ANY}*)$)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:345",
+    "source": "^(?!//[^/])[ \\t]*([^ \\t]#{CC_ANY}*?)(;;)(?:$|[ \\t]+(#{CC_ANY}*)$)",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:359",
+    "source": "^<(\\d+|\\.)>[ \\t]+(#{CC_ANY}*)$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:370",
+    "source": "((?://|#|--|;;) ?)?(\\\\)?<!?(|--)(\\d+|\\.)\\3>(?=(?: ?\\\\?<!?\\3(?:\\d+|\\.)\\3>)*$)",
+    "flags": ")",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:372",
+    "source": "(#{k.empty? ? '' : \"#{::Regexp.escape k} ?\"})?#{CalloutExtractRxt}",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:374",
+    "source": "\\\\?<!?(|--)(\\d+|\\.)\\1>(?=(?: ?\\\\?<!?\\1(?:\\d+|\\.)\\1>)*#{CC_EOL})",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:376",
+    "source": "((?://|#|--|;;) ?)?(\\\\)?&lt;!?(|--)(\\d+|\\.)\\3&gt;(?=(?: ?\\\\?&lt;!?\\3(?:\\d+|\\.)\\3&gt;)*#{CC_EOL})",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:378",
+    "source": "(#{k.empty? ? '' : \"#{::Regexp.escape k} ?\"})?#{CalloutSourceRxt}",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:391",
+    "source": "^(?:(\\d+)\\*)?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?(\\d+%?|~)?([a-z])?$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:400",
+    "source": "^[ \\t]*(?:(\\d+(?:\\.\\d*)?|(?:\\d*\\.)?\\d+)([*+]))?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?([a-z])?$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:401",
+    "source": "[ \\t]+(?:(\\d+(?:\\.\\d*)?|(?:\\d*\\.)?\\d+)([*+]))?([<^>](?:\\.[<^>]?)?|(?:[<^>]?\\.)?[<^>])?([a-z])?$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:413",
+    "source": "^(#{CG_WORD}[#{CC_WORD}-]*)::(|\\S|\\S#{CC_ANY}*?\\S)\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:422",
+    "source": "^(image|video|audio)::(\\S|\\S#{CC_ANY}*?\\S)\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:431",
+    "source": "^toc::\\[(#{CC_ANY}+)?\\]$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:444",
+    "source": "(\\\\)?(?:\\[\\[([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+?))? ?\\]\\]|anchor:([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)\\[(?:\\]|(#{CC_ANY}*?[^\\\\])\\]))",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:447",
+    "source": "(?:^|[^\\\\\\[])\\[\\[([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+?))? ?\\]\\]|(?:^|[^\\\\])anchor:([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)\\[(?:\\]|(#{CC_ANY}*?[^\\\\])\\])",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:450",
+    "source": "^\\[\\[([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+?))?\\]\\]",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:458",
+    "source": "^\\[\\[\\[([#{CC_ALPHA}_:][#{CC_WORD}\\-:.]*)(?:, *(#{CC_ANY}+?))?\\]\\]\\]",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:464",
+    "source": "([\\\\>:/])?#{CG_WORD}(?:&amp;|[#{CC_WORD}\\-.%+])*@#{CG_ALNUM}[#{CC_ALNUM}_\\-.]*\\.[a-zA-Z]{2,5}\\b",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:475",
+    "source": "\\\\?footnote(?:(ref):|:([#{CC_WORD}-]+)?)\\[(?:|(#{CC_ALL}*?[^\\\\]))\\](?!</a>)",
+    "flags": ")m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:487",
+    "source": "\\\\?i(?:mage|con):([^:\\s\\[](?:[^\\n\\[]*[^\\s\\[])?)\\[(|#{CC_ALL}*?[^\\\\])\\]",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:498",
+    "source": "\\\\?(?:(indexterm2?):\\[(#{CC_ALL}*?[^\\\\])\\]|\\(\\((#{CC_ALL}+?)\\)\\)(?!\\)))",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:510",
+    "source": "(\\\\)?(kbd|btn):\\[(#{CC_ALL}*?[^\\\\])\\]",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:525",
+    "source": "(^|link:|#{CG_BLANK}|\\\\?&lt;(?=\\\\?(?:https?|file|ftp|irc)(:))|[>\\(\\)\\[\\];\"'])(\\\\?(?:https?|file|ftp|irc)://)(?:([^\\s\\[\\]]+)\\[(|#{CC_ALL}*?[^\\\\])\\]|(?!\\2)([^\\s]+?)&gt;|([^\\s\\[\\]<]*([^\\s,.?!\\[\\]<\\)])))",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:527",
+    "source": "(^|link:|#{CG_BLANK}|\\\\?&lt;()|[>\\(\\)\\[\\];\"'])(\\\\?(?:https?|file|ftp|irc)://)(?:([^\\s\\[\\]]+)\\[(|#{CC_ALL}*?[^\\\\])\\]|\\2([^\\s]+?)&gt;|([^\\s\\[\\]<]*([^\\s,.?!\\[\\]<\\)])))",
+    "flags": ")m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:538",
+    "source": "\\\\?(?:link|(mailto)):(|[^:\\s\\[][^\\s\\[]*)\\[(|#{CC_ALL}*?[^\\\\])\\]",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:542",
+    "source": "^#{CG_WORD}[#{CC_WORD}-]*$",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:552",
+    "source": "\\\\?(stem|(?:latex|ascii)math):([a-z]+(?:,[a-z-]+)*)?\\[(#{CC_ALL}*?[^\\\\])\\]",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:563",
+    "source": "\\\\?menu:(#{CG_WORD}|[#{CC_WORD}&][^\\n\\[]*[^\\s\\[])\\[ *(?:|(#{CC_ALL}*?[^\\\\]))\\]",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:571",
+    "source": "\\\\?\"([#{CC_WORD}&][^\"]*?[ \\n]+&gt;[ \\n]+[^\"]*)\"",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:585",
+    "source": "((?:^|[^#{CC_WORD};:\\\\])(?=(\\[)|\\+)|\\\\(?=\\[)|(?=\\\\\\+))(?:\\2(x-|[^\\[\\]]+ x-)\\]|(?:#{QuoteAttributeListRxt})?(?=(\\\\)?\\+))(\\5?(\\+|`)(\\S|\\S#{CC_ALL}*?\\S)\\7)(?!#{CG_WORD})",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:586",
+    "source": "(^|[^`#{CC_WORD}])(?:(\\Z)()|#{QuoteAttributeListRxt}(?=(\\\\))?)?(\\5?(`)([^`\\s]|[^`\\s]#{CC_ALL}*?\\S)\\7)(?![`#{CC_WORD}])",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:598",
+    "source": "(?:(?:(\\\\?)#{QuoteAttributeListRxt})?(\\\\{0,2})(\\+\\+\\+?|\\$\\$)(#{CC_ALL}*?)\\4|(\\\\?)pass:([a-z]+(?:,[a-z-]+)*)?\\[(|#{CC_ALL}*?[^\\\\])\\])",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:609",
+    "source": "\\\\?(?:&lt;&lt;([#{CC_WORD}#/.:{]#{CC_ALL}*?)&gt;&gt;|xref:([#{CC_WORD}#/.:{]#{CC_ALL}*?)\\[(?:\\]|(#{CC_ALL}*?[^\\\\])\\]))",
+    "flags": ")m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:625",
+    "source": "^(#{CC_ANY}*) \\+$",
+    "flags": "/m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:628",
+    "source": "^(.*) \\+$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:639",
+    "source": "^ {0,3}([-*_])( *)\\1\\2\\1$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:651",
+    "source": "^(?:'{3,}|<{3,}|([-*_])( *)\\1\\2\\1)$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:663",
+    "source": "\\n{2,}",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:680",
+    "source": "\\\\([ \\t\\n])",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:684",
+    "source": "[&']|--|\\.\\.\\.|\\([CRT]M?\\)",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:695",
+    "source": "([^\\\\])[ \\t\\n]+",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:699",
+    "source": "[+-]",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:708",
+    "source": "\\d+$",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:721",
+    "source": "^#{CG_ALPHA}[#{CC_ALNUM}.+-]+:/{0,2}",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:723",
+    "source": "\\A#{CG_ALPHA}[#{CC_ALNUM}.+-]+:/{0,2}",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/rx.rb:727",
+    "source": "<[^>]+>",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/substitutors.rb:8",
+    "source": "[<&>]",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/substitutors.rb:12",
+    "source": "[*_`#^~]",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/substitutors.rb:12",
+    "source": "[*'_+#^~]",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/substitutors.rb:57",
+    "source": "#{PASS_START}(\\d+)#{PASS_END}",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/substitutors.rb:60",
+    "source": "<span\\b[^>]*>#{PASS_START}</span>[^\\d]*(\\d+)[^\\d]*<span\\b[^>]*>#{PASS_END}</span>",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/syntax_highlighter/pygments.rb:101",
+    "source": "^#{BASE_SELECTOR.gsub '.', '\\\\.'} +\\{([^}]+?)\\}",
+    "flags": "/",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/syntax_highlighter/pygments.rb:144",
+    "source": "#{LegacyLinenoSpanStartTagCs}( *\\d+) ?</span>",
+    "flags": ")",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/syntax_highlighter/pygments.rb:148",
+    "source": "<td><div class=\"linenodiv\" style=\"[^\"]+?\"><pre style=\"[^\"]+?\">",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/syntax_highlighter/pygments.rb:149",
+    "source": "(?<=^|<span></span>)<span style=\"[^\"]+\">( *\\d+) ?</span>",
+    "flags": ")",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/syntax_highlighter/pygments.rb:154",
+    "source": "<div class=\"#{WRAPPER_CLASS}\"><pre\\b[^>]*?>(.*)</pre></div>\\n*",
+    "flags": ")m",
+    "interpolated": true
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:428",
+    "source": "\\|",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:429",
+    "source": ",",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:430",
+    "source": ":",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:431",
+    "source": "\\t",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:432",
+    "source": "!",
+    "flags": "/",
+    "interpolated": false
+  },
+  {
+    "name": "lib/asciidoctor/table.rb:484",
+    "source": "#{::Regexp.escape sep}",
+    "flags": "/",
+    "interpolated": true
+  }
+]
