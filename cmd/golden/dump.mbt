@@ -42,7 +42,7 @@ fn is_date_attr(k : String) -> Bool {
 ///|
 /// Canonical AST dump matching scripts/harvest/harvest.rb.
 fn dump_node(node : @core.Node) -> Json {
-  let d : Map[String, Json] = {}
+  let d : Map[String, Json] = Map([])
   let ctx = node.context.name()
   d["context"] = Json::string(ctx)
   if node.node_name != ctx {

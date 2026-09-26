@@ -170,13 +170,13 @@ pub fn Node::attr(
   self : Node,
   name : String,
   default? : String,
-  inherit? : Bool = false,
+  inherited? : Bool = false,
   fallback_name? : String,
 ) -> String? {
   match self.attributes.str(name) {
     Some(v) => Some(v)
     None =>
-      if (inherit || fallback_name is Some(_)) && self.parent_ is Some(_) {
+      if (inherited || fallback_name is Some(_)) && self.parent_ is Some(_) {
         match self.document().attributes.str(fallback_name.unwrap_or(name)) {
           Some(v) => Some(v)
           None => default
@@ -193,14 +193,14 @@ pub fn Node::has_attr(
   self : Node,
   name : String,
   expected? : String,
-  inherit? : Bool = false,
+  inherited? : Bool = false,
 ) -> Bool {
   match expected {
     Some(e) => {
       let v = match self.attributes.str(name) {
         Some(v) => Some(v)
         None =>
-          if inherit && self.parent_ is Some(_) {
+          if inherited && self.parent_ is Some(_) {
             self.document().attributes.str(name)
           } else {
             None
@@ -211,7 +211,7 @@ pub fn Node::has_attr(
     None =>
       self.attributes.contains(name) ||
       (
-        inherit &&
+        inherited &&
         self.parent_ is Some(_) &&
         self.document().attributes.contains(name)
       )

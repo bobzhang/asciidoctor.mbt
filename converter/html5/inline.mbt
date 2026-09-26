@@ -61,7 +61,7 @@ fn Html5Converter::convert_inline_anchor(
                     self.resolving_xref = true
                     let t = match
                       r.xreftext(
-                        xrefstyle?=node.attr("xrefstyle", inherit=true),
+                        xrefstyle?=node.attr("xrefstyle", inherited=true),
                       ) {
                       Some(t) =>
                         if t.contains("<a") {

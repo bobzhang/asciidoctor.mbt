@@ -284,7 +284,7 @@ pub fn Node::image_uri(
 ) -> String {
   let doc = self.document()
   let images_base = match asset_dir_key {
-    Some(k) => self.attr(k, inherit=true)
+    Some(k) => self.attr(k, inherited=true)
     None => None
   }
   if doc.safe() < SAFE_SECURE && doc.has_attr("data-uri") {
@@ -315,7 +315,7 @@ pub fn Node::media_uri(
   asset_dir_key? : String? = Some("imagesdir"),
 ) -> String {
   let base = match asset_dir_key {
-    Some(k) => self.attr(k, inherit=true)
+    Some(k) => self.attr(k, inherited=true)
     None => None
   }
   self.normalize_web_path(target, start?=base)
@@ -340,7 +340,7 @@ pub fn Node::generate_data_uri(
     Some(k) =>
       self.normalize_system_path(
         target_image,
-        start?=self.attr(k, inherit=true),
+        start?=self.attr(k, inherited=true),
         target_name="image",
       )
     None => self.normalize_system_path(target_image)

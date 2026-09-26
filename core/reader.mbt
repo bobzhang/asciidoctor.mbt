@@ -219,7 +219,7 @@ pub fn Reader::new_preprocessor(
     data,
     normalize_chomp=false,
     normalize~,
-    include=false,
+    for_include=false,
     skip_front_matter~,
   )
   for l in prepared {
@@ -237,7 +237,7 @@ fn Reader::pre_prepare_lines(
   data : Array[String],
   normalize_chomp~ : Bool,
   normalize~ : Bool,
-  include~ : Bool,
+  for_include~ : Bool,
   indent? : Int,
   skip_front_matter? : Bool = false,
 ) -> Array[String] {
@@ -250,7 +250,7 @@ fn Reader::pre_prepare_lines(
   if skip_front_matter {
     match self.skip_front_matter(result) {
       Some(front_matter) =>
-        if !include {
+        if !for_include {
           pre.document.attributes.set_str(
             "front-matter",
             front_matter.join("\n"),
@@ -259,7 +259,7 @@ fn Reader::pre_prepare_lines(
       None => ()
     }
   }
-  if include {
+  if for_include {
     match indent {
       Some(i) =>
         adjust_indentation(
@@ -1418,7 +1418,7 @@ fn Reader::preprocess_include_directive(
               inc_offset = Some(inc_lineno)
             }
             inc_lines.push(l)
-            remaining = remaining[1:].to_array()
+            remaining = remaining[1:].to_owned()
           }
           if remaining.is_empty() {
             break
@@ -1829,7 +1829,7 @@ fn Reader::push_include_impl(
     data,
     normalize_chomp=!self.process_lines,
     normalize=self.process_lines,
-    include=true,
+    for_include=true,
     indent?,
     skip_front_matter=attributes.truthy("skip-front-matter-option"),
   )

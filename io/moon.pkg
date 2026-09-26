@@ -2,10 +2,11 @@ import {
   "bobzhang/asciidoctor",
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/internal/rb",
-  "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
 }
 
 supported_targets = "native"
+
+warnings = "-implicit_impl_as_method"

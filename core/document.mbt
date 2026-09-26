@@ -194,7 +194,7 @@ pub fn new_document(data : Array[String]?, options : Options) -> Node {
   doc.level = 0
   let parent_doc = options.parent
   options.parent = None
-  let attr_overrides : Map[String, AttrVal] = {}
+  let attr_overrides : Map[String, AttrVal] = Map([])
   let attrs = doc.attributes
   let mut parent_doctype : String? = None
   let dd : DocData = match parent_doc {
@@ -803,7 +803,7 @@ pub fn Node::resolve_id(self : Node, text : String) -> String? {
     Some(m) => m.get(text)
     None =>
       if dd.parsed {
-        let accum = {}
+        let accum : Map[String, String] = Map([])
         dd.reftexts = Some(accum)
         for id, ref_ in dd.catalog.refs {
           match ref_.xreftext() {
@@ -814,7 +814,7 @@ pub fn Node::resolve_id(self : Node, text : String) -> String? {
         accum.get(text)
       } else {
         // publish a partial map so recursive lookups terminate (Ruby semantics)
-        let accum : Map[String, String] = {}
+        let accum : Map[String, String] = Map([])
         dd.reftexts = Some(accum)
         let mut resolved = None
         for id, ref_ in dd.catalog.refs {
@@ -1723,7 +1723,7 @@ pub fn Node::docinfo(
     let suffix = suffix.unwrap_or(dd.outfilesuffix.unwrap_or(""))
     let docinfo = match self.attributes.str("docinfo") {
       Some(v) if v != "" =>
-        Some(v.split(",").map(k => @rb.strip(k.to_string())).collect())
+        Some(v.split(",").map(k => @rb.strip(k.to_owned())).collect())
       v =>
         if self.attributes.contains("docinfo2") {
           Some(["private", "shared"])

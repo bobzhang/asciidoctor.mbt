@@ -110,7 +110,7 @@ pub fn Attributes::from_array(pairs : Array[(String, AttrVal)]) -> Attributes {
 ///|
 /// Shallow copy (Ruby `Hash#merge` with no arguments).
 pub fn Attributes::copy(self : Attributes) -> Attributes {
-  let m = {}
+  let m : Map[AttrKey, AttrVal] = Map([])
   for k, v in self.map {
     m[k] = v
   }

@@ -3,3 +3,5 @@ import {
   "bobzhang/asciidoctor/regex",
   "bobzhang/asciidoctor/internal/rb",
 }
+
+warnings = "-implicit_impl_as_method"

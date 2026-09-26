@@ -22,10 +22,10 @@ emitted = {}
     next if emitted[name]
     if Regexp === v
       emitted[name] = true
-      out << "\n///|\nlet #{name} : @regex.Regex = #{rx v}\n"
+      out << "\n///|\n#warnings(\"-unused_value\")\nlet #{name} : @regex.Regex = #{rx v}\n"
     elsif Hash === v && !v.empty? && v.values.all? { |x| Regexp === x }
       emitted[name] = true
-      out << "\n///|\nlet #{name} : Map[String, @regex.Regex] = {\n"
+      out << "\n///|\n#warnings(\"-unused_value\")\nlet #{name} : Map[String, @regex.Regex] = {\n"
       v.each { |k, r| out << "  #{lit k.to_s}: #{rx r},\n" }
       out << "}\n"
     end

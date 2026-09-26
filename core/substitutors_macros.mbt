@@ -523,7 +523,7 @@ pub fn Node::sub_macros(self : Node, text : String) -> String {
 }
 
 ///|
-let inline_macro_rx_cache : Map[String, @regex.Regex] = {}
+let inline_macro_rx_cache : Map[String, @regex.Regex] = Map([])
 
 ///|
 /// Default regexp for an inline macro extension (Ruby `resolve_regexp`).

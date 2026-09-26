@@ -2,7 +2,6 @@
 priv struct BlockMatchData {
   context : Context
   masq : Array[String]
-  tip : String
   terminator : String
 }
 
@@ -98,7 +97,7 @@ fn is_delimited_block(line0 : String) -> BlockMatchData? {
       let tail = @rb.from(tip, tip.length() - 1)
       if line_len == tip_len ||
         (tip_len == 4 && is_uniform(@rb.from(line, 1), tail, line_len - 1)) {
-        Some({ context, masq, tip, terminator: line, })
+        Some({ context, masq, terminator: line, })
       } else {
         None
       }

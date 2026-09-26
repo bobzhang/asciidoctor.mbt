@@ -367,7 +367,7 @@ fn Html5Converter::convert_listing(
   }
   let body = match syntax_hl {
     Some(hl) => {
-      let opts : Map[String, String] = {}
+      let opts : Map[String, String] = Map([])
       if nowrap {
         opts["nowrap"] = "true"
       }

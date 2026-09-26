@@ -62,7 +62,7 @@ fn ManPageConverter::convert_inline_anchor(
               if !self.resolving_xref {
                 self.resolving_xref = true
                 let t = match
-                  r.xreftext(xrefstyle?=node.attr("xrefstyle", inherit=true)) {
+                  r.xreftext(xrefstyle?=node.attr("xrefstyle", inherited=true)) {
                   Some(t) =>
                     if r.context == Section &&
                       r.level < 2 &&

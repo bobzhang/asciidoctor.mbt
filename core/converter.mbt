@@ -53,7 +53,7 @@ pub(open) trait Converter {
 pub type ConverterFactory = (String, String?, Node) -> &Converter
 
 ///|
-let converter_registry : Map[String, ConverterFactory] = {}
+let converter_registry : Map[String, ConverterFactory] = Map([])
 
 ///|
 /// Registers a converter factory for the given backend names.
@@ -80,7 +80,7 @@ pub fn registered_backends() -> Array[String] {
 
 ///|
 /// A converter that renders nothing (used when no converter is registered).
-struct NullConverter {
+priv struct NullConverter {
   traits : BackendTraits
 }
 

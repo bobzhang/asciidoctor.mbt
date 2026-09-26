@@ -124,7 +124,6 @@ fn build_options(
 priv struct Stats {
   mut records : Int
   mut skipped : Int
-  mut crashed : Int
   mut ast_total : Int
   mut ast_pass : Int
   mut out_total : Int
@@ -357,7 +356,6 @@ async fn main {
   let total : Stats = {
     records: 0,
     skipped: 0,
-    crashed: 0,
     ast_total: 0,
     ast_pass: 0,
     out_total: 0,
@@ -369,7 +367,6 @@ async fn main {
     let stats : Stats = {
       records: 0,
       skipped: 0,
-      crashed: 0,
       ast_total: 0,
       ast_pass: 0,
       out_total: 0,
@@ -378,7 +375,7 @@ async fn main {
     }
     let mut rec_idx = -1
     for line in text.split("\n") {
-      let line = line.to_string()
+      let line = line.to_owned()
       if line == "" {
         continue
       }
@@ -433,7 +430,7 @@ fn base64_decode(s : String) -> Bytes {
       -1
     }
   }
-  let out = @buffer.new()
+  let out = Buffer()
   let mut acc = 0
   let mut bits = 0
   for i in 0..<s.length() {

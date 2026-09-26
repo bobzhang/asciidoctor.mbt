@@ -628,7 +628,7 @@ pub fn Node::sub_source(
 }
 
 ///|
-let callout_rx_cache : Map[String, @regex.Regex] = {}
+let callout_rx_cache : Map[String, @regex.Regex] = Map([])
 
 ///|
 fn callout_rx_for(line_comment : String, source : Bool) -> @regex.Regex {
@@ -698,7 +698,7 @@ fn Node::highlight_source(
 ) -> String {
   match self.document().syntax_highlighter() {
     Some(hl) if hl.handles_highlighting() => {
-      let opts : Map[String, String] = {}
+      let opts : Map[String, String] = Map([])
       let highlighted = hl.highlight(
         self,
         source,
@@ -1313,12 +1313,14 @@ pub fn Node::commit_subs(self : Node) -> Unit {
 }
 
 ///|
-/// Extracts callouts from source (Ruby `extract_callouts`).
+/// Extracts callouts from source (Ruby `extract_callouts`); kept for
+/// server-side syntax highlighter adapters.
+#warnings("-unused_value")
 fn Node::extract_callouts(
   self : Node,
   source : String,
 ) -> (String, Map[Int, Array[(AttrVal, String)]]?) {
-  let marks : Map[Int, Array[(AttrVal, String)]] = {}
+  let marks : Map[Int, Array[(AttrVal, String)]] = Map([])
   let mut autonum = 0
   let mut lineno = 0
   let mut last_lineno : Int? = None
@@ -1366,6 +1368,7 @@ fn Node::extract_callouts(
 
 ///|
 /// Restores callouts after highlighting (Ruby `restore_callouts`).
+#warnings("-unused_value")
 fn Node::restore_callouts(
   self : Node,
   source : String,
