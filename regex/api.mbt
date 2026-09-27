@@ -695,23 +695,17 @@ fn Regex::replace_with(
   let len = s.length()
   let mut pos = 0
   let mut last = 0
-  let mut sb : StringBuilder? = None
+  // the pieces of the result, joined once at the end (sized exactly); an
+  // input without a match is returned as is
+  let parts : Array[StringView] = []
   while pos <= len {
     match self.find_with(vm, pos) {
       None => break
       Some(m) => {
-        let buf = match sb {
-          Some(b) => b
-          None => {
-            let b = StringBuilder(size_hint=len + 16)
-            sb = Some(b)
-            b
-          }
-        }
         let b = m.begin()
         let e = m.end()
-        buf.write_substring(s, last, b - last)
-        buf.write_string(f(m))
+        parts.push(s.view(start_offset=last, end_offset=b))
+        parts.push(f(m))
         if once {
           last = e
           break
@@ -722,9 +716,9 @@ fn Regex::replace_with(
             break
           }
           let w = cp_width(s, e)
-          buf.write_substring(s, e, w)
           pos = e + w
-          last = pos
+          // the skipped character stays with the text that follows
+          last = e
         } else {
           pos = e
           last = e
@@ -732,12 +726,11 @@ fn Regex::replace_with(
       }
     }
   }
-  match sb {
-    None => s
-    Some(buf) => {
-      buf.write_substring(s, last, len - last)
-      buf.to_string()
-    }
+  if parts.is_empty() {
+    s
+  } else {
+    parts.push(s.view(start_offset=last, end_offset=len))
+    parts.join("")
   }
 }
 
