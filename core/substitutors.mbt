@@ -53,7 +53,16 @@ pub fn sub_specialchars(text : String) -> String {
   // copy the runs between the special characters (code units are copied
   // verbatim, as the character-wise loop did)
   let n = text.length()
-  let sb = StringBuilder(size_hint=n + 16)
+  // exact output length, so that the builder neither grows nor is copied
+  let mut size = n
+  for i in 0..<n {
+    match text.unsafe_get(i) {
+      '<' | '>' => size += 3
+      '&' => size += 4
+      _ => ()
+    }
+  }
+  let sb = StringBuilder(size_hint=2 * size) // (in bytes)
   let mut last = 0
   for i in 0..<n {
     let entity = match text.unsafe_get(i) {

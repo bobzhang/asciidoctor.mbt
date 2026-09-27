@@ -440,7 +440,20 @@ fn lookup_case(
 ///|
 /// Ruby `String#downcase` (full Unicode mapping).
 pub fn downcase(s : String) -> String {
-  let sb = StringBuilder(size_hint=s.length())
+  // common case: ASCII without capitals (e.g. attribute names) is unchanged
+  let n = s.length()
+  let mut i = 0
+  while i < n {
+    let c = s.unsafe_get(i)
+    if c >= 128 || (c >= 'A' && c <= 'Z') {
+      break
+    }
+    i += 1
+  }
+  if i == n {
+    return s
+  }
+  let sb = StringBuilder(size_hint=2 * n)
   for c in s {
     let cp = c.to_int()
     if cp < 128 {
