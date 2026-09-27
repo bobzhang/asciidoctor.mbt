@@ -289,15 +289,21 @@ fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
 fn Vm::push(self : Vm, kind : Int, a : Int, b : Int) -> Unit {
   let sp = self.sp
   if sp + 3 > self.stack.length() {
-    let bigger = FixedArray::make(2 * self.stack.length(), 0)
-    self.stack.blit_to(bigger, len=sp)
-    self.stack = bigger
+    self.grow()
   }
   let stack = self.stack
   stack.unsafe_set(sp, kind)
   stack.unsafe_set(sp + 1, a)
   stack.unsafe_set(sp + 2, b)
   self.sp = sp + 3
+}
+
+///|
+/// Doubles the backtrack stack (kept out of `push` so that it stays small).
+fn Vm::grow(self : Vm) -> Unit {
+  let bigger = FixedArray::make(2 * self.stack.length(), 0)
+  self.stack.blit_to(bigger, len=self.sp)
+  self.stack = bigger
 }
 
 ///|
