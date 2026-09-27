@@ -190,8 +190,8 @@ parser async would slow it and infect every API. Instead:
   remote URIs 13, API mutation 11, misc 3).
 * Real-world check: `scripts/corpus.mbtx` — all 100 files of the Asciidoctor documentation convert
   byte-identically to Ruby (HTML and warnings).
-* Performance (release native, after regex prefilters): 38k-line document converts in 0.14s wall /
-  0.13s CPU vs Ruby ~0.6s. (A ~0.4s delay seen earlier was macOS's one-time check of a freshly built
+* Performance (release native, after regex prefilters): 38k-line document loads in 0.14s wall /
+  0.13s CPU (parse only; see the corrected benchmark below). (A ~0.4s delay seen earlier was macOS's one-time check of a freshly built
   executable — it affects non-async binaries too and disappears on subsequent runs; it is not an
   async-runtime cost.)
 * Tests pass on native, wasm-gc and js.
@@ -259,6 +259,21 @@ parser async would slow it and infect every API. Instead:
   files written with linkcss+copycss (57/57).
 * Binary size: the CLI links all lexers (native release 3.4 MB → 21.6 MB, wasm release 1.3 MB →
   11.2 MB); to be addressed later.
+
+
+### 2026-09-27 (benchmark, corrected)
+* The 0.14s figure above was parse-only: with `-o /dev/null` Ruby's convert (and the port) only loads
+  the document. Wall-clock medians, release builds, output written, vs Ruby 2.6.10 (no YJIT):
+
+  | input | Ruby | native | wasm (moonrun) |
+  |---|---|---|---|
+  | 3 lines | 90 ms | 9 ms | 218 ms |
+  | 742 lines | 98 ms | 11 ms | 237 ms |
+  | 38k lines | 634 ms | 286 ms (parse 120 ms) | 1022 ms |
+  | 34k lines, 248 source blocks, Pygments | 1025 ms | 543 ms | 1783 ms |
+
+  Output is identical to Ruby in every case. wasm startup grew from ~40 ms to ~220 ms when the Pygments
+  lexers were linked (1.3 MB → 11 MB module).
 
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
