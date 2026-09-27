@@ -142,7 +142,8 @@ fn Vm::step1(self : Vm, inst : Inst, pos : Int) -> Int {
         -1
       }
     AnyChar(dotall) => {
-      let (cp, w) = self.cp_at(pos)
+      let cp = self.cp_at(pos)
+      let w = cp_width_of(cp)
       if !dotall && cp == '\n' {
         -1
       } else {
@@ -158,7 +159,8 @@ fn Vm::step1(self : Vm, inst : Inst, pos : Int) -> Int {
           -1
         }
       } else {
-        let (cp, w) = self.cp_at(pos)
+        let cp = self.cp_at(pos)
+        let w = cp_width_of(cp)
         if self.classes[ci].contains(cp) {
           pos + w
         } else {
@@ -183,16 +185,28 @@ fn splits_pair(s : String, pos : Int) -> Bool {
 }
 
 ///|
-/// Decodes the code point at `pos`; returns (cp, width). `pos` must be < len.
-fn Vm::cp_at(self : Vm, pos : Int) -> (Int, Int) {
+/// Decodes the code point at `pos` (`pos` must be < len). Its width in code
+/// units is `cp_width_of(cp)`: only a surrogate pair decodes above U+FFFF.
+/// (Returns a plain Int: a tuple would be heap-allocated on every call.)
+fn Vm::cp_at(self : Vm, pos : Int) -> Int {
   let c = self.input.unsafe_get(pos).to_int()
   if c >= 0xD800 && c <= 0xDBFF && pos + 1 < self.len {
     let d = self.input.unsafe_get(pos + 1).to_int()
     if d >= 0xDC00 && d <= 0xDFFF {
-      return (0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00), 2)
+      return 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00)
     }
   }
-  (c, 1)
+  c
+}
+
+///|
+/// Width in UTF-16 code units of a code point decoded by `cp_at`.
+fn cp_width_of(cp : Int) -> Int {
+  if cp >= 0x10000 {
+    2
+  } else {
+    1
+  }
 }
 
 ///|
@@ -219,7 +233,7 @@ fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
       pos == self.len || (pos == self.len - 1 && self.input[pos] == '\n')
     WordBoundary | NotWordBoundary => {
       let before = pos > 0 && is_unicode_word(self.cp_before(pos))
-      let after = pos < self.len && is_unicode_word(self.cp_at(pos).0)
+      let after = pos < self.len && is_unicode_word(self.cp_at(pos))
       (before != after) == (kind == WordBoundary)
     }
     SearchStart => pos == self.search_start
@@ -249,8 +263,10 @@ fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
       if j >= len {
         return -1
       }
-      let (a, wa) = self.cp_at(i)
-      let (b, wb) = self.cp_at(j)
+      let a = self.cp_at(i)
+      let wa = cp_width_of(a)
+      let b = self.cp_at(j)
+      let wb = cp_width_of(b)
       if !fold_eq(a, b) {
         return -1
       }
@@ -358,7 +374,8 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         }
       AnyChar(dotall) =>
         if pos < len {
-          let (cp, w) = self.cp_at(pos)
+          let cp = self.cp_at(pos)
+          let w = cp_width_of(cp)
           if !dotall && cp == '\n' {
             ok = false
           } else {
@@ -379,7 +396,8 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
               ok = false
             }
           } else {
-            let (cp, w) = self.cp_at(pos)
+            let cp = self.cp_at(pos)
+            let w = cp_width_of(cp)
             if self.classes[ci].contains(cp) {
               pc += 1
               pos += w

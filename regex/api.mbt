@@ -361,6 +361,35 @@ fn FirstSet::admits(self : FirstSet, s : String, pos : Int) -> Bool {
 }
 
 ///|
+/// One-unit strings for the ASCII range (needles for `find_unit`).
+let ascii_units : FixedArray[String] = FixedArray::makei(128, i => {
+  Int::unsafe_to_char(i).to_string()
+})
+
+///|
+/// Offset of the first code unit `u` at or after `from`, or `s.length()` if
+/// there is none (`from` itself when `from >= s.length()`). ASCII units use the
+/// core library's vectorized search.
+fn find_unit(s : String, from : Int, u : Int) -> Int {
+  let len = s.length()
+  if from >= len {
+    return from
+  }
+  if u < 128 {
+    match s.view(start_offset=from).find(ascii_units[u]) {
+      Some(i) => from + i
+      None => len
+    }
+  } else {
+    let mut i = from
+    while i < len && s.unsafe_get(i).to_int() != u {
+      i += 1
+    }
+    i
+  }
+}
+
+///|
 /// Finds the first match starting at a code point boundary at or after `start`.
 fn Regex::find_with(
   self : Regex,
@@ -382,11 +411,7 @@ fn Regex::find_with(
     let at = if from >= 0 && from <= start && vm.req_at[k] >= start {
       vm.req_at[k]
     } else {
-      let u = required[k]
-      let mut i = start
-      while i < len && s.unsafe_get(i).to_int() != u {
-        i += 1
-      }
+      let i = find_unit(s, start, required[k])
       vm.req_from[k] = start
       vm.req_at[k] = i
       i
@@ -407,10 +432,7 @@ fn Regex::find_with(
           }
         }
         // advance to next line start
-        while pos < len && s.unsafe_get(pos) != '\n' {
-          pos += 1
-        }
-        pos += 1
+        pos = find_unit(s, pos, '\n') + 1
       }
       return None
     }
@@ -423,10 +445,7 @@ fn Regex::find_with(
       // within [q - max_off, q - min_off] can place the literal at q. The
       // literal is a BMP non-surrogate, so `q` is always a boundary.
       while true {
-        let mut q = pos + min_off
-        while q < len && s.unsafe_get(q).to_int() != unit {
-          q += 1
-        }
+        let q = find_unit(s, pos + min_off, unit)
         if q >= len {
           return None
         }

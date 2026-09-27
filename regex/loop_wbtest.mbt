@@ -9,7 +9,13 @@ fn loop_probe(re : Regex, input : String, start : Int) -> String {
     RegexTimeout(_) => return "timeout steps=\{before - vm.fuel}"
   }
   let result = match result {
-    Some(m) => m.offsets.to_string()
+    Some(m) => {
+      let sb = StringBuilder()
+      for o in m.offsets {
+        sb.write_string("\{o} ")
+      }
+      sb.to_string()
+    }
     None => "none"
   }
   "\{result} steps=\{before - vm.fuel}"
