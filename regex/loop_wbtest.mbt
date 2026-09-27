@@ -100,3 +100,50 @@ test "Star loops behave exactly like their Split expansion" {
     }
   }
 }
+
+///|
+test "lead unit sets only skip starts that cannot match" {
+  let patterns = [
+    "(^|[^\\p{Word};:}])(?:\\[([^\\[\\]]+)\\])?\\*(\\S|\\S.*?\\S)\\*(?!\\p{Word})",
+    "(^|[^\\p{Word};:\"'`}])(?:\\[([^\\[\\]]+)\\])?`(\\S|\\S.*?\\S)`(?![\\p{Word}\"'`])",
+    "\\\\?(?:\\[([^\\[\\]]+)\\])?\\*\\*(.+?)\\*\\*", "(?:x|yz)?[ab]c", ".?.?(?:[ab]|c)d",
+    "(?<=\\w)(?:[#_])x", "\\K?[\\[#](.)", "😀?[ab]",
+  ]
+  let lead = "😀".unsafe_substring(start=0, end=1)
+  let inputs = [
+    "",
+    "*a*",
+    "x *strong* y",
+    "[role]*b* and **c**",
+    "a`b` `c`d `[x]`e`",
+    "ya\\**z**",
+    "xac ybc yzbc zac",
+    "abcd cd ...d",
+    "a#x _x b_x",
+    "[1#2",
+    "😀a😀b",
+    "*" + lead + "*",
+    "*" + lead + "a*",
+  ]
+  for p in patterns {
+    let re = compile_with(p, "m", 0, true) catch {
+      RegexError(message~, ..) => fail("/\{p}/: \{message}")
+    }
+    let plain = { ..re, lead_units: None, pool: [], }
+    for input in inputs {
+      for start in 0..<=input.length() {
+        // step counts differ (fewer attempts); the outcome must not
+        let a = loop_probe(re, input, start)
+        let b = loop_probe(plain, input, start)
+        let a = a[:a.find(" steps=").unwrap_or(a.length())].to_string()
+        let b = b[:b.find(" steps=").unwrap_or(b.length())].to_string()
+        if a != b {
+          fail("/\{p}/ on \{input.escape()} from \{start}: \{a} vs \{b}")
+        }
+      }
+    }
+  }
+  // the quote patterns do get a lead set
+  let q = compile_with(patterns[0], "m", 0, true)
+  assert_true(q.lead_units is Some(_))
+}

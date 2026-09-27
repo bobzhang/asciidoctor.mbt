@@ -406,6 +406,42 @@ fn required_units(node : Node) -> Array[Int] {
 }
 
 ///|
+/// Most code units a `lead_set` may have.
+const MAX_LEAD_UNITS = 4
+
+///|
+/// Like `lead_literal`, for patterns whose top-level concatenation continues,
+/// after a prefix of bounded width, with a non-nullable remainder that can
+/// only start with one of a few ASCII code units: (units, min offset, max
+/// offset). E.g. `(^|[^\w])(?:\[[^\]]+\])?#...` has the units `[` and `#` at
+/// offset 0 or 1. The search jumps between occurrences of these units.
+fn lead_set(node : Node) -> (FixedArray[Bool], Int, Int)? {
+  let items = match node {
+    Concat(items) => items
+    Group(_, Concat(items)) => items
+    _ => return None
+  }
+  let mut lo = 0
+  let mut hi = 0
+  for i, it in items {
+    let (first, nullable) = first_info(Concat(items[i:].to_owned()))
+    if !nullable && first is Some(f) && !f.non_ascii {
+      let n = f.ascii.iter().filter(b => b).count()
+      if n >= 1 && n <= MAX_LEAD_UNITS {
+        return Some((f.ascii, lo, hi))
+      }
+    }
+    let (a, b) = width(it)
+    if b < 0 {
+      return None
+    }
+    lo += a
+    hi += b
+  }
+  None
+}
+
+///|
 /// A mandatory literal code unit at a bounded offset from the match start:
 /// (unit, min offset, max offset). Lets the search jump between occurrences.
 fn lead_literal(node : Node) -> (Int, Int, Int)? {

@@ -22,6 +22,7 @@ pub struct Regex {
   priv first : FirstSet?
   priv required : FixedArray[Int]
   priv lead : (Int, Int, Int)?
+  priv lead_units : (FixedArray[Bool], Int, Int)? // when `lead` is None
   priv step_limit : Int
   // idle matchers, reused by later search operations (see `acquire`)
   priv pool : Array[Vm]
@@ -152,6 +153,7 @@ fn compile_with(
     i += 1
   }
   let (first, is_nullable) = first_info(node)
+  let lead = lead_literal(node)
   {
     source: pattern,
     prog: FixedArray::from_array(c.prog),
@@ -167,7 +169,12 @@ fn compile_with(
       first
     },
     required: FixedArray::from_array(required_units(node)),
-    lead: lead_literal(node),
+    lead,
+    lead_units: if lead is None {
+      lead_set(node)
+    } else {
+      None
+    },
     step_limit: if step_limit > 0 {
       step_limit
     } else {
@@ -459,6 +466,43 @@ fn Regex::find_with(
       // literal is a BMP non-surrogate, so `q` is always a boundary.
       while true {
         let q = find_unit(s, pos + min_off, unit)
+        if q >= len {
+          return None
+        }
+        let from = if q - max_off > pos { q - max_off } else { pos }
+        let to = q - min_off
+        let mut st = from
+        while st <= to {
+          let possible = match self.first {
+            Some(first) => first.admits(s, st)
+            None => !splits_pair(s, st)
+          }
+          if possible {
+            match self.try_at(vm, st) {
+              Some(m) => return Some(m)
+              None => ()
+            }
+          }
+          st += 1
+        }
+        pos = to + 1
+      }
+      return None
+    }
+    None => ()
+  }
+  match self.lead_units {
+    Some((units, min_off, max_off)) => {
+      // as above, jumping between occurrences of any of the (ASCII) units
+      while true {
+        let mut q = pos + min_off
+        while q < len {
+          let c = s.unsafe_get(q).to_int()
+          if c < 128 && units[c] {
+            break
+          }
+          q += 1
+        }
         if q >= len {
           return None
         }
