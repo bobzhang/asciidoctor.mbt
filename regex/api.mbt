@@ -307,10 +307,17 @@ fn Regex::try_at(
   vm : Vm,
   pos : Int,
 ) -> MatchData? raise RegexTimeout {
-  vm.caps.fill(-1)
+  // Invariant: `caps` and `regs` are all -1 between attempts (and in pooled
+  // matchers). A failed run backtracks through every recorded change, so it
+  // leaves them as it found them; a successful one is cleaned up here; a
+  // matcher that timed out is not reused.
   let e = vm.run(0, pos, -1)
   if e >= 0 {
     let offsets = vm.caps.copy()
+    vm.caps.fill(-1)
+    if vm.regs.length() > 0 {
+      vm.regs.fill(-1)
+    }
     // group 0's start is only set in advance by \K
     if offsets[0] < 0 {
       offsets[0] = pos
@@ -335,9 +342,15 @@ pub fn Regex::try_match_at(
     return None
   }
   let vm = self.acquire(s)
-  defer self.release(vm)
   vm.search_start = pos
-  self.try_at(vm, pos)
+  let m = self.try_at(vm, pos) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  m
 }
 
 ///|
@@ -512,8 +525,14 @@ pub fn Regex::try_find(
     return None
   }
   let vm = self.acquire(s)
-  defer self.release(vm)
-  self.find_with(vm, start)
+  let m = self.find_with(vm, start) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  m
 }
 
 ///|
@@ -551,9 +570,26 @@ pub fn Regex::try_find_all(
   self : Regex,
   s : String,
 ) -> Array[MatchData] raise RegexTimeout {
-  let out = []
   let vm = self.acquire(s)
-  defer self.release(vm)
+  let out = self.find_all_with(vm) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+/// (Matchers are released explicitly rather than with `defer`, which would
+/// allocate a closure environment per operation.)
+fn Regex::find_all_with(
+  self : Regex,
+  vm : Vm,
+) -> Array[MatchData] raise RegexTimeout {
+  let s = vm.input
+  let out = []
   let len = s.length()
   let mut pos = 0
   while pos <= len {
@@ -594,7 +630,24 @@ pub fn Regex::try_replace(
   once? : Bool = false,
 ) -> String raise RegexTimeout {
   let vm = self.acquire(s)
-  defer self.release(vm)
+  let out = self.replace_with(vm, f, once) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+fn Regex::replace_with(
+  self : Regex,
+  vm : Vm,
+  f : (MatchData) -> String,
+  once : Bool,
+) -> String raise RegexTimeout {
+  let s = vm.input
   let len = s.length()
   let mut pos = 0
   let mut last = 0
@@ -764,7 +817,25 @@ pub fn Regex::try_split(
     return out
   }
   let vm = self.acquire(s)
-  defer self.release(vm)
+  self.split_with(vm, limit, out) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+fn Regex::split_with(
+  self : Regex,
+  vm : Vm,
+  limit : Int,
+  out : Array[String],
+) -> Unit raise RegexTimeout {
+  let s = vm.input
+  let len = s.length()
   let mut beg = 0
   let mut start = 0
   let mut last_null = false
@@ -808,7 +879,6 @@ pub fn Regex::try_split(
       out.pop() |> ignore
     }
   }
-  out
 }
 
 ///|

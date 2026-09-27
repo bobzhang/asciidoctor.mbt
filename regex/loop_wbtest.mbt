@@ -8,6 +8,10 @@ fn loop_probe(re : Regex, input : String, start : Int) -> String {
   let result = re.find_with(vm, start) catch {
     RegexTimeout(_) => return "timeout steps=\{before - vm.fuel}"
   }
+  // the matcher is left clean for the next attempt (see `Regex::try_at`)
+  if vm.caps.iter().any(c => c != -1) || vm.regs.iter().any(r => r != -1) {
+    return "dirty matcher state"
+  }
   let result = match result {
     Some(m) => {
       let sb = StringBuilder()

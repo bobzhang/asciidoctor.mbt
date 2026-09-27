@@ -65,14 +65,15 @@ fn Vm::reset(self : Vm, re : Regex, input : String) -> Unit {
   let limit = re.step_limit_for(len)
   self.input = input
   self.len = len
-  self.caps.fill(-1)
-  self.regs.fill(-1)
+  // `caps` and `regs` are all -1 already: see `Regex::try_at`
   self.sp = 0
   self.search_start = 0
   self.fuel = limit
   self.limit = limit
   self.timed_out = false
-  self.req_from.fill(-1)
+  if self.req_from.length() > 0 {
+    self.req_from.fill(-1)
+  }
 }
 
 ///|
@@ -100,7 +101,8 @@ fn Regex::release(self : Regex, vm : Vm) -> Unit {
   if vm.stack.length() > STACK_RETAIN {
     vm.stack = FixedArray::make(STACK_INIT, 0)
   }
-  if self.pool.length() < POOL_MAX {
+  // a matcher that ran out of steps stopped without restoring its captures
+  if !vm.timed_out && self.pool.length() < POOL_MAX {
     self.pool.push(vm)
   }
 }
