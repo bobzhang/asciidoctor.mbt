@@ -421,10 +421,26 @@ fn lead_set(node : Node) -> (FixedArray[Bool], Int, Int)? {
     Group(_, Concat(items)) => items
     _ => return None
   }
+  // first-set and nullability of every suffix `items[i:]`, computed once from
+  // the back (analyzing each suffix separately is quadratic in the length)
+  let n = items.length()
+  let suffixes : Array[(FirstSet?, Bool)] = Array::make(
+    n + 1,
+    (empty_first(), true),
+  )
+  for i = n - 1; i >= 0; i = i - 1 {
+    let (f, nullable) = first_info(items[i])
+    suffixes[i] = if nullable {
+      let (rest, rest_nullable) = suffixes[i + 1]
+      (union_first(f, rest), rest_nullable)
+    } else {
+      (union_first(empty_first(), f), false)
+    }
+  }
   let mut lo = 0
   let mut hi = 0
   for i, it in items {
-    let (first, nullable) = first_info(Concat(items[i:].to_owned()))
+    let (first, nullable) = suffixes[i]
     if !nullable && first is Some(f) && !f.non_ascii {
       let n = f.ascii.iter().filter(b => b).count()
       if n >= 1 && n <= MAX_LEAD_UNITS {

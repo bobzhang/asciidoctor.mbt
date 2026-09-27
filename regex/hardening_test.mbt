@@ -457,10 +457,31 @@ test "matchers are reused safely" {
     content="[\"a1\", \"b2\"]",
   )
   // a huge backtrack stack is not kept, and matching still works afterwards
+  // (the trailing `c` gets past the required-unit prefilter, so the loop
+  // really pushes 40000 backtrack entries)
   let greedy = @regex.re("(?:a|b)*c")
+  debug_inspect(
+    greedy.find("ab".repeat(20000) + "c").map(m => (m.begin(), m.end())),
+    content="Some((0, 40001))",
+  )
   debug_inspect(
     greedy.find("ab".repeat(20000)).map(m => m.begin()),
     content="None",
   )
   debug_inspect(greedy.find("abc").map(m => m.begin()), content="Some(0)")
+}
+
+///|
+test "compiling long concatenations stays linear" {
+  // the lead-set analysis used to copy every suffix of a concatenation
+  let long_classes = @regex.re("[ab]".repeat(30000))
+  debug_inspect(
+    long_classes.find("x" + "ab".repeat(15000)).map(m => m.begin()),
+    content="Some(1)",
+  )
+  let long_optionals = @regex.re("a?".repeat(20000) + "#")
+  debug_inspect(
+    long_optionals.find("aaa#").map(m => (m.begin(), m.end())),
+    content="Some((0, 4))",
+  )
 }
