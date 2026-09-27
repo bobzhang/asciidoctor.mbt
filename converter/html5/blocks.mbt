@@ -14,7 +14,19 @@ fn Html5Converter::convert_admonition(
   } else {
     "<div class=\"title\">\{a(node, "textlabel")}</div>"
   }
-  "<div\{id_attr(node)} class=\"admonitionblock \{name}\{role_suffix(node)}\">\n<table>\n<tr>\n<td class=\"icon\">\n\{label}\n</td>\n<td class=\"content\">\n\{title_div(node)}\{node.content()}\n</td>\n</tr>\n</table>\n</div>"
+  [
+    "<div",
+    id_attr(node),
+    " class=\"admonitionblock ",
+    name,
+    role_suffix(node),
+    "\">\n<table>\n<tr>\n<td class=\"icon\">\n",
+    label,
+    "\n</td>\n<td class=\"content\">\n",
+    title_div(node),
+    node.content(),
+    "\n</td>\n</tr>\n</table>\n</div>",
+  ].join("")
 }
 
 ///|
@@ -235,7 +247,17 @@ fn Html5Converter::convert_example(
     } else {
       ""
     }
-    "<div\{id_attr(node)} class=\"exampleblock\{role_suffix(node)}\">\n\{title_element}<div class=\"content\">\n\{node.content()}\n</div>\n</div>"
+    [
+      "<div",
+      id_attr(node),
+      " class=\"exampleblock",
+      role_suffix(node),
+      "\">\n",
+      title_element,
+      "<div class=\"content\">\n",
+      node.content(),
+      "\n</div>\n</div>",
+    ].join("")
   }
 }
 
@@ -379,9 +401,19 @@ fn Html5Converter::convert_listing(
       }
       hl.format(node, lang, opts)
     }
-    None => pre_open + node.content() + pre_close
+    None => [pre_open, node.content(), pre_close].join("")
   }
-  "<div\{id_attr(node)} class=\"listingblock\{role_suffix(node)}\">\n\{title_element}<div class=\"content\">\n\{body}\n</div>\n</div>"
+  [
+    "<div",
+    id_attr(node),
+    " class=\"listingblock",
+    role_suffix(node),
+    "\">\n",
+    title_element,
+    "<div class=\"content\">\n",
+    body,
+    "\n</div>\n</div>",
+  ].join("")
 }
 
 ///|
@@ -391,7 +423,23 @@ fn Html5Converter::convert_literal(
 ) -> String {
   ignore(self)
   let nowrap = !node.document().has_attr("prewrap") || node.has_option("nowrap")
-  "<div\{id_attr(node)} class=\"literalblock\{role_suffix(node)}\">\n\{title_div(node)}<div class=\"content\">\n<pre\{if nowrap { " class=\"nowrap\"" } else { "" }}>\{node.content()}</pre>\n</div>\n</div>"
+  [
+    "<div",
+    id_attr(node),
+    " class=\"literalblock",
+    role_suffix(node),
+    "\">\n",
+    title_div(node),
+    "<div class=\"content\">\n<pre",
+    if nowrap {
+      " class=\"nowrap\""
+    } else {
+      ""
+    },
+    ">",
+    node.content(),
+    "</pre>\n</div>\n</div>",
+  ].join("")
 }
 
 ///|
@@ -518,7 +566,18 @@ fn Html5Converter::convert_open(
       Some(s) if s != "open" => " \{s}"
       _ => ""
     }
-    "<div\{id_attr(node)} class=\"openblock\{style_class}\{role_suffix(node)}\">\n\{title_div(node)}<div class=\"content\">\n\{node.content()}\n</div>\n</div>"
+    [
+      "<div",
+      id_attr(node),
+      " class=\"openblock",
+      style_class,
+      role_suffix(node),
+      "\">\n",
+      title_div(node),
+      "<div class=\"content\">\n",
+      node.content(),
+      "\n</div>\n</div>",
+    ].join("")
   }
 }
 
@@ -536,10 +595,20 @@ fn Html5Converter::convert_paragraph(
         None => " class=\"paragraph\""
       }
   }
+  // (`join` allocates the result once; an interpolation would grow a builder
+  // while copying the content)
   if node.has_title() {
-    "<div\{attributes}>\n<div class=\"title\">\{node.title().unwrap_or("")}</div>\n<p>\{node.content()}</p>\n</div>"
+    [
+      "<div",
+      attributes,
+      ">\n<div class=\"title\">",
+      node.title().unwrap_or(""),
+      "</div>\n<p>",
+      node.content(),
+      "</p>\n</div>",
+    ].join("")
   } else {
-    "<div\{attributes}>\n<p>\{node.content()}</p>\n</div>"
+    ["<div", attributes, ">\n<p>", node.content(), "</p>\n</div>"].join("")
   }
 }
 
@@ -620,7 +689,16 @@ fn Html5Converter::convert_sidebar(
   node : @core.Node,
 ) -> String {
   ignore(self)
-  "<div\{id_attr(node)} class=\"sidebarblock\{role_suffix(node)}\">\n<div class=\"content\">\n\{title_div(node)}\{node.content()}\n</div>\n</div>"
+  [
+    "<div",
+    id_attr(node),
+    " class=\"sidebarblock",
+    role_suffix(node),
+    "\">\n<div class=\"content\">\n",
+    title_div(node),
+    node.content(),
+    "\n</div>\n</div>",
+  ].join("")
 }
 
 ///|
