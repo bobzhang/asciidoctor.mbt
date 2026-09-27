@@ -275,6 +275,18 @@ parser async would slow it and infect every API. Instead:
   Output is identical to Ruby in every case. wasm startup grew from ~40 ms to ~220 ms when the Pygments
   lexers were linked (1.3 MB → 11 MB module).
 
+
+### 2026-09-27 (after PR #1, vs Ruby 4.0 / YJIT)
+* One-shot CLI, median wall seconds (`-S safe -o out.html`): 3 lines / 742 lines / 38k lines —
+  Ruby 2.6 0.08 / 0.09 / 0.61; Ruby 4.0.7 0.06 / 0.07 / 0.42; Ruby 4.0.7 `--yjit` 0.07 / 0.20 / 0.63
+  (JIT warm-up does not pay off in one run); port native <0.01 / 0.01 / 0.13; port wasm (moonrun)
+  0.21 / 0.23 / 0.61.
+* Warm, in process (38k lines, median parse + convert ms): Ruby 2.6 267 + 250, Ruby 4.0 166 + 192,
+  Ruby 4.0 YJIT 113 + 176, port native 33 + 47.
+* Ruby's hot path is Onigmo (C), so the port's margin is bounded by its own regex engine unless the
+  hottest patterns get dedicated scanners or the quote passes are fused. wasm: ~0.2 s is instantiating
+  the 11 MB module (Pygments lexers); compute is ~4.5x slower than native.
+
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
 2. Server-side syntax highlighting: Pygments is ported (`highlighter/pygments`); Rouge and CodeRay are
