@@ -14,9 +14,21 @@ pub fn prepare_source_string(
   let mut start = 0
   let mut i = 0
   while i < n {
-    if data[i] == '\n' {
-      let line = data.unsafe_substring(start~, end=i + 1)
-      lines.push(if trim_end { @rb.rstrip(line) } else { @rb.chomp(line) })
+    if data.unsafe_get(i) == '\n' {
+      // `rstrip`/`chomp` of `data[start..=i]`, copying only the kept part
+      let mut end = i
+      if trim_end {
+        while end > start &&
+              (
+                @rb.is_space(data.unsafe_get(end - 1)) ||
+                data.unsafe_get(end - 1) == 0
+              ) {
+          end -= 1
+        }
+      } else if end > start && data.unsafe_get(end - 1) == '\r' {
+        end -= 1
+      }
+      lines.push(data.unsafe_substring(start~, end~))
       start = i + 1
     }
     i += 1

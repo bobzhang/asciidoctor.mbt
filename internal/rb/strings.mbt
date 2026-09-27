@@ -206,6 +206,18 @@ pub fn split_ws(s : String) -> Array[String] {
 }
 
 ///|
+/// Whether `needle` occurs in `s` at offset `i` (`i + needle.length()` must
+/// not exceed `s.length()`).
+fn matches_at(s : String, i : Int, needle : String) -> Bool {
+  for j in 0..<needle.length() {
+    if s.unsafe_get(i + j) != needle.unsafe_get(j) {
+      return false
+    }
+  }
+  true
+}
+
+///|
 /// Ruby `String#split(sep, limit)` with a literal (non-space) separator.
 /// With `limit == 0` trailing empty fields are removed; negative keeps them;
 /// positive limits the number of fields.
@@ -222,13 +234,14 @@ pub fn split(s : String, sep : String, limit? : Int = 0) -> Array[String] {
     return out
   }
   let m = sep.length()
+  let first = sep.unsafe_get(0)
   let mut start = 0
   let mut i = 0
   while i + m <= n {
     if limit > 0 && out.length() == limit - 1 {
       break
     }
-    if s.unsafe_substring(start=i, end=i + m) == sep {
+    if s.unsafe_get(i) == first && matches_at(s, i, sep) {
       out.push(s.unsafe_substring(start~, end=i))
       i += m
       start = i

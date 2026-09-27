@@ -50,15 +50,23 @@ pub fn sub_specialchars(text : String) -> String {
   if !(text.contains(">") || text.contains("&") || text.contains("<")) {
     return text
   }
-  let sb = StringBuilder(size_hint=text.length() + 16)
-  for c in text {
-    match c {
-      '<' => sb.write_string("&lt;")
-      '>' => sb.write_string("&gt;")
-      '&' => sb.write_string("&amp;")
-      _ => sb.write_char(c)
+  // copy the runs between the special characters (code units are copied
+  // verbatim, as the character-wise loop did)
+  let n = text.length()
+  let sb = StringBuilder(size_hint=n + 16)
+  let mut last = 0
+  for i in 0..<n {
+    let entity = match text.unsafe_get(i) {
+      '<' => "&lt;"
+      '>' => "&gt;"
+      '&' => "&amp;"
+      _ => continue
     }
+    sb.write_substring(text, last, i - last)
+    sb.write_string(entity)
+    last = i + 1
   }
+  sb.write_substring(text, last, n - last)
   sb.to_string()
 }
 
@@ -583,6 +591,11 @@ pub fn Node::parse_attributes(
 ///|
 /// Applies post replacements (hard line breaks).
 pub fn Node::sub_post_replacements(self : Node, text : String) -> String {
+  // both branches below leave a text without a line break and without " +"
+  // unchanged (skips the attribute lookups)
+  if !text.contains(" +") && !text.contains("\n") {
+    return text
+  }
   if self.attributes.truthy("hardbreaks-option") ||
     self.document().attributes.truthy("hardbreaks-option") {
     let lines = @rb.split(text, "\n", limit=-1)
