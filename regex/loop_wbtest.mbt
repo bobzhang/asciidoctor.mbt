@@ -135,8 +135,8 @@ test "lead unit sets only skip starts that cannot match" {
         // step counts differ (fewer attempts); the outcome must not
         let a = loop_probe(re, input, start)
         let b = loop_probe(plain, input, start)
-        let a = a[:a.find(" steps=").unwrap_or(a.length())].to_string()
-        let b = b[:b.find(" steps=").unwrap_or(b.length())].to_string()
+        let a = a[:a.find(" steps=").unwrap_or(a.length())].to_owned()
+        let b = b[:b.find(" steps=").unwrap_or(b.length())].to_owned()
         if a != b {
           fail("/\{p}/ on \{input.escape()} from \{start}: \{a} vs \{b}")
         }
