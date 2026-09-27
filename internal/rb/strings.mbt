@@ -228,8 +228,19 @@ pub fn split(s : String, sep : String, limit? : Int = 0) -> Array[String] {
     return out
   }
   if sep == "" {
-    for c in s {
-      out.push(c.to_string())
+    // one field per character; a non-zero limit keeps the (empty) remainder
+    // after the last character, and a positive one stops splitting early
+    let mut i = 0
+    while i < n {
+      if limit > 0 && out.length() == limit - 1 {
+        break
+      }
+      let w = if s[i].is_leading_surrogate() && i + 1 < n { 2 } else { 1 }
+      out.push(s.unsafe_substring(start=i, end=i + w))
+      i += w
+    }
+    if limit != 0 {
+      out.push(s.unsafe_substring(start=i, end=n))
     }
     return out
   }
