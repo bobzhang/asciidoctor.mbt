@@ -4,6 +4,9 @@
 ///|
 test "gsub with empty matches" {
   inspect(@regex.re("x*").gsub("abc", "-"), content="-a-b-c-")
+  inspect(@regex.re("x*").sub("abc", "-"), content="-abc")
+  inspect(@regex.re("b*").gsub("abc", "-"), content="-a--c-")
+  inspect(@regex.re("x").gsub("abc", "-"), content="abc")
   inspect(@regex.re("a*?").gsub("aaa", "-"), content="-a-a-a-")
   inspect(@regex.re("(a)(?=a)").gsub("aaa", "<\\1>"), content="<a><a>a")
 }

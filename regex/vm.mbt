@@ -1,38 +1,109 @@
 ///|
 /// Backtracking matcher state for one search operation over one input.
+///
+/// A `Vm` is reusable: `Regex::acquire` takes one from the regex's pool (or
+/// allocates one) and resets it for a new operation, `Regex::release` returns
+/// it. Every observable piece of state is reset, so a reused matcher behaves
+/// exactly like a fresh one.
 priv struct Vm {
   prog : FixedArray[Inst]
   classes : FixedArray[CharClass]
   sub_starts : FixedArray[Int]
-  input : String
-  len : Int
+  mut input : String
+  mut len : Int
   caps : FixedArray[Int]
   regs : FixedArray[Int]
-  stack : Array[Int] // triples: (kind, a, b)
+  // backtrack stack of triples (kind, a, b); `sp` is its logical length
+  mut stack : FixedArray[Int]
+  mut sp : Int
   mut search_start : Int
   // remaining step budget; a step is one branch (Split) or one (sub)program run
   mut fuel : Int
-  limit : Int
+  mut limit : Int
   mut timed_out : Bool
+  // memo of the required-unit prefilter: the scan for `required[i]` that
+  // started at `req_from[i]` (-1: none yet) found it at `req_at[i]` (len: absent)
+  req_from : FixedArray[Int]
+  req_at : FixedArray[Int]
 }
 
 ///|
-fn Vm::new(re : Regex, input : String) -> Vm {
-  let len = input.length()
-  let limit = re.step_limit_for(len)
+/// Initial capacity of the backtrack stack (in ints, i.e. 3 per entry).
+const STACK_INIT = 96
+
+///|
+/// Largest backtrack stack a pooled matcher keeps between operations (4096 entries).
+const STACK_RETAIN = 12288
+
+///|
+fn Vm::new(re : Regex) -> Vm {
+  let nreq = re.required.length()
   {
     prog: re.prog,
     classes: re.classes,
     sub_starts: re.sub_starts,
-    input,
-    len,
+    input: "",
+    len: 0,
     caps: FixedArray::make(2 * (re.ncaps + 1), -1),
     regs: FixedArray::make(re.nregs, -1),
-    stack: [],
+    stack: FixedArray::make(STACK_INIT, 0),
+    sp: 0,
     search_start: 0,
-    fuel: limit,
-    limit,
+    fuel: 0,
+    limit: 0,
     timed_out: false,
+    req_from: FixedArray::make(nreq, -1),
+    req_at: FixedArray::make(nreq, 0),
+  }
+}
+
+///|
+/// Prepares the matcher for a new search operation over `input`, leaving it in
+/// the same state as a freshly allocated one.
+fn Vm::reset(self : Vm, re : Regex, input : String) -> Unit {
+  let len = input.length()
+  let limit = re.step_limit_for(len)
+  self.input = input
+  self.len = len
+  // `caps` and `regs` are all -1 already: see `Regex::try_at`
+  self.sp = 0
+  self.search_start = 0
+  self.fuel = limit
+  self.limit = limit
+  self.timed_out = false
+  if self.req_from.length() > 0 {
+    self.req_from.fill(-1)
+  }
+}
+
+///|
+/// Takes a matcher for one search operation over `input`. Matchers are pooled
+/// per regex; a nested operation on the same regex (e.g. from a `replace`
+/// callback) simply takes another one.
+fn Regex::acquire(self : Regex, input : String) -> Vm {
+  let vm = match self.pool.pop() {
+    Some(vm) => vm
+    None => Vm::new(self)
+  }
+  vm.reset(self, input)
+  vm
+}
+
+///|
+/// Maximum number of idle matchers kept per regex.
+const POOL_MAX = 4
+
+///|
+/// Returns a matcher to the pool once its operation is over.
+fn Regex::release(self : Regex, vm : Vm) -> Unit {
+  // do not keep the input (possibly a whole document) or a huge stack alive
+  vm.input = ""
+  if vm.stack.length() > STACK_RETAIN {
+    vm.stack = FixedArray::make(STACK_INIT, 0)
+  }
+  // a matcher that ran out of steps stopped without restoring its captures
+  if !vm.timed_out && self.pool.length() < POOL_MAX {
+    self.pool.push(vm)
   }
 }
 
@@ -44,6 +115,64 @@ const KIND_CAP = 1
 
 ///|
 const KIND_REG = 2
+
+///|
+/// `KIND_LOOP + 2 * pc` (greedy) and `KIND_LOOP + 2 * pc + 1` (lazy) mark the
+/// pending iterations of the `Star` loop at `pc`.
+const KIND_LOOP = 3
+
+///|
+/// Whether `s[i]`, `s[i + 1]` form a surrogate pair (both indices in range).
+fn is_pair(s : String, i : Int) -> Bool {
+  let c = s.unsafe_get(i).to_int()
+  let d = s.unsafe_get(i + 1).to_int()
+  c >= 0xD800 && c <= 0xDBFF && d >= 0xDC00 && d <= 0xDFFF
+}
+
+///|
+/// Runs the one-character instruction `inst` (the body of a `Star` loop) at
+/// `pos`; returns the position after the character, or -1.
+fn Vm::step1(self : Vm, inst : Inst, pos : Int) -> Int {
+  if pos >= self.len {
+    return -1
+  }
+  match inst {
+    Unit(u) =>
+      if self.input.unsafe_get(pos).to_int() == u {
+        pos + 1
+      } else {
+        -1
+      }
+    AnyChar(dotall) => {
+      let cp = self.cp_at(pos)
+      let w = cp_width_of(cp)
+      if !dotall && cp == '\n' {
+        -1
+      } else {
+        pos + w
+      }
+    }
+    Set(ci) => {
+      let c = self.input.unsafe_get(pos).to_int()
+      if c < 128 {
+        if self.classes[ci].ascii[c] {
+          pos + 1
+        } else {
+          -1
+        }
+      } else {
+        let cp = self.cp_at(pos)
+        let w = cp_width_of(cp)
+        if self.classes[ci].contains(cp) {
+          pos + w
+        } else {
+          -1
+        }
+      }
+    }
+    _ => abort("Star body is not a one-character instruction")
+  }
+}
 
 ///|
 /// Whether `pos` lies between the two code units of a surrogate pair of `s`.
@@ -58,16 +187,28 @@ fn splits_pair(s : String, pos : Int) -> Bool {
 }
 
 ///|
-/// Decodes the code point at `pos`; returns (cp, width). `pos` must be < len.
-fn Vm::cp_at(self : Vm, pos : Int) -> (Int, Int) {
-  let c = self.input[pos].to_int()
+/// Decodes the code point at `pos` (`pos` must be < len). Its width in code
+/// units is `cp_width_of(cp)`: only a surrogate pair decodes above U+FFFF.
+/// (Returns a plain Int: a tuple would be heap-allocated on every call.)
+fn Vm::cp_at(self : Vm, pos : Int) -> Int {
+  let c = self.input.unsafe_get(pos).to_int()
   if c >= 0xD800 && c <= 0xDBFF && pos + 1 < self.len {
-    let d = self.input[pos + 1].to_int()
+    let d = self.input.unsafe_get(pos + 1).to_int()
     if d >= 0xDC00 && d <= 0xDFFF {
-      return (0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00), 2)
+      return 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00)
     }
   }
-  (c, 1)
+  c
+}
+
+///|
+/// Width in UTF-16 code units of a code point decoded by `cp_at`.
+fn cp_width_of(cp : Int) -> Int {
+  if cp >= 0x10000 {
+    2
+  } else {
+    1
+  }
 }
 
 ///|
@@ -94,7 +235,7 @@ fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
       pos == self.len || (pos == self.len - 1 && self.input[pos] == '\n')
     WordBoundary | NotWordBoundary => {
       let before = pos > 0 && is_unicode_word(self.cp_before(pos))
-      let after = pos < self.len && is_unicode_word(self.cp_at(pos).0)
+      let after = pos < self.len && is_unicode_word(self.cp_at(pos))
       (before != after) == (kind == WordBoundary)
     }
     SearchStart => pos == self.search_start
@@ -124,8 +265,10 @@ fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
       if j >= len {
         return -1
       }
-      let (a, wa) = self.cp_at(i)
-      let (b, wb) = self.cp_at(j)
+      let a = self.cp_at(i)
+      let wa = cp_width_of(a)
+      let b = self.cp_at(j)
+      let wb = cp_width_of(b)
       if !fold_eq(a, b) {
         return -1
       }
@@ -144,9 +287,23 @@ fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
 
 ///|
 fn Vm::push(self : Vm, kind : Int, a : Int, b : Int) -> Unit {
-  self.stack.push(kind)
-  self.stack.push(a)
-  self.stack.push(b)
+  let sp = self.sp
+  if sp + 3 > self.stack.length() {
+    self.grow()
+  }
+  let stack = self.stack
+  stack.unsafe_set(sp, kind)
+  stack.unsafe_set(sp + 1, a)
+  stack.unsafe_set(sp + 2, b)
+  self.sp = sp + 3
+}
+
+///|
+/// Doubles the backtrack stack (kept out of `push` so that it stays small).
+fn Vm::grow(self : Vm) -> Unit {
+  let bigger = FixedArray::make(2 * self.stack.length(), 0)
+  self.stack.blit_to(bigger, len=self.sp)
+  self.stack = bigger
 }
 
 ///|
@@ -207,7 +364,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
     self.timed_out = true
     return -1
   }
-  let base = self.stack.length()
+  let base = self.sp
   let prog = self.prog
   let input = self.input
   let len = self.len
@@ -215,9 +372,9 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
   let mut pos = pos0
   while true {
     let mut ok = true
-    match prog[pc] {
+    match prog.unsafe_get(pc) {
       Unit(u) =>
-        if pos < len && input[pos].to_int() == u {
+        if pos < len && input.unsafe_get(pos).to_int() == u {
           pc += 1
           pos += 1
         } else {
@@ -225,7 +382,8 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         }
       AnyChar(dotall) =>
         if pos < len {
-          let (cp, w) = self.cp_at(pos)
+          let cp = self.cp_at(pos)
+          let w = cp_width_of(cp)
           if !dotall && cp == '\n' {
             ok = false
           } else {
@@ -237,7 +395,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         }
       Set(ci) =>
         if pos < len {
-          let c = input[pos].to_int()
+          let c = input.unsafe_get(pos).to_int()
           if c < 128 {
             if self.classes[ci].ascii[c] {
               pc += 1
@@ -246,7 +404,8 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
               ok = false
             }
           } else {
-            let (cp, w) = self.cp_at(pos)
+            let cp = self.cp_at(pos)
+            let w = cp_width_of(cp)
             if self.classes[ci].contains(cp) {
               pc += 1
               pos += w
@@ -261,12 +420,47 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
         self.fuel -= 1
         if self.fuel < 0 {
           self.timed_out = true
-          self.stack.truncate(base)
+          self.sp = base
           return -1
         }
         self.push(KIND_BRANCH, b, pos)
         pc = a
       }
+      Star(greedy) =>
+        if greedy {
+          // `Split(pc + 1, pc + 3)` per iteration: one step each, the last
+          // one after the body has failed
+          let inst = prog.unsafe_get(pc + 1)
+          let mut p = pos
+          while true {
+            self.fuel -= 1
+            if self.fuel < 0 {
+              self.timed_out = true
+              self.sp = base
+              return -1
+            }
+            let q = self.step1(inst, p)
+            if q < 0 {
+              break
+            }
+            p = q
+          }
+          // the pending alternatives: every earlier iteration boundary
+          if p > pos {
+            self.push(KIND_LOOP + 2 * pc, pos, p)
+          }
+          pc += 3
+          pos = p
+        } else {
+          self.fuel -= 1
+          if self.fuel < 0 {
+            self.timed_out = true
+            self.sp = base
+            return -1
+          }
+          self.push(KIND_LOOP + 2 * pc + 1, 0, pos)
+          pc += 3
+        }
       Jmp(a) => pc = a
       Save(slot) => {
         self.push(KIND_CAP, slot, self.caps[slot])
@@ -343,7 +537,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           found
         }
         if self.timed_out {
-          self.stack.truncate(base)
+          self.sp = base
           return -1
         }
         if matched != neg {
@@ -358,7 +552,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           pc += 1
           pos = r
         } else if self.timed_out {
-          self.stack.truncate(base)
+          self.sp = base
           return -1
         } else {
           ok = false
@@ -372,7 +566,7 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
       Progress(r) => if pos > self.regs[r] { pc += 1 } else { ok = false }
       SubEnd =>
         if target < 0 || pos == target {
-          self.stack.truncate(base)
+          self.sp = base
           return pos
         } else {
           ok = false
@@ -381,12 +575,13 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
     if !ok {
       // backtrack
       let mut resumed = false
-      while self.stack.length() > base {
-        let n = self.stack.length()
-        let b = self.stack[n - 1]
-        let a = self.stack[n - 2]
-        let kind = self.stack[n - 3]
-        self.stack.truncate(n - 3)
+      let stack = self.stack
+      while self.sp > base {
+        let n = self.sp - 3
+        let kind = stack.unsafe_get(n)
+        let a = stack.unsafe_get(n + 1)
+        let b = stack.unsafe_get(n + 2)
+        self.sp = n
         if kind == KIND_BRANCH {
           pc = a
           pos = b
@@ -394,8 +589,44 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           break
         } else if kind == KIND_CAP {
           self.caps[a] = b
-        } else {
+        } else if kind == KIND_REG {
           self.regs[a] = b
+        } else if (kind - KIND_LOOP) % 2 == 0 {
+          // greedy `Star` loop that started at `a` and now ends at `b`:
+          // resume after the loop one character earlier
+          let star = (kind - KIND_LOOP) / 2
+          let prev = if b - 2 >= a && is_pair(input, b - 2) {
+            b - 2
+          } else {
+            b - 1
+          }
+          if prev > a {
+            stack.unsafe_set(n + 2, prev)
+            self.sp = n + 3
+          }
+          pc = star + 3
+          pos = prev
+          resumed = true
+          break
+        } else {
+          // lazy `Star` loop, now at `b`: one more iteration, then resume
+          // after the loop
+          let star = (kind - KIND_LOOP) / 2
+          let q = self.step1(prog.unsafe_get(star + 1), b)
+          if q >= 0 {
+            self.fuel -= 1
+            if self.fuel < 0 {
+              self.timed_out = true
+              self.sp = base
+              return -1
+            }
+            stack.unsafe_set(n + 2, q)
+            self.sp = n + 3
+            pc = star + 3
+            pos = q
+            resumed = true
+            break
+          }
         }
       }
       if !resumed {

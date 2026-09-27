@@ -4,6 +4,11 @@ priv enum Inst {
   AnyChar(Bool) // `.`, dot-all?
   Set(Int) // index into classes
   Split(Int, Int) // try first, push second
+  // `Star(greedy)` at pc heads the loop `Star; <one-char inst>; Jmp(pc)` and
+  // behaves exactly like `Split(pc + 1, pc + 3)` (greedy) or
+  // `Split(pc + 3, pc + 1)` (lazy) in its place, but keeps one backtrack
+  // entry for the whole loop instead of one per iteration
+  Star(Bool)
   Jmp(Int)
   Save(Int)
   Assert(AssertKind)
@@ -29,6 +34,7 @@ priv struct Compiler {
   mut nregs : Int
   names : Map[String, Int]
   pattern : String
+  loops : Bool // emit `Star` for one-character loops
 }
 
 ///|
@@ -41,6 +47,18 @@ fn nullable(node : Node) -> Bool {
     Group(_, n) | Atomic(n) => nullable(n)
     Repeat(n, min, _, _) => min == 0 || nullable(n)
     Backref(_, _) | NamedBackref(_, _) | Keep => true
+  }
+}
+
+///|
+/// Whether `node` compiles to one instruction that consumes exactly one
+/// character (`Unit`, `AnyChar` or `Set`) or fails.
+fn single_unit_step(node : Node) -> Bool {
+  match node {
+    Char(cp) => cp < 0x10000
+    Any(_) | Class(_) => true
+    Group(None, n) => single_unit_step(n)
+    _ => false
   }
 }
 
@@ -215,7 +233,13 @@ fn Compiler::compile(self : Compiler, node : Node) -> Unit raise RegexError {
         }
         self.emit(Jmp(loop_pc)) |> ignore
         let end = self.pc()
-        self.prog[loop_pc] = if greed == Greedy {
+        self.prog[loop_pc] = if self.loops &&
+          end == body + 2 &&
+          single_unit_step(n) {
+          // `Star` runs this three-instruction loop in place (same layout,
+          // same steps and backtracking order)
+          Star(greed == Greedy)
+        } else if greed == Greedy {
           Split(body, end)
         } else {
           Split(end, body)
@@ -379,6 +403,58 @@ fn required_units(node : Node) -> Array[Int] {
     }
     _ => []
   }
+}
+
+///|
+/// Most code units a `lead_set` may have.
+const MAX_LEAD_UNITS = 4
+
+///|
+/// Like `lead_literal`, for patterns whose top-level concatenation continues,
+/// after a prefix of bounded width, with a non-nullable remainder that can
+/// only start with one of a few ASCII code units: (units, min offset, max
+/// offset). E.g. `(^|[^\w])(?:\[[^\]]+\])?#...` has the units `[` and `#` at
+/// offset 0 or 1. The search jumps between occurrences of these units.
+fn lead_set(node : Node) -> (FixedArray[Bool], Int, Int)? {
+  let items = match node {
+    Concat(items) => items
+    Group(_, Concat(items)) => items
+    _ => return None
+  }
+  // first-set and nullability of every suffix `items[i:]`, computed once from
+  // the back (analyzing each suffix separately is quadratic in the length)
+  let n = items.length()
+  let suffixes : Array[(FirstSet?, Bool)] = Array::make(
+    n + 1,
+    (empty_first(), true),
+  )
+  for i = n - 1; i >= 0; i = i - 1 {
+    let (f, nullable) = first_info(items[i])
+    suffixes[i] = if nullable {
+      let (rest, rest_nullable) = suffixes[i + 1]
+      (union_first(f, rest), rest_nullable)
+    } else {
+      (union_first(empty_first(), f), false)
+    }
+  }
+  let mut lo = 0
+  let mut hi = 0
+  for i, it in items {
+    let (first, nullable) = suffixes[i]
+    if !nullable && first is Some(f) && !f.non_ascii {
+      let n = f.ascii.iter().filter(b => b).count()
+      if n >= 1 && n <= MAX_LEAD_UNITS {
+        return Some((f.ascii, lo, hi))
+      }
+    }
+    let (a, b) = width(it)
+    if b < 0 {
+      return None
+    }
+    lo += a
+    hi += b
+  }
+  None
 }
 
 ///|

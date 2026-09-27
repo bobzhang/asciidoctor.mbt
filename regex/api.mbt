@@ -22,7 +22,10 @@ pub struct Regex {
   priv first : FirstSet?
   priv required : FixedArray[Int]
   priv lead : (Int, Int, Int)?
+  priv lead_units : (FixedArray[Bool], Int, Int)? // when `lead` is None
   priv step_limit : Int
+  // idle matchers, reused by later search operations (see `acquire`)
+  priv pool : Array[Vm]
 }
 
 ///|
@@ -100,6 +103,18 @@ pub fn compile(
   flags? : String = "",
   step_limit? : Int = 0,
 ) -> Regex raise RegexError {
+  compile_with(pattern, flags, step_limit, true)
+}
+
+///|
+/// `compile`; `loops` selects the `Star` instruction for one-character loops
+/// (false only in tests, which check that both programs behave identically).
+fn compile_with(
+  pattern : String,
+  flags : String,
+  step_limit : Int,
+  loops : Bool,
+) -> Regex raise RegexError {
   let mut dotall = false
   let mut icase = false
   let mut extended = false
@@ -125,6 +140,7 @@ pub fn compile(
     nregs: 0,
     names,
     pattern,
+    loops,
   }
   c.compile(node)
   c.emit(SubEnd) |> ignore
@@ -137,6 +153,7 @@ pub fn compile(
     i += 1
   }
   let (first, is_nullable) = first_info(node)
+  let lead = lead_literal(node)
   {
     source: pattern,
     prog: FixedArray::from_array(c.prog),
@@ -152,12 +169,18 @@ pub fn compile(
       first
     },
     required: FixedArray::from_array(required_units(node)),
-    lead: lead_literal(node),
+    lead,
+    lead_units: if lead is None {
+      lead_set(node)
+    } else {
+      None
+    },
     step_limit: if step_limit > 0 {
       step_limit
     } else {
       0
     },
+    pool: [],
   }
 }
 
@@ -291,10 +314,17 @@ fn Regex::try_at(
   vm : Vm,
   pos : Int,
 ) -> MatchData? raise RegexTimeout {
-  vm.caps.fill(-1)
+  // Invariant: `caps` and `regs` are all -1 between attempts (and in pooled
+  // matchers). A failed run backtracks through every recorded change, so it
+  // leaves them as it found them; a successful one is cleaned up here; a
+  // matcher that timed out is not reused.
   let e = vm.run(0, pos, -1)
   if e >= 0 {
     let offsets = vm.caps.copy()
+    vm.caps.fill(-1)
+    if vm.regs.length() > 0 {
+      vm.regs.fill(-1)
+    }
     // group 0's start is only set in advance by \K
     if offsets[0] < 0 {
       offsets[0] = pos
@@ -318,9 +348,16 @@ pub fn Regex::try_match_at(
   if pos < 0 || pos > s.length() || splits_pair(s, pos) {
     return None
   }
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
   vm.search_start = pos
-  self.try_at(vm, pos)
+  let m = self.try_at(vm, pos) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  m
 }
 
 ///|
@@ -344,6 +381,35 @@ fn FirstSet::admits(self : FirstSet, s : String, pos : Int) -> Bool {
 }
 
 ///|
+/// One-unit strings for the ASCII range (needles for `find_unit`).
+let ascii_units : FixedArray[String] = FixedArray::makei(128, i => {
+  Int::unsafe_to_char(i).to_string()
+})
+
+///|
+/// Offset of the first code unit `u` at or after `from`, or `s.length()` if
+/// there is none (`from` itself when `from >= s.length()`). ASCII units use the
+/// core library's vectorized search.
+fn find_unit(s : String, from : Int, u : Int) -> Int {
+  let len = s.length()
+  if from >= len {
+    return from
+  }
+  if u < 128 {
+    match s.view(start_offset=from).find(ascii_units[u]) {
+      Some(i) => from + i
+      None => len
+    }
+  } else {
+    let mut i = from
+    while i < len && s.unsafe_get(i).to_int() != u {
+      i += 1
+    }
+    i
+  }
+}
+
+///|
 /// Finds the first match starting at a code point boundary at or after `start`.
 fn Regex::find_with(
   self : Regex,
@@ -355,13 +421,22 @@ fn Regex::find_with(
   // an offset inside a surrogate pair means the next code point boundary
   let start = if splits_pair(s, start) { start + 1 } else { start }
   vm.search_start = start
-  // prefilter: every required code unit must occur at or after `start`
-  for u in self.required {
-    let mut i = start
-    while i < len && s[i].to_int() != u {
-      i += 1
+  // prefilter: every required code unit must occur at or after `start`.
+  // Successive searches of one operation start at increasing offsets, so a
+  // previous scan that started at or before `start` and found the unit at or
+  // after it still gives the first occurrence (or its absence).
+  let required = self.required
+  for k in 0..<required.length() {
+    let from = vm.req_from[k]
+    let at = if from >= 0 && from <= start && vm.req_at[k] >= start {
+      vm.req_at[k]
+    } else {
+      let i = find_unit(s, start, required[k])
+      vm.req_from[k] = start
+      vm.req_at[k] = i
+      i
     }
-    if i >= len {
+    if at >= len {
       return None
     }
   }
@@ -377,10 +452,7 @@ fn Regex::find_with(
           }
         }
         // advance to next line start
-        while pos < len && s[pos] != '\n' {
-          pos += 1
-        }
-        pos += 1
+        pos = find_unit(s, pos, '\n') + 1
       }
       return None
     }
@@ -393,8 +465,42 @@ fn Regex::find_with(
       // within [q - max_off, q - min_off] can place the literal at q. The
       // literal is a BMP non-surrogate, so `q` is always a boundary.
       while true {
+        let q = find_unit(s, pos + min_off, unit)
+        if q >= len {
+          return None
+        }
+        let from = if q - max_off > pos { q - max_off } else { pos }
+        let to = q - min_off
+        let mut st = from
+        while st <= to {
+          let possible = match self.first {
+            Some(first) => first.admits(s, st)
+            None => !splits_pair(s, st)
+          }
+          if possible {
+            match self.try_at(vm, st) {
+              Some(m) => return Some(m)
+              None => ()
+            }
+          }
+          st += 1
+        }
+        pos = to + 1
+      }
+      return None
+    }
+    None => ()
+  }
+  match self.lead_units {
+    Some((units, min_off, max_off)) => {
+      // as above, jumping between occurrences of any of the (ASCII) units
+      while true {
         let mut q = pos + min_off
-        while q < len && s[q].to_int() != unit {
+        while q < len {
+          let c = s.unsafe_get(q).to_int()
+          if c < 128 && units[c] {
+            break
+          }
           q += 1
         }
         if q >= len {
@@ -428,7 +534,7 @@ fn Regex::find_with(
       let ascii = first.ascii
       let non_ascii = first.non_ascii
       while pos < len {
-        let c = s[pos].to_int()
+        let c = s.unsafe_get(pos).to_int()
         if (if c < 128 { ascii[c] } else { non_ascii && !splits_pair(s, pos) }) {
           match self.try_at(vm, pos) {
             Some(m) => return Some(m)
@@ -462,7 +568,15 @@ pub fn Regex::try_find(
   if start < 0 || start > s.length() {
     return None
   }
-  self.find_with(Vm::new(self, s), start)
+  let vm = self.acquire(s)
+  let m = self.find_with(vm, start) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  m
 }
 
 ///|
@@ -500,8 +614,26 @@ pub fn Regex::try_find_all(
   self : Regex,
   s : String,
 ) -> Array[MatchData] raise RegexTimeout {
+  let vm = self.acquire(s)
+  let out = self.find_all_with(vm) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+/// (Matchers are released explicitly rather than with `defer`, which would
+/// allocate a closure environment per operation.)
+fn Regex::find_all_with(
+  self : Regex,
+  vm : Vm,
+) -> Array[MatchData] raise RegexTimeout {
+  let s = vm.input
   let out = []
-  let vm = Vm::new(self, s)
   let len = s.length()
   let mut pos = 0
   while pos <= len {
@@ -541,27 +673,39 @@ pub fn Regex::try_replace(
   f : (MatchData) -> String,
   once? : Bool = false,
 ) -> String raise RegexTimeout {
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  let out = self.replace_with(vm, f, once) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+fn Regex::replace_with(
+  self : Regex,
+  vm : Vm,
+  f : (MatchData) -> String,
+  once : Bool,
+) -> String raise RegexTimeout {
+  let s = vm.input
   let len = s.length()
   let mut pos = 0
   let mut last = 0
-  let mut sb : StringBuilder? = None
+  // the pieces of the result, joined once at the end (sized exactly); an
+  // input without a match is returned as is
+  let parts : Array[StringView] = []
   while pos <= len {
     match self.find_with(vm, pos) {
       None => break
       Some(m) => {
-        let buf = match sb {
-          Some(b) => b
-          None => {
-            let b = StringBuilder(size_hint=len + 16)
-            sb = Some(b)
-            b
-          }
-        }
         let b = m.begin()
         let e = m.end()
-        buf.write_substring(s, last, b - last)
-        buf.write_string(f(m))
+        parts.push(s.view(start_offset=last, end_offset=b))
+        parts.push(f(m))
         if once {
           last = e
           break
@@ -572,9 +716,9 @@ pub fn Regex::try_replace(
             break
           }
           let w = cp_width(s, e)
-          buf.write_substring(s, e, w)
           pos = e + w
-          last = pos
+          // the skipped character stays with the text that follows
+          last = e
         } else {
           pos = e
           last = e
@@ -582,12 +726,11 @@ pub fn Regex::try_replace(
       }
     }
   }
-  match sb {
-    None => s
-    Some(buf) => {
-      buf.write_substring(s, last, len - last)
-      buf.to_string()
-    }
+  if parts.is_empty() {
+    s
+  } else {
+    parts.push(s.view(start_offset=last, end_offset=len))
+    parts.join("")
   }
 }
 
@@ -710,7 +853,26 @@ pub fn Regex::try_split(
   if len == 0 {
     return out
   }
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  self.split_with(vm, limit, out) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  out
+}
+
+///|
+fn Regex::split_with(
+  self : Regex,
+  vm : Vm,
+  limit : Int,
+  out : Array[String],
+) -> Unit raise RegexTimeout {
+  let s = vm.input
+  let len = s.length()
   let mut beg = 0
   let mut start = 0
   let mut last_null = false
@@ -754,7 +916,6 @@ pub fn Regex::try_split(
       out.pop() |> ignore
     }
   }
-  out
 }
 
 ///|

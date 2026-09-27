@@ -63,3 +63,32 @@ test "succ" {
     content="[\"ba\", \"aaa\", \"b0\", \"AAa\", \"2.0\"]",
   )
 }
+
+///|
+test "split on an empty separator honors limit like Ruby" {
+  // expected values from Ruby 2.6: "abc".split("", limit) etc.
+  debug_inspect(
+    [
+      @rb.split("abc", "", limit=2),
+      @rb.split("abc", "", limit=-1),
+      @rb.split("abc", "", limit=1),
+      @rb.split("a\u{1F600}c", "", limit=2),
+      @rb.split("abc", "", limit=5),
+      @rb.split("abc", "", limit=-2),
+      @rb.split("", "", limit=-1),
+      @rb.split("a\u{1F600}", ""),
+    ],
+    content=(
+      #|[
+      #|  ["a", "bc"],
+      #|  ["a", "b", "c", ""],
+      #|  ["abc"],
+      #|  ["a", "😀c"],
+      #|  ["a", "b", "c", ""],
+      #|  ["a", "b", "c", ""],
+      #|  [],
+      #|  ["a", "😀"],
+      #|]
+    ),
+  )
+}

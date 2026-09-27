@@ -206,6 +206,18 @@ pub fn split_ws(s : String) -> Array[String] {
 }
 
 ///|
+/// Whether `needle` occurs in `s` at offset `i` (`i + needle.length()` must
+/// not exceed `s.length()`).
+fn matches_at(s : String, i : Int, needle : String) -> Bool {
+  for j in 0..<needle.length() {
+    if s.unsafe_get(i + j) != needle.unsafe_get(j) {
+      return false
+    }
+  }
+  true
+}
+
+///|
 /// Ruby `String#split(sep, limit)` with a literal (non-space) separator.
 /// With `limit == 0` trailing empty fields are removed; negative keeps them;
 /// positive limits the number of fields.
@@ -216,19 +228,31 @@ pub fn split(s : String, sep : String, limit? : Int = 0) -> Array[String] {
     return out
   }
   if sep == "" {
-    for c in s {
-      out.push(c.to_string())
+    // one field per character; a non-zero limit keeps the (empty) remainder
+    // after the last character, and a positive one stops splitting early
+    let mut i = 0
+    while i < n {
+      if limit > 0 && out.length() == limit - 1 {
+        break
+      }
+      let w = if s[i].is_leading_surrogate() && i + 1 < n { 2 } else { 1 }
+      out.push(s.unsafe_substring(start=i, end=i + w))
+      i += w
+    }
+    if limit != 0 {
+      out.push(s.unsafe_substring(start=i, end=n))
     }
     return out
   }
   let m = sep.length()
+  let first = sep.unsafe_get(0)
   let mut start = 0
   let mut i = 0
   while i + m <= n {
     if limit > 0 && out.length() == limit - 1 {
       break
     }
-    if s.unsafe_substring(start=i, end=i + m) == sep {
+    if s.unsafe_get(i) == first && matches_at(s, i, sep) {
       out.push(s.unsafe_substring(start~, end=i))
       i += m
       start = i
@@ -427,7 +451,20 @@ fn lookup_case(
 ///|
 /// Ruby `String#downcase` (full Unicode mapping).
 pub fn downcase(s : String) -> String {
-  let sb = StringBuilder(size_hint=s.length())
+  // common case: ASCII without capitals (e.g. attribute names) is unchanged
+  let n = s.length()
+  let mut i = 0
+  while i < n {
+    let c = s.unsafe_get(i)
+    if c >= 128 || (c >= 'A' && c <= 'Z') {
+      break
+    }
+    i += 1
+  }
+  if i == n {
+    return s
+  }
+  let sb = StringBuilder(size_hint=2 * n)
   for c in s {
     let cp = c.to_int()
     if cp < 128 {

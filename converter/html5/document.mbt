@@ -253,7 +253,9 @@ fn Html5Converter::convert_document(
     result.push("</div>")
   }
   result.push(
-    "<div id=\"content\"\{max_width_attr}>\n\{node.content()}\n</div>",
+    ["<div id=\"content\"", max_width_attr, ">\n", node.content(), "\n</div>"].join(
+      "",
+    ),
   )
   if node.has_footnotes() && !node.has_attr("nofootnotes") {
     for l in footnotes_html(node, max_width_attr, slash) {
@@ -526,15 +528,45 @@ fn Html5Converter::convert_section(
     }
     None => ""
   }
+  // (`join` allocates the result once; an interpolation would grow a builder
+  // while copying the content)
   if level == 0 {
-    "<h1\{id_attr_s} class=\"sect0\{role_suffix(node)}\">\{title}</h1>\n\{node.content()}"
+    [
+      "<h1",
+      id_attr_s,
+      " class=\"sect0",
+      role_suffix(node),
+      "\">",
+      title,
+      "</h1>\n",
+      node.content(),
+    ].join("")
   } else {
-    let body = if level == 1 {
-      "<div class=\"sectionbody\">\n\{node.content()}\n</div>"
+    // the content is converted before the role is read, as before
+    let content = node.content()
+    let (body_open, body_close) = if level == 1 {
+      ("<div class=\"sectionbody\">\n", "\n</div>")
     } else {
-      node.content()
+      ("", "")
     }
-    "<div class=\"sect\{level}\{role_suffix(node)}\">\n<h\{level + 1}\{id_attr_s}>\{title}</h\{level + 1}>\n\{body}\n</div>"
+    let h = (level + 1).to_string()
+    [
+      "<div class=\"sect",
+      level.to_string(),
+      role_suffix(node),
+      "\">\n<h",
+      h,
+      id_attr_s,
+      ">",
+      title,
+      "</h",
+      h,
+      ">\n",
+      body_open,
+      content,
+      body_close,
+      "\n</div>",
+    ].join("")
   }
 }
 

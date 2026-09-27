@@ -429,3 +429,59 @@ test "step limits are configurable" {
 test "panic non-raising API aborts on budget exhaustion" {
   ignore(@regex.re("(a+)+$", step_limit=1000).find("a".repeat(40) + "!"))
 }
+
+///|
+test "matchers are reused safely" {
+  // a replacement callback may use the same regex while the outer replace
+  // is still scanning (matchers are pooled per regex)
+  let re = @regex.re("<(\\w+)>")
+  let out = re.replace("<a> and <b>", m => {
+    let inner = re.replace("<\{m.at(1)}\{m.at(1)}>", n => n.at(1).to_upper())
+    let found = re.find("x <y> z").map(n => n.at(1)).unwrap_or("-")
+    "[\{inner}|\{found}|\{re.split("1<a>2<b>3").length()}]"
+  })
+  inspect(out, content="[AA|y|5] and [BB|y|5]")
+  // a search that ran out of steps leaves no state behind
+  let tight = @regex.compile("(a|b)*\\d", step_limit=50)
+  try tight.try_find("ab".repeat(100)) catch {
+    @regex.RegexTimeout(..) => ()
+  } noraise {
+    _ => fail("expected RegexTimeout")
+  }
+  debug_inspect(
+    tight.find("ab1").map(m => m.matched()),
+    content="Some(\"ab1\")",
+  )
+  debug_inspect(
+    tight.find_all("a1 b2").map(m => m.matched()),
+    content="[\"a1\", \"b2\"]",
+  )
+  // a huge backtrack stack is not kept, and matching still works afterwards
+  // (the trailing `c` gets past the required-unit prefilter, so the loop
+  // really pushes 40000 backtrack entries)
+  let greedy = @regex.re("(?:a|b)*c")
+  debug_inspect(
+    greedy.find("ab".repeat(20000) + "c").map(m => (m.begin(), m.end())),
+    content="Some((0, 40001))",
+  )
+  debug_inspect(
+    greedy.find("ab".repeat(20000)).map(m => m.begin()),
+    content="None",
+  )
+  debug_inspect(greedy.find("abc").map(m => m.begin()), content="Some(0)")
+}
+
+///|
+test "compiling long concatenations stays linear" {
+  // the lead-set analysis used to copy every suffix of a concatenation
+  let long_classes = @regex.re("[ab]".repeat(30000))
+  debug_inspect(
+    long_classes.find("x" + "ab".repeat(15000)).map(m => m.begin()),
+    content="Some(1)",
+  )
+  let long_optionals = @regex.re("a?".repeat(20000) + "#")
+  debug_inspect(
+    long_optionals.find("aaa#").map(m => (m.begin(), m.end())),
+    content="Some((0, 4))",
+  )
+}
