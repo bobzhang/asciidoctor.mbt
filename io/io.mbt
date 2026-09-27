@@ -243,6 +243,20 @@ async fn[T] fixpoint(
 }
 
 ///|
+/// Raised inside a round that already requested uncached files, to skip work
+/// whose result would be discarded (the round is rerun).
+priv suberror MissingFiles
+
+///|
+/// Raises `MissingFiles` if this round requested uncached files, so a caller
+/// can stop early (e.g. skip converting after a parse that missed includes).
+fn FsVfs::raise_if_missing(self : FsVfs) -> Unit raise MissingFiles {
+  if !self.misses.is_empty() {
+    raise MissingFiles
+  }
+}
+
+///|
 let system_time_zone_installed : Ref[Bool] = { val: false, }
 
 ///|

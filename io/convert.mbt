@@ -201,6 +201,8 @@ pub async fn convert_source(
   }
   let (doc, out, output) = run_with_files(vfs, () => {
     let doc = @asciidoctor.load(text, options=opts)
+    // this round is rerun once the missing files are loaded: skip converting
+    vfs.raise_if_missing()
     raise_processing_error(doc)
     let out = match sibling {
       Some(path) => {
