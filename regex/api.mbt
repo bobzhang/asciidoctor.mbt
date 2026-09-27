@@ -23,6 +23,8 @@ pub struct Regex {
   priv required : FixedArray[Int]
   priv lead : (Int, Int, Int)?
   priv step_limit : Int
+  // idle matchers, reused by later search operations (see `acquire`)
+  priv pool : Array[Vm]
 }
 
 ///|
@@ -100,6 +102,18 @@ pub fn compile(
   flags? : String = "",
   step_limit? : Int = 0,
 ) -> Regex raise RegexError {
+  compile_with(pattern, flags, step_limit, true)
+}
+
+///|
+/// `compile`; `loops` selects the `Star` instruction for one-character loops
+/// (false only in tests, which check that both programs behave identically).
+fn compile_with(
+  pattern : String,
+  flags : String,
+  step_limit : Int,
+  loops : Bool,
+) -> Regex raise RegexError {
   let mut dotall = false
   let mut icase = false
   let mut extended = false
@@ -125,6 +139,7 @@ pub fn compile(
     nregs: 0,
     names,
     pattern,
+    loops,
   }
   c.compile(node)
   c.emit(SubEnd) |> ignore
@@ -158,6 +173,7 @@ pub fn compile(
     } else {
       0
     },
+    pool: [],
   }
 }
 
@@ -318,7 +334,8 @@ pub fn Regex::try_match_at(
   if pos < 0 || pos > s.length() || splits_pair(s, pos) {
     return None
   }
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  defer self.release(vm)
   vm.search_start = pos
   self.try_at(vm, pos)
 }
@@ -355,13 +372,26 @@ fn Regex::find_with(
   // an offset inside a surrogate pair means the next code point boundary
   let start = if splits_pair(s, start) { start + 1 } else { start }
   vm.search_start = start
-  // prefilter: every required code unit must occur at or after `start`
-  for u in self.required {
-    let mut i = start
-    while i < len && s[i].to_int() != u {
-      i += 1
+  // prefilter: every required code unit must occur at or after `start`.
+  // Successive searches of one operation start at increasing offsets, so a
+  // previous scan that started at or before `start` and found the unit at or
+  // after it still gives the first occurrence (or its absence).
+  let required = self.required
+  for k in 0..<required.length() {
+    let from = vm.req_from[k]
+    let at = if from >= 0 && from <= start && vm.req_at[k] >= start {
+      vm.req_at[k]
+    } else {
+      let u = required[k]
+      let mut i = start
+      while i < len && s.unsafe_get(i).to_int() != u {
+        i += 1
+      }
+      vm.req_from[k] = start
+      vm.req_at[k] = i
+      i
     }
-    if i >= len {
+    if at >= len {
       return None
     }
   }
@@ -377,7 +407,7 @@ fn Regex::find_with(
           }
         }
         // advance to next line start
-        while pos < len && s[pos] != '\n' {
+        while pos < len && s.unsafe_get(pos) != '\n' {
           pos += 1
         }
         pos += 1
@@ -394,7 +424,7 @@ fn Regex::find_with(
       // literal is a BMP non-surrogate, so `q` is always a boundary.
       while true {
         let mut q = pos + min_off
-        while q < len && s[q].to_int() != unit {
+        while q < len && s.unsafe_get(q).to_int() != unit {
           q += 1
         }
         if q >= len {
@@ -428,7 +458,7 @@ fn Regex::find_with(
       let ascii = first.ascii
       let non_ascii = first.non_ascii
       while pos < len {
-        let c = s[pos].to_int()
+        let c = s.unsafe_get(pos).to_int()
         if (if c < 128 { ascii[c] } else { non_ascii && !splits_pair(s, pos) }) {
           match self.try_at(vm, pos) {
             Some(m) => return Some(m)
@@ -462,7 +492,9 @@ pub fn Regex::try_find(
   if start < 0 || start > s.length() {
     return None
   }
-  self.find_with(Vm::new(self, s), start)
+  let vm = self.acquire(s)
+  defer self.release(vm)
+  self.find_with(vm, start)
 }
 
 ///|
@@ -501,7 +533,8 @@ pub fn Regex::try_find_all(
   s : String,
 ) -> Array[MatchData] raise RegexTimeout {
   let out = []
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  defer self.release(vm)
   let len = s.length()
   let mut pos = 0
   while pos <= len {
@@ -541,7 +574,8 @@ pub fn Regex::try_replace(
   f : (MatchData) -> String,
   once? : Bool = false,
 ) -> String raise RegexTimeout {
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  defer self.release(vm)
   let len = s.length()
   let mut pos = 0
   let mut last = 0
@@ -710,7 +744,8 @@ pub fn Regex::try_split(
   if len == 0 {
     return out
   }
-  let vm = Vm::new(self, s)
+  let vm = self.acquire(s)
+  defer self.release(vm)
   let mut beg = 0
   let mut start = 0
   let mut last_null = false

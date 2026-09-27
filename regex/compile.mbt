@@ -4,6 +4,11 @@ priv enum Inst {
   AnyChar(Bool) // `.`, dot-all?
   Set(Int) // index into classes
   Split(Int, Int) // try first, push second
+  // `Star(greedy)` at pc heads the loop `Star; <one-char inst>; Jmp(pc)` and
+  // behaves exactly like `Split(pc + 1, pc + 3)` (greedy) or
+  // `Split(pc + 3, pc + 1)` (lazy) in its place, but keeps one backtrack
+  // entry for the whole loop instead of one per iteration
+  Star(Bool)
   Jmp(Int)
   Save(Int)
   Assert(AssertKind)
@@ -29,6 +34,7 @@ priv struct Compiler {
   mut nregs : Int
   names : Map[String, Int]
   pattern : String
+  loops : Bool // emit `Star` for one-character loops
 }
 
 ///|
@@ -41,6 +47,18 @@ fn nullable(node : Node) -> Bool {
     Group(_, n) | Atomic(n) => nullable(n)
     Repeat(n, min, _, _) => min == 0 || nullable(n)
     Backref(_, _) | NamedBackref(_, _) | Keep => true
+  }
+}
+
+///|
+/// Whether `node` compiles to one instruction that consumes exactly one
+/// character (`Unit`, `AnyChar` or `Set`) or fails.
+fn single_unit_step(node : Node) -> Bool {
+  match node {
+    Char(cp) => cp < 0x10000
+    Any(_) | Class(_) => true
+    Group(None, n) => single_unit_step(n)
+    _ => false
   }
 }
 
@@ -215,7 +233,13 @@ fn Compiler::compile(self : Compiler, node : Node) -> Unit raise RegexError {
         }
         self.emit(Jmp(loop_pc)) |> ignore
         let end = self.pc()
-        self.prog[loop_pc] = if greed == Greedy {
+        self.prog[loop_pc] = if self.loops &&
+          end == body + 2 &&
+          single_unit_step(n) {
+          // `Star` runs this three-instruction loop in place (same layout,
+          // same steps and backtracking order)
+          Star(greed == Greedy)
+        } else if greed == Greedy {
           Split(body, end)
         } else {
           Split(end, body)
