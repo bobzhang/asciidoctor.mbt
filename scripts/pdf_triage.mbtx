@@ -3,12 +3,18 @@
 //
 // Usage: moon run --target native scripts/pdf_triage.mbtx -- SUMMARY.json
 //          [--dump] [--all] [--pass-set FILE] [--compare OLD.json]
+//          [--show TEXT] [--unsupported]
 //   --dump        print one compact line per failing document
 //   --all         include documents with unsupported features
 //   --pass-set F  write the names of the passing documents to F
 //   --compare OLD print the documents that pass in one summary only
 //   --show TEXT   print the measurements of the documents whose name
 //                 contains TEXT
+//   --unsupported count the failing documents per unsupported feature
+//
+// The signature of a document is where its first misplaced word lies
+// (`geometry.first_off`, with the spike block holding it and the one
+// before), else its first differing line, page count or structure check.
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
@@ -149,7 +155,13 @@ fn signature(doc : Json) -> (String, String) {
   if checks.length() > 0 {
     return ("structure \{checks[0].0}", checks[0].1)
   }
-  ("other", doc |> field("gate_failures") |> items |> fn(a) { a.map(str).join("; ") })
+  (
+    "other",
+    doc
+    |> field("gate_failures")
+    |> items
+    |> fn(a) { a.map(str).join("; ") },
+  )
 }
 
 ///|
@@ -161,11 +173,13 @@ async fn main {
   let mut pass_set : String? = None
   let mut compare : String? = None
   let mut show : String? = None
+  let mut unsupported_counts = false
   let mut i = 1
   while i < args.length() {
     match args[i] {
       "--dump" => dump = true
       "--all" => all = true
+      "--unsupported" => unsupported_counts = true
       "--pass-set" if i + 1 < args.length() => {
         pass_set = Some(args[i + 1])
         i += 1
@@ -197,7 +211,9 @@ async fn main {
         for f in items(field(doc, "gate_failures")) {
           println("  gate: \{str(f)}")
         }
-        for (k, v) in field(doc, "unsupported_summary") |> fn(j) {
+        for
+          (k, v) in field(doc, "unsupported_summary")
+          |> fn(j) {
             match j {
               Object(o) => o.to_array()
               _ => []
@@ -205,21 +221,48 @@ async fn main {
           } {
           println("  unsupported: \{k} × \{v.stringify()}")
         }
-        println("  first_off: \{field(field(m, "geometry"), "first_off").stringify()}")
-        println("  first_diff: \{field(field(m, "lines"), "first_diff").stringify()}")
+        println(
+          "  first_off: \{field(field(m, "geometry"), "first_off").stringify()}",
+        )
+        println(
+          "  first_diff: \{field(field(m, "lines"), "first_diff").stringify()}",
+        )
         for e in items(field(field(m, "lines"), "examples")) {
           println("  line: \{str(e)}")
         }
         for e in items(field(field(m, "geometry"), "examples")) {
           println("  off: \{str(e)}")
         }
-        for (name, detail) in failed_checks(doc) {
-          println("  structure \{name}: \{detail}")
+        for check in failed_checks(doc) {
+          println("  structure \{check.0}: \{check.1}")
         }
       }
       return
     }
     None => ()
+  }
+  if unsupported_counts {
+    // failing documents per unsupported feature, and those failing with
+    // no other reported feature
+    let counts : Map[String, Int] = Map([])
+    for doc in docs {
+      if passes(doc) {
+        continue
+      }
+      match field(doc, "unsupported_summary") {
+        Object(o) =>
+          for k, _ in o {
+            counts[k] = counts.get(k).unwrap_or(0) + 1
+          }
+        _ => ()
+      }
+    }
+    let sorted = counts.to_array()
+    sorted.sort_by((a, b) => b.1.compare(a.1))
+    for entry in sorted {
+      println("\{entry.1}\t\{entry.0}")
+    }
+    return
   }
   match pass_set {
     Some(file) => {
