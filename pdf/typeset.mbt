@@ -84,8 +84,11 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
   let starts = Array::make(n, false)
   let kind = fn(i : Int) -> Int {
     let unit = items[i].unit
-    // an anchor stands for asciidoctor-pdf's zero-width-space placeholder
-    if is_whitespace(unit) || items[i].anchor is Some(_) {
+    // an anchor stands for asciidoctor-pdf's placeholder text, a NUL: part
+    // of the word it touches, and no break opportunity
+    if items[i].anchor is Some(_) {
+      0
+    } else if is_whitespace(unit) {
       1
     } else if unit == 0x2D {
       2

@@ -1513,7 +1513,16 @@ fn Converter::convert_list_item(
     let width = if lines.length() > 0 { lines[0].fit_width } else { 0.0 }
     let y = flow.y
     let page = flow.page
-    let baseline = y + metrics.padding_top + face.ascender_pt(base.size)
+    // the marker's text box stretches to the bottom margin: when its line
+    // does not fit above it, the marker goes to the top of the next page,
+    // where the item's text will follow it (`flow_bounding_box`)
+    let a = face.ascender_pt(base.size)
+    if !flow.at_page_top() &&
+      metrics.padding_top + a + face.descender_pt(base.size) >
+      flow.cursor() + 0.0001 {
+      flow.advance_page()
+    }
+    let baseline = flow.y + metrics.padding_top + a
     if lines.length() > 0 {
       // set with `character_spacing: -0.5`, which Prawn does not count
       // after the last glyph: right-aligned in a box as wide as the marker
@@ -1656,11 +1665,39 @@ fn Converter::convert_horizontal_dlist(
     }
   }
   let column = @cmp.minimum(term_width + 20.0, flow.width() * 0.5 - 20.0)
+  // `height_of_typeset_text 'A'` in the term font and in the prose font
+  let one_line = fn(style : Style) {
+    flow.height_of(
+      [{ text: "A", style, anchor: None, }],
+      line_metrics(base_line_height, flow.font(style), style.size),
+      style,
+    )
+  }
+  let term_height = one_line(term_style)
+  let prose_height = one_line(base_style())
   for entry in node.dlist_items {
+    // the terms (and a line of the description) must fit, else the entry
+    // starts on the next page
+    let terms = entry.terms.length().to_double()
+    let needed = @cmp.maximum(
+      (description_list_term_spacing + term_height) * terms -
+      description_list_term_spacing,
+      if entry.desc is Some(_) {
+        prose_height
+      } else {
+        0.0
+      },
+    )
+    if !flow.at_page_top() && flow.cursor() < needed {
+      flow.advance_page()
+    }
     let start_page = flow.page
     let start_y = flow.y
     flow.indent(10.0, flow.width() - column, fn() {
-      for term in entry.terms {
+      for index, term in entry.terms {
+        if index > 0 {
+          flow.margin(description_list_term_spacing)
+        }
         self.ink_prose(
           term.text().unwrap_or(""),
           style=term_style,
@@ -1671,30 +1708,39 @@ fn Converter::convert_horizontal_dlist(
       }
     })
     let (term_page, term_y) = (flow.page, flow.y)
-    flow.page = start_page
-    flow.y = start_y
     match entry.desc {
-      Some(desc) =>
+      Some(desc) => {
+        flow.page = start_page
+        flow.y = start_y
+        // traverse_list_item: the description's text takes the prose
+        // margin below when something follows it in the entry
+        let margin_bottom = if next_enclosed_block(desc, descend=true)
+          is Some(_) {
+          prose_margin_bottom
+        } else {
+          0.0
+        }
         flow.indent(column + 10.0, 10.0, fn() {
           match desc.text() {
             Some(text) if !text.is_empty() =>
-              self.ink_prose(
-                text,
-                margin_bottom=0.0,
-                normalize_line_height=true,
-              )
-            _ => ()
+              self.ink_prose(text, margin_bottom~, normalize_line_height=true)
+            _ =>
+              if !desc.has_blocks() {
+                self.ink_prose("", margin_bottom~, normalize_line_height=true)
+              }
           }
           self.traverse(desc)
         })
+        // the cursor ends below the last term
+        if flow.page < term_page || (flow.page == term_page && flow.y < term_y) {
+          flow.page = term_page
+          flow.y = term_y
+        }
+      }
       None => ()
     }
-    if flow.page < term_page || (flow.page == term_page && flow.y < term_y) {
-      flow.page = term_page
-      flow.y = term_y
-    }
   }
-  if next_enclosed_block(node) is Some(_) {
+  if !list_nested(node) && next_enclosed_block(node) is Some(_) {
     flow.margin(prose_margin_bottom)
   }
 }
@@ -1839,6 +1885,10 @@ fn admonition_icon(name : String) -> (String, String, Color)? {
 
 ///|
 fn Converter::convert_example(self : Converter, node : @core.Node) -> Unit {
+  if node.has_option("collapsible") {
+    self.convert_collapsible(node)
+    return
+  }
   self.bordered_block(
     node,
     padding=vertical_rhythm,
@@ -1864,7 +1914,34 @@ fn Converter::convert_sidebar(self : Converter, node : @core.Node) -> Unit {
 }
 
 ///|
-/// A padded block with a background and border (example, sidebar).
+/// asciidoctor-pdf's `convert_collapsible`: an example block with the
+/// `collapsible` option is its title (default `Details`) after a
+/// down-pointing triangle, as a caption, then its content indented by the
+/// triangle's width; arranged when it has an id.
+fn Converter::convert_collapsible(self : Converter, node : @core.Node) -> Unit {
+  let marker = "\u{25bc} "
+  let title = marker + node.title().unwrap_or("Details")
+  let caption_style = Style::new(size=caption_font_size, doc_italic=true)
+  let indent_by = self.flow.width_of(marker, caption_style)
+  let body = fn(c : Converter) {
+    c.add_dest(node)
+    c.flow.tared(() => c.ink_caption(title))
+    c.flow.indent(indent_by, 0.0, () => c.traverse(node))
+  }
+  if !self.flow.at_page_top() && node.id is Some(_) {
+    self.arrange_block(body)
+  } else {
+    body(self)
+  }
+  self.block_margin_bottom(node)
+}
+
+///|
+/// A padded block with a background and border (example, sidebar), in
+/// `arrange_block`: its destination, then its caption (example) or title
+/// (sidebar), both tared, then its content; where it breaks across pages,
+/// a dashed line in the gap colour cuts into the border
+/// (`theme_fill_and_stroke_block`).
 fn Converter::bordered_block(
   self : Converter,
   node : @core.Node,

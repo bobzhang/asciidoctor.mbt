@@ -1,0 +1,139 @@
+= Arranged blocks
+:icons: font
+
+Blocks are arranged as asciidoctor-pdf's `arrange_block` does: a dry run tells whether the block would put nothing but its caption or background on the current page, in which case it starts on the next page.
+The destination of a block with an id goes before its caption.
+
+<<ex-first>>, <<code-first>>, <<side-first>> and <<quote-first>> are referenced here, with a footnote.footnote:[The footnote is counted once, whatever the dry runs convert.]
+
+== Near the bottom
+
+Filler paragraph one, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph two, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph three, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph four, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph five, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph six, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph seven, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph eight, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph nine, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph ten, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph eleven, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph fourteen, long enough to take two lines.
+
+[#ex-first]
+.An example whose caption fits but whose content does not
+====
+The content of the example, with a footnote.footnote:[Inside an example.]
+====
+
+[#code-first]
+.A listing with a caption
+----
+line one
+line two
+line three
+----
+
+Filler paragraph fifteen, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph sixteen, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph seventeen, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph eighteen, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph nineteen, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-one, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-two, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-three, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-four, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-five, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-six, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-seven, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph twenty-eight, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+[#side-first]
+.A sidebar title
+****
+The sidebar's content.
+****
+
+[#quote-first]
+.A quote
+[quote,Someone,Somewhere]
+____
+A quotation, near the bottom of a page.
+____
+
+NOTE: An admonition after the quote.
+
+Filler paragraph twenty-nine, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-one, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-two, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-three, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-four, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-five, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-six, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-seven, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-eight, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph thirty-nine, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph forty, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+Filler paragraph forty-one, long enough to take two lines of text on the page so that the blocks after it land at different distances from the bottom margin of the page.
+
+.Open block with a title
+--
+An open block whose title is tared.
+--
+
+.Source set configuration example
+[%collapsible]
+====
+A collapsible block.
+====
+
+[discrete]
+=== A discrete heading kept with the next block
+
+The block after the discrete heading.
+
+* A list item at the bottom
+* Another list item, whose marker must move with its text to the next page when the line does not fit on this one.
+* A third
+
+<1> A callout list not after code.
+<2> Its second item.

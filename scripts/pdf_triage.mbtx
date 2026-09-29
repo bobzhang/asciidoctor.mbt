@@ -7,6 +7,8 @@
 //   --all         include documents with unsupported features
 //   --pass-set F  write the names of the passing documents to F
 //   --compare OLD print the documents that pass in one summary only
+//   --show TEXT   print the measurements of the documents whose name
+//                 contains TEXT
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
@@ -158,6 +160,7 @@ async fn main {
   let mut all = false
   let mut pass_set : String? = None
   let mut compare : String? = None
+  let mut show : String? = None
   let mut i = 1
   while i < args.length() {
     match args[i] {
@@ -165,6 +168,10 @@ async fn main {
       "--all" => all = true
       "--pass-set" if i + 1 < args.length() => {
         pass_set = Some(args[i + 1])
+        i += 1
+      }
+      "--show" if i + 1 < args.length() => {
+        show = Some(args[i + 1])
         i += 1
       }
       "--compare" if i + 1 < args.length() => {
@@ -178,6 +185,42 @@ async fn main {
   }
   let summary = load(path)
   let docs = items(field(summary, "documents"))
+  match show {
+    Some(pattern) => {
+      for doc in docs {
+        let name = str(field(doc, "name"))
+        if !name.contains(pattern) {
+          continue
+        }
+        let m = field(doc, "measurements")
+        println("\{name}: \{str(field(doc, "gate"))}")
+        for f in items(field(doc, "gate_failures")) {
+          println("  gate: \{str(f)}")
+        }
+        for (k, v) in field(doc, "unsupported_summary") |> fn(j) {
+            match j {
+              Object(o) => o.to_array()
+              _ => []
+            }
+          } {
+          println("  unsupported: \{k} × \{v.stringify()}")
+        }
+        println("  first_off: \{field(field(m, "geometry"), "first_off").stringify()}")
+        println("  first_diff: \{field(field(m, "lines"), "first_diff").stringify()}")
+        for e in items(field(field(m, "lines"), "examples")) {
+          println("  line: \{str(e)}")
+        }
+        for e in items(field(field(m, "geometry"), "examples")) {
+          println("  off: \{str(e)}")
+        }
+        for (name, detail) in failed_checks(doc) {
+          println("  structure \{name}: \{detail}")
+        }
+      }
+      return
+    }
+    None => ()
+  }
   match pass_set {
     Some(file) => {
       let names = docs.filter(passes).map(d => str(field(d, "name")))

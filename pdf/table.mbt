@@ -149,7 +149,33 @@ fn Converter::text_cell_content(
   width : Double,
 ) -> (CellContent, Double) {
   let flow = self.flow
-  let (base, fragments, line_height) = if head {
+  let (base, fragments, line_height) = cell_fragments(cell, head)
+  let face = flow.font(base)
+  let metrics = line_metrics(line_height, face, base.size)
+  // prawn-table lays text out one point wider than the content box
+  // (`FPTolerance`)
+  let inner = width - 2.0 * table_cell_padding + 1.0
+  let lines = typeset_lines(fragments, flow.catalog, inner, cell_align(cell))
+  // Cell::Text#natural_content_height: the box's height and its line gap,
+  // the last line's height less its ascender and descender (Box#line_gap:
+  // a line all in the code font has that font's gap)
+  let last_gap = match lines.last() {
+    Some(line) if line.height != 0.0 =>
+      line.height - (line.ascender + line.descender)
+    _ => face.line_gap_pt(base.size)
+  }
+  let natural = text_box_height(lines, face, base, metrics) + last_gap
+  (TextContent(lines, metrics, base), natural)
+}
+
+///|
+/// The base style, formatted text and line height of a text cell, after
+/// the cell's style (`convert_table`'s `case cell.style`).
+fn cell_fragments(
+  cell : @core.Node,
+  head : Bool,
+) -> (Style, Array[Fragment], Double) {
+  if head {
     let base = Style::new(doc_bold=true)
     (
       base,
@@ -168,6 +194,8 @@ fn Converter::text_cell_content(
         let base = match style {
           Some("strong") | Some("header") => Style::new(doc_bold=true)
           Some("emphasis") => Style::new(doc_italic=true)
+          // the codespan font and colour (`theme_font :codespan` sets the
+          // colour the cell takes)
           Some("monospaced") =>
             Style::new(family=mono_font_family, color=codespan_font_color)
           _ => Style::new()
@@ -180,16 +208,253 @@ fn Converter::text_cell_content(
       }
     }
   }
-  let face = flow.font(base)
-  let metrics = line_metrics(line_height, face, base.size)
-  // prawn-table lays text out one point wider than the content box
-  // (`FPTolerance`)
-  let inner = width - 2.0 * table_cell_padding + 1.0
-  let lines = typeset_lines(fragments, flow.catalog, inner, cell_align(cell))
-  // Cell::Text#natural_content_height: the box's height and the line gap
-  let natural = text_box_height(lines, face, base, metrics) +
-    face.line_gap_pt(base.size)
-  (TextContent(lines, metrics, base), natural)
+}
+
+///|
+/// A cell of prawn-table's width calculation: a master cell, or a dummy
+/// standing for a place its span covers (Cell::SpanDummy), in the order
+/// `make_cells` creates them.
+priv struct WidthCell {
+  row : Int
+  column : Int
+  colspan : Int
+  /// the master cell this dummy stands for (its index), or -1
+  master : Int
+  /// width_ignoring_span, min_width_ignoring_span
+  width : Double
+  min : Double
+}
+
+///|
+/// `Cells#aggregate_cell_values(:column, :avg_spanned_min_width, :max)`
+/// over `cells` (the table's or one column's): each column's largest
+/// minimum width, a span's shared evenly among its columns, summed.
+fn aggregate_min_widths(
+  all : Array[WidthCell],
+  cells : Array[WidthCell],
+) -> Double {
+  let avg = fn(c : WidthCell) {
+    if c.master >= 0 {
+      let m = all[c.master]
+      m.min / m.colspan.to_double()
+    } else {
+      c.min / c.colspan.to_double()
+    }
+  }
+  let values : Map[Int, Double] = Map([])
+  let put_max = fn(i : Int, v : Double) {
+    match values.get(i) {
+      Some(old) => values[i] = @cmp.maximum(old, v)
+      None => values[i] = v
+    }
+  }
+  for c in cells {
+    if c.colspan == 1 && c.master < 0 {
+      put_max(c.column, c.min)
+    }
+  }
+  let rows_with_dummy : Map[Int, Bool] = Map([])
+  for c in cells {
+    if c.master >= 0 {
+      rows_with_dummy[c.row] = true
+    }
+  }
+  let mut needs_fixing = true
+  for c in cells {
+    let index = c.column
+    if c.colspan > 1 {
+      // fill_values_if_needed: some but not all of the span's columns have
+      // a value, in a row with a dummy
+      let mut missing = 0
+      for i in 0..<c.colspan {
+        if !values.contains(index + i) {
+          missing += 1
+        }
+      }
+      if missing > 0 && missing < c.colspan && rows_with_dummy.contains(c.row) {
+        let mut sum = avg(c) * c.colspan.to_double()
+        for i in 0..<c.colspan {
+          match values.get(index + i) {
+            Some(v) => sum -= v
+            None => ()
+          }
+        }
+        let share = sum / missing.to_double()
+        for i in 0..<c.colspan {
+          if !values.contains(index + i) {
+            values[index + i] = share
+          }
+        }
+      }
+      let mut old_sum = 0.0
+      for i in 0..<c.colspan {
+        old_sum += values.get(index + i).unwrap_or(0.0)
+      }
+      let new_sum = avg(c) * c.colspan.to_double()
+      needs_fixing = new_sum - old_sum > 1.0e-9
+      if needs_fixing {
+        put_max(index, avg(c))
+        let mut all_exist = true
+        for i in 0..<c.colspan {
+          if !values.contains(index + i) {
+            all_exist = false
+          }
+        }
+        if all_exist {
+          for i in 0..<c.colspan {
+            values[index + i] = avg(c)
+          }
+        }
+      }
+    } else if needs_fixing && c.master >= 0 {
+      put_max(index, avg(c))
+    }
+  }
+  let mut total = 0.0
+  for _, v in values {
+    total += v
+  }
+  total
+}
+
+///|
+/// The column widths of an `autowidth` table, as prawn-table sizes a table
+/// given no column widths: each cell's natural width (its text on one
+/// line, or the widest of its hard-broken lines, at most the bounds'
+/// width; an AsciiDoc cell takes the bounds' width), the widest per column
+/// (`ColumnWidthCalculator#natural_widths`), then shrunk towards the
+/// columns' minimum widths when wider than `width` (the table's width, by
+/// default the natural width capped by the bounds), or grown when
+/// narrower.
+fn Converter::autowidth_columns(
+  self : Converter,
+  node : @core.Node,
+  bounds_width : Double,
+  table_width : Double?,
+) -> Array[Double] {
+  let flow = self.flow
+  let rows = node.rows()
+  let all_rows : Array[(Array[@core.Node], Bool)] = []
+  for row in rows.head {
+    all_rows.push((row, true))
+  }
+  for row in rows.body {
+    all_rows.push((row, false))
+  }
+  for row in rows.foot {
+    all_rows.push((row, false))
+  }
+  let pad = 2.0 * table_cell_padding
+  let occupied : Map[(Int, Int), Bool] = Map([])
+  let cells : Array[WidthCell] = []
+  let mut num_cols = node.columns().length()
+  for r, entry in all_rows {
+    let (row, head) = entry
+    let mut column = 0
+    for cell in row {
+      while occupied.contains((r, column)) {
+        column += 1
+      }
+      let colspan = @cmp.maximum(cell.colspan().unwrap_or(1), 1)
+      let rowspan = if head {
+        1
+      } else {
+        @cmp.maximum(cell.rowspan().unwrap_or(1), 1)
+      }
+      let (natural, min_content) = if !head &&
+        cell.style == Some("asciidoc") &&
+        cell.inner_document() is Some(_) {
+        (bounds_width - pad, 0.0)
+      } else {
+        let (base, fragments, _) = cell_fragments(cell, head)
+        let lines = typeset_lines(fragments, flow.catalog, 1.0e9, Left)
+        let mut widest = 0.0
+        for line in lines {
+          widest = @cmp.maximum(widest, line.fit_width)
+        }
+        let natural = @cmp.minimum(widest, bounds_width)
+        (natural, @cmp.minimum(natural, flow.width_of("M", base)))
+      }
+      let master = cells.length()
+      cells.push({
+        row: r,
+        column,
+        colspan,
+        master: -1,
+        width: natural + pad,
+        min: pad + min_content,
+      })
+      for i in 0..<rowspan {
+        for j in 0..<colspan {
+          occupied[(r + i, column + j)] = true
+          if i > 0 || j > 0 {
+            cells.push({
+              row: r + i,
+              column: column + j,
+              colspan: 1,
+              master,
+              width: 0.0,
+              min: 0.0,
+            })
+          }
+        }
+      }
+      column += colspan
+      num_cols = @cmp.maximum(num_cols, column)
+    }
+  }
+  // ColumnWidthCalculator#natural_widths
+  let rows_with_dummy : Map[Int, Bool] = Map([])
+  for c in cells {
+    if c.master >= 0 {
+      rows_with_dummy[c.row] = true
+    }
+  }
+  let natural = Array::make(num_cols, 0.0)
+  for c in cells {
+    if !rows_with_dummy.contains(c.row) && c.master < 0 {
+      natural[c.column] = @cmp.maximum(natural[c.column], c.width)
+    }
+  }
+  for c in cells {
+    if !rows_with_dummy.contains(c.row) || c.master >= 0 {
+      continue
+    }
+    if c.colspan == 1 {
+      natural[c.column] = @cmp.maximum(natural[c.column], c.width)
+    } else {
+      let mut current = 0.0
+      for i in c.column..<@cmp.minimum(c.column + c.colspan, num_cols) {
+        current += natural[i]
+      }
+      if c.width - current > 1.0e-9 {
+        for i in c.column..<@cmp.minimum(c.column + c.colspan, num_cols) {
+          natural[i] = c.width / c.colspan.to_double()
+        }
+      }
+    }
+  }
+  let natural_width = natural.fold(init=0.0, (a, b) => a + b)
+  let width = table_width.unwrap_or(@cmp.minimum(natural_width, bounds_width))
+  if width - natural_width < -1.0e-9 {
+    // shrink towards each column's minimum width
+    let min_width = aggregate_min_widths(cells, cells)
+    let f = (width - min_width) / (natural_width - min_width)
+    Array::makei(num_cols, c => {
+      let min = aggregate_min_widths(
+        cells,
+        cells.filter(cell => cell.column == c),
+      )
+      f * (natural[c] - min) + min
+    })
+  } else if width - natural_width > 1.0e-9 {
+    // grow towards each column's maximum width (the bounds' width)
+    let f = (width - natural_width) /
+      (bounds_width * num_cols.to_double() - natural_width)
+    natural.map(nat => f * (bounds_width - nat) + nat)
+  } else {
+    natural
+  }
 }
 
 ///|
@@ -643,16 +908,24 @@ fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
     .get("tablepcwidth")
     .map(v => v.to_f())
     .unwrap_or(100.0)
-  let table_width = flow.width() * pct / 100.0
   let columns_spec = node.columns()
   let columns : Array[Double] = []
-  if node.has_option("autowidth") {
-    // prawn-table would size columns to their content; share evenly
-    let n = columns_spec.length()
-    for _ in 0..<n {
-      columns.push(table_width / n.to_double())
+  let table_width = if node.has_option("autowidth") {
+    // prawn-table sizes the columns to their content, within the width
+    // given by a `width` attribute or the `stretch` role
+    let requested = if node.has_attr("width") {
+      Some(flow.width() * pct / 100.0)
+    } else if node.has_role("stretch") {
+      Some(flow.width())
+    } else {
+      None
     }
+    columns.append(self.autowidth_columns(node, flow.width(), requested))
+    columns.fold(init=0.0, (a, b) => a + b)
   } else {
+    flow.width() * pct / 100.0
+  }
+  if !node.has_option("autowidth") {
     for col in columns_spec {
       let colpc = col.attributes
         .get("colpcwidth")
@@ -687,7 +960,19 @@ fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
   }
   let layout = self.layout_table(node, columns, left)
   if node.has_title() {
-    self.ink_caption(node.captioned_title())
+    // the default `table_caption_max_width: fit-content`: the caption is
+    // no wider than the table, and aligned with it
+    let remainder = flow.width() - table_width
+    let (l, r) = if remainder > 0.0 {
+      match alignment {
+        Center => (remainder * 0.5, remainder * 0.5)
+        Right => (remainder, 0.0)
+        _ => (0.0, remainder)
+      }
+    } else {
+      (0.0, 0.0)
+    }
+    flow.indent(l, r, () => self.ink_caption(node.captioned_title()))
   }
   if layout.num_rows == 0 {
     self.block_margin_bottom(node)

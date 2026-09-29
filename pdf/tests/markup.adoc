@@ -1,0 +1,18 @@
+= Formatted text markup
+
+asciidoctor-pdf parses formatted text with a grammar in which an end tag closes whatever element is open, and shows text it cannot parse as it is.
+
+Apply the `sideband.*` option selectively to specific URLs. The
+same URL matching logic applies as for `http.<url>.*` settings.
+
+Plain *strong with `code` inside* and more text after it to fill the line up to the end so it wraps somewhere.
+
+Unknown markup is shown as it is: +++<u>underlined</u>+++ and the rest of the paragraph.
+
+A reference to the top of the document <<_top>>, one without a target <<>>, and to the bibliography <<pp>> and <<gof,the book>>.
+
+[bibliography]
+== References
+
+* [[[pp]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer.
+* [[[gof,GoF]]] Erich Gamma et al. Design Patterns.

@@ -28,6 +28,8 @@ priv struct Session {
   footnote_labels : Map[Int, String]
   /// the font catalog, for the glyphs of font icons (`icon:name[]`)
   mut catalog : FontCatalog?
+  /// the bibliography entries referenced so far (`@bibref_refs`)
+  bibref_refs : Map[String, Bool]
 }
 
 ///|
@@ -37,6 +39,7 @@ let session : Session = {
   rendered_footnotes: 0,
   footnote_labels: Map([]),
   catalog: None,
+  bibref_refs: Map([]),
 }
 
 ///|
@@ -52,6 +55,7 @@ pub fn register(catalog? : FontCatalog) -> Unit {
     session.scratch = 0
     session.rendered_footnotes = 0
     session.footnote_labels.clear()
+    session.bibref_refs.clear()
     ({ resolving_xref: false, } : InlineConverter)
   })
 }
@@ -220,41 +224,56 @@ fn InlineConverter::convert_inline_anchor(
       match node.attributes.str("path") {
         Some(path) => "<a href=\"\{target}\">\{node.text().unwrap_or(path)}</a>"
         None => {
-          let refid = node.attributes.str("refid")
+          guard node.attributes.str("refid") is Some(refid) else {
+            // no target: the top of the document
+            let text = node.text().unwrap_or("[^top&#93;")
+            return "<a anchor=\"\{top_anchor(node.document())}\">\{text}</a>"
+          }
+          // the first reference to a bibliography entry is where the entry
+          // links back to (`_bibref_ref_<id>`)
+          let mut anchor = ""
           let text = match node.text() {
             Some(text) => text
             None => {
               let refs = node.document().catalog().refs
-              match refid.bind(id => refs.get(id)) {
+              match refs.get(refid) {
                 Some(ref_) if !self.resolving_xref => {
                   self.resolving_xref = true
                   let text = ref_.xreftext(
                     xrefstyle?=node.attr("xrefstyle", inherited=true),
                   )
+                  if ref_.inline_type == Some("bibref") &&
+                    session.scratch == 0 &&
+                    !session.bibref_refs.contains(refid) {
+                    session.bibref_refs[refid] = true
+                    anchor = "<a id=\"_bibref_ref_\{refid}\"></a>"
+                  }
                   self.resolving_xref = false
                   match text {
                     Some(t) => drop_anchors(t)
-                    None => "[\{refid.unwrap_or("")}]"
+                    None => "[\{refid}]"
                   }
                 }
-                _ => "[\{refid.unwrap_or("")}]"
+                _ => "[\{refid}]"
               }
             }
           }
-          match refid {
-            Some(id) => "<a anchor=\"\{id}\">\{text}</a>"
-            None => "<a anchor=\"\{top_anchor(node.document())}\">\{text}</a>"
-          }
+          "\{anchor}<a anchor=\"\{refid}\">\{text}</a>"
         }
       }
     Some("ref") => "<a id=\"\{node.id.unwrap_or("")}\"></a>"
     Some("bibref") => {
       let id = node.id.unwrap_or("")
       let reftext = match node.reftext() {
-        Some(r) => r
-        None => id
+        Some(r) => "[\{r}]"
+        None => "[\{id}]"
       }
-      "<a id=\"\{id}\"></a>[\{reftext}]"
+      let reftext = if session.bibref_refs.contains(id) {
+        "<a anchor=\"_bibref_ref_\{id}\">\{reftext}</a>"
+      } else {
+        reftext
+      }
+      "<a id=\"\{id}\"></a>\{reftext}"
     }
     other => {
       unsupported("inline", "anchor type \{other.unwrap_or("none")}", node)

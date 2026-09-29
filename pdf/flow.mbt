@@ -276,6 +276,24 @@ fn Flow::font(self : Flow, style : Style) -> Face {
 }
 
 ///|
+/// Prawn's `width_of` a plain string in `style`'s font, trailing spaces
+/// included (asciidoctor-pdf's `rendered_width_of_string`): the truncated
+/// glyph widths, kerned.
+fn Flow::width_of(self : Flow, text : String, style : Style) -> Double {
+  let face = self.font(style)
+  let mut width = 0.0
+  let n = text.length()
+  for i in 0..<n {
+    let cp = text[i].to_int()
+    width += face.prawn_width(cp)
+    if i + 1 < n {
+      width += face.kerning(cp, text[i + 1].to_int())
+    }
+  }
+  width * style.size / 1000.0
+}
+
+///|
 fn Flow::add_anchor(self : Flow, name : String, x : Double, y : Double) -> Unit {
   self.push(Anchor({ name: pdf_anchor_name(name), x_pt: x, y_pt: y, }))
 }

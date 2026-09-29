@@ -323,6 +323,152 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
 }
 
 ///|
+/// The tag names asciidoctor-pdf's markup grammar knows (`tag_name`,
+/// `void_tag_name` in formatted_text/parser.treetop), in its order.
+let markup_tag_names : Array[String] = [
+  "a", "strong", "em", "code", "font", "span", "button", "kbd", "sup", "sub", "mark",
+  "menu", "del",
+]
+
+///|
+let markup_void_tag_names : Array[String] = ["br", "img"]
+
+///|
+/// Match the first of `names` that `s` has at `pos`, as a PEG ordered
+/// choice does; the position after it.
+fn match_name(s : String, pos : Int, names : Array[String]) -> Int? {
+  for name in names {
+    if s[pos:].has_prefix(name) {
+      return Some(pos + name.length())
+    }
+  }
+  None
+}
+
+///|
+/// `attributes`: ` name="value"` pairs, names in [a-z_]; the position
+/// after them.
+fn match_markup_attributes(s : String, pos : Int) -> Int {
+  let n = s.length()
+  let mut p = pos
+  while true {
+    let mut q = p
+    while q < n && s[q] == ' ' {
+      q += 1
+    }
+    if q == p {
+      break
+    }
+    let name_start = q
+    while q < n && ((s[q] >= 'a' && s[q] <= 'z') || s[q] == '_') {
+      q += 1
+    }
+    if q == name_start || q + 1 >= n || s[q] != '=' || s[q + 1] != '"' {
+      break
+    }
+    q += 2
+    while q < n && s[q] != '"' {
+      q += 1
+    }
+    if q >= n {
+      break
+    }
+    p = q + 1
+  }
+  p
+}
+
+///|
+/// Whether asciidoctor-pdf's markup grammar parses `s`: text, character
+/// references (`&amp;`, `&#8217;`, `&#x2019;`), the known void and start
+/// tags with double-quoted attributes, and end tags that close whatever
+/// element is open. Formatted text it cannot parse is shown as it is,
+/// markup and all (Formatter#format).
+fn markup_parses(s : String) -> Bool {
+  let n = s.length()
+  let mut depth = 0
+  let mut i = 0
+  while i < n {
+    let c = s[i]
+    if c == '<' {
+      if i + 1 < n && s[i + 1] == '/' {
+        // an end tag closes the element open here; at the top level
+        // there is none
+        guard match_name(s, i + 2, markup_tag_names) is Some(p) &&
+          p < n &&
+          s[p] == '>' &&
+          depth > 0 else {
+          return false
+        }
+        depth -= 1
+        i = p + 1
+        continue
+      }
+      match match_name(s, i + 1, markup_void_tag_names) {
+        Some(p) => {
+          let mut q = match_markup_attributes(s, p)
+          let mut r = q
+          while r < n && s[r] == ' ' {
+            r += 1
+          }
+          if r < n && s[r] == '/' {
+            q = r + 1
+          }
+          if q < n && s[q] == '>' {
+            i = q + 1
+            continue
+          }
+        }
+        None => ()
+      }
+      guard match_name(s, i + 1, markup_tag_names) is Some(p) else {
+        return false
+      }
+      let q = match_markup_attributes(s, p)
+      guard q < n && s[q] == '>' else { return false }
+      depth += 1
+      i = q + 1
+    } else if c == '&' {
+      let mut j = i + 1
+      let digits = fn(from : Int, hex : Bool) {
+        let mut k = from
+        while k < n &&
+              (
+                (s[k] >= '0' && s[k] <= '9') ||
+                (
+                  hex &&
+                  ((s[k] >= 'a' && s[k] <= 'f') || (s[k] >= 'A' && s[k] <= 'F'))
+                )
+              ) {
+          k += 1
+        }
+        k
+      }
+      if s[j:].has_prefix("#x") {
+        let k = digits(j + 2, true)
+        guard k - (j + 2) >= 2 && k - (j + 2) <= 5 else { return false }
+        j = k
+      } else if s[j:].has_prefix("#") {
+        let k = digits(j + 1, false)
+        guard k - (j + 1) >= 2 && k - (j + 1) <= 6 else { return false }
+        j = k
+      } else {
+        guard match_name(s, j, ["amp", "apos", "gt", "lt", "nbsp", "quot"])
+          is Some(k) else {
+          return false
+        }
+        j = k
+      }
+      guard j < n && s[j] == ';' else { return false }
+      i = j + 1
+    } else {
+      i += 1
+    }
+  }
+  depth == 0
+}
+
+///|
 /// Parse formatted text into fragments. `<br>` becomes a "\n" fragment;
 /// with `normalize`, runs of whitespace (including newlines) collapse to
 /// one space, as asciidoctor-pdf's formatter does for prose.
@@ -331,6 +477,11 @@ fn parse_formatted(
   base : Style,
   normalize? : Bool = true,
 ) -> Array[Fragment] {
+  if !markup_parses(markup) {
+    // shown as it is, markup and all
+    let text = if normalize { collapse_whitespace(markup) } else { markup }
+    return [{ text, style: base, anchor: None, }]
+  }
   let fragments : Array[Fragment] = []
   let stack : Array[(String, Style)] = []
   let mut style = base
@@ -364,12 +515,10 @@ fn parse_formatted(
       let inner = markup[i + 1:j].to_owned()
       i = j + 1
       if inner.has_prefix("/") {
-        let tag = inner[1:].to_owned().trim(chars=" ").to_owned()
-        // pop to the matching open tag
-        let mut k = stack.length() - 1
-        while k >= 0 && stack[k].0 != tag {
-          k -= 1
-        }
+        // an end tag closes the innermost open element, whatever its name
+        // (the markup grammar matches `start_tag complex end_tag` without
+        // comparing names)
+        let k = stack.length() - 1
         if k >= 0 {
           flush()
           style = stack[k].1
