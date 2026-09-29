@@ -492,7 +492,10 @@ fn parse_formatted(
     return [{ text, style: base, anchor: None, }]
   }
   let fragments : Array[Fragment] = []
-  let stack : Array[(String, Style)] = []
+  // each open element: its tag, the style outside it, how many fragments
+  // there were when it opened (-1 for an anchor, which is never empty),
+  // and the text fragment just before it (-1: none)
+  let stack : Array[(String, Style, Int, Int)] = []
   let mut style = base
   let text = StringBuilder()
   fn flush() {
@@ -529,6 +532,18 @@ fn parse_formatted(
         // comparing names)
         let k = stack.length() - 1
         if k >= 0 {
+          let (_, _, opened, before) = stack[k]
+          if opened >= 0 && text.is_empty() && fragments.length() == opened {
+            // an element with nothing in it takes the space before it
+            // away (Transform#apply)
+            if before >= 0 && fragments[before].text.has_suffix(" ") {
+              let t = fragments[before].text
+              fragments[before] = {
+                ..fragments[before],
+                text: t[:t.length() - 1].to_owned(),
+              }
+            }
+          }
           flush()
           style = stack[k].1
           while stack.length() > k {
@@ -591,14 +606,20 @@ fn parse_formatted(
             anchor: Some(id),
           })
           if !self_closing {
-            stack.push((tag, style))
+            stack.push((tag, style, -1, -1))
           }
         }
         "img" => ()
         _ =>
           if !self_closing {
+            let before = if text.is_empty() { -1 } else { fragments.length() }
             flush()
-            stack.push((tag, style))
+            let before = if before >= 0 && fragments.length() > before {
+              before
+            } else {
+              -1
+            }
+            stack.push((tag, style, fragments.length(), before))
             style = open_tag(tag, attrs, style)
           }
       }

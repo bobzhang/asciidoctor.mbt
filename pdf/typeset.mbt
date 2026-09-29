@@ -41,6 +41,8 @@ priv struct Item {
 ///|
 /// One placed run of a line; `x` is relative to the line's left edge.
 priv struct LineRun {
+  /// the index of the fragment it is part of
+  fragment : Int
   text : String
   style : Style
   face : Face
@@ -58,6 +60,10 @@ priv struct Line {
   ascender : Double
   descender : Double
   height : Double
+  /// links whose fragment has nothing on the line but the spaces ending
+  /// it: Prawn still annotates them, with no width, at the line's end
+  /// (x, style, face)
+  empty_links : Array[(Double, Style, Face)]
 }
 
 ///|
@@ -573,6 +579,7 @@ fn place_line(
     }
     if advances.length() > 0 {
       runs.push({
+        fragment,
         text: sb.to_string(),
         style: fragments[fragment].style,
         face: faces[fragment],
@@ -608,5 +615,16 @@ fn place_line(
       measure(fragment)
     }
   }
-  { runs, anchors, fit_width, ascender, descender, height, }
+  let empty_links : Array[(Double, Style, Face)] = []
+  let mut seen = -1
+  for k in visible_end..<to {
+    let f = items[k].fragment
+    if f != seen &&
+      fragments[f].style.link is Some(_) &&
+      !runs.iter().any(r => r.fragment == f) {
+      empty_links.push((x, fragments[f].style, faces[f]))
+    }
+    seen = f
+  }
+  { runs, anchors, fit_width, ascender, descender, height, empty_links, }
 }

@@ -466,6 +466,15 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // the page the body starts on (`add_dest_for_top`)
   let top = top_anchor(doc)
   flow.add_anchor(top, 0.0, 0.0)
+  // a man page starts with its name and purpose, as a section the outline
+  // (built from the document's sections) does not list
+  if doc.doctype() == "manpage" && doc.has_attr("manpurpose") {
+    let listed = c.outline.length()
+    c.convert_section(generate_manname_section(doc))
+    while c.outline.length() > listed {
+      ignore(c.outline.pop())
+    }
+  }
   c.traverse(doc)
   c.ink_footnotes(doc)
   match c.toc_extent {
@@ -2286,4 +2295,30 @@ fn Converter::ink_footers(self : Converter, front_matter : Int) -> Unit {
       face.ascender_pt(style.size)
     page.items.append(flow.line_items(lines[0], left + 1.0, baseline))
   }
+}
+
+///|
+/// asciidoctor-pdf's `generate_manname_section`: the Name section of a man
+/// page (`manname-title`, upper case when the first section's title is),
+/// holding `manname - manpurpose`.
+fn generate_manname_section(doc : @core.Node) -> @core.Node {
+  let title = doc.attr("manname-title").unwrap_or("Name")
+  let title = match doc.sections().get(0).bind(s => s.title()) {
+    Some(first) if first.to_upper() == first => title.to_upper()
+    _ => title
+  }
+  let section = @core.Node::new_section(Some(doc), level=1)
+  section.sectname = Some("section")
+  section.set_id(doc.attr("manname-id"))
+  section.set_title(Some(title))
+  let text = "\{doc.attr("manname").unwrap_or("")} - \{doc.attr("manpurpose").unwrap_or("")}"
+  section.append(
+    @core.Node::new_block(
+      section,
+      Paragraph,
+      subs=SubsSpec("normal"),
+      source_text=text,
+    ),
+  )
+  section
 }

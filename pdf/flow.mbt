@@ -374,6 +374,19 @@ fn Flow::line_items(
   baseline : Double,
 ) -> Array[@pagelayout.PageItem] {
   let items : Array[@pagelayout.PageItem] = []
+  for link in line.empty_links {
+    let (x, style, face) = link
+    let a = face.ascender_pt(style.size)
+    items.push(
+      Link({
+        x_pt: x0 + x,
+        y_pt: baseline - a,
+        w_pt: 0.0,
+        h_pt: a + face.descender_pt(style.size),
+        target: style.link.unwrap_or(""),
+      }),
+    )
+  }
   for anchor in line.anchors {
     items.push(
       Anchor({
