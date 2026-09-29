@@ -21,10 +21,20 @@ priv struct Session {
   mut scratch : Int
   /// the index terms met so far
   mut index : IndexCatalog
+  /// how many footnotes are inked (`@rendered_footnotes`): a book inks
+  /// them after each chapter, and labels count from there
+  mut rendered_footnotes : Int
+  /// the labels footnotes were inked with, by index
+  footnote_labels : Map[Int, String]
 }
 
 ///|
-let session : Session = { scratch: 0, index: IndexCatalog::new(), }
+let session : Session = {
+  scratch: 0,
+  index: IndexCatalog::new(),
+  rendered_footnotes: 0,
+  footnote_labels: Map([]),
+}
 
 ///|
 /// Registers the `pdf` backend with the core so that `backend=pdf` loads
@@ -35,6 +45,8 @@ pub fn register() -> Unit {
     // converter)
     session.index = IndexCatalog::new()
     session.scratch = 0
+    session.rendered_footnotes = 0
+    session.footnote_labels.clear()
     ({ resolving_xref: false, } : InlineConverter)
   })
 }
@@ -269,7 +281,14 @@ fn convert_inline_footnote(node : @core.Node) -> String {
       } else {
         "<a id=\"_footnoteref_\{index}\"></a>"
       }
-      "<sup>\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{index}</a>]</sup>"
+      // counted from the footnotes inked so far (a book's chapter), or the
+      // label it was inked with
+      let number = @string.parse_int(index) catch { _ => 0 }
+      let label = match session.footnote_labels.get(number) {
+        Some(label) => label
+        None => (number - session.rendered_footnotes).to_string()
+      }
+      "<sup>\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{label}</a>]</sup>"
     }
     None => "<sup>[\{node.text().unwrap_or("")}]</sup>"
   }

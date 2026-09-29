@@ -421,7 +421,7 @@ fn parse_formatted(
               end -= 1
             }
             text.reset()
-            text.write_string(pending[:end].to_string())
+            text.write_string(pending[:end].to_owned())
           }
           flush()
           fragments.push({ text: "", style, anchor: Some(id), })

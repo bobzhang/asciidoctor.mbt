@@ -96,12 +96,25 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
       // asciidoctor-pdf draws SVG, GIF, ... itself
       unsupported("image", "format of \{target}", node)
     }
-    // asciidoctor-pdf prints the alt text in brackets
+    // asciidoctor-pdf's `on_image_error`: the alt text in brackets (linked
+    // when the image is) and the target in italics, then the caption
+    let (open, close) = match node.attr("link") {
+      Some(link) => ("<a href=\"\{link}\">", "</a>")
+      None => ("", "")
+    }
     self.ink_prose(
-      "[\{node.attr("alt").unwrap_or(target)}] | \{target}",
-      align=Left,
+      "\{open}[\{node.attr("alt").unwrap_or(target)}]\{close} | <em>\{target}</em>",
+      align=match node.attr("align") {
+        Some("center") => Center
+        Some("right") => Right
+        _ => Left
+      },
       margin_bottom=0.0,
+      normalize=false,
     )
+    if node.has_title() {
+      self.ink_caption(node.captioned_title(), bottom=true)
+    }
     self.block_margin_bottom(node)
     return
   }

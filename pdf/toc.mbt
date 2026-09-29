@@ -7,12 +7,10 @@
 // and their actual page numbers, all linked to their sections.
 
 ///|
-/// Where the reserved TOC pages start and end (page index, cursor y).
+/// Where the reserved TOC pages start (page index, cursor y).
 priv struct TocExtent {
   from_page : Int
   from_y : Double
-  to_page : Int
-  to_y : Double
 }
 
 ///|
@@ -336,7 +334,7 @@ fn Converter::allocate_toc(
     }
     flow.y = end_y
   }
-  { from_page, from_y: start_y, to_page: from_page + pages - 1, to_y: end_y, }
+  { from_page, from_y: start_y, }
 }
 
 ///|

@@ -17,8 +17,6 @@ priv struct Converter {
   mut toc_extent : TocExtent?
   /// the `toc::[]` block the TOC was placed at, and its destination
   mut toc_node : (@core.Node, String)?
-  /// how many footnotes are inked (`@rendered_footnotes`)
-  mut rendered_footnotes : Int
 }
 
 ///|
@@ -31,7 +29,6 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     text_align: Justify,
     toc_extent: None,
     toc_node: None,
-    rendered_footnotes: 0,
   }
 }
 
@@ -59,7 +56,6 @@ fn Converter::dry_run(
   let scratch = Converter::new(self.doc, flow)
   scratch.gutters.append(self.gutters)
   scratch.text_align = self.text_align
-  scratch.rendered_footnotes = self.rendered_footnotes
   session.scratch += 1
   let footnotes = self.doc.catalog().footnotes
   let registered = footnotes.length()
@@ -585,6 +581,10 @@ fn Converter::traverse(self : Converter, node : @core.Node) -> Unit {
 
 ///|
 fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
+  // the attribute entries in the body take effect as the block before
+  // which they stand is converted (AbstractBlock#convert); after parsing,
+  // the document's attributes are those of its header
+  node.document().playback_attributes(node.attributes)
   match node.context {
     Section => self.convert_section(node)
     Preamble => self.convert_preamble(node)
@@ -1642,10 +1642,10 @@ fn Converter::convert_thematic_break(
 /// inked here.
 fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
   let footnotes = self.doc.footnotes()
-  if footnotes.length() <= self.rendered_footnotes {
+  if footnotes.length() <= session.rendered_footnotes {
     return
   }
-  let pending = footnotes[self.rendered_footnotes:].to_owned()
+  let pending = footnotes[session.rendered_footnotes:].to_owned()
   let flow = self.flow
   let is_last = match self.doc.blocks.last() {
     Some(last) => physical_equal(last, node)
@@ -1657,7 +1657,7 @@ fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
   let style = Style::new(size=(base_font_size * 0.75).round())
   let face = flow.font(style)
   let metrics = line_metrics(base_line_height, face, style.size)
-  let offset = self.rendered_footnotes
+  let offset = session.rendered_footnotes
   let texts = pending.map(fn(fn_) {
     "<a id=\"_footnotedef_\{fn_.index}\"></a>[<a anchor=\"_footnoteref_\{fn_.index}\">\{fn_.index - offset}</a>] \{fn_.text}"
   })
@@ -1672,7 +1672,17 @@ fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
     self.ink_prose(text, style~, margin_bottom=3.0)
   }
   if !flow.scratch {
-    self.rendered_footnotes = footnotes.length()
+    // a later reference to one of these (an xref footnote) shows its label,
+    // with the chapter it is in
+    if node.context == Section {
+      let xreftext = node
+        .xreftext(xrefstyle?=self.doc.attr("xrefstyle"))
+        .unwrap_or("")
+      for fn_ in pending {
+        session.footnote_labels[fn_.index] = "\{fn_.index - offset} - \{xreftext}"
+      }
+    }
+    session.rendered_footnotes = footnotes.length()
   }
 }
 
