@@ -1,0 +1,52 @@
+= Line metrics
+:doctype: article
+
+Every fragment on a line counts towards its height, as in Prawn's arranger, and in lists, description lists and captions the prose font does too (`normalize_line_height`).
+
+`-p`::
+`--patch`::
+  Generate a patch.
+
+--follow::
+  Continue listing the history of a file beyond renames.
+
+`-x`:: `code as the description`
+
+* `code` only item
+* normal item
+*
+* last item
+
+. `numbered code`
+. two
+. three
+
+[start=9]
+. nine
+. ten
+
+.A caption with `code`
+----
+code
+----
+
+A paragraph with a hard break after code `org.hibernate.validator:hibernate-validator` +
+and `org.glassfish.expressly:expressly` more text.
+
+`only code at the start` +
+next line.
+
+.Optional dependencies
+|===
+| Optional dependency | Explanation
+
+| `jakarta.data:jakarta.data.stateful-api` | Jakarta Data Stateful Repositories API
+| `org.hibernate.validator:hibernate-validator` +
+and `org.glassfish.expressly:expressly` | Hibernate Validator
+| `org.apache.logging.log4j:log4j-core` | log4j
+|===
+
+The content of this file has moved to link:./documentation/src/main/asciidoc/dialect/index.adoc.
+Going forward, it will be published in rendered form at https://docs.hibernate.org/stable/orm/dialect/.
+
+See https://example.org/a/b/c?x=1&y=2#frag for details, and https://example.org/ab/c too, then https://example.org/very/long/path/that/keeps/going/and/going/until/it/has/to/wrap/somewhere.html in the middle.

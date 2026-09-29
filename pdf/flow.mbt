@@ -63,6 +63,14 @@ priv struct Flow {
   mut columns : Columns?
   /// the last line `typeset` placed: the line, its page and its baseline
   mut last_line : (Line, Int, Double)?
+  /// while above zero, what is inked does not count as content (Prawn's
+  /// `tare_first_page_content_stream`: captions and backgrounds)
+  mut taring : Int
+  /// content was inked since the flow started, before its first page break
+  mut inked : Bool
+  /// at the flow's first page break: whether nothing had been inked
+  /// (asciidoctor-pdf's `DetectEmptyFirstPage`); None before it
+  mut first_break_empty : Bool?
 }
 
 ///|
@@ -80,6 +88,9 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
     right: page_width - margin_side,
     columns: None,
     last_line: None,
+    taring: 0,
+    inked: false,
+    first_break_empty: None,
   }
 }
 
@@ -115,6 +126,9 @@ fn Flow::advance_page(self : Flow) -> Unit {
       columns.current = 0
     }
     None => ()
+  }
+  if self.first_break_empty is None {
+    self.first_break_empty = Some(!self.inked)
   }
   if self.page + 1 < self.model.pages.length() {
     self.page += 1
@@ -163,7 +177,27 @@ fn Flow::items(self : Flow) -> Array[@pagelayout.PageItem] {
 
 ///|
 fn Flow::push(self : Flow, item : @pagelayout.PageItem) -> Unit {
+  if !(item is Anchor(_)) {
+    self.mark_inked()
+  }
   self.items().push(item)
+}
+
+///|
+/// Content goes on the page (see `inked`).
+fn Flow::mark_inked(self : Flow) -> Unit {
+  if self.taring == 0 {
+    self.inked = true
+  }
+}
+
+///|
+/// Ink `body` as tared content: captions and backgrounds, which do not
+/// keep a block on a page by themselves.
+fn Flow::tared(self : Flow, body : () -> Unit) -> Unit {
+  self.taring += 1
+  body()
+  self.taring -= 1
 }
 
 ///|
@@ -418,6 +452,9 @@ fn Flow::ink_line(
   x0 : Double,
   baseline : Double,
 ) -> Unit {
+  if !line.runs.is_empty() {
+    self.mark_inked()
+  }
   self.items().append(self.line_items(line, x0, baseline))
   if !self.scratch {
     // an index term's anchor tells the index its page
@@ -427,6 +464,35 @@ fn Flow::ink_line(
         session.index.link_dest_to_page(anchor.0, self.page + 1)
       }
     }
+  }
+}
+
+///|
+/// The ascender, descender and height a placed line takes: its fragments'
+/// largest, or the document font's for an empty line. With
+/// `normalize_line_height`, the document font's count on every line, as
+/// asciidoctor-pdf's arranger puts a zero-width space in that font at the
+/// start of each line (so a line of code in a list takes the prose line's
+/// height, not the smaller one of the monospace font).
+fn line_extent(
+  line : Line,
+  base_face : Face,
+  size : Double,
+  normalize_line_height : Bool,
+) -> (Double, Double, Double) {
+  let a = base_face.ascender_pt(size)
+  let d = base_face.descender_pt(size)
+  let h = base_face.height_pt(size)
+  if line.height == 0.0 {
+    (a, d, h)
+  } else if normalize_line_height {
+    (
+      @cmp.maximum(a, line.ascender),
+      @cmp.maximum(d, line.descender),
+      @cmp.maximum(h, line.height),
+    )
+  } else {
+    (line.ascender, line.descender, line.height)
   }
 }
 
@@ -441,6 +507,7 @@ fn Flow::typeset(
   align? : Alignment = Left,
   bottom_gutter? : Double = 0.0,
   hanging_indent? : Double = 0.0,
+  normalize_line_height? : Bool = false,
 ) -> Unit {
   self.last_line = None
   // a hanging indent: the first line takes the whole width, the next ones
@@ -467,15 +534,12 @@ fn Flow::typeset(
     let mut placed = 0
     while index < lines.length() {
       let line = lines[index]
-      let (a, d, h) = if line.height == 0.0 {
-        (
-          base_face.ascender_pt(base.size),
-          base_face.descender_pt(base.size),
-          base_face.height_pt(base.size),
-        )
-      } else {
-        (line.ascender, line.descender, line.height)
-      }
+      let (a, d, h) = line_extent(
+        line,
+        base_face,
+        base.size,
+        normalize_line_height,
+      )
       let next = if placed == 0 { a } else { baseline + h + metrics.leading }
       // the last line keeps clear of the padding below it (asciidoctor-pdf's
       // bottom gutter)
@@ -509,21 +573,19 @@ fn Flow::height_of(
   fragments : Array[Fragment],
   metrics : LineMetrics,
   base : Style,
+  normalize_line_height? : Bool = false,
 ) -> Double {
   let lines = typeset_lines(fragments, self.catalog, self.width(), Left)
   let base_face = self.font(base)
   let mut baseline = 0.0
   let mut depth = 0.0
   for index, line in lines {
-    let (a, d, h) = if line.height == 0.0 {
-      (
-        base_face.ascender_pt(base.size),
-        base_face.descender_pt(base.size),
-        base_face.height_pt(base.size),
-      )
-    } else {
-      (line.ascender, line.descender, line.height)
-    }
+    let (a, d, h) = line_extent(
+      line,
+      base_face,
+      base.size,
+      normalize_line_height,
+    )
     baseline = if index == 0 { a } else { baseline + h + metrics.leading }
     depth = d
   }

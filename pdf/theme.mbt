@@ -184,6 +184,10 @@ let margin_side : Double = 0.67 * 72.0
 let margin_bottom : Double = 0.67 * 72.0
 
 ///|
+/// `conum_line_height`: in `theme_font :conum`, the base line height
+let conum_line_height : Double = 4.0 / 3.0
+
+///|
 /// `toc_line_height`
 let toc_line_height = 1.4
 

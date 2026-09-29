@@ -165,10 +165,55 @@ fn load_face(
 
 ///|
 /// The font catalog of the theme: family → the four styles, and the
-/// pagelayout registry holding them, which the renderer draws with.
+/// pagelayout registry holding them, which the renderer draws with; and
+/// the icon sets (`icons=font`), each a font family of its own.
 pub struct FontCatalog {
   priv faces : Map[String, Face]
   priv registry : @fonts.FontRegistry
+  /// icon set (`fas`) → icon name → glyph (prawn-icon's legends)
+  priv icons : Map[String, Map[String, String]]
+  /// Font Awesome 4 icon name (`fa-save`) → set and name (`far-save`)
+  /// (asciidoctor-pdf's `fa-legacy-mapping.yml`)
+  priv legacy_icons : Map[String, String]
+}
+
+///|
+/// An icon font of prawn-icon (`data/fonts/<set>/`): the set's name (`fas`,
+/// `far`, `fab`, `fi`, `pf`), its TrueType font and its legend (`<set>.yml`,
+/// which names each glyph).
+pub(all) struct IconSet {
+  name : String
+  font : Bytes
+  legend : String
+}
+
+///|
+/// The `key: value` lines of a flat YAML map, under its top-level key when
+/// it has one (prawn-icon's legends: `fas:` then `  fire: "…"`; the legacy
+/// mapping: `fa-save: far-save`). Keys starting with `__` are metadata.
+fn parse_flat_yaml(text : String) -> Map[String, String] {
+  let map : Map[String, String] = Map([])
+  for raw in text.split("\n") {
+    let line = raw.trim().to_owned()
+    if line == "" || line.has_prefix("#") || line == "---" {
+      continue
+    }
+    guard line.find(": ") is Some(i) else { continue }
+    let key = line[:i].to_owned()
+    if key.has_prefix("__") {
+      continue
+    }
+    let mut value = line[i + 2:].trim().to_owned()
+    if value.length() >= 2 &&
+      (
+        (value.has_prefix("\"") && value.has_suffix("\"")) ||
+        (value.has_prefix("'") && value.has_suffix("'"))
+      ) {
+      value = value[1:value.length() - 1].to_owned()
+    }
+    map[key] = value
+  }
+  map
 }
 
 ///|
@@ -193,9 +238,26 @@ pub fn default_font_files() -> Array[(String, Bool, Bool, String)] {
 }
 
 ///|
-/// Load a catalog from font files: (family, bold, italic, TrueType bytes).
+/// The icon sets of prawn-icon 3.0.0 (its `data/fonts`): (set, font file,
+/// legend file), relative to that directory.
+pub fn default_icon_font_files() -> Array[(String, String, String)] {
+  [
+    ("fab", "fab/fa-brands.ttf", "fab/fab.yml"),
+    ("far", "far/fa-regular.ttf", "far/far.yml"),
+    ("fas", "fas/fa-solid.ttf", "fas/fas.yml"),
+    ("fi", "fi/foundation-icons.ttf", "fi/fi.yml"),
+    ("pf", "pf/paymentfont-webfont.ttf", "pf/pf.yml"),
+  ]
+}
+
+///|
+/// Load a catalog from font files: (family, bold, italic, TrueType bytes),
+/// with the icon sets `icons=font` draws from and asciidoctor-pdf's
+/// mapping of Font Awesome 4 icon names (`fa-legacy-mapping.yml`).
 pub fn FontCatalog::load(
   files : Array[(String, Bool, Bool, Bytes)],
+  icon_sets? : Array[IconSet] = [],
+  legacy_icon_mapping? : String = "",
 ) -> FontCatalog raise {
   let faces : Map[String, Face] = Map([])
   let registry = @fonts.FontRegistry::new()
@@ -205,9 +267,41 @@ pub fn FontCatalog::load(
       registry, family, bold, italic, data,
     )
   }
+  let icons : Map[String, Map[String, String]] = Map([])
+  for set in icon_sets {
+    faces[face_key(set.name, false, false)] = load_face(
+      registry,
+      set.name,
+      false,
+      false,
+      set.font,
+    )
+    icons[set.name] = parse_flat_yaml(set.legend)
+  }
   // complete: nothing may join it once a document is measured with it
   registry.seal()
-  { faces, registry, }
+  {
+    faces,
+    registry,
+    icons,
+    legacy_icons: parse_flat_yaml(legacy_icon_mapping),
+  }
+}
+
+///|
+/// The glyph of icon `name` in icon set `set`, when the catalog has both.
+fn FontCatalog::icon_glyph(
+  self : FontCatalog,
+  set : String,
+  name : String,
+) -> String? {
+  self.icons.get(set).bind(glyphs => glyphs.get(name))
+}
+
+///|
+/// Whether the catalog can draw font icons (it has icon sets).
+fn FontCatalog::has_icons(self : FontCatalog) -> Bool {
+  !self.icons.is_empty()
 }
 
 ///|

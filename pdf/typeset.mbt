@@ -317,6 +317,7 @@ fn typeset_lines(
         limit,
         align,
         align == Justify && !is_last && !hard,
+        hard,
       ),
     )
   }
@@ -379,6 +380,7 @@ fn place_line(
   limit : Double,
   align : Alignment,
   justify : Bool,
+  hard : Bool,
 ) -> Line {
   // trailing spaces are not part of the line
   let mut visible_end = to
@@ -473,7 +475,19 @@ fn place_line(
       measure(fragment)
     }
   }
-  if runs.is_empty() {
+  // every fragment the line holds counts towards its height, as Prawn's
+  // arranger measures each fragment it consumed for the line: spaces that
+  // end it or were dropped from its start, anchors (asciidoctor-pdf's
+  // placeholder text), and the line break that ends it
+  let last = if hard { to + 1 } else { to }
+  let mut previous = -1
+  for k in from..<@cmp.minimum(last, items.length()) {
+    if items[k].fragment != previous {
+      previous = items[k].fragment
+      measure(previous)
+    }
+  }
+  if runs.is_empty() && height == 0.0 {
     // an empty line takes the metrics of the fragment it sits in
     let fragment = if from < items.length() {
       items[from].fragment

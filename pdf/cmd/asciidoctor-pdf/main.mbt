@@ -1,13 +1,16 @@
 ///|
 // asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME=VALUE]... [--fonts-dir DIR]
 //
-// Converts an AsciiDoc file to PDF with the spike backend. The default
+// Converts an AsciiDoc file to PDF with the spike backend. `--trace FILE`
+// writes where each block went (see `conversion_trace`). The default
 // theme's fonts (Noto Serif, M+ 1mn) are read from `--fonts-dir`, else
-// from $ASCIIDOCTOR_PDF_FONTS_DIR.
+// from $ASCIIDOCTOR_PDF_FONTS_DIR; the icon fonts of `icons=font` (Font
+// Awesome and the other sets of prawn-icon's `data/fonts`) from
+// `--icon-fonts-dir`, else $ASCIIDOCTOR_PDF_ICON_FONTS_DIR.
 
 ///|
 fn usage() -> String {
-  "Usage: asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME[=VALUE]]... [--fonts-dir DIR]"
+  "Usage: asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME[=VALUE]]... [--fonts-dir DIR] [--icon-fonts-dir DIR] [--trace FILE]"
 }
 
 ///|
@@ -16,6 +19,8 @@ async fn main {
   let mut input : String? = None
   let mut output : String? = None
   let mut fonts_dir = @env.get_env_var("ASCIIDOCTOR_PDF_FONTS_DIR")
+  let mut trace_file : String? = None
+  let mut icon_fonts_dir = @env.get_env_var("ASCIIDOCTOR_PDF_ICON_FONTS_DIR")
   let attributes : Array[(String, @core.AttrVal)] = []
   let mut i = 1
   while i < args.length() {
@@ -33,6 +38,16 @@ async fn main {
       }
       "--fonts-dir" if i + 1 < args.length() => {
         fonts_dir = Some(args[i + 1])
+        i += 2
+        continue
+      }
+      "--icon-fonts-dir" if i + 1 < args.length() => {
+        icon_fonts_dir = Some(args[i + 1])
+        i += 2
+        continue
+      }
+      "--trace" if i + 1 < args.length() => {
+        trace_file = Some(args[i + 1])
         i += 2
         continue
       }
@@ -62,8 +77,30 @@ async fn main {
       (family, bold, italic, @fs.read_file(fonts_dir + "/" + file).binary()),
     )
   }
-  let catalog = @asciidoctor_pdf.FontCatalog::load(files)
-  @asciidoctor_pdf.register()
+  // the icon fonts (prawn-icon's), for `icons=font`, and asciidoctor-pdf's
+  // mapping of Font Awesome 4 icon names, next to its fonts
+  let icon_sets : Array[@asciidoctor_pdf.IconSet] = []
+  match icon_fonts_dir {
+    Some(dir) =>
+      for entry in @asciidoctor_pdf.default_icon_font_files() {
+        let (name, font, legend) = entry
+        icon_sets.push({
+          name,
+          font: @fs.read_file(dir + "/" + font).binary(),
+          legend: @fs.read_file(dir + "/" + legend).text(),
+        })
+      }
+    None => ()
+  }
+  let legacy_icon_mapping = @fs.read_file(fonts_dir + "/fa-legacy-mapping.yml").text() catch {
+    _ => ""
+  }
+  let catalog = @asciidoctor_pdf.FontCatalog::load(
+    files,
+    icon_sets~,
+    legacy_icon_mapping~,
+  )
+  @asciidoctor_pdf.register(catalog~)
   let cwd = @env.current_dir().unwrap_or("/")
   let path = @core.expand_path_from(cwd, input)
   let data = @fs.read_file(path).binary()
@@ -112,4 +149,13 @@ async fn main {
       @core.dirname(path) + "/" + @core.basename(path, drop_ext=true) + ".pdf"
   }
   @fs.write_file(out, pdf, create_mode=CreateOrTruncate)
+  match trace_file {
+    Some(file) =>
+      @fs.write_file(
+        @core.expand_path_from(cwd, file),
+        @asciidoctor_pdf.conversion_trace().map(l => l + "\n").join(""),
+        create_mode=CreateOrTruncate,
+      )
+    None => ()
+  }
 }

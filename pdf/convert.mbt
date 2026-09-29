@@ -43,12 +43,17 @@ fn Converter::dry_run(
   left : Double,
   right : Double,
   start_y? : Double,
+  bottom? : Double,
   body : (Converter) -> Unit,
 ) -> Flow {
   let flow = Flow::new(self.flow.catalog, scratch=true)
   flow.start_new_page()
   flow.left = left
   flow.right = right
+  match bottom {
+    Some(b) => flow.bottom = b
+    None => ()
+  }
   match start_y {
     Some(y) => flow.y = y
     None => ()
@@ -56,6 +61,13 @@ fn Converter::dry_run(
   let scratch = Converter::new(self.doc, flow)
   scratch.gutters.append(self.gutters)
   scratch.text_align = self.text_align
+  // the outermost dry run restores the document's attributes, and so its
+  // counters (a footnote's number), when it ends (`push_scratch`)
+  let saved_attributes = if session.scratch == 0 {
+    Some(self.doc.attributes.copy())
+  } else {
+    None
+  }
   session.scratch += 1
   let footnotes = self.doc.catalog().footnotes
   let registered = footnotes.length()
@@ -64,7 +76,38 @@ fn Converter::dry_run(
     ignore(footnotes.pop())
   }
   session.scratch -= 1
+  match saved_attributes {
+    Some(saved) => self.doc.attributes.replace(saved)
+    None => ()
+  }
   flow
+}
+
+///|
+/// asciidoctor-pdf's `arrange_block` for a block that may break across
+/// pages: `body` inks the block; a dry run of it from the cursor tells
+/// whether it would ink nothing on this page but tared content (its
+/// caption, its background: `Flow::tared`) before moving to the next page
+/// (`dry_run` with `stop_if_first_page_empty`), in which case the block
+/// starts on the next page.
+fn Converter::arrange_block(
+  self : Converter,
+  body : (Converter) -> Unit,
+) -> Unit {
+  let flow = self.flow
+  if !flow.at_page_top() {
+    let scratch = self.dry_run(
+      flow.left,
+      flow.right,
+      start_y=flow.y,
+      bottom=flow.bottom,
+      body,
+    )
+    if scratch.first_break_empty == Some(true) {
+      flow.advance_page()
+    }
+  }
+  body(self)
 }
 
 ///|
@@ -100,6 +143,68 @@ let diagnostics : Array[String] = []
 /// met (see `diagnostics`), in document order.
 pub fn conversion_warnings() -> Array[String] {
   diagnostics.copy()
+}
+
+///|
+/// Where one block of the last `convert_document` went: its nesting depth,
+/// what it is, its source line, and the flow position (page from 1, cursor
+/// in points from the page top) where its conversion started and ended.
+priv struct TraceEntry {
+  depth : Int
+  what : String
+  line : Int
+  start_page : Int
+  start_y : Double
+  mut end_page : Int
+  mut end_y : Double
+}
+
+///|
+let trace : Array[TraceEntry] = []
+
+///|
+let trace_depth : Ref[Int] = { val: 0, }
+
+///|
+/// Where the blocks of the last `convert_document` went, one line each in
+/// the order they started: `depth what line start_page start_y end_page
+/// end_y`, tab-separated (pages from 1, y in points from the page top).
+/// Comparison tools map a position in the PDF to the innermost block
+/// containing it.
+pub fn conversion_trace() -> Array[String] {
+  trace.map(e => {
+    "\{e.depth}\t\{e.what}\t\{e.line}\t\{e.start_page}\t\{e.start_y}\t\{e.end_page}\t\{e.end_y}"
+  })
+}
+
+///|
+/// Run `body`, the conversion of `node`, recording where it went (see
+/// `conversion_trace`); dry runs leave no trace.
+fn Converter::traced(
+  self : Converter,
+  node : @core.Node,
+  what : String,
+  body : () -> Unit,
+) -> Unit {
+  if self.flow.scratch {
+    body()
+    return
+  }
+  let entry : TraceEntry = {
+    depth: trace_depth.val,
+    what,
+    line: node.lineno().unwrap_or(0),
+    start_page: self.flow.page + 1,
+    start_y: self.flow.y,
+    end_page: 0,
+    end_y: 0.0,
+  }
+  trace.push(entry)
+  trace_depth.val += 1
+  body()
+  trace_depth.val -= 1
+  entry.end_page = self.flow.page + 1
+  entry.end_y = self.flow.y
 }
 
 ///|
@@ -293,9 +398,9 @@ fn outline_levels(doc : @core.Node) -> (Int, Int) {
 
 ///|
 /// Report document-level features the spike does not implement.
-fn report_document_features(doc : @core.Node) -> Unit {
-  if doc.attr("icons") == Some("font") {
-    unsupported("attribute", "icons=font", doc)
+fn report_document_features(doc : @core.Node, catalog : FontCatalog) -> Unit {
+  if doc.attr("icons") == Some("font") && !catalog.has_icons() {
+    unsupported("attribute", "icons=font (no icon fonts)", doc)
   }
   if doc.has_attr("source-highlighter") {
     unsupported("attribute", "source-highlighter", doc)
@@ -308,7 +413,9 @@ fn report_document_features(doc : @core.Node) -> Unit {
 /// unsupported content is.
 pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise {
   diagnostics.clear()
-  report_document_features(doc)
+  trace.clear()
+  trace_depth.val = 0
+  report_document_features(doc, catalog)
   let flow = Flow::new(catalog)
   let c = Converter::new(doc, flow)
   flow.start_new_page()
@@ -612,13 +719,23 @@ fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
   // which they stand is converted (AbstractBlock#convert); after parsing,
   // the document's attributes are those of its header
   node.document().playback_attributes(node.attributes)
+  let what = match node.style {
+    Some(style) => "\{node.context.name()}/\{style}"
+    None => node.context.name()
+  }
+  self.traced(node, what, () => self.convert_block_body(node))
+}
+
+///|
+fn Converter::convert_block_body(self : Converter, node : @core.Node) -> Unit {
   match node.context {
     Section => self.convert_section(node)
     Preamble => self.convert_preamble(node)
     Paragraph => self.convert_paragraph(node)
     Listing | Literal => self.convert_code(node)
     Ulist => self.convert_ulist(node)
-    Olist | Colist => self.convert_olist(node)
+    Olist => self.convert_olist(node)
+    Colist => self.convert_colist(node)
     Dlist => self.convert_dlist(node)
     Table => self.convert_table(node)
     Admonition => self.convert_admonition(node)
@@ -630,10 +747,7 @@ fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
     ThematicBreak => self.convert_thematic_break(node)
     PageBreak => if !self.flow.at_page_top() { self.flow.advance_page() }
     Toc => self.convert_toc(node, "macro")
-    FloatingTitle => {
-      self.add_dest(node)
-      self.ink_heading(node.title().unwrap_or(""), node.level + 1)
-    }
+    FloatingTitle => self.convert_floating_title(node)
     other => unsupported("block", other.name(), node)
   }
 }
@@ -737,6 +851,7 @@ fn Converter::ink_prose(
   line_height? : Double = base_line_height,
   normalize? : Bool = true,
   bottom_gutter? : Double = 0.0,
+  normalize_line_height? : Bool = false,
 ) -> Unit {
   let face = self.flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
@@ -746,6 +861,7 @@ fn Converter::ink_prose(
     style,
     align=align.unwrap_or(self.text_align),
     bottom_gutter~,
+    normalize_line_height~,
   )
   self.flow.margin(margin_bottom)
 }
@@ -807,6 +923,61 @@ fn Converter::ink_heading(
 }
 
 ///|
+/// asciidoctor-pdf's `arrange_heading` with a numeric
+/// `heading_min_height_after`: keep a heading with the content after it,
+/// when there is some, by starting a new page unless the heading, its top
+/// margin and that much room below it fit here.
+fn Converter::arrange_heading(
+  self : Converter,
+  title : String,
+  hlevel : Int,
+  content_after : Bool,
+) -> Unit {
+  let flow = self.flow
+  let size = heading_font_size(hlevel)
+  if size > flow.cursor() {
+    flow.advance_page()
+    return
+  }
+  let style = Style::new(size~, bold=true)
+  let face = flow.font(style)
+  let space_below = if content_after {
+    heading_min_height_after + heading_margin_bottom
+  } else {
+    0.0
+  }
+  let height = flow.height_of(
+    parse_formatted(title, style),
+    line_metrics(1.0, face, size),
+    style,
+  )
+  if flow.cursor() < height + heading_margin_top + space_below {
+    flow.advance_page()
+  }
+}
+
+///|
+/// A discrete heading (asciidoctor-pdf's `convert_floating_title`): kept
+/// with the next block unless it is the last of its parent.
+fn Converter::convert_floating_title(
+  self : Converter,
+  node : @core.Node,
+) -> Unit {
+  let title = node.title().unwrap_or("")
+  let hlevel = node.level + 1
+  let last_child = match node.parent() {
+    Some(parent) =>
+      parent.blocks.last().map(b => physical_equal(b, node)).unwrap_or(false)
+    None => true
+  }
+  if !self.flow.at_page_top() && !last_child {
+    self.arrange_heading(title, hlevel, true)
+  }
+  self.add_dest(node)
+  self.ink_heading(title, hlevel)
+}
+
+///|
 /// asciidoctor-pdf's `convert_section`: parts and chapters (a book's
 /// level-1 sections) start a new page; other headings keep with the
 /// content after them (`arrange_heading`). The section records the page it
@@ -833,28 +1004,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     flow.advance_page()
   }
   if !hidden && !started_new && !flow.at_page_top() {
-    // asciidoctor-pdf's `arrange_heading`: keep the heading with the
-    // content after it
-    let size = heading_font_size(hlevel)
-    if size > flow.cursor() {
-      flow.advance_page()
-    } else {
-      let style = Style::new(size~, bold=true)
-      let face = flow.font(style)
-      let space_below = if section.has_blocks() {
-        heading_min_height_after + heading_margin_bottom
-      } else {
-        0.0
-      }
-      let height = flow.height_of(
-        parse_formatted(title, style),
-        line_metrics(1.0, face, size),
-        style,
-      )
-      if flow.cursor() < height + heading_margin_top + space_below {
-        flow.advance_page()
-      }
-    }
+    self.arrange_heading(title, hlevel, section.has_blocks())
   }
   let start_page = flow.page + 1
   section.set_attr("pdf-page-start", value=Int(start_page)) |> ignore
@@ -981,6 +1131,7 @@ fn Converter::ink_caption(
     align=Left,
     margin_bottom=if bottom { 0.0 } else { caption_margin_inside },
     normalize=false,
+    normalize_line_height=true,
   )
 }
 
@@ -1024,90 +1175,63 @@ fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
     style,
     normalize=false,
   )
-  // arrange_block's dry run: when not even the first line (with the
-  // caption above it) fits here, the block starts on the next page; a
-  // single line must also leave room for the bottom padding (its gutter)
-  let single = typeset_lines(
-      fragments,
-      flow.catalog,
-      flow.width() - 2.0 * code_padding,
-      Left,
-    ).length() <=
-    1
-  let caption_height = if node.has_title() {
-    let caption_style = Style::new(size=caption_font_size, doc_italic=true)
-    flow.height_of(
-      parse_formatted(node.captioned_title(), caption_style, normalize=false),
-      line_metrics(
-        base_line_height,
-        flow.font(caption_style),
-        caption_font_size,
-      ),
-      caption_style,
-    ) +
-    caption_margin_inside
-  } else {
-    0.0
-  }
-  let first_line = caption_height +
-    code_padding +
-    metrics.padding_top +
-    face.ascender_pt(code_font_size) +
-    face.descender_pt(code_font_size) +
-    (if single { code_padding } else { 0.0 })
-  if !flow.at_page_top() && flow.cursor() < first_line {
-    flow.advance_page()
-  }
-  if node.has_title() {
-    self.ink_caption(node.captioned_title())
-  }
-  self.add_dest(node)
-  let start = flow.mark()
-  let (left, right) = (flow.left, flow.right)
-  flow.move_down(code_padding)
-  flow.indent(code_padding, code_padding, fn() {
-    flow.typeset(fragments, metrics, style, bottom_gutter=code_padding)
-  })
-  flow.pad_bottom(code_padding)
-  flow.underlay(start, fn(top, bottom, first, last) {
-    let items = [
-      rect_item(
-        left,
-        top,
-        right - left,
-        bottom - top,
-        fill=code_background_color,
-        stroke=code_border_color,
-        stroke_width=code_border_width,
-      ),
-    ]
-    // where the block breaks across pages, a dashed line in the background
-    // colour cuts into the border (theme_fill_and_stroke_block)
-    let inset = 4.0 + code_border_width
-    let width = code_border_width * 1.2
-    if !first {
-      items.append(
-        dashed_hrule(
-          left + inset,
-          right - inset,
+  // arrange_block: the caption and the background are tared, so the block
+  // starts on the next page when not even its first line (with the room
+  // its bottom padding needs, when it is the last) fits here
+  self.arrange_block(fn(c) {
+    let flow = c.flow
+    c.add_dest(node)
+    if node.has_title() {
+      flow.tared(() => c.ink_caption(node.captioned_title()))
+    }
+    let start = flow.mark()
+    let (left, right) = (flow.left, flow.right)
+    flow.move_down(code_padding)
+    flow.indent(code_padding, code_padding, fn() {
+      flow.typeset(fragments, metrics, style, bottom_gutter=code_padding)
+    })
+    flow.pad_bottom(code_padding)
+    flow.underlay(start, fn(top, bottom, first, last) {
+      let items = [
+        rect_item(
+          left,
           top,
-          width,
-          code_background_color,
+          right - left,
+          bottom - top,
+          fill=code_background_color,
+          stroke=code_border_color,
+          stroke_width=code_border_width,
         ),
-      )
-    }
-    if !last {
-      items.append(
-        dashed_hrule(
-          left + inset,
-          right - inset,
-          bottom,
-          width,
-          code_background_color,
-        ),
-      )
-    }
-    items
+      ]
+      // where the block breaks across pages, a dashed line in the
+      // background colour cuts into the border
+      // (theme_fill_and_stroke_block)
+      let inset = 4.0 + code_border_width
+      let width = code_border_width * 1.2
+      if !first {
+        items.append(
+          dashed_hrule(
+            left + inset,
+            right - inset,
+            top,
+            width,
+            code_background_color,
+          ),
+        )
+      }
+      if !last {
+        items.append(
+          dashed_hrule(
+            left + inset,
+            right - inset,
+            bottom,
+            width,
+            code_background_color,
+          ),
+        )
+      }
+      items
+    })
   })
   self.block_margin_bottom(node)
 }
@@ -1202,6 +1326,101 @@ fn alpha(n : Int, upper : Bool) -> String {
 }
 
 ///|
+/// The block before `node` among its parent's blocks.
+fn previous_sibling(node : @core.Node) -> @core.Node? {
+  guard node.parent() is Some(parent) else { return None }
+  let mut previous : @core.Node? = None
+  for block in parent.blocks {
+    if physical_equal(block, node) {
+      return previous
+    }
+    previous = Some(block)
+  }
+  None
+}
+
+///|
+/// asciidoctor-pdf's `convert_colist`: after a code block it moves up
+/// (`callout_list_margin_top_after_code`); each item's number, in the conum
+/// font, is centred in a column as wide as the number and an `x`, and the
+/// item's text is indented by that column (`convert_colist_item`).
+fn Converter::convert_colist(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
+  if !flow.at_page_top() &&
+    previous_sibling(node) is Some(prev) &&
+    (prev.context == Listing || prev.context == Literal) {
+    flow.margin(-block_margin_bottom / 2.0)
+  }
+  self.add_dest(node)
+  let conum = conum_style()
+  let conum_face = flow.font(conum)
+  // allocate_space_for_list_item with the conum font's line metrics (in
+  // `theme_font :conum`, the base line height is `conum_line_height`)
+  let metrics = line_metrics(conum_line_height, conum_face, conum.size)
+  let items = node.items()
+  for index, item in items {
+    if !flow.at_page_top() &&
+      flow.cursor() <
+      conum_line_height * conum.size + metrics.leading + metrics.padding_top {
+      flow.advance_page()
+    }
+    self.traced(item, "list_item", () => {
+      let marker = conum_glyph((index + 1).to_string())
+      let marker_width = typeset_lines(
+          [{ text: marker + "x", style: conum, anchor: None, }],
+          flow.catalog,
+          1.0e6,
+          Left,
+        )[0].fit_width
+      let (page, y) = (flow.page, flow.y)
+      flow.indent(0.0, flow.width() - marker_width, () => {
+        self.ink_prose(
+          marker,
+          style=conum,
+          align=Center,
+          margin_bottom=0.0,
+          normalize=false,
+          line_height=conum_line_height,
+        )
+      })
+      flow.page = page
+      flow.y = y
+      let margin_bottom = if index == items.length() - 1 {
+        0.0
+      } else {
+        list_item_spacing
+      }
+      flow.indent(marker_width, 0.0, () => {
+        match item.text() {
+          Some(text) if !text.is_empty() =>
+            self.ink_prose(text, margin_bottom~, normalize_line_height=true)
+          _ =>
+            if !item.has_blocks() {
+              self.ink_prose("", margin_bottom~, normalize_line_height=true)
+            }
+        }
+        self.traverse(item)
+      })
+    })
+  }
+  self.block_margin_bottom(node)
+}
+
+///|
+/// The conum font (`conum_font_*`): the codespan font and colour at the
+/// base size.
+fn conum_style() -> Style {
+  {
+    ..Style::new(
+      family=mono_font_family,
+      size=base_font_size,
+      color=codespan_font_color,
+    ),
+    font_set: true,
+  }
+}
+
+///|
 fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
   self.add_dest(node)
   let start = match node.attr("start") {
@@ -1209,25 +1428,16 @@ fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
     None => 1
   }
   let style = node.style.unwrap_or("arabic")
-  let colist = node.context == Colist
-  if colist && !self.flow.at_page_top() {
-    // callout lists hug the code block above (callout_list_margin_top_after_code)
-    self.flow.move_down(-block_margin_bottom / 2.0)
-  }
   self.convert_list(node, fn(index, _item) {
     let n = start + index
-    if colist {
-      conum_glyph(n.to_string())
-    } else {
-      match style {
-        "loweralpha" => "\{alpha(n, false)}."
-        "upperalpha" => "\{alpha(n, true)}."
-        "lowerroman" => "\{roman(n, false)}."
-        "upperroman" => "\{roman(n, true)}."
-        "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
-        "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
-        _ => "\{n}."
-      }
+    match style {
+      "loweralpha" => "\{alpha(n, false)}."
+      "upperalpha" => "\{alpha(n, true)}."
+      "lowerroman" => "\{roman(n, false)}."
+      "upperroman" => "\{roman(n, true)}."
+      "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
+      "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
+      _ => "\{n}."
     }
   })
 }
@@ -1253,7 +1463,10 @@ fn Converter::convert_list(
         base_line_height * base.size + metrics.leading + metrics.padding_top {
         flow.advance_page()
       }
-      self.convert_list_item(item, marker_of(index, item), metrics)
+      let marker = marker_of(index, item)
+      self.traced(item, "list_item", () => {
+        self.convert_list_item(item, marker, metrics)
+      })
     }
   })
   if !list_nested(node) && next_enclosed_block(node) is Some(_) {
@@ -1302,7 +1515,20 @@ fn Converter::convert_list_item(
     let page = flow.page
     let baseline = y + metrics.padding_top + face.ascender_pt(base.size)
     if lines.length() > 0 {
-      flow.ink_line(lines[0], flow.left - width - gap + 0.5, baseline)
+      // set with `character_spacing: -0.5`, which Prawn does not count
+      // after the last glyph: right-aligned in a box as wide as the marker
+      // without it, the text starts 0.5pt in per glyph after the first,
+      // plus the 0.5pt asciidoctor-pdf adds back
+      // (`character_spacing_correction`)
+      let mut glyphs = 0
+      for run in lines[0].runs {
+        for i in 0..<run.advances.length() {
+          run.advances[i] -= 0.5
+          glyphs += 1
+        }
+      }
+      let shift = 0.5 * glyphs.to_double()
+      flow.ink_line(lines[0], flow.left - width - gap + shift, baseline)
     }
     flow.page = page
     flow.y = y
@@ -1315,8 +1541,13 @@ fn Converter::convert_list_item(
     0.0
   }
   match item.text() {
-    Some(text) if !text.is_empty() => self.ink_prose(text, margin_bottom~)
-    _ => ()
+    Some(text) if !text.is_empty() =>
+      self.ink_prose(text, margin_bottom~, normalize_line_height=true)
+    // an item without text or blocks still takes a line (`DummyText`)
+    _ =>
+      if !item.has_blocks() {
+        self.ink_prose("", margin_bottom~, normalize_line_height=true)
+      }
   }
   self.traverse(item)
 }
@@ -1333,7 +1564,37 @@ fn Converter::convert_dlist(self : Converter, node : @core.Node) -> Unit {
     return
   }
   let term_style = Style::new(bold=true)
+  // `height_of_typeset_text 'A'` in the term font and in the prose font
+  let one_line = fn(style : Style) {
+    flow.height_of(
+      [{ text: "A", style, anchor: None, }],
+      line_metrics(base_line_height, flow.font(style), style.size),
+      style,
+    )
+  }
+  let term_height = one_line(term_style)
+  let prose_height = one_line(base_style())
   for entry in node.dlist_items {
+    // keep the terms (and the first line of the description) together
+    let desc_text = match entry.desc {
+      Some(desc) => desc.text().map(t => !t.is_empty()).unwrap_or(false)
+      None => false
+    }
+    let nlines = entry.terms.length() + (if desc_text { 1 } else { 0 })
+    let blocks_only = match entry.desc {
+      Some(desc) => !desc_text && desc.has_blocks()
+      None => false
+    }
+    let needed = nlines.to_double() * term_height +
+      (nlines - 1).to_double() * description_list_term_spacing +
+      (if blocks_only {
+        description_list_term_spacing + prose_height
+      } else {
+        0.0
+      })
+    if !flow.at_page_top() && flow.cursor() < needed {
+      flow.advance_page()
+    }
     for index, term in entry.terms {
       if index > 0 {
         flow.margin(description_list_term_spacing)
@@ -1343,6 +1604,7 @@ fn Converter::convert_dlist(self : Converter, node : @core.Node) -> Unit {
         style=term_style,
         align=Left,
         margin_bottom=0.0,
+        normalize_line_height=true,
       )
     }
     match entry.desc {
@@ -1357,7 +1619,7 @@ fn Converter::convert_dlist(self : Converter, node : @core.Node) -> Unit {
           }
           match desc.text() {
             Some(text) if !text.is_empty() =>
-              self.ink_prose(text, margin_bottom~)
+              self.ink_prose(text, margin_bottom~, normalize_line_height=true)
             _ => ()
           }
           self.traverse(desc)
@@ -1404,6 +1666,7 @@ fn Converter::convert_horizontal_dlist(
           style=term_style,
           align=Left,
           margin_bottom=0.0,
+          normalize_line_height=true,
         )
       }
     })
@@ -1415,7 +1678,11 @@ fn Converter::convert_horizontal_dlist(
         flow.indent(column + 10.0, 10.0, fn() {
           match desc.text() {
             Some(text) if !text.is_empty() =>
-              self.ink_prose(text, margin_bottom=0.0)
+              self.ink_prose(
+                text,
+                margin_bottom=0.0,
+                normalize_line_height=true,
+              )
             _ => ()
           }
           self.traverse(desc)
@@ -1435,60 +1702,139 @@ fn Converter::convert_horizontal_dlist(
 ///|
 fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
   let flow = self.flow
+  let name = node.attr("name").unwrap_or("")
+  // `icons=font`: the admonition's icon, 24pt, in a column one and a half
+  // times as wide (`admonition_icon_data`); other icons (images) are left
+  // out, and the label is text
+  let icon = match self.doc.attr("icons") {
+    Some("font") if !node.has_attr("icon") =>
+      match admonition_icon(name) {
+        Some((set, icon_name, color)) =>
+          match flow.catalog.icon_glyph(set, icon_name) {
+            Some(glyph) => Some((set, glyph, color))
+            None => None
+          }
+        None => None
+      }
+    Some(_) => {
+      unsupported("block", "admonition icon image", node)
+      None
+    }
+    None => None
+  }
   let label_style = Style::new(bold=true)
-  let label = sanitize(
-    node.caption().unwrap_or(node.attr("name").unwrap_or("")),
-  ).to_upper()
-  let label_lines = typeset_lines(
-    [{ text: label, style: label_style, anchor: None, }],
-    flow.catalog,
-    1.0e6,
-    Left,
-  )
-  let label_width = if label_lines.length() > 0 {
+  let label = sanitize(node.caption().unwrap_or(name)).to_upper()
+  let label_lines = if icon is Some(_) {
+    []
+  } else {
+    typeset_lines(
+      [{ text: label, style: label_style, anchor: None, }],
+      flow.catalog,
+      1.0e6,
+      Left,
+    )
+  }
+  let label_width = if icon is Some(_) {
+    admonition_icon_size * 1.5
+  } else if label_lines.length() > 0 {
     label_lines[0].fit_width
   } else {
     0.0
   }
   let (pad_top, pad_right, pad_bottom, pad_left) = admonition_padding
-  if !flow.at_page_top() &&
-    flow.cursor() < pad_top + base_line_height_length + pad_bottom {
-    flow.advance_page()
-  }
-  self.add_dest(node)
-  let start = flow.mark()
-  let box_left = flow.left + pad_left
-  let rule_x = box_left + label_width + pad_right
-  flow.indent(pad_left, pad_right, fn() {
-    flow.move_down(pad_top)
-    flow.indent(label_width + pad_right + pad_left, 0.0, fn() {
-      if node.has_title() {
-        self.ink_caption(node.title().unwrap_or(""))
-      }
-      self.push_gutter(node, pad_bottom)
-      self.traverse(node)
-      self.pop_gutter()
-    })
-    flow.pad_bottom(pad_bottom)
-  })
   let label_face = flow.font(label_style)
-  flow.underlay(start, fn(top, bottom, first, _last) {
-    let items = [
-      vrule(
-        rule_x, top, bottom, admonition_column_rule_width, admonition_column_rule_color,
-      ),
-    ]
-    if first && label_lines.length() > 0 {
-      // the label is centred vertically on the part of the block on its
-      // first page
-      let a = label_face.ascender_pt(label_style.size)
-      let d = label_face.descender_pt(label_style.size)
-      let offset = @cmp.maximum((bottom - top - (a + d)) / 2.0, 0.0)
-      items.append(flow.line_items(label_lines[0], box_left, top + offset + a))
-    }
-    items
+  // arrange_block: the label and the rule are drawn once the extent is
+  // known, so they take no part in keeping the block on this page; the
+  // title is content
+  self.arrange_block(fn(c) {
+    let flow = c.flow
+    c.add_dest(node)
+    let start = flow.mark()
+    let box_left = flow.left + pad_left
+    let rule_x = box_left + label_width + pad_right
+    flow.indent(pad_left, pad_right, fn() {
+      flow.move_down(pad_top)
+      flow.indent(label_width + pad_right + pad_left, 0.0, fn() {
+        if node.has_title() {
+          c.ink_caption(node.title().unwrap_or(""))
+        }
+        c.push_gutter(node, pad_bottom)
+        c.traverse(node)
+        c.pop_gutter()
+      })
+      flow.pad_bottom(pad_bottom)
+    })
+    flow.underlay(start, fn(top, bottom, first, _last) {
+      let items = [
+        vrule(
+          rule_x, top, bottom, admonition_column_rule_width, admonition_column_rule_color,
+        ),
+      ]
+      match icon {
+        Some((set, glyph, color)) if first => {
+          // the icon, no taller than the label box, centred in it: moved
+          // down by half the room it leaves, then set as Prawn's `text`
+          // (the first baseline an ascender below the top), centred
+          // across the column (`fit_icon_to_bounds`, `icon`)
+          let height = bottom - top
+          let size = @cmp.minimum(height, admonition_icon_size)
+          let offset = @cmp.maximum((height - size) * 0.5, 0.0)
+          let style = {
+            ..Style::new(family=set, size~, color~),
+            font_set: true,
+          }
+          let lines = typeset_lines(
+            [{ text: glyph, style, anchor: None, }],
+            flow.catalog,
+            label_width,
+            Center,
+          )
+          let face = flow.font(style)
+          if lines.length() > 0 {
+            items.append(
+              flow.line_items(
+                lines[0],
+                box_left,
+                top + offset + face.ascender_pt(size),
+              ),
+            )
+          }
+        }
+        _ =>
+          if first && label_lines.length() > 0 {
+            // the label is centred vertically on the part of the block on
+            // its first page
+            let a = label_face.ascender_pt(label_style.size)
+            let d = label_face.descender_pt(label_style.size)
+            let offset = @cmp.maximum((bottom - top - (a + d)) / 2.0, 0.0)
+            items.append(
+              flow.line_items(label_lines[0], box_left, top + offset + a),
+            )
+          }
+      }
+      items
+    })
   })
   self.block_margin_bottom(node)
+}
+
+///|
+/// The size of an admonition's font icon (`admonition_icon_<type>_size`).
+let admonition_icon_size = 24.0
+
+///|
+/// asciidoctor-pdf's `AdmonitionIcons`: the icon set, icon name and colour
+/// of each admonition type (a type it does not know takes the note's
+/// icon, in the text colour).
+fn admonition_icon(name : String) -> (String, String, Color)? {
+  match name {
+    "caution" => Some(("fas", "fire", rgb_hex(0xBF3400)))
+    "important" => Some(("fas", "exclamation-circle", rgb_hex(0xBF0000)))
+    "note" => Some(("fas", "info-circle", rgb_hex(0x19407C)))
+    "tip" => Some(("far", "lightbulb", rgb_hex(0x111111)))
+    "warning" => Some(("fas", "exclamation-triangle", rgb_hex(0xBF6900)))
+    _ => Some(("fas", "info-circle", base_font_color))
+  }
 }
 
 ///|
@@ -1529,124 +1875,165 @@ fn Converter::bordered_block(
   stroke_width~ : Double,
   caption~ : Bool,
 ) -> Unit {
-  let flow = self.flow
-  if caption && node.has_title() {
-    self.ink_caption(node.captioned_title())
-  }
-  if !flow.at_page_top() &&
-    flow.cursor() < padding * 2.0 + base_line_height_length {
-    flow.advance_page()
-  }
-  self.add_dest(node)
-  let start = flow.mark()
-  let (left, right) = (flow.left, flow.right)
-  flow.move_down(padding)
-  flow.indent(side_padding, side_padding, fn() {
-    if !caption && node.has_title() {
-      // sidebar title: centred, bold, heading h4 size
-      self.ink_prose(
-        node.title().unwrap_or(""),
-        style=Style::new(size=heading_font_size(4), doc_bold=true),
-        align=Center,
-        margin_bottom=heading_margin_bottom,
-        // the heading line height, 1
-        line_height=1.0,
-      )
+  self.arrange_block(fn(c) {
+    let flow = c.flow
+    c.add_dest(node)
+    if caption && node.has_title() {
+      flow.tared(() => c.ink_caption(node.captioned_title()))
     }
-    self.push_gutter(node, padding)
-    self.traverse(node)
-    self.pop_gutter()
-  })
-  flow.pad_bottom(padding)
-  flow.underlay(start, fn(top, bottom, _first, _last) {
-    [
-      rect_item(
-        left,
-        top,
-        right - left,
-        bottom - top,
-        fill?,
-        stroke~,
-        stroke_width~,
-      ),
-    ]
+    let start = flow.mark()
+    let (left, right) = (flow.left, flow.right)
+    flow.move_down(padding)
+    flow.indent(side_padding, side_padding, fn() {
+      if !caption && node.has_title() {
+        // sidebar title: centred, bold, heading h4 size
+        flow.tared(() => {
+          c.ink_prose(
+            node.title().unwrap_or(""),
+            style=Style::new(size=heading_font_size(4), doc_bold=true),
+            align=Center,
+            margin_bottom=heading_margin_bottom,
+            // the heading line height, 1
+            line_height=1.0,
+          )
+        })
+      }
+      c.push_gutter(node, padding)
+      c.traverse(node)
+      c.pop_gutter()
+    })
+    flow.pad_bottom(padding)
+    // the page's white when the block has no background of its own
+    let gap = fill.unwrap_or(rgb_hex(0xFFFFFF))
+    flow.underlay(start, fn(top, bottom, first, last) {
+      let items = [
+        rect_item(
+          left,
+          top,
+          right - left,
+          bottom - top,
+          fill?,
+          stroke~,
+          stroke_width~,
+        ),
+      ]
+      let inset = 4.0 + stroke_width
+      let width = stroke_width * 1.2
+      if !first {
+        items.append(dashed_hrule(left + inset, right - inset, top, width, gap))
+      }
+      if !last {
+        items.append(
+          dashed_hrule(left + inset, right - inset, bottom, width, gap),
+        )
+      }
+      items
+    })
   })
   self.block_margin_bottom(node)
 }
 
 ///|
 fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
-  if node.has_title() {
-    self.ink_caption(node.title().unwrap_or(""))
-  }
-  self.add_dest(node)
   let border = horizontal_rhythm / 3.0
-  let start = flow.mark()
-  let left = flow.left
-  let style = Style::new(size=quote_font_size)
-  flow.move_down(vertical_rhythm / 4.0)
-  flow.indent(horizontal_rhythm + border / 2.0, horizontal_rhythm, fn() {
-    if node.context == Verse {
-      self.ink_prose(
-        guard_indentation(node.content()),
-        style~,
-        align=Left,
-        margin_bottom=0.0,
-        normalize=false,
-      )
-    } else {
-      // quote paragraphs take the quote font size
-      for block in node.blocks {
-        if block.context == Paragraph {
-          self.ink_prose(
-            block.content(),
-            style~,
-            margin_bottom=if next_enclosed_block(block) is Some(_) {
-              prose_margin_bottom
-            } else {
-              0.0
-            },
-          )
-        } else {
-          self.convert_block(block)
-        }
-      }
+  let pad = vertical_rhythm / 4.0
+  let attribution = node.attr("attribution")
+  // arrange_block: the destination, the caption (tared), then the content
+  // in the quote padding, whose bottom the last line keeps clear of
+  // unless an attribution follows
+  self.arrange_block(fn(c) {
+    let flow = c.flow
+    c.add_dest(node)
+    if node.has_title() {
+      flow.tared(() => c.ink_caption(node.title().unwrap_or("")))
     }
-    match node.attr("attribution") {
-      Some(attribution) => {
-        flow.margin(block_margin_bottom)
-        let cite = match node.attr("citetitle") {
-          Some(title) => "\{attribution}, \{title}"
-          None => attribution
-        }
-        self.ink_prose(
-          "— \{cite}",
-          style=Style::new(
-            size=(base_font_size * 0.85).round(),
-            color=rgb_hex(0x999999),
-          ),
-          align=Left,
+    let start = flow.mark()
+    let left = flow.left
+    let style = Style::new(size=quote_font_size)
+    flow.move_down(pad)
+    flow.indent(horizontal_rhythm + border / 2.0, horizontal_rhythm, fn() {
+      if attribution is None {
+        c.push_gutter(node, pad)
+      } else {
+        c.gutters.push(None)
+      }
+      if node.context == Verse {
+        c.ink_prose(
+          guard_indentation(node.content()),
+          style~,
+          align=role_align(node.roles(), Left),
           margin_bottom=0.0,
+          normalize=false,
+          bottom_gutter=c.gutter(node),
         )
+      } else {
+        // quote paragraphs take the quote font size
+        for block in node.blocks {
+          if block.context == Paragraph {
+            c.ink_prose(
+              block.content(),
+              style~,
+              margin_bottom=if next_enclosed_block(block) is Some(_) {
+                prose_margin_bottom
+              } else {
+                0.0
+              },
+              bottom_gutter=c.gutter(block),
+            )
+          } else {
+            c.convert_block(block)
+          }
+        }
       }
-      None => ()
-    }
-  })
-  flow.move_down(vertical_rhythm / 4.0)
-  flow.underlay(start, fn(top, bottom, _first, _last) {
-    [vrule(left + border / 2.0, top, bottom, border, quote_border_color)]
+      c.pop_gutter()
+      match attribution {
+        Some(attribution) => {
+          flow.margin(block_margin_bottom)
+          let cite = match node.attr("citetitle") {
+            Some(title) => "\{attribution}, \{title}"
+            None => attribution
+          }
+          c.ink_prose(
+            "— \{cite}",
+            style=Style::new(
+              size=(base_font_size * 0.85).round(),
+              color=rgb_hex(0x999999),
+            ),
+            align=Left,
+            margin_bottom=0.0,
+            normalize=false,
+          )
+        }
+        None => ()
+      }
+    })
+    flow.pad_bottom(pad)
+    flow.underlay(start, fn(top, bottom, _first, _last) {
+      [vrule(left + border / 2.0, top, bottom, border, quote_border_color)]
+    })
   })
   self.block_margin_bottom(node)
 }
 
 ///|
 fn Converter::convert_open(self : Converter, node : @core.Node) -> Unit {
-  self.add_dest(node)
-  if node.has_title() {
-    self.ink_caption(node.title().unwrap_or(""))
+  // a titled open block, or one with an id, is arranged: its caption is
+  // tared, so it moves on with the content after it
+  if !self.flow.at_page_top() && (node.has_title() || node.id is Some(_)) {
+    self.arrange_block(fn(c) {
+      c.add_dest(node)
+      if node.has_title() {
+        c.flow.tared(() => c.ink_caption(node.title().unwrap_or("")))
+      }
+      c.traverse(node)
+    })
+  } else {
+    self.add_dest(node)
+    if node.has_title() {
+      self.ink_caption(node.title().unwrap_or(""))
+    }
+    self.traverse(node)
   }
-  self.traverse(node)
 }
 
 ///|

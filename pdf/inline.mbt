@@ -26,6 +26,8 @@ priv struct Session {
   mut rendered_footnotes : Int
   /// the labels footnotes were inked with, by index
   footnote_labels : Map[Int, String]
+  /// the font catalog, for the glyphs of font icons (`icon:name[]`)
+  mut catalog : FontCatalog?
 }
 
 ///|
@@ -34,12 +36,15 @@ let session : Session = {
   index: IndexCatalog::new(),
   rendered_footnotes: 0,
   footnote_labels: Map([]),
+  catalog: None,
 }
 
 ///|
 /// Registers the `pdf` backend with the core so that `backend=pdf` loads
-/// resolve inline content to formatted text.
-pub fn register() -> Unit {
+/// resolve inline content to formatted text; font icons take their glyphs
+/// from `catalog`'s icon sets.
+pub fn register(catalog? : FontCatalog) -> Unit {
+  session.catalog = catalog
   @core.register_converter(["pdf"], fn(_backend, _htmlsyntax, _doc) {
     // a new document: a new index (nested documents share their parent's
     // converter)
@@ -74,6 +79,8 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
     "inline_footnote" => convert_inline_footnote(node)
     "inline_kbd" => convert_inline_kbd(node)
     "inline_menu" => convert_inline_menu(node)
+    "inline_image" if node.inline_type == Some("icon") =>
+      convert_inline_icon(node)
     "inline_image" => {
       // drawn as its alt text; asciidoctor-pdf places the image in the line
       unsupported("inline", "image", node)
@@ -191,7 +198,23 @@ fn InlineConverter::convert_inline_anchor(
         Some(role) => " class=\"\{role}\""
         None => ""
       }
-      "\{anchor}<a href=\"\{target}\"\{class}>\{node.text().unwrap_or("")}</a>"
+      let text = node.text().unwrap_or("")
+      let doc = node.document()
+      if node.has_role("bare") {
+        "\{anchor}<a href=\"\{target}\"\{class}>\{breakable_uri(text)}</a>"
+      } else if doc.has_attr("show-link-uri") {
+        let bare = if doc.has_attr("hide-uri-scheme") {
+          match target.find("://") {
+            Some(i) => target[i + 3:].to_owned()
+            None => target
+          }
+        } else {
+          target
+        }
+        "\{anchor}<a href=\"\{target}\"\{class}>\{text}</a> [<font size=\"0.85em\">\{breakable_uri(bare)}</font>&#93;"
+      } else {
+        "\{anchor}<a href=\"\{target}\"\{class}>\{text}</a>"
+      }
     }
     Some("xref") =>
       match node.attributes.str("path") {
@@ -238,6 +261,148 @@ fn InlineConverter::convert_inline_anchor(
       ""
     }
   }
+}
+
+///|
+/// The Font Awesome icon sets, in the order a `fa` icon name is looked up
+/// (`FontAwesomeIconSets`), and all icon sets (`IconSets`).
+let font_awesome_icon_sets : Array[String] = ["fab", "far", "fas"]
+
+///|
+let icon_set_names : Array[String] = ["fab", "far", "fas", "fi", "pf"]
+
+///|
+/// asciidoctor-pdf's `convert_inline_icon`: with `icons=font`, the icon's
+/// glyph in its icon set's font (`name@set`, the `set` attribute, else
+/// `icon-set`, default `fa`: a Font Awesome 4 name through the legacy
+/// mapping, else the first Font Awesome set that has it; a `fas-` style
+/// prefix names the set too), sized by the `size` attribute; otherwise, or
+/// when the icon is unknown, the alt text in brackets.
+fn convert_inline_icon(node : @core.Node) -> String {
+  let doc = node.document()
+  let alt = "[\{node.attr("alt").unwrap_or("")}&#93;"
+  let icons = doc.attr("icons")
+  guard icons == Some("font") && session.catalog is Some(catalog) else {
+    if icons is Some(_) && icons != Some("font") {
+      unsupported("inline", "image icon", node)
+      return "[\{node.target.unwrap_or("")}&#93;"
+    }
+    if icons == Some("font") {
+      unsupported("inline", "font icon (no icon fonts)", node)
+    }
+    return alt
+  }
+  let target = node.target.unwrap_or("")
+  let (name0, set0, explicit) = match target.find("@") {
+    Some(i) => (target[:i].to_owned(), target[i + 1:].to_owned(), true)
+    None =>
+      match node.attr("set") {
+        Some(set) => (target, set, true)
+        None => (target, doc.attr("icon-set").unwrap_or("fa"), false)
+      }
+  }
+  let mut name = name0
+  let mut set = set0
+  let mut glyph : String? = None
+  if set == "fa" || !icon_set_names.contains(set) {
+    set = "fa"
+    match catalog.legacy_icons.get("fa-\{name}") {
+      Some(mapped) =>
+        match mapped.find("-") {
+          Some(i) => {
+            set = mapped[:i].to_owned()
+            name = mapped[i + 1:].to_owned()
+            glyph = catalog.icon_glyph(set, name)
+          }
+          None => ()
+        }
+      None =>
+        for candidate in font_awesome_icon_sets {
+          match catalog.icon_glyph(candidate, name) {
+            Some(g) => {
+              set = candidate
+              glyph = Some(g)
+              break
+            }
+            None => ()
+          }
+        }
+    }
+  } else {
+    glyph = catalog.icon_glyph(set, name)
+  }
+  if glyph is None &&
+    !explicit &&
+    icon_set_names.iter().any(s => name.has_prefix(s + "-")) {
+    match name.find("-") {
+      Some(i) => {
+        set = name[:i].to_owned()
+        name = name[i + 1:].to_owned()
+        glyph = catalog.icon_glyph(set, name)
+      }
+      None => ()
+    }
+  }
+  guard glyph is Some(glyph) else { return alt }
+  let size_attr = match node.attr("size") {
+    Some("lg") => " size=\"1.333em\""
+    // `fw` sets a width Prawn's formatted text does not know
+    Some("fw") => " width=\"1em\""
+    Some(size) => " size=\"\{size.replace(old="x", new="em")}\""
+    None => ""
+  }
+  let class_attr = match node.role() {
+    Some(role) => " class=\"\{role}\""
+    None => ""
+  }
+  "<font name=\"\{set}\"\{size_attr}\{class_attr}>\{glyph}</font>"
+}
+
+///|
+/// asciidoctor-pdf's `breakable_uri`: a zero-width space after each `/`,
+/// `?`, `&amp;` and `#` of the address (after the scheme's `://`) that is
+/// not its last character, so a long URL can wrap there; but not one that
+/// would leave a single character on the next line.
+fn breakable_uri(uri : String) -> String {
+  let (scheme, address) = match uri.find("://") {
+    Some(i) => (uri[:i + 3].to_owned(), uri[i + 3:].to_owned())
+    None => ("", uri)
+  }
+  if address.is_empty() {
+    return uri
+  }
+  let sb = StringBuilder()
+  let n = address.length()
+  let mut i = 0
+  while i < n {
+    let matched = if address[i:].has_prefix("&amp;") {
+      5
+    } else if address[i] == '/' || address[i] == '?' || address[i] == '#' {
+      1
+    } else {
+      0
+    }
+    if matched == 0 {
+      sb.write_char(address[i].to_int().unsafe_to_char())
+      i += 1
+      continue
+    }
+    for k in 0..<matched {
+      sb.write_char(address[i + k].to_int().unsafe_to_char())
+    }
+    i += matched
+    if i < n {
+      sb.write_char('\u{200b}')
+    }
+  }
+  let broken = sb.to_string()
+  let len = broken.length()
+  let result = if len >= 2 && broken[len - 2] == 0x200B {
+    broken[:len - 2].to_owned() + broken[len - 1:].to_owned()
+  } else {
+    broken
+  }
+  scheme + result
 }
 
 ///|

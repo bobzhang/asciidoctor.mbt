@@ -6,13 +6,17 @@ import {
 }
 
 // Values
+pub fn conversion_trace() -> Array[String]
+
 pub fn conversion_warnings() -> Array[String]
 
 pub fn convert_document(@core.Node, FontCatalog) -> Bytes raise
 
 pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
 
-pub fn register() -> Unit
+pub fn default_icon_font_files() -> Array[(String, String, String)]
+
+pub fn register(catalog? : FontCatalog) -> Unit
 
 // Errors
 
@@ -20,7 +24,13 @@ pub fn register() -> Unit
 pub struct FontCatalog {
   // private fields
 }
-pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)]) -> Self raise
+pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String) -> Self raise
+
+pub(all) struct IconSet {
+  name : String
+  font : Bytes
+  legend : String
+}
 
 // Type aliases
 
