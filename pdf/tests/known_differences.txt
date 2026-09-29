@@ -1,0 +1,11 @@
+# Known differences for scripts/pdf_compare.mbtx --gate.
+#
+# One document per line: `NAME: reason`, where NAME is the case name the
+# comparison prints (a built-in case such as `sampler`, or for --list runs
+# the path with `.repos/` dropped and `/` replaced by `__`). A listed
+# document is still measured and reported ("known" in the summary), but
+# does not fail the gate. Every entry needs a reason; remove it once the
+# difference is fixed.
+#
+# (none yet: every difference found so far is a defect to fix, not an
+# accepted deviation)

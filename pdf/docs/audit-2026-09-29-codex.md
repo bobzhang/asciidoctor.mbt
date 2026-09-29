@@ -60,3 +60,29 @@ The additional PDF checks found:
 6. Validate fonts/Unicode, annotations, destination resolution **and name-tree ordering**, outline state, page boxes and metadata separately. Add deliberate mutations—deleted text, reordered lines, shifted code, extra blank page, removed link—to verify that each metric detects its intended failure.
 
 **Verdict:** the numbers credibly demonstrate very strong text/layout agreement on these saved examples. They do **not** establish near-perfect PDF parity, and the current summary is unsuitable as a 49-document acceptance gate until failure accounting, vertical coverage and structural validation are fixed.
+
+---
+
+## Follow-up (2026-09-29)
+
+What was done about each finding. The comparison script's header is the authoritative definition of the metrics and gate.
+
+| Audit item | Status |
+|---|---|
+| Failures vanish; one record per input | **Fixed.** Every input yields one record with status `ok`, `oracle_failed`, `spike_failed`, `both_failed`, `timeout`, `invalid_pdf` or `measurement_failed`, the commands, tool versions, input and output SHA-256, and both engines' stdout/stderr, in the HTML and in `summary.json`. Poppler and pdf-inspect exit codes are checked. |
+| `DROPPED` lost; unsupported content silent | **Fixed.** The converter reports `UNSUPPORTED <kind> <what> at <file>:<line>` on stderr (blocks, inline images, index terms, AsciiDoc table cells, unembeddable images, toc/book/icons/highlighter); the script captures and counts them. |
+| Rounding to `1`; missing denominators | **Fixed.** Exact `n/m` everywhere; percentages are truncated, so only n = m shows 100%. |
+| Unordered line multiset; indentation, blank-line and extra-line blind spots | **Fixed** (except blank lines). Per-page ordered LCS over the union of pages; missing, extra and reordered lines all count; leading indentation of matched lines must agree within one column. Blank lines are still ignored. |
+| Page counts not enforced; Ruby-only raster pages; zero padding | **Fixed.** Page counts gate; raster compares the union of pages (a missing page counts as fully different); page files are matched by number. |
+| Empty inputs return 1 | **Fixed.** Empty documents are reported as such and compare as equal only when both are empty. |
+| `dy = 0` when box heights differ | **Fixed.** Baselines come from the text operators themselves (pdf-inspect), matched to each word; unmeasured words lower coverage, reported with p50/p95/max and worst pages. |
+| 60 dpi grey, one threshold, full-page denominator | **Fixed.** 150 dpi RGB, thresholds 16/64/128, full-page and content-region denominators, flat (fill) differences for faint colours, per-page difference images. |
+| Structure: fonts, boxes, links, outline, destinations, name-tree order, labels, info | **Checked** per document by pdf-inspect (pdflite). |
+| Name tree sorted by length first | **Fixed** in pagelayout (lexical byte order). |
+| Simple fonts lack `/ToUnicode` | **Fixed** in pagelayout. |
+| Outline collapsed (`/Count -1`) | **Fixed**: open state follows `outlinelevels`; the outline root always has `/Count`. |
+| `__anchor-top` vs `__top`; Creator, dates, `/OpenAction`, page boxes | **Fixed** (also page labels, PageMode, DisplayDocTitle, PostScript font names, non-ASCII destination names). PDF version (1.7 vs 1.4) and Producer still differ, by design. |
+| Mutation self-test | **Done**: `--self-test` corrupts a good spike PDF seven ways (deleted text, reordered lines, shifted block, dropped graphics, extra page, removed link, name-tree order) and checks each is flagged, that the identity comparison passes, and that two oracle renders are pixel-identical. |
+| Ambiguous repeated-word alignment | **Remains.** Word alignment is still an LCS of word texts. |
+
+With the stricter gate, the built-in cases give: sampler and features **pass**; Pro Git ch02 fails on unsupported index terms (missing `__indexterm-N` destinations), one word out of reading order, and `mplus1mn-italic` used only by the spike (italic monospace in table captions); ch03 additionally has the known line-break difference (898/900 lines). The 49-document baseline: 25 pass, 24 fail, all 49 with status `ok` (see the gallery for categories).

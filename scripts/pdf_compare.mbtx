@@ -1,33 +1,89 @@
-// Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf.
+// Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf, and gate
+// on the result.
 //
-// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [-v] [--out DIR] [--list FILE] [CASE...]
-//   --out DIR   write the gallery to DIR (default _build/gallery/pdf-spike)
-//   --list FILE compare the documents listed in FILE (one path per line)
-//               instead of the built-in cases
-//   -v          list the words placed more than 1pt away from Ruby's
+// Usage: moon run --target native scripts/pdf_compare.mbtx -- [options] [CASE...]
+//   --out DIR     write the gallery and summary.json to DIR
+//                 (default _build/gallery/pdf-spike)
+//   --list FILE   compare the documents listed in FILE (one path per line)
+//                 instead of the built-in cases
+//   --known FILE  known differences, `name: reason` per line (default
+//                 pdf/tests/known_differences.txt); reported, but they do
+//                 not fail the gate
+//   --gate        exit non-zero when a document (not a known difference)
+//                 violates the acceptance thresholds below or failed
+//   --jobs N      documents compared in parallel (default 4)
+//   --self-test   check that every metric flags a deliberately corrupted
+//                 copy of a good spike PDF (see `self_test`)
+//   --no-build    do not rebuild the spike first
+//   -v            print the worst-placed words
 //
-// Renders each case with Ruby asciidoctor-pdf 2.3.x (Homebrew Ruby, gems in
-// .repos/gems-pdf) and with the spike CLI, then compares them with poppler:
-// page counts, per-page text (`pdftotext -layout`), and word positions
-// (`pdftotext -bbox`). Pages are rasterized (`pdftoppm -r 60`) into a
-// side-by-side gallery at _build/gallery/pdf-spike/index.html.
+// Every input yields exactly one record, whose status is one of
+//   ok                  both engines produced a valid PDF and it was measured
+//   oracle_failed       Ruby asciidoctor-pdf exited non-zero or wrote nothing
+//   spike_failed        the spike exited non-zero or wrote nothing
+//   both_failed         both did
+//   timeout             a conversion exceeded conversion_timeout_ms
+//   invalid_pdf         pdfinfo rejects an output
+//   measurement_failed  a poppler tool or pdf-inspect failed on an output
+// with the commands, tool versions, the input's hash, both outputs' hashes
+// and both engines' stdout/stderr (the spike reports what it could not
+// render as `UNSUPPORTED <kind> <what> at <file>:<line>` on stderr).
 //
-// Parity metrics, per document:
-//   pages      page count, Ruby vs spike (must be equal)
-//   recall     Ruby words present in the spike output (multiset), and
-//   precision  spike words present in the Ruby output (catches invented text)
-//   aligned    Ruby words matched in reading order
-//   same page  aligned words the spike puts on the same page number
-//   lines      Ruby text lines (whitespace-normalised) found verbatim on the
-//              same page of the spike output: line breaks and page breaks
-//   ±1pt       same-page aligned words whose box is within 1pt of Ruby's
-//              (both x and y); median |dx| and |dy| in points
+// Measurements, for documents with status ok (counts are exact, and a
+// percentage never rounds a shortfall up to 100%):
+//   pages      Ruby vs spike page count; pages are compared over the union
+//              of page numbers, a page missing on one side counting as
+//              entirely different
+//   words      `pdftotext -bbox-layout` words: multiset recall and
+//              precision, the longest common subsequence in reading order
+//              (ordered), and the aligned words on the same page
+//   lines      per page, `pdftotext -layout` lines with runs of spaces
+//              collapsed, compared in order (longest common subsequence):
+//              missing, extra and reordered lines all count; the leading
+//              indentation of matched lines must agree within one column
+//              (code indentation is significant)
+//   geometry   for aligned same-page words: |dx| of the left edge and |dy|
+//              of the baseline. Baselines come from the text-showing
+//              operators themselves (pdf-inspect: origin, size and font of
+//              every Tj/TJ), matched to each word's box; a word whose
+//              baseline cannot be found is unmeasured and lowers coverage
+//              (measured / Ruby words)
+//   raster     150 dpi RGB renderings (pdftoppm), pixels whose largest
+//              channel difference exceeds 16, 64 and 128, over the full
+//              page and over the content region (the bounding box of ink
+//              in either rendering), plus flat differences (see
+//              gate_max_flat); per-page difference images (red: ink only
+//              in Ruby's, blue: only in the spike's, orange: flat)
+//   structure  fonts (embedded, ToUnicode, same families), page boxes,
+//              link annotations (count, target, rectangle within 1pt),
+//              outline (titles, depth, open state, targets), named
+//              destinations (names, resolution, lexical name-tree order),
+//              page labels, document information, viewer settings
+//
+// Acceptance thresholds (--gate):
+//   - status ok
+//   - the same number of pages
+//   - every page's ordered lines identical, indentation included
+//   - at least gate_min_within (99.5%) of measured words within 1pt, with
+//     at least gate_min_coverage (99%) of Ruby's words measured
+//   - every structure check passes
+//   - on every page, at most gate_max_raster of the content region differs
+//     by more than 64 levels. Repeated oracle renders are identical (0
+//     differing pixels, see --self-test), so the noise floor is zero; the
+//     threshold (1.25%) allows the anti-aliasing and sub-point glyph
+//     placement differences of two engines that agree to 1pt, calibrated
+//     on the built-in cases and the baseline (see gate_max_raster)
+//   - on every page, at most gate_max_flat (0.5%) of the content region has
+//     flat differences: more than 6 levels apart where both renderings are
+//     uniform, i.e. a missing or recoloured fill that the 64-level
+//     threshold cannot see (anti-aliasing never produces these)
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
   "moonbitlang/async/process",
   "moonbitlang/core/env",
   "moonbitlang/core/string",
+  "moonbitlang/core/json",
   "moonbitlang/core/cmp",
 }
 
@@ -41,10 +97,61 @@ let gems : String = ".repos/gems-pdf"
 let fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
 
 ///|
-let spike : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.exe"
+let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"
+
+///|
+let spike : String = "\{bin}/asciidoctor-pdf/asciidoctor-pdf.exe"
+
+///|
+let inspector : String = "\{bin}/pdf-inspect/pdf-inspect.exe"
 
 ///|
 let default_gallery : String = "_build/gallery/pdf-spike"
+
+///|
+let default_known : String = "pdf/tests/known_differences.txt"
+
+///|
+let conversion_timeout_ms : Int = 300_000
+
+///|
+let tool_timeout_ms : Int = 300_000
+
+///|
+/// Positions agree when within this many points.
+let tolerance_pt : Double = 1.0
+
+///|
+let gate_min_within : Double = 0.995
+
+///|
+let gate_min_coverage : Double = 0.99
+
+///|
+/// Largest share of a page's content region that may differ by more than
+/// 64 levels at 150 dpi. Calibration (2026-09-29): two renders of the
+/// oracle are pixel-identical (the self-test checks this), so the floor
+/// is zero; documents whose text, lines and word positions all agree to
+/// 1pt measure at most 1.048% on their worst page (sampler 0.254%,
+/// features 0.713%, Pro Git ch02 0.811%, 25 passing baseline documents
+/// ≤ 1.048%): anti-aliasing of glyphs a fraction of a point apart. A 5pt
+/// shift of half a page measures 1.757% (self-test), hence 1.25%.
+let gate_max_raster : Double = 0.0125
+
+///|
+/// Largest share of a page's content region with flat differences: more
+/// than 6 levels apart where both renderings are uniform over 3×3 pixels
+/// (no glyph or rule edge nearby). Anti-aliasing cannot produce these; a
+/// missing, extra or recoloured fill (a code block's #F5F5F5 background is
+/// only 10 levels from white, invisible to the thresholds above) does.
+let gate_max_flat : Double = 0.005
+
+///|
+let thresholds : Array[Int] = [16, 64, 128]
+
+///|
+/// The threshold the gate and the summary use (index into `thresholds`).
+let gate_threshold_index : Int = 1
 
 ///|
 /// (name, input, wrapper text written to `input` for the run and removed
@@ -68,34 +175,316 @@ let cases : Array[(String, String, String)] = [
   ),
 ]
 
+// ---------------------------------------------------------------------------
+// Processes
+
+///|
+priv struct Run {
+  command : String
+  code : Int
+  out : String
+  err : String
+  seconds : Double
+  timed_out : Bool
+}
+
+///|
+fn latin1(bytes : Bytes) -> String {
+  let sb = StringBuilder()
+  for b in bytes {
+    sb.write_char(b.to_int().unsafe_to_char())
+  }
+  sb.to_string()
+}
+
+///|
+fn now_seconds() -> Double {
+  @env.now().to_double() / 1000.0
+}
+
+///|
+fn shell_quote(arg : String) -> String {
+  if arg != "" &&
+    arg
+    .iter()
+    .all(c => c.is_ascii_alphabetic() ||
+      c.is_ascii_digit() ||
+      "-_./=+:,@%".contains_char(c)) {
+    arg
+  } else {
+    "'" + arg.replace_all(old="'", new="'\\''") + "'"
+  }
+}
+
 ///|
 async fn run(
   cmd : String,
   args : Array[String],
-  env? : Map[String, String] = {},
-) -> (Int, String, String) {
-  let (code, out, err) = @process.collect_output(cmd, args, extra_env=env)
-  (code, out.text(), err.text())
+  env? : Map[String, String] = Map([]),
+  timeout? : Int = tool_timeout_ms,
+) -> Run {
+  let prefix = env.iter().map(kv => "\{kv.0}=\{shell_quote(kv.1)} ").collect().join("")
+  let command = prefix + ([cmd, ..args].map(shell_quote).join(" "))
+  let t0 = now_seconds()
+  let result = @async.with_timeout_opt(timeout, async fn() {
+    let (code, out, err) = @process.collect_output(cmd, args, extra_env=env)
+    let out_text = out.text() catch { _ => latin1(out.binary()) }
+    let err_text = err.text() catch { _ => latin1(err.binary()) }
+    (code, out_text, err_text)
+  }) catch {
+    e => Some((-1, "", "could not run: \{e}"))
+  }
+  let seconds = now_seconds() - t0
+  match result {
+    Some((code, out, err)) =>
+      { command, code, out, err, seconds, timed_out: false }
+    None =>
+      {
+        command,
+        code: -1,
+        out: "",
+        err: "timed out after \{timeout / 1000}s",
+        seconds,
+        timed_out: true,
+      }
+  }
 }
+
+///|
+async fn sha256(path : String) -> String {
+  let r = run("shasum", ["-a", "256", path])
+  if r.code != 0 {
+    return ""
+  }
+  first_word(r.out)
+}
+
+///|
+fn first_word(text : String) -> String {
+  match text.find(" ") {
+    Some(i) => text[:i].to_owned()
+    None => text.trim().to_owned()
+  }
+}
+
+///|
+fn first_line(text : String) -> String {
+  match text.find("\n") {
+    Some(i) => text[:i].to_owned()
+    None => text
+  }
+}
+
+///|
+async fn file_exists(path : String) -> Bool {
+  (@fs.exists(path)) catch {
+    _ => false
+  }
+}
+
+///|
+/// At most `limit` characters of `text`, noting how much was cut.
+fn clip(text : String, limit? : Int = 20000) -> String {
+  if text.length() <= limit {
+    text
+  } else {
+    text[:limit].to_owned() + "\n... (\{text.length() - limit} more characters)"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Number formatting
+
+///|
+/// `value` with exactly `digits` decimals, rounded half away from zero.
+fn fixed(value : Double, digits? : Int = 3) -> String {
+  if value.is_nan() {
+    return "NaN"
+  }
+  let negative = value < 0.0
+  let scale = 10.0.pow(digits.to_double())
+  let scaled = ((if negative { -value } else { value }) * scale).round().to_int64()
+  let div = scale.to_int64()
+  let int_part = scaled / div
+  let sign = if negative && scaled != 0L { "-" } else { "" }
+  if digits <= 0 {
+    return "\{sign}\{int_part}"
+  }
+  let frac = (scaled % div).to_string()
+  let frac = "0".repeat(digits - frac.length()) + frac
+  "\{sign}\{int_part}.\{frac}"
+}
+
+///|
+/// `n / d` as a percentage with three decimals, truncated rather than
+/// rounded, so that only n == d shows as 100% and only n == 0 as 0%.
+fn pct(n : Int, d : Int) -> String {
+  if d == 0 {
+    return "n/a"
+  }
+  if n == d {
+    return "100%"
+  }
+  if n == 0 {
+    return "0%"
+  }
+  let v = n.to_double() * 100.0 / d.to_double()
+  let truncated = (v * 1000.0).floor() / 1000.0
+  if truncated <= 0.0 {
+    "<0.001%"
+  } else {
+    "\{fixed(truncated)}%"
+  }
+}
+
+///|
+fn ratio(n : Int, d : Int) -> String {
+  "\{n}/\{d} (\{pct(n, d)})"
+}
+
+///|
+/// A share (0..1) as a percentage, truncated like `pct`.
+fn share_pct(value : Double) -> String {
+  if value <= 0.0 {
+    "0%"
+  } else if value >= 1.0 {
+    "100%"
+  } else {
+    let truncated = (value * 100000.0).floor() / 1000.0
+    if truncated <= 0.0 {
+      "<0.001%"
+    } else {
+      "\{fixed(truncated)}%"
+    }
+  }
+}
+
+///|
+/// The nearest-rank percentile of sorted values.
+fn percentile(sorted : Array[Double], p : Double) -> Double {
+  if sorted.is_empty() {
+    return 0.0
+  }
+  let rank = (p * sorted.length().to_double()).ceil().to_int() - 1
+  sorted[if rank < 0 { 0 } else if rank >= sorted.length() { sorted.length() - 1 } else { rank }]
+}
+
+// ---------------------------------------------------------------------------
+// JSON helpers
+
+///|
+fn field(j : Json, key : String) -> Json {
+  match j {
+    Object(m) => m.get(key).unwrap_or(Json::null())
+    _ => Json::null()
+  }
+}
+
+///|
+fn items(j : Json) -> Array[Json] {
+  match j {
+    Array(a) => a
+    _ => []
+  }
+}
+
+///|
+fn num(j : Json) -> Double? {
+  match j {
+    Number(n, ..) => Some(n)
+    _ => None
+  }
+}
+
+///|
+fn str(j : Json) -> String {
+  match j {
+    String(s) => s
+    Null => ""
+    other => other.stringify()
+  }
+}
+
+///|
+fn jn(n : Int) -> Json {
+  Json::number(n.to_double())
+}
+
+///|
+fn jd(v : Double) -> Json {
+  if v.is_nan() || v.is_inf() {
+    Json::null()
+  } else {
+    Json::number(v)
+  }
+}
+
+///|
+fn js(s : String) -> Json {
+  Json::string(s)
+}
+
+///|
+fn jstrings(a : Array[String]) -> Json {
+  Json::array(a.map(js))
+}
+
+// ---------------------------------------------------------------------------
+// Extraction
 
 ///|
 priv struct Word {
   text : String
   page : Int
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+}
+
+///|
+priv struct Line {
+  text : String
+  indent : Int
+}
+
+///|
+priv struct TextRun {
   x : Double
   y : Double
-  /// box height, which depends on the font descriptor's ascent and descent
-  h : Double
+}
+
+///|
+/// What the comparison reads from one PDF.
+priv struct Extract {
+  pdf : String
+  sha : String
+  pages : Int
+  /// per page, `pdftotext -layout` lines
+  lines : Array[Array[Line]]
+  words : Array[Word]
+  /// per page, text-showing operator origins
+  runs : Array[Array[TextRun]]
+  info : Json
+}
+
+///|
+suberror InvalidPdf {
+  InvalidPdf(String)
+}
+
+///|
+suberror MeasurementFailed {
+  MeasurementFailed(String)
 }
 
 ///|
 fn attr_value(tag : String, name : String) -> Double {
-  match tag.find("\{name}=\"") {
+  match tag.find(" \{name}=\"") {
     Some(i) => {
-      let start = i + name.length() + 2
-      let rest = tag.unsafe_substring(start~, end=tag.length())
+      let rest = tag[i + name.length() + 3:]
       let end = rest.find("\"").unwrap_or(rest.length())
-      @string.parse_double(rest.unsafe_substring(start=0, end~)) catch {
+      @string.parse_double(rest[:end]) catch {
         _ => 0.0
       }
     }
@@ -114,47 +503,53 @@ fn unescape(text : String) -> String {
 }
 
 ///|
-/// Words with their boxes from `pdftotext -bbox` output.
-fn parse_bbox(html : String) -> Array[Word] {
+/// Words with their boxes from `pdftotext -bbox-layout`, and the page count.
+fn parse_bbox(html : String) -> (Array[Word], Int) {
   let words = []
   let mut page = 0
-  for line in html.split("\n") {
-    let line = line.trim().to_owned()
+  for raw in html.split("\n") {
+    let line = raw.trim()
     if line.has_prefix("<page ") {
       page += 1
     } else if line.has_prefix("<word ") {
+      let line = line.to_owned()
       let close = line.find(">").unwrap_or(0)
-      let tag = line.unsafe_substring(start=0, end=close)
+      let tag = line[:close].to_owned()
       let end = line.rev_find("</word>").unwrap_or(line.length())
-      let text = unescape(line.unsafe_substring(start=close + 1, end~))
-      let y = attr_value(tag, "yMax")
-      words.push({ text, page, x: attr_value(tag, "xMin"), y, h: y - attr_value(tag, "yMin") })
+      words.push({
+        text: unescape(line[close + 1:end].to_owned()),
+        page: page - 1,
+        x0: attr_value(tag, "xMin"),
+        y0: attr_value(tag, "yMin"),
+        x1: attr_value(tag, "xMax"),
+        y1: attr_value(tag, "yMax"),
+      })
     }
   }
-  words
+  (words, page)
 }
 
 ///|
-fn normalize_line(line : String) -> String {
-  let parts = []
-  for part in line.split(" ") {
-    if part.length() > 0 {
-      parts.push(part.to_owned())
-    }
-  }
-  parts.join(" ")
-}
-
-///|
-/// The non-empty lines of each page of `pdftotext -layout` output.
-fn page_lines(text : String) -> Array[Array[String]] {
+/// The non-empty lines of each page of `pdftotext -layout` output, runs of
+/// spaces collapsed, with their leading indentation in columns.
+fn layout_pages(text : String) -> Array[Array[Line]] {
   let pages = []
   for page in text.split("\u000c") {
     let lines = []
-    for line in page.split("\n") {
-      let l = normalize_line(line.to_owned())
-      if l.length() > 0 {
-        lines.push(l)
+    for raw in page.split("\n") {
+      let raw = raw.to_owned()
+      let mut indent = 0
+      while indent < raw.length() && raw[indent] == ' ' {
+        indent += 1
+      }
+      let parts = []
+      for part in raw.split(" ") {
+        if part.length() > 0 {
+          parts.push(part.to_owned())
+        }
+      }
+      if parts.length() > 0 {
+        lines.push({ text: parts.join(" "), indent })
       }
     }
     pages.push(lines)
@@ -167,73 +562,101 @@ fn page_lines(text : String) -> Array[Array[String]] {
 }
 
 ///|
-fn median(values : Array[Double]) -> Double {
-  if values.is_empty() {
-    return 0.0
+async fn page_count(pdf : String) -> Int {
+  let r = run("pdfinfo", [pdf])
+  if r.code != 0 {
+    raise InvalidPdf("pdfinfo \{pdf}: exit \{r.code}: \{r.err.trim()}")
   }
-  let sorted = values.copy()
-  sorted.sort()
-  sorted[sorted.length() / 2]
-}
-
-///|
-fn fmt(value : Double, digits? : Int = 3) -> String {
-  let scale = 10.0.pow(digits.to_double())
-  let rounded = (value * scale).round() / scale
-  rounded.to_string()
-}
-
-///|
-priv struct Metrics {
-  pages_ruby : Int
-  pages_spike : Int
-  recall : Double
-  precision : Double
-  aligned : Double
-  same_page : Double
-  lines : Double
-  within_1pt : Double
-  median_dx : Double
-  median_dy : Double
-  page_lines : Array[(Int, Int)] // per Ruby page: (lines matched, lines)
-}
-
-///|
-fn multiset_share(from : Array[Word], into : Array[Word]) -> Double {
-  let counts : Map[String, Int] = {}
-  for w in into {
-    counts[w.text] = counts.get(w.text).unwrap_or(0) + 1
-  }
-  let mut hit = 0
-  for w in from {
-    match counts.get(w.text) {
-      Some(n) if n > 0 => {
-        counts[w.text] = n - 1
-        hit += 1
+  for line in r.out.split("\n") {
+    if line.has_prefix("Pages:") {
+      return @string.parse_int(line["Pages:".length():].trim()) catch {
+        _ => raise InvalidPdf("pdfinfo \{pdf}: unreadable page count")
       }
-      _ => ()
     }
   }
-  if from.is_empty() {
-    1.0
-  } else {
-    hit.to_double() / from.length().to_double()
-  }
+  raise InvalidPdf("pdfinfo \{pdf}: no page count")
 }
 
 ///|
-/// Index pairs of a longest common subsequence of `a` and `b` (Myers'
-/// O(ND) diff, keeping only the diagonals each step can reach).
-fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
-  let n = a.length()
-  let m = b.length()
-  let max = n + m
+async fn tool(cmd : String, args : Array[String]) -> String {
+  let r = run(cmd, args)
+  if r.code != 0 {
+    raise MeasurementFailed("\{r.command}: exit \{r.code}: \{clip(r.err.trim().to_owned(), limit=400)}")
+  }
+  r.out
+}
+
+///|
+async fn extract(pdf : String) -> Extract {
+  let pages = page_count(pdf)
+  if pages <= 0 {
+    raise InvalidPdf("\{pdf} has no pages")
+  }
+  let layout = tool("pdftotext", ["-layout", pdf, "-"])
+  let bbox = tool("pdftotext", ["-bbox-layout", pdf, "-"])
+  let info_text = tool(inspector, ["info", pdf])
+  let info = @json.parse(info_text) catch {
+    e => raise MeasurementFailed("pdf-inspect info \{pdf}: \{e}")
+  }
+  let (words, bbox_pages) = parse_bbox(bbox)
+  if bbox_pages != pages {
+    raise MeasurementFailed(
+      "pdftotext -bbox-layout found \{bbox_pages} pages, pdfinfo \{pages}",
+    )
+  }
+  let lines = layout_pages(layout)
+  while lines.length() < pages {
+    lines.push([])
+  }
+  let runs = items(field(info, "pages")).map(page => {
+    items(field(page, "runs")).map(r => {
+      ({ x: num(field(r, "x")).unwrap_or(0.0), y: num(field(r, "y")).unwrap_or(0.0) } : TextRun)
+    })
+  })
+  if runs.length() != pages {
+    raise MeasurementFailed("pdf-inspect found \{runs.length()} pages, pdfinfo \{pages}")
+  }
+  { pdf, sha: sha256(pdf), pages, lines, words, runs, info }
+}
+
+// ---------------------------------------------------------------------------
+// Sequence alignment
+
+///|
+fn intern(values : Array[String], table : Map[String, Int]) -> Array[Int] {
+  values.map(v => {
+    match table.get(v) {
+      Some(id) => id
+      None => {
+        let id = table.length()
+        table[v] = id
+        id
+      }
+    }
+  })
+}
+
+///|
+/// Index pairs of a longest common subsequence of `a[a0:a1]` and
+/// `b[b0:b1]` (Myers' O(ND) diff), or None when the edit distance
+/// exceeds `max_d`.
+fn myers(
+  a : Array[Int],
+  a0 : Int,
+  a1 : Int,
+  b : Array[Int],
+  b0 : Int,
+  b1 : Int,
+  max_d : Int,
+) -> Array[(Int, Int)]? {
+  let n = a1 - a0
+  let m = b1 - b0
+  let max = @cmp.minimum(n + m, max_d)
   let offset = max + 1
   let v = Array::make(2 * max + 3, 0)
   let trace : Array[Array[Int]] = []
-  let mut last = 0
+  let mut last = -1
   for d in 0..=max {
-    // v as it stood after step d - 1, on the diagonals step d reads
     let snap = Array::make(2 * d + 3, 0)
     for k in (-d - 1)..=(d + 1) {
       snap[k + d + 1] = v[offset + k]
@@ -248,7 +671,7 @@ fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
         v[offset + k - 1] + 1
       }
       let mut y = x - k
-      while x < n && y < m && a[x] == b[y] {
+      while x < n && y < m && a[a0 + x] == b[b0 + y] {
         x += 1
         y += 1
       }
@@ -263,6 +686,9 @@ fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
       last = d
       break
     }
+  }
+  if last < 0 {
+    return None
   }
   let pairs = []
   let mut x = n
@@ -280,7 +706,7 @@ fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
     while x > prev_x && y > prev_y {
       x -= 1
       y -= 1
-      pairs.push((x, y))
+      pairs.push((a0 + x, b0 + y))
     }
     x = prev_x
     y = prev_y
@@ -288,139 +714,1297 @@ fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
   while x > 0 && y > 0 {
     x -= 1
     y -= 1
-    pairs.push((x, y))
+    pairs.push((a0 + x, b0 + y))
   }
   pairs.rev_in_place()
-  pairs
+  Some(pairs)
 }
 
 ///|
-fn compare(
-  ruby_words : Array[Word],
-  spike_words : Array[Word],
-  ruby_text : String,
-  spike_text : String,
-  pages_ruby : Int,
-  pages_spike : Int,
-  verbose~ : Bool,
-  off~ : Array[String],
-) -> Metrics {
-  // align words in reading order: a longest common subsequence of the
-  // word texts
-  let pairs = myers(ruby_words.map(w => w.text), spike_words.map(w => w.text))
-  let aligned = pairs.length()
-  let mut same_page = 0
-  let mut within = 0
-  let dxs = []
-  let dys = []
-  for pair in pairs {
-    let w = ruby_words[pair.0]
-    let s = spike_words[pair.1]
-    if s.page == w.page {
-      same_page += 1
-      let dx = (s.x - w.x).abs()
-      // boxes only locate the baseline alike when both descriptors agree
-      // (Prawn writes OS/2 typo metrics, pagelayout hhea ones: M+ 1mn
-      // differs); compare x alone otherwise
-      let dy = if (s.h - w.h).abs() < 0.1 { (s.y - w.y).abs() } else { 0.0 }
-      dxs.push(dx)
-      dys.push(dy)
-      if dx <= 1.0 && dy <= 1.0 {
-        within += 1
-      } else if verbose && off.length() < 20 {
-        off.push("  p\{w.page} \{w.text}: dx \{fmt(s.x - w.x, digits=2)} dy \{fmt(s.y - w.y, digits=2)}")
-      }
-    }
+/// A longest common subsequence of `a` and `b` as index pairs, and whether
+/// it is exact: beyond an edit distance of `max_d` a greedy alignment
+/// stands in (it can only under-count).
+fn align(a : Array[Int], b : Array[Int], max_d? : Int = 3000) -> (Array[(Int, Int)], Bool) {
+  let mut start = 0
+  while start < a.length() && start < b.length() && a[start] == b[start] {
+    start += 1
   }
-  let rl = page_lines(ruby_text)
-  let sl = page_lines(spike_text)
-  let mut matched_lines = 0
-  let mut total_lines = 0
-  let per_page = []
-  for p, lines in rl {
-    let available : Map[String, Int] = {}
-    if p < sl.length() {
-      for l in sl[p] {
-        available[l] = available.get(l).unwrap_or(0) + 1
-      }
-    }
-    let mut hit = 0
-    for l in lines {
-      match available.get(l) {
-        Some(n) if n > 0 => {
-          available[l] = n - 1
-          hit += 1
+  let mut end_a = a.length()
+  let mut end_b = b.length()
+  while end_a > start && end_b > start && a[end_a - 1] == b[end_b - 1] {
+    end_a -= 1
+    end_b -= 1
+  }
+  let pairs = []
+  for i in 0..<start {
+    pairs.push((i, i))
+  }
+  let mut exact = true
+  match myers(a, start, end_a, b, start, end_b, max_d) {
+    Some(middle) => pairs.append(middle)
+    None => {
+      exact = false
+      // greedy: match when equal, else skip to the nearer next occurrence
+      let mut i = start
+      let mut j = start
+      while i < end_a && j < end_b {
+        if a[i] == b[j] {
+          pairs.push((i, j))
+          i += 1
+          j += 1
+          continue
         }
-        _ => ()
+        let mut found_b = -1
+        for k in (j + 1)..<@cmp.minimum(end_b, j + 64) {
+          if b[k] == a[i] {
+            found_b = k
+            break
+          }
+        }
+        let mut found_a = -1
+        for k in (i + 1)..<@cmp.minimum(end_a, i + 64) {
+          if a[k] == b[j] {
+            found_a = k
+            break
+          }
+        }
+        if found_b >= 0 && (found_a < 0 || found_b - j <= found_a - i) {
+          j = found_b
+        } else if found_a >= 0 {
+          i = found_a
+        } else {
+          i += 1
+          j += 1
+        }
       }
     }
-    per_page.push((hit, lines.length()))
-    matched_lines += hit
-    total_lines += lines.length()
   }
-  let n = ruby_words.length().to_double()
-  {
-    pages_ruby,
-    pages_spike,
-    recall: multiset_share(ruby_words, spike_words),
-    precision: multiset_share(spike_words, ruby_words),
-    aligned: aligned.to_double() / n,
-    same_page: same_page.to_double() / n,
-    lines: matched_lines.to_double() / total_lines.to_double(),
-    within_1pt: if dxs.is_empty() {
-      0.0
+  for k in 0..<(a.length() - end_a) {
+    pairs.push((end_a + k, end_b + k))
+  }
+  (pairs, exact)
+}
+
+///|
+fn multiset_common(a : Array[Int], b : Array[Int]) -> Int {
+  let counts : Map[Int, Int] = Map([])
+  for v in b {
+    counts[v] = counts.get(v).unwrap_or(0) + 1
+  }
+  let mut hit = 0
+  for v in a {
+    match counts.get(v) {
+      Some(n) if n > 0 => {
+        counts[v] = n - 1
+        hit += 1
+      }
+      _ => ()
+    }
+  }
+  hit
+}
+
+// ---------------------------------------------------------------------------
+// Text and geometry
+
+///|
+priv struct PageLines {
+  ruby : Int
+  spike : Int
+  ordered : Int
+  common : Int
+  indent_mismatches : Int
+}
+
+///|
+priv struct TextMetrics {
+  ruby_words : Int
+  spike_words : Int
+  common_words : Int
+  ordered_words : Int
+  ordered_exact : Bool
+  same_page_words : Int
+  ruby_lines : Int
+  spike_lines : Int
+  ordered_lines : Int
+  common_lines : Int
+  /// the lines in order ignoring page boundaries
+  document_ordered_lines : Int
+  identical_pages : Int
+  indent_mismatches : Int
+  pages : Array[PageLines]
+  line_examples : Array[String]
+  // geometry
+  aligned_same_page : Int
+  measured : Int
+  within : Int
+  dx : Array[Double]
+  dy : Array[Double]
+  dx_right : Array[Double]
+  page_off : Array[Int]
+  off_examples : Array[String]
+}
+
+///|
+/// The baseline of a word: the origin of the rightmost text-showing
+/// operator that starts at or before the word's left edge and whose
+/// baseline lies within the word's box.
+fn baseline(word : Word, runs : Array[TextRun]) -> Double? {
+  let mut best : TextRun? = None
+  for r in runs {
+    if r.y >= word.y0 - 0.5 && r.y <= word.y1 + 0.5 && r.x <= word.x0 + 0.5 {
+      match best {
+        Some(b) if b.x >= r.x => ()
+        _ => best = Some(r)
+      }
+    }
+  }
+  best.map(r => r.y)
+}
+
+///|
+fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
+  let table : Map[String, Int] = Map([])
+  let rw = intern(r.words.map(w => w.text), table)
+  let sw = intern(s.words.map(w => w.text), table)
+  let common_words = multiset_common(rw, sw)
+  let (pairs, ordered_exact) = align(rw, sw)
+  let union = @cmp.maximum(r.pages, s.pages)
+  let page_off = Array::make(union, 0)
+  let mut same_page = 0
+  let mut measured = 0
+  let mut within = 0
+  let dx = []
+  let dy = []
+  let dx_right = []
+  let off = []
+  for pair in pairs {
+    let w = r.words[pair.0]
+    let v = s.words[pair.1]
+    if w.page != v.page {
+      continue
+    }
+    same_page += 1
+    let bw = baseline(w, r.runs[w.page])
+    let bv = baseline(v, s.runs[v.page])
+    guard bw is Some(yr) && bv is Some(ys) else { continue }
+    measured += 1
+    let ddx = (v.x0 - w.x0).abs()
+    let ddy = (ys - yr).abs()
+    dx.push(ddx)
+    dy.push(ddy)
+    dx_right.push((v.x1 - w.x1).abs())
+    if ddx <= tolerance_pt && ddy <= tolerance_pt {
+      within += 1
     } else {
-      within.to_double() / dxs.length().to_double()
+      page_off[w.page] += 1
+      if off.length() < (if verbose { 40 } else { 12 }) {
+        off.push(
+          "p\{w.page + 1} \{w.text}: dx \{fixed(v.x0 - w.x0, digits=2)} dy \{fixed(ys - yr, digits=2)}",
+        )
+      }
+    }
+  }
+  dx.sort()
+  dy.sort()
+  dx_right.sort()
+  // lines, page by page over the union of pages
+  let line_table : Map[String, Int] = Map([])
+  let pages = []
+  let examples = []
+  let mut ruby_lines = 0
+  let mut spike_lines = 0
+  let mut ordered_lines = 0
+  let mut common_lines = 0
+  let mut identical = 0
+  let mut indent_mismatches = 0
+  let all_r = []
+  let all_s = []
+  for p in 0..<union {
+    let rl = if p < r.lines.length() { r.lines[p] } else { [] }
+    let sl = if p < s.lines.length() { s.lines[p] } else { [] }
+    let a = intern(rl.map(l => l.text), line_table)
+    let b = intern(sl.map(l => l.text), line_table)
+    all_r.append(a)
+    all_s.append(b)
+    let (lp, _) = align(a, b)
+    let common = multiset_common(a, b)
+    let mut indents = 0
+    for pair in lp {
+      if (rl[pair.0].indent - sl[pair.1].indent).abs() >= 2 {
+        indents += 1
+        if examples.length() < 40 {
+          examples.push(
+            "p\{p + 1} indent \{rl[pair.0].indent} → \{sl[pair.1].indent}: \{rl[pair.0].text}",
+          )
+        }
+      }
+    }
+    // the first differences of the page, as a diff
+    if lp.length() < a.length() || lp.length() < b.length() {
+      let mut i = 0
+      let mut j = 0
+      let mut shown = 0
+      for pair in [..lp, (a.length(), b.length())] {
+        while i < pair.0 && shown < 6 && examples.length() < 40 {
+          examples.push("p\{p + 1} − ruby:  \{rl[i].text}")
+          i += 1
+          shown += 1
+        }
+        while j < pair.1 && shown < 6 && examples.length() < 40 {
+          examples.push("p\{p + 1} + spike: \{sl[j].text}")
+          j += 1
+          shown += 1
+        }
+        i = pair.0 + 1
+        j = pair.1 + 1
+      }
+    }
+    if lp.length() == a.length() && lp.length() == b.length() && indents == 0 {
+      identical += 1
+    }
+    pages.push({
+      ruby: a.length(),
+      spike: b.length(),
+      ordered: lp.length(),
+      common,
+      indent_mismatches: indents,
+    })
+    ruby_lines += a.length()
+    spike_lines += b.length()
+    ordered_lines += lp.length()
+    common_lines += common
+    indent_mismatches += indents
+  }
+  let (doc_pairs, _) = align(all_r, all_s)
+  {
+    ruby_words: rw.length(),
+    spike_words: sw.length(),
+    common_words,
+    ordered_words: pairs.length(),
+    ordered_exact,
+    same_page_words: same_page,
+    ruby_lines,
+    spike_lines,
+    ordered_lines,
+    common_lines,
+    document_ordered_lines: doc_pairs.length(),
+    identical_pages: identical,
+    indent_mismatches,
+    pages,
+    line_examples: examples,
+    aligned_same_page: same_page,
+    measured,
+    within,
+    dx,
+    dy,
+    dx_right,
+    page_off,
+    off_examples: off,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structure
+
+///|
+priv struct Check {
+  name : String
+  ok : Bool
+  detail : String
+}
+
+///|
+fn close(a : Json, b : Json) -> Bool {
+  match (num(a), num(b)) {
+    (Some(x), Some(y)) => (x - y).abs() <= tolerance_pt
+    (None, None) => true
+    _ => false
+  }
+}
+
+///|
+/// Two resolved destinations agree: same page, positions within 1pt.
+fn same_dest(a : Json, b : Json) -> Bool {
+  // a reference to a name neither document defines (a cross-document
+  // xref) is the same dangling reference in both
+  if field(a, "missing") is True && field(b, "missing") is True {
+    return field(a, "name") == field(b, "name")
+  }
+  field(a, "page") == field(b, "page") &&
+  str(field(a, "kind")) == str(field(b, "kind")) &&
+  close(field(a, "x"), field(b, "x")) &&
+  close(field(a, "y"), field(b, "y")) &&
+  !(field(a, "missing") is True) &&
+  !(field(b, "missing") is True)
+}
+
+///|
+fn same_target(a : Json, b : Json) -> Bool {
+  match (field(a, "uri"), field(b, "uri")) {
+    (String(x), String(y)) => x == y
+    (Null, Null) =>
+      match (field(a, "dest"), field(b, "dest")) {
+        (Null, Null) => str(field(a, "action")) == str(field(b, "action"))
+        (x, y) => same_dest(x, y)
+      }
+    _ => false
+  }
+}
+
+///|
+fn describe_target(t : Json) -> String {
+  match field(t, "uri") {
+    String(u) => u
+    _ =>
+      match field(t, "dest") {
+        Null => t.stringify()
+        d => {
+          let name = match field(d, "name") {
+            String(n) => "#\{n} "
+            _ => ""
+          }
+          "\{name}p\{fixed(num(field(d, "page")).unwrap_or(-1.0) + 1.0, digits=0)} y=\{fixed(num(field(d, "y")).unwrap_or(0.0), digits=1)}"
+        }
+      }
+  }
+}
+
+///|
+fn rect_delta(a : Json, b : Json) -> Double {
+  let ra = items(a)
+  let rb = items(b)
+  if ra.length() != 4 || rb.length() != 4 {
+    return 1.0e9
+  }
+  let mut worst = 0.0
+  for i in 0..<4 {
+    let d = (num(ra[i]).unwrap_or(0.0) - num(rb[i]).unwrap_or(0.0)).abs()
+    if d > worst {
+      worst = d
+    }
+  }
+  worst
+}
+
+///|
+fn family_set(info : Json) -> Array[String] {
+  let set = []
+  for f in items(field(info, "fonts")) {
+    let family = str(field(f, "family"))
+    if !set.contains(family) {
+      set.push(family)
+    }
+  }
+  set.sort()
+  set
+}
+
+///|
+fn compare_structure(r : Json, s : Json) -> Array[Check] {
+  let checks = []
+  // fonts
+  {
+    let problems = []
+    for f in items(field(s, "fonts")) {
+      if !(field(f, "embedded") is True) {
+        problems.push("\{str(field(f, "name"))} not embedded")
+      }
+      if !(field(f, "tounicode") is True) {
+        problems.push("\{str(field(f, "name"))} has no ToUnicode")
+      }
+    }
+    let rf = family_set(r)
+    let sf = family_set(s)
+    let only_r = rf.filter(f => !sf.contains(f))
+    let only_s = sf.filter(f => !rf.contains(f))
+    if !only_r.is_empty() {
+      problems.push("only Ruby uses \{only_r.join(", ")}")
+    }
+    if !only_s.is_empty() {
+      problems.push("only the spike uses \{only_s.join(", ")}")
+    }
+    checks.push({
+      name: "fonts",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{sf.length()} families (\{sf.join(", ")}), all embedded with ToUnicode"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  let rp = items(field(r, "pages"))
+  let sp = items(field(s, "pages"))
+  let common_pages = @cmp.minimum(rp.length(), sp.length())
+  // page boxes
+  {
+    let problems = []
+    for i in 0..<common_pages {
+      for key in ["MediaBox", "CropBox", "BleedBox", "TrimBox", "ArtBox"] {
+        let a = field(field(rp[i], "boxes"), key)
+        let b = field(field(sp[i], "boxes"), key)
+        if rect_delta(a, b) > 0.01 && problems.length() < 8 {
+          problems.push("p\{i + 1} \{key} \{a.stringify()} vs \{b.stringify()}")
+        }
+      }
+      let ek = fn(p : Json) {
+        match field(p, "explicit_boxes") {
+          Object(m) => {
+            let keys = m.keys().collect()
+            keys.sort()
+            keys.join(",")
+          }
+          _ => ""
+        }
+      }
+      if ek(rp[i]) != ek(sp[i]) && problems.length() < 8 {
+        problems.push("p\{i + 1} explicit boxes \{ek(rp[i])} vs \{ek(sp[i])}")
+      }
+      if field(rp[i], "rotate") != field(sp[i], "rotate") && problems.length() < 8 {
+        problems.push("p\{i + 1} rotation differs")
+      }
+    }
+    checks.push({
+      name: "page boxes",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{common_pages} pages: all five boxes and rotation agree"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  // link annotations: each Ruby link matched to an unused spike link on
+  // the same page with the same target, nearest rectangle first
+  {
+    let mut total_r = 0
+    let mut total_s = 0
+    let mut matched = 0
+    let mut worst = 0.0
+    let problems = []
+    for i in 0..<@cmp.maximum(rp.length(), sp.length()) {
+      let ra = if i < rp.length() { items(field(rp[i], "annots")) } else { [] }
+      let sa = if i < sp.length() { items(field(sp[i], "annots")) } else { [] }
+      total_r += ra.length()
+      total_s += sa.length()
+      let used = Array::make(sa.length(), false)
+      for a in ra {
+        let mut best = -1
+        let mut best_d = 1.0e18
+        for j, b in sa {
+          if !used[j] &&
+            str(field(a, "subtype")) == str(field(b, "subtype")) &&
+            same_target(field(a, "target"), field(b, "target")) {
+            let d = rect_delta(field(a, "rect"), field(b, "rect"))
+            if d < best_d {
+              best = j
+              best_d = d
+            }
+          }
+        }
+        if best < 0 {
+          if problems.length() < 8 {
+            problems.push("p\{i + 1} spike lacks \{describe_target(field(a, "target"))}")
+          }
+          continue
+        }
+        used[best] = true
+        matched += 1
+        if best_d > worst {
+          worst = best_d
+        }
+        if best_d > tolerance_pt && problems.length() < 8 {
+          problems.push(
+            "p\{i + 1} \{describe_target(field(a, "target"))} rectangle off by \{fixed(best_d, digits=2)}pt",
+          )
+        }
+      }
+      for j, b in sa {
+        if !used[j] && problems.length() < 8 {
+          problems.push("p\{i + 1} spike adds \{describe_target(field(b, "target"))}")
+        }
+      }
+    }
+    let ok = matched == total_r && matched == total_s && worst <= tolerance_pt
+    checks.push({
+      name: "links",
+      ok,
+      detail: "Ruby \{total_r}, spike \{total_s}, matched \{matched}, worst rectangle difference \{fixed(worst, digits=3)}pt" +
+      (if problems.is_empty() { "" } else { "; " + problems.join("; ") }),
+    })
+  }
+  // outline
+  {
+    let ro = items(field(r, "outline"))
+    let so = items(field(s, "outline"))
+    let problems = []
+    if ro.length() != so.length() {
+      problems.push("Ruby \{ro.length()} entries, spike \{so.length()}")
+    }
+    for i in 0..<@cmp.minimum(ro.length(), so.length()) {
+      let a = ro[i]
+      let b = so[i]
+      let label = str(field(a, "title"))
+      if str(field(a, "title")) != str(field(b, "title")) {
+        problems.push("#\{i + 1} title \"\{label}\" vs \"\{str(field(b, "title"))}\"")
+      } else if field(a, "depth") != field(b, "depth") {
+        problems.push("\"\{label}\" depth differs")
+      } else if (field(a, "has_children") is True) &&
+        field(a, "open") != field(b, "open") {
+        problems.push(
+          "\"\{label}\" is \{if field(a, "open") is True { "open" } else { "closed" }} in Ruby, \{if field(b, "open") is True { "open" } else { "closed" }} in the spike",
+        )
+      } else if !same_dest(field(field(a, "target"), "dest"), field(field(b, "target"), "dest")) {
+        problems.push(
+          "\"\{label}\" goes to \{describe_target(field(a, "target"))} vs \{describe_target(field(b, "target"))}",
+        )
+      }
+    }
+    if !close(field(r, "outline_count"), field(s, "outline_count")) {
+      problems.push(
+        "outline /Count \{field(r, "outline_count").stringify()} vs \{field(s, "outline_count").stringify()}",
+      )
+    }
+    checks.push({
+      name: "outline",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{ro.length()} entries agree (titles, depth, open state, targets)"
+      } else {
+        problems[:@cmp.minimum(problems.length(), 8)].to_owned().join("; ")
+      },
+    })
+  }
+  // named destinations
+  {
+    let resolved = fn(info : Json) {
+      let map : Map[String, Json] = Map([])
+      for d in items(field(info, "dests")) {
+        match field(d, "name") {
+          String(n) => if !map.contains(n) { map[n] = d }
+          _ => ()
+        }
+      }
+      map
+    }
+    let rd = resolved(r)
+    let sd = resolved(s)
+    let problems = []
+    for entry in rd {
+      match sd.get(entry.0) {
+        None => problems.push("spike lacks \{entry.0}")
+        Some(b) =>
+          if !same_dest(entry.1, b) {
+            problems.push(
+              "\{entry.0}: \{describe_target({ "dest": entry.1 })} vs \{describe_target({ "dest": b })}",
+            )
+          }
+      }
+    }
+    for entry in sd {
+      if !rd.contains(entry.0) {
+        problems.push("spike adds \{entry.0}")
+      }
+    }
+    checks.push({
+      name: "destinations",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{rd.length()} names resolve alike"
+      } else {
+        "Ruby \{rd.length()}, spike \{sd.length()}: " +
+        problems[:@cmp.minimum(problems.length(), 8)].to_owned().join("; ")
+      },
+    })
+    let sorted = field(s, "dests_sorted") is True
+    checks.push({
+      name: "name-tree order",
+      ok: sorted,
+      detail: if sorted {
+        "spike keys in lexical byte order (Ruby: \{if field(r, "dests_sorted") is True { "sorted" } else { "unsorted" }})"
+      } else {
+        "spike keys out of lexical order: \{items(field(s, "dest_names")).map(str)[:@cmp.minimum(6, items(field(s, "dest_names")).length())].to_owned().join(", ")}..."
+      },
+    })
+  }
+  // page labels
+  {
+    let rl = field(r, "page_labels")
+    let sl = field(s, "page_labels")
+    checks.push({
+      name: "page labels",
+      ok: rl == sl,
+      detail: if rl == sl {
+        "\{items(rl).length()} labels agree"
+      } else {
+        "\{rl.stringify()} vs \{sl.stringify()}"
+      },
+    })
+  }
+  // document information
+  {
+    let problems = []
+    for key in ["Title", "Author", "Subject", "Keywords", "Creator"] {
+      let a = field(field(r, "info"), key)
+      let b = field(field(s, "info"), key)
+      if a != b {
+        problems.push("\{key} \{a.stringify()} vs \{b.stringify()}")
+      }
+    }
+    for key in ["CreationDate", "ModDate"] {
+      let a = field(field(r, "info"), key) is String(_)
+      let b = field(field(s, "info"), key) is String(_)
+      if a != b {
+        problems.push("\{key} \{if a { "only in Ruby" } else { "only in the spike" }}")
+      }
+    }
+    checks.push({
+      name: "document info",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "Title, Author, Subject, Keywords, Creator and dates agree (PDF \{str(field(r, "version"))} vs \{str(field(s, "version"))})"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  // viewer settings
+  {
+    let problems = []
+    if field(r, "page_mode") != field(s, "page_mode") {
+      problems.push(
+        "PageMode \{field(r, "page_mode").stringify()} vs \{field(s, "page_mode").stringify()}",
+      )
+    }
+    let ra = field(r, "open_action")
+    let sa = field(s, "open_action")
+    if !(ra is Null && sa is Null) && !same_dest(ra, sa) {
+      problems.push("OpenAction \{ra.stringify()} vs \{sa.stringify()}")
+    }
+    if field(r, "display_doc_title") != field(s, "display_doc_title") {
+      problems.push("DisplayDocTitle differs")
+    }
+    checks.push({
+      name: "viewer settings",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "PageMode, OpenAction and DisplayDocTitle agree"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  checks
+}
+
+// ---------------------------------------------------------------------------
+// Raster
+
+///|
+priv struct PageRaster {
+  page : Int
+  /// "ruby" or "spike" when that side has no such page
+  missing : String
+  area : Int
+  content_area : Int
+  counts : Array[Int]
+  /// faint differences (more than 6 levels) where both renderings are
+  /// flat: fills, backgrounds, colours
+  flat : Int
+  diff : String
+}
+
+///|
+fn PageRaster::flat_share(self : PageRaster) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.content_area == 0 {
+    0.0
+  } else {
+    self.flat.to_double() / self.content_area.to_double()
+  }
+}
+
+///|
+fn PageRaster::full_share(self : PageRaster, t : Int) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.area == 0 {
+    0.0
+  } else {
+    self.counts[t].to_double() / self.area.to_double()
+  }
+}
+
+///|
+fn PageRaster::content_share(self : PageRaster, t : Int) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.content_area == 0 {
+    0.0
+  } else {
+    self.counts[t].to_double() / self.content_area.to_double()
+  }
+}
+
+///|
+/// Page files a pdftoppm run wrote, by page number (the digits after the
+/// last `-`, however they are padded).
+async fn rendered_pages(dir : String, prefix : String, suffix : String) -> Map[Int, String] {
+  let pages : Map[Int, String] = Map([])
+  for name in @fs.readdir(dir, sort=true) {
+    if name.has_prefix(prefix + "-") && name.has_suffix(suffix) {
+      let digits = name[prefix.length() + 1:name.length() - suffix.length()]
+      let n = @string.parse_int(digits) catch { _ => -1 }
+      if n >= 0 {
+        pages[n] = "\{dir}/\{name}"
+      }
+    }
+  }
+  pages
+}
+
+///|
+async fn compare_raster(
+  ruby_pdf : String,
+  spike_pdf : String,
+  dir : String,
+  union : Int,
+) -> Array[PageRaster] {
+  ignore(tool("pdftoppm", ["-r", "150", ruby_pdf, "\{dir}/r150-ruby"]))
+  ignore(tool("pdftoppm", ["-r", "150", spike_pdf, "\{dir}/r150-spike"]))
+  let rp = rendered_pages(dir, "r150-ruby", ".ppm")
+  let sp = rendered_pages(dir, "r150-spike", ".ppm")
+  let out = []
+  for p in 1..=union {
+    match (rp.get(p), sp.get(p)) {
+      (Some(a), Some(b)) => {
+        let diff = "diff-\{p}.png"
+        let text = tool(inspector, ["rastercmp", a, b, "\{dir}/\{diff}"])
+        let j = @json.parse(text) catch {
+          e => raise MeasurementFailed("rastercmp: \{e}")
+        }
+        if field(j, "size_mismatch") is True {
+          out.push({
+            page: p,
+            missing: "size",
+            area: 1,
+            content_area: 1,
+            counts: thresholds.map(_ => 1),
+            flat: 1,
+            diff: "",
+          })
+        } else {
+          let counts = items(field(j, "counts")).map(c => {
+            num(field(c, "pixels")).unwrap_or(0.0).to_int()
+          })
+          out.push({
+            page: p,
+            missing: "",
+            area: num(field(j, "area")).unwrap_or(0.0).to_int(),
+            content_area: num(field(j, "content_area")).unwrap_or(0.0).to_int(),
+            counts,
+            flat: num(field(j, "flat_pixels")).unwrap_or(0.0).to_int(),
+            diff,
+          })
+        }
+      }
+      (a, _) =>
+        out.push({
+          page: p,
+          missing: if a is None { "ruby" } else { "spike" },
+          area: 0,
+          content_area: 0,
+          counts: thresholds.map(_ => 0),
+          flat: 0,
+          diff: "",
+        })
+    }
+  }
+  for entry in rp {
+    @fs.remove(entry.1) catch {
+      _ => ()
+    }
+  }
+  for entry in sp {
+    @fs.remove(entry.1) catch {
+      _ => ()
+    }
+  }
+  out
+}
+
+// ---------------------------------------------------------------------------
+// One comparison
+
+///|
+priv struct Measured {
+  ruby : Extract
+  spike : Extract
+  text : TextMetrics
+  structure : Array[Check]
+  raster : Array[PageRaster]
+}
+
+///|
+async fn measure(
+  ruby_pdf : String,
+  spike_pdf : String,
+  dir : String,
+  verbose : Bool,
+) -> Measured {
+  let r = extract(ruby_pdf)
+  let s = extract(spike_pdf)
+  let text = compare_text(r, s, verbose)
+  let structure = compare_structure(r.info, s.info)
+  let raster = compare_raster(ruby_pdf, spike_pdf, dir, @cmp.maximum(r.pages, s.pages))
+  { ruby: r, spike: s, text, structure, raster }
+}
+
+///|
+fn Measured::worst_flat(self : Measured) -> (Double, Int) {
+  let mut worst = 0.0
+  let mut page = 0
+  for p in self.raster {
+    let v = p.flat_share()
+    if v > worst {
+      worst = v
+      page = p.page
+    }
+  }
+  (worst, page)
+}
+
+///|
+fn Measured::worst_raster(self : Measured) -> (Double, Int) {
+  let mut worst = 0.0
+  let mut page = 0
+  for p in self.raster {
+    let v = p.content_share(gate_threshold_index)
+    if v > worst {
+      worst = v
+      page = p.page
+    }
+  }
+  (worst, page)
+}
+
+///|
+fn Measured::within_share(self : Measured) -> Double {
+  if self.text.measured == 0 {
+    if self.text.ruby_words == 0 { 1.0 } else { 0.0 }
+  } else {
+    self.text.within.to_double() / self.text.measured.to_double()
+  }
+}
+
+///|
+fn Measured::coverage(self : Measured) -> Double {
+  if self.text.ruby_words == 0 {
+    1.0
+  } else {
+    self.text.measured.to_double() / self.text.ruby_words.to_double()
+  }
+}
+
+///|
+/// Why this comparison fails the acceptance thresholds (none: it passes).
+fn Measured::gate_failures(self : Measured) -> Array[String] {
+  let t = self.text
+  let out = []
+  if self.ruby.pages != self.spike.pages {
+    out.push("pages \{self.ruby.pages} vs \{self.spike.pages}")
+  }
+  if t.ordered_lines != t.ruby_lines || t.ordered_lines != t.spike_lines {
+    out.push(
+      "lines: \{t.ordered_lines} in order of \{t.ruby_lines} Ruby / \{t.spike_lines} spike",
+    )
+  }
+  if t.indent_mismatches > 0 {
+    out.push("\{t.indent_mismatches} lines indented differently")
+  }
+  if t.common_words != t.ruby_words || t.common_words != t.spike_words {
+    out.push("words: \{t.common_words} shared of \{t.ruby_words} Ruby / \{t.spike_words} spike")
+  }
+  if self.within_share() < gate_min_within {
+    out.push("within 1pt \{ratio(t.within, t.measured)} < \{share_pct(gate_min_within)}")
+  }
+  if self.coverage() < gate_min_coverage {
+    out.push("coverage \{ratio(t.measured, t.ruby_words)} < \{share_pct(gate_min_coverage)}")
+  }
+  for c in self.structure {
+    if !c.ok {
+      out.push("structure: \{c.name}")
+    }
+  }
+  let (worst, page) = self.worst_raster()
+  if worst > gate_max_raster {
+    out.push("raster p\{page} \{share_pct(worst)} of content differs > \{share_pct(gate_max_raster)}")
+  }
+  let (flat, flat_page) = self.worst_flat()
+  if flat > gate_max_flat {
+    out.push("raster p\{flat_page} \{share_pct(flat)} of content has flat (fill) differences > \{share_pct(gate_max_flat)}")
+  }
+  out
+}
+
+///|
+let category_order : Array[String] = [
+  "failure", "unsupported feature", "missing/extra text", "reading order", "line-wrap change",
+  "page break/extra pages", "geometry", "navigation/metadata", "styling/assets",
+]
+
+///|
+fn Measured::categories(self : Measured, unsupported : Int) -> Array[String] {
+  let t = self.text
+  let out = []
+  if unsupported > 0 {
+    out.push("unsupported feature")
+  }
+  let text_differs = t.common_words != t.ruby_words || t.common_words != t.spike_words
+  if text_differs {
+    out.push("missing/extra text")
+  } else if t.ordered_words != t.common_words {
+    out.push("reading order")
+  }
+  let doc_lines_equal = t.document_ordered_lines == t.ruby_lines &&
+    t.document_ordered_lines == t.spike_lines
+  if !text_differs && t.ordered_words == t.common_words && !doc_lines_equal {
+    out.push("line-wrap change")
+  }
+  if self.ruby.pages != self.spike.pages ||
+    (doc_lines_equal && t.ordered_lines != t.ruby_lines) ||
+    t.same_page_words < t.ordered_words {
+    out.push("page break/extra pages")
+  }
+  if self.within_share() < gate_min_within ||
+    self.coverage() < gate_min_coverage ||
+    t.indent_mismatches > 0 {
+    out.push("geometry")
+  }
+  // fonts are styling; every other structure check is navigation/metadata
+  if self.structure.iter().any(c => !c.ok && c.name != "fonts") {
+    out.push("navigation/metadata")
+  }
+  if self.worst_raster().0 > gate_max_raster ||
+    self.worst_flat().0 > gate_max_flat ||
+    self.structure.iter().any(c => !c.ok && c.name == "fonts") {
+    out.push("styling/assets")
+  }
+  out
+}
+
+///|
+fn Measured::to_json(self : Measured) -> Json {
+  let t = self.text
+  let (worst, worst_page) = self.worst_raster()
+  let worst_pages = []
+  for p, n in t.page_off {
+    if n > 0 {
+      worst_pages.push((p + 1, n))
+    }
+  }
+  worst_pages.sort_by((a, b) => b.1.compare(a.1))
+  {
+    "pages": { "ruby": jn(self.ruby.pages), "spike": jn(self.spike.pages) },
+    "pdf_sha256": { "ruby": js(self.ruby.sha), "spike": js(self.spike.sha) },
+    "pdf_version": { "ruby": field(self.ruby.info, "version"), "spike": field(self.spike.info, "version") },
+    "empty": { "ruby": Json::boolean(t.ruby_words == 0), "spike": Json::boolean(t.spike_words == 0) },
+    "words": {
+      "ruby": jn(t.ruby_words),
+      "spike": jn(t.spike_words),
+      "common": jn(t.common_words),
+      "ordered": jn(t.ordered_words),
+      "ordered_exact": Json::boolean(t.ordered_exact),
+      "same_page": jn(t.same_page_words),
     },
-    median_dx: median(dxs),
-    median_dy: median(dys),
-    page_lines: per_page,
+    "lines": {
+      "ruby": jn(t.ruby_lines),
+      "spike": jn(t.spike_lines),
+      "ordered": jn(t.ordered_lines),
+      "common": jn(t.common_lines),
+      "missing": jn(t.ruby_lines - t.ordered_lines),
+      "extra": jn(t.spike_lines - t.ordered_lines),
+      "reordered": jn(t.common_lines - t.ordered_lines),
+      "document_ordered": jn(t.document_ordered_lines),
+      "identical_pages": jn(t.identical_pages),
+      "indent_mismatches": jn(t.indent_mismatches),
+      "examples": jstrings(t.line_examples),
+    },
+    "geometry": {
+      "aligned_same_page": jn(t.aligned_same_page),
+      "measured": jn(t.measured),
+      "within_1pt": jn(t.within),
+      "coverage": jd(self.coverage()),
+      "dx": { "p50": jd(percentile(t.dx, 0.5)), "p95": jd(percentile(t.dx, 0.95)), "max": jd(percentile(t.dx, 1.0)) },
+      "dy": { "p50": jd(percentile(t.dy, 0.5)), "p95": jd(percentile(t.dy, 0.95)), "max": jd(percentile(t.dy, 1.0)) },
+      "dx_right": { "p50": jd(percentile(t.dx_right, 0.5)), "p95": jd(percentile(t.dx_right, 0.95)), "max": jd(percentile(t.dx_right, 1.0)) },
+      "worst_pages": Json::array(
+        worst_pages[:@cmp.minimum(5, worst_pages.length())].iter().map(e => ({ "page": jn(e.0), "off": jn(e.1) } : Json)).collect(),
+      ),
+      "examples": jstrings(t.off_examples),
+    },
+    "raster": {
+      "dpi": 150,
+      "thresholds": Json::array(thresholds.map(jn)),
+      "worst_content_share": jd(worst),
+      "worst_flat_share": jd(self.worst_flat().0),
+      "worst_flat_page": jn(self.worst_flat().1),
+      "worst_page": jn(worst_page),
+      "pages": Json::array(
+        self.raster.map(p => ({
+          "page": jn(p.page),
+          "missing": js(p.missing),
+          "area": jn(p.area),
+          "content_area": jn(p.content_area),
+          "pixels": Json::array(p.counts.map(jn)),
+          "full_share": Json::array(Array::makei(thresholds.length(), i => jd(p.full_share(i)))),
+          "content_share": Json::array(Array::makei(thresholds.length(), i => jd(p.content_share(i)))),
+          "flat_pixels": jn(p.flat),
+          "flat_share": jd(p.flat_share()),
+        } : Json)),
+      ),
+    },
+    "structure": Json::array(
+      self.structure.map(c => ({ "name": js(c.name), "ok": Json::boolean(c.ok), "detail": js(c.detail) } : Json)),
+    ),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+
+///|
+priv struct Record {
+  name : String
+  input : String
+  input_sha : String
+  mut status : String
+  mut reason : String
+  ruby_run : Run?
+  spike_run : Run?
+  unsupported : Array[String]
+  known : String?
+  mut measured : Measured?
+  mut categories : Array[String]
+  mut gate_failures : Array[String]
+  dir : String
+}
+
+///|
+fn Record::passes(self : Record) -> Bool {
+  self.status == "ok" && self.gate_failures.is_empty()
+}
+
+///|
+/// Badness, for sorting the summary worst first.
+fn Record::severity(self : Record) -> Double {
+  if self.status != "ok" {
+    return 1.0e9
+  }
+  guard self.measured is Some(m) else { return 1.0e9 }
+  let t = m.text
+  let line_dice = if t.ruby_lines + t.spike_lines == 0 {
+    1.0
+  } else {
+    2.0 * t.ordered_lines.to_double() / (t.ruby_lines + t.spike_lines).to_double()
+  }
+  let word_dice = if t.ruby_words + t.spike_words == 0 {
+    1.0
+  } else {
+    2.0 * t.ordered_words.to_double() / (t.ruby_words + t.spike_words).to_double()
+  }
+  (1.0 - line_dice) * 1.0e4 +
+  (1.0 - word_dice) * 1.0e4 +
+  (m.ruby.pages - m.spike.pages).abs().to_double() * 1.0e3 +
+  (1.0 - m.within_share()) * 1.0e2 +
+  m.worst_raster().0 * 10.0 +
+  m.structure.iter().filter(c => !c.ok).count().to_double() +
+  self.gate_failures.length().to_double() * 0.01
+}
+
+///|
+fn run_json(r : Run?) -> Json {
+  match r {
+    None => Json::null()
+    Some(r) =>
+      {
+        "command": js(r.command),
+        "exit": jn(r.code),
+        "timed_out": Json::boolean(r.timed_out),
+        "seconds": jd(r.seconds),
+        "stdout": js(clip(r.out, limit=65536)),
+        "stderr": js(clip(r.err, limit=65536)),
+      }
   }
 }
 
 ///|
-/// The pixels of a binary PGM (P5) file: (width, height, offset of the
-/// data).
-fn pgm_header(data : Bytes) -> (Int, Int, Int) {
-  let fields = []
-  let mut i = 0
-  while fields.length() < 4 && i < data.length() {
-    while i < data.length() && (data[i] == b' ' || data[i] == b'\n') {
-      i += 1
+fn Record::to_json(self : Record) -> Json {
+  let unsupported_counts : Map[String, Int] = Map([])
+  for u in self.unsupported {
+    // "UNSUPPORTED kind what at loc" → "kind what"
+    let key = match u.rev_find(" at ") {
+      Some(i) => u[:i].to_owned().replace(old="UNSUPPORTED ", new="")
+      None => u
     }
-    let start = i
-    while i < data.length() && data[i] != b' ' && data[i] != b'\n' {
-      i += 1
-    }
-    let sb = StringBuilder()
-    for j in start..<i {
-      sb.write_char(data[j].to_int().unsafe_to_char())
-    }
-    fields.push(sb.to_string())
+    unsupported_counts[key] = unsupported_counts.get(key).unwrap_or(0) + 1
   }
-  let num = fn(s : String) { @string.parse_int(s) catch { _ => 0 } }
-  (num(fields[1]), num(fields[2]), i + 1)
+  {
+    "name": js(self.name),
+    "input": js(self.input),
+    "input_sha256": js(self.input_sha),
+    "status": js(self.status),
+    "reason": js(self.reason),
+    "gate": js(
+      if self.passes() {
+        "pass"
+      } else if self.known is Some(_) {
+        "known"
+      } else {
+        "fail"
+      },
+    ),
+    "gate_failures": jstrings(self.gate_failures),
+    "known_difference": match self.known {
+      Some(k) => js(k)
+      None => Json::null()
+    },
+    "categories": jstrings(self.categories),
+    "unsupported": jstrings(self.unsupported),
+    "unsupported_summary": Json::object(unsupported_counts.map((_, v) => jn(v))),
+    "ruby": run_json(self.ruby_run),
+    "spike": run_json(self.spike_run),
+    "measurements": match self.measured {
+      Some(m) => m.to_json()
+      None => Json::null()
+    },
+  }
 }
 
 ///|
-/// Share of pixels whose grey level differs by more than 64 between two
-/// renderings of a page (1.0 when a page is missing or sizes differ).
-async fn pixel_diff(a : String, b : String) -> Double {
-  let da = @fs.read_file(a).binary() catch { _ => return 1.0 }
-  let db = @fs.read_file(b).binary() catch { _ => return 1.0 }
-  let (wa, ha, oa) = pgm_header(da)
-  let (wb, hb, ob) = pgm_header(db)
-  if wa != wb || ha != hb || wa == 0 {
-    return 1.0
-  }
-  let mut differ = 0
-  for i in 0..<(wa * ha) {
-    if (da[oa + i].to_int() - db[ob + i].to_int()).abs() > 64 {
-      differ += 1
+fn unsupported_lines(stderr : String) -> Array[String] {
+  let out = []
+  for line in stderr.split("\n") {
+    match line.find("UNSUPPORTED ") {
+      Some(i) => out.push(line[i:].to_owned())
+      None => ()
     }
   }
-  differ.to_double() / (wa * ha).to_double()
+  out
 }
+
+///|
+async fn compare_case(
+  name : String,
+  input : String,
+  wrapper : String,
+  gallery : String,
+  known : Map[String, String],
+  verbose : Bool,
+) -> Record {
+  let dir = "\{gallery}/\{name}"
+  ignore(run("rm", ["-rf", dir]))
+  ignore(run("mkdir", ["-p", dir]))
+  if wrapper != "" {
+    @fs.write_file(input, wrapper, create_mode=CreateOrTruncate) catch {
+      _ => ()
+    }
+  }
+  let input_sha = sha256(input)
+  let root = @fs.realpath(".") catch { _ => "." }
+  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+  let ruby_pdf = "\{dir}/ruby.pdf"
+  let spike_pdf = "\{dir}/spike.pdf"
+  let rr = run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input], env~, timeout=conversion_timeout_ms)
+  let sr = run(
+    spike,
+    ["--fonts-dir", fonts, "-o", spike_pdf, input],
+    timeout=conversion_timeout_ms,
+  )
+  if wrapper != "" {
+    @fs.remove(input) catch {
+      _ => ()
+    }
+  }
+  let record : Record = {
+    name,
+    input,
+    input_sha,
+    status: "ok",
+    reason: "",
+    ruby_run: Some(rr),
+    spike_run: Some(sr),
+    unsupported: unsupported_lines(sr.err),
+    known: known.get(name),
+    measured: None,
+    categories: [],
+    gate_failures: [],
+    dir,
+  }
+  let ruby_ok = rr.code == 0 && file_exists(ruby_pdf)
+  let spike_ok = sr.code == 0 && file_exists(spike_pdf)
+  if rr.timed_out || sr.timed_out {
+    record.status = "timeout"
+    let who = if rr.timed_out { "Ruby" } else { "spike" }
+    record.reason = "\{who} exceeded \{conversion_timeout_ms / 1000}s"
+  } else if !ruby_ok && !spike_ok {
+    record.status = "both_failed"
+    record.reason = "Ruby exit \{rr.code}, spike exit \{sr.code}"
+  } else if !ruby_ok {
+    record.status = "oracle_failed"
+    record.reason = "Ruby exit \{rr.code}: \{clip(rr.err.trim().to_owned(), limit=300)}"
+  } else if !spike_ok {
+    record.status = "spike_failed"
+    record.reason = "spike exit \{sr.code}: \{clip(sr.err.trim().to_owned(), limit=300)}"
+  } else {
+    try {
+      let m = measure(ruby_pdf, spike_pdf, dir, verbose)
+      record.measured = Some(m)
+      // the gallery's page images
+      ignore(run("pdftoppm", ["-r", "60", "-png", ruby_pdf, "\{dir}/ruby"]))
+      ignore(run("pdftoppm", ["-r", "60", "-png", spike_pdf, "\{dir}/spike"]))
+      @fs.write_file(
+        "\{dir}/ruby.txt",
+        tool("pdftotext", ["-layout", ruby_pdf, "-"]),
+        create_mode=CreateOrTruncate,
+      )
+      @fs.write_file(
+        "\{dir}/spike.txt",
+        tool("pdftotext", ["-layout", spike_pdf, "-"]),
+        create_mode=CreateOrTruncate,
+      )
+    } catch {
+      InvalidPdf(why) => {
+        record.status = "invalid_pdf"
+        record.reason = why
+      }
+      MeasurementFailed(why) => {
+        record.status = "measurement_failed"
+        record.reason = why
+      }
+      e => {
+        record.status = "measurement_failed"
+        record.reason = e.to_string()
+      }
+    }
+  }
+  match record.measured {
+    Some(m) => {
+      record.categories = m.categories(record.unsupported.length())
+      record.gate_failures = m.gate_failures()
+    }
+    None => {
+      record.categories = ["failure"]
+      record.gate_failures = [record.status]
+    }
+  }
+  record
+}
+
+// ---------------------------------------------------------------------------
+// Output
 
 ///|
 fn html_escape(text : String) -> String {
@@ -428,47 +2012,474 @@ fn html_escape(text : String) -> String {
   .replace_all(old="&", new="&amp;")
   .replace_all(old="<", new="&lt;")
   .replace_all(old=">", new="&gt;")
+  .replace_all(old="\"", new="&quot;")
 }
 
 ///|
-async fn page_count(pdf : String) -> Int {
-  let (_, out, _) = run("pdfinfo", [pdf])
-  for line in out.split("\n") {
-    if line.has_prefix("Pages:") {
-      return @string.parse_int(line.to_owned().replace(old="Pages:", new="").trim()) catch {
-        _ => 0
+fn Record::summary_line(self : Record) -> String {
+  match self.measured {
+    None => "\{self.name}: \{self.status} (\{self.reason})"
+    Some(m) => {
+      let t = m.text
+      let (worst, page) = m.worst_raster()
+      "\{self.name}: \{if self.passes() { "PASS" } else if self.known is Some(_) { "KNOWN" } else { "FAIL" }} pages \{m.ruby.pages}/\{m.spike.pages}, lines \{ratio(t.ordered_lines, t.ruby_lines)} (spike \{t.spike_lines}), words \{ratio(t.common_words, t.ruby_words)} (spike \{t.spike_words}), ±1pt \{ratio(t.within, t.measured)} coverage \{pct(t.measured, t.ruby_words)}, raster worst p\{page} \{share_pct(worst)} flat \{share_pct(m.worst_flat().0)}, structure \{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}" +
+      (if self.categories.is_empty() { "" } else { " [\{self.categories.join(", ")}]" })
+    }
+  }
+}
+
+///|
+fn gate_cell(r : Record) -> String {
+  if r.passes() {
+    "<span class=\"pass\">pass</span>"
+  } else if r.known is Some(k) {
+    "<span class=\"known\" title=\"\{html_escape(k)}\">known</span>"
+  } else {
+    "<span class=\"fail\">FAIL</span>"
+  }
+}
+
+///|
+fn summary_row(r : Record) -> String {
+  let name = "<a href=\"#\{html_escape(r.name)}\">\{html_escape(r.name)}</a>"
+  let cats = html_escape(r.categories.join(", "))
+  match r.measured {
+    None =>
+      "<tr><td>\{name}</td><td>\{html_escape(r.status)}</td><td>\{gate_cell(r)}</td><td>\{cats}</td><td colspan=\"8\">\{html_escape(r.reason)}</td><td>\{r.unsupported.length()}</td></tr>"
+    Some(m) => {
+      let t = m.text
+      let (worst, page) = m.worst_raster()
+      let pages = if m.ruby.pages == m.spike.pages {
+        "\{m.ruby.pages}"
+      } else {
+        "<b>\{m.ruby.pages} / \{m.spike.pages}</b>"
+      }
+      "<tr><td>\{name}</td><td>ok</td><td>\{gate_cell(r)}</td><td>\{cats}</td><td>\{pages}</td>" +
+      "<td>\{ratio(t.ordered_lines, t.ruby_lines)}<br><span class=\"stat\">−\{t.ruby_lines - t.ordered_lines} +\{t.spike_lines - t.ordered_lines} ↕\{t.common_lines - t.ordered_lines} indent \{t.indent_mismatches}</span></td>" +
+      "<td>\{ratio(t.common_words, t.ruby_words)}<br><span class=\"stat\">spike \{t.spike_words}, ordered \{t.ordered_words}\{if t.ordered_exact { "" } else { " (approx.)" }}</span></td>" +
+      "<td>\{ratio(t.within, t.measured)}</td><td>\{ratio(t.measured, t.ruby_words)}</td>" +
+      "<td>\{fixed(percentile(t.dy, 0.95), digits=2)} / \{fixed(percentile(t.dy, 1.0), digits=2)}</td>" +
+      "<td>\{share_pct(worst)}\{if page > 0 { " (p\{page})" } else { "" }}<br><span class=\"stat\">flat \{share_pct(m.worst_flat().0)}</span></td>" +
+      "<td>\{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}</td><td>\{r.unsupported.length()}</td></tr>"
+    }
+  }
+}
+
+///|
+fn run_block(label : String, r : Run?) -> String {
+  match r {
+    None => ""
+    Some(r) =>
+      "<details><summary>\{label}: exit \{r.code}, \{fixed(r.seconds, digits=2)}s\{if r.timed_out { ", timed out" } else { "" }}</summary><pre>$ \{html_escape(r.command)}\n\{html_escape(clip(r.out, limit=8000))}\n\{html_escape(clip(r.err, limit=8000))}</pre></details>"
+  }
+}
+
+///|
+async fn section(r : Record) -> String {
+  let parts = []
+  parts.push("<section id=\"\{html_escape(r.name)}\"><h2>\{html_escape(r.name)} \{gate_cell(r)}</h2>")
+  parts.push(
+    "<p class=\"stat\">\{html_escape(r.input)} · sha256 \{r.input_sha} · status \{r.status}\{if r.reason == "" { "" } else { ": " + html_escape(r.reason) }}</p>",
+  )
+  match r.known {
+    Some(k) => parts.push("<p>Known difference: \{html_escape(k)}</p>")
+    None => ()
+  }
+  if !r.gate_failures.is_empty() {
+    parts.push("<p>Gate: \{html_escape(r.gate_failures.join("; "))}</p>")
+  }
+  if !r.unsupported.is_empty() {
+    parts.push(
+      "<details><summary>\{r.unsupported.length()} unsupported</summary><pre>\{html_escape(r.unsupported[:@cmp.minimum(200, r.unsupported.length())].to_owned().join("\n"))}</pre></details>",
+    )
+  }
+  parts.push(run_block("Ruby asciidoctor-pdf", r.ruby_run))
+  parts.push(run_block("spike", r.spike_run))
+  match r.measured {
+    None => ()
+    Some(m) => {
+      let t = m.text
+      parts.push(
+        "<p><a href=\"\{r.name}/ruby.pdf\">ruby.pdf</a> · <a href=\"\{r.name}/spike.pdf\">spike.pdf</a> · <a href=\"\{r.name}/ruby.txt\">ruby.txt</a> · <a href=\"\{r.name}/spike.txt\">spike.txt</a></p>",
+      )
+      parts.push(
+        "<p class=\"stat\">words: \{ratio(t.common_words, t.ruby_words)} shared (spike \{t.spike_words}), \{t.ordered_words} in order, \{t.same_page_words} of those on the same page. Lines: \{t.ordered_lines} in order of \{t.ruby_lines} Ruby / \{t.spike_lines} spike (\{t.document_ordered_lines} ignoring page breaks), \{t.identical_pages}/\{t.pages.length()} pages identical, \{t.indent_mismatches} indentation differences. Geometry: \{ratio(t.within, t.measured)} of measured words within 1pt; coverage \{ratio(t.measured, t.ruby_words)}; |dx| p50/p95/max \{fixed(percentile(t.dx, 0.5), digits=2)}/\{fixed(percentile(t.dx, 0.95), digits=2)}/\{fixed(percentile(t.dx, 1.0), digits=2)}pt, |dy| \{fixed(percentile(t.dy, 0.5), digits=2)}/\{fixed(percentile(t.dy, 0.95), digits=2)}/\{fixed(percentile(t.dy, 1.0), digits=2)}pt, right edge |dx| max \{fixed(percentile(t.dx_right, 1.0), digits=2)}pt.</p>",
+      )
+      let checks = m.structure.map(c => "<li class=\"\{if c.ok { "ok" } else { "bad" }}\">\{html_escape(c.name)}: \{html_escape(c.detail)}</li>")
+      parts.push("<ul class=\"checks\">\{checks.join("")}</ul>")
+      if !t.line_examples.is_empty() {
+        parts.push(
+          "<details><summary>line differences</summary><pre>\{html_escape(t.line_examples.join("\n"))}</pre></details>",
+        )
+      }
+      if !t.off_examples.is_empty() {
+        parts.push(
+          "<details><summary>words off by more than 1pt</summary><pre>\{html_escape(t.off_examples.join("\n"))}</pre></details>",
+        )
+      }
+      let rp = rendered_pages(r.dir, "ruby", ".png")
+      let sp = rendered_pages(r.dir, "spike", ".png")
+      let rows = []
+      for p in m.raster {
+        let n = p.page
+        let cell = fn(map : Map[Int, String]) {
+          match map.get(n) {
+            Some(path) => {
+              let file = path[path.rev_find("/").unwrap_or(-1) + 1:].to_owned()
+              "<img src=\"\{r.name}/\{file}\" loading=\"lazy\">"
+            }
+            None => "<div class=\"missing\">no page</div>"
+          }
+        }
+        let diff = if p.diff == "" {
+          "<div class=\"missing\">\{if p.missing == "" { "" } else { "missing in " + p.missing }}</div>"
+        } else {
+          "<img src=\"\{r.name}/\{p.diff}\" loading=\"lazy\">"
+        }
+        let pl = if n - 1 < t.pages.length() {
+          let x = t.pages[n - 1]
+          "lines \{x.ordered}/\{x.ruby} in order (spike \{x.spike}), indent \{x.indent_mismatches}; words off \{if n - 1 < t.page_off.length() { t.page_off[n - 1] } else { 0 }}; "
+        } else {
+          ""
+        }
+        let raster = if p.missing != "" {
+          "page missing in \{p.missing}"
+        } else {
+          "pixels >64: \{share_pct(p.content_share(1))} of content, flat \{share_pct(p.flat_share())}, \{share_pct(p.full_share(1))} of page (>16 \{share_pct(p.content_share(0))}, >128 \{share_pct(p.content_share(2))})"
+        }
+        rows.push(
+          "<tr><th colspan=\"3\">page \{n} <span class=\"stat\">\{pl}\{raster}</span></th></tr><tr><td>\{cell(rp)}</td><td>\{cell(sp)}</td><td>\{diff}</td></tr>",
+        )
+      }
+      parts.push(
+        "<table class=\"pages\"><tr><th>Ruby asciidoctor-pdf 2.3.27</th><th>asciidoctor.mbt spike</th><th>difference (150 dpi, >64; red Ruby only, blue spike only)</th></tr>\{rows.join("\n")}</table>",
+      )
+    }
+  }
+  parts.push("</section>")
+  parts.join("\n")
+}
+
+///|
+async fn write_outputs(
+  gallery : String,
+  records : Array[Record],
+  tools : Json,
+  title : String,
+) -> Unit {
+  let sorted = records.copy()
+  sorted.sort_by((a, b) => b.severity().compare(a.severity()))
+  // counts
+  let by_status : Map[String, Int] = Map([])
+  let by_category : Map[String, Int] = Map([])
+  let mut pass = 0
+  let mut known = 0
+  for r in records {
+    by_status[r.status] = by_status.get(r.status).unwrap_or(0) + 1
+    for c in r.categories {
+      by_category[c] = by_category.get(c).unwrap_or(0) + 1
+    }
+    if r.passes() {
+      pass += 1
+    } else if r.known is Some(_) {
+      known += 1
+    }
+  }
+  let failing = records.length() - pass - known
+  let summary : Json = {
+    "title": js(title),
+    "generated_at_unix": jd(now_seconds()),
+    "tools": tools,
+    "thresholds": {
+      "tolerance_pt": jd(tolerance_pt),
+      "min_within_1pt": jd(gate_min_within),
+      "min_coverage": jd(gate_min_coverage),
+      "max_raster_content_share": jd(gate_max_raster),
+      "max_flat_content_share": jd(gate_max_flat),
+      "raster_dpi": 150,
+      "raster_channel_threshold": jn(thresholds[gate_threshold_index]),
+    },
+    "counts": {
+      "documents": jn(records.length()),
+      "pass": jn(pass),
+      "known": jn(known),
+      "fail": jn(failing),
+      "status": Json::object(by_status.map((_, v) => jn(v))),
+      "categories": Json::object(by_category.map((_, v) => jn(v))),
+    },
+    "documents": Json::array(sorted.map(r => r.to_json())),
+  }
+  @fs.write_file("\{gallery}/summary.json", summary.stringify(indent=1), create_mode=CreateOrTruncate)
+  let status_rows = by_status.iter().map(kv => "<tr><td>\{kv.0}</td><td>\{kv.1}</td></tr>").collect().join("")
+  let category_rows = category_order
+    .filter(c => by_category.contains(c))
+    .map(c => "<tr><td>\{c}</td><td>\{by_category.get(c).unwrap_or(0)}</td></tr>")
+    .join("")
+  let sections = []
+  for r in sorted {
+    sections.push(section(r))
+  }
+  let html =
+    $|<!DOCTYPE html>
+    $|<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    $|<title>PDF backend comparison</title>
+    $|<style>
+    $|:root { color-scheme: light dark; --bg: #fff; --fg: #222; --muted: #666; --line: #ddd; --ok: #1a7f37; --bad: #c62828; --known: #9a6700; }
+    $|@media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #eee; --muted: #aaa; --line: #444; --ok: #5fd068; --bad: #ff7b72; --known: #e3b341; } }
+    $|body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; margin: 16px; }
+    $|table { border-collapse: collapse; }
+    $|.summary td, .summary th, .counts td, .counts th { border: 1px solid var(--line); padding: 4px 8px; text-align: right; vertical-align: top; }
+    $|.summary td:first-child, .summary td:nth-child(4), .counts td:first-child { text-align: left; }
+    $|.summary td:first-child { max-width: 22em; overflow-wrap: anywhere; } .summary td:nth-child(4) { min-width: 12em; }
+    $|.pages td { vertical-align: top; padding: 4px; }
+    $|.pages img { width: 100%; max-width: 420px; border: 1px solid var(--line); background: #fff; }
+    $|.pages th { text-align: left; font-weight: 600; padding-top: 12px; }
+    $|.stat { color: var(--muted); font-weight: normal; font-size: 12px; }
+    $|.missing { width: 420px; max-width: 100%; height: 60px; border: 1px dashed var(--line); color: var(--muted); }
+    $|.pass, .ok { color: var(--ok); } .fail, .bad { color: var(--bad); } .known { color: var(--known); }
+    $|pre { white-space: pre-wrap; font-size: 12px; }
+    $|.scroll { overflow-x: auto; }
+    $|</style></head><body>
+  let head =
+    $|<h1>\{html_escape(title)}</h1>
+    $|<p>Generated by <code>scripts/pdf_compare.mbtx</code>: Ruby asciidoctor-pdf (oracle) against the asciidoctor.mbt spike (<code>pdf/</code>), default theme. The script header defines every metric and the acceptance thresholds: same page count; every page's ordered lines identical (indentation included); ≥\{share_pct(gate_min_within)} of measured words within \{fixed(tolerance_pt, digits=0)}pt with ≥\{share_pct(gate_min_coverage)} of Ruby's words measured; all structure checks; at most \{share_pct(gate_max_raster)} of any page's content region differing by more than 64 levels at 150 dpi, and at most \{share_pct(gate_max_flat)} with flat (fill) differences. Counts are exact; percentages are truncated, never rounded up. Machine-readable results: <a href="summary.json">summary.json</a>.</p>
+    $|<p><b>\{records.length()} documents: \{pass} pass, \{known} known differences, \{failing} fail.</b></p>
+    $|<div class="scroll"><table class="counts"><tr><th>status</th><th>documents</th></tr>\{status_rows}</table></div>
+    $|<div class="scroll"><table class="counts"><tr><th>category</th><th>documents</th></tr>\{category_rows}</table></div>
+    $|<h2>Documents, worst first</h2>
+    $|<div class="scroll"><table class="summary"><tr><th>document</th><th>status</th><th>gate</th><th>categories</th><th>pages (Ruby / spike)</th><th>lines in order / Ruby (−missing +extra ↕reordered)</th><th>words shared / Ruby</th><th>±1pt / measured</th><th>measured / Ruby words</th><th>|dy| p95 / max (pt)</th><th>raster worst page (>64, content; flat)</th><th>structure</th><th>unsupported</th></tr>
+  let out =
+    $|\{html}
+    $|\{head}
+    $|\{sorted.map(summary_row).join("\n")}
+    $|</table></div>
+    $|\{sections.join("\n")}
+    $|<h2>Tools</h2><pre>\{html_escape(tools.stringify(indent=1))}</pre>
+    $|</body></html>
+  @fs.write_file("\{gallery}/index.html", out, create_mode=CreateOrTruncate)
+}
+
+///|
+async fn tool_versions() -> Json {
+  let root = @fs.realpath(".") catch { _ => "." }
+  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+  let version = fn(r : Run) {
+    first_line(if r.out.trim() == "" { r.err } else { r.out })
+  }
+  // pdf/moon.work names the pagelayout checkout by absolute path
+  let work = @fs.read_file("pdf/moon.work").text() catch { _ => "" }
+  let mut office = ""
+  for line in work.split("\n") {
+    let l = line.trim(chars=" \t\",").to_owned()
+    if l.has_suffix("/pagelayout") {
+      office = l[:l.length() - "/pagelayout".length()].to_owned()
+    }
+  }
+  let office_rev = if office == "" {
+    ""
+  } else {
+    run("git", ["-C", office, "rev-parse", "HEAD"]).out.trim().to_owned()
+  }
+  let dirty = run("git", ["status", "--porcelain", "--", "pdf", "scripts"]).out.trim() != ""
+  {
+    "ruby": js(version(run(ruby, ["-v"]))),
+    "asciidoctor_pdf": js(version(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-v"], env~))),
+    "poppler": js(version(run("pdftotext", ["-v"]))),
+    "moon": js(version(run("moon", ["version"]))),
+    "asciidoctor_mbt_commit": js(run("git", ["rev-parse", "HEAD"]).out.trim().to_owned() + (if dirty { " (modified)" } else { "" })),
+    "office_mbt": js(office),
+    "office_mbt_commit": js(office_rev),
+    "spike": js(spike),
+    "inspector": js(inspector),
+  }
+}
+
+///|
+async fn read_known(path : String) -> Map[String, String] {
+  let known : Map[String, String] = Map([])
+  let text = @fs.read_file(path).text() catch { _ => return known }
+  for raw in text.split("\n") {
+    let line = raw.trim()
+    if line == "" || line.has_prefix("#") {
+      continue
+    }
+    match line.find(":") {
+      Some(i) => known[line[:i].trim().to_owned()] = line[i + 1:].trim().to_owned()
+      None => known[line.to_owned()] = "(no reason given)"
+    }
+  }
+  known
+}
+
+// ---------------------------------------------------------------------------
+// Self-test
+
+///|
+/// Corrupt a good spike PDF in six ways and check that each corruption is
+/// flagged by the metric meant to catch it — and that the uncorrupted PDF,
+/// compared with itself, passes everything. Also renders the oracle twice
+/// and checks the renderings are identical (the raster noise floor).
+async fn self_test(gallery : String) -> Bool {
+  let dir = "\{gallery}/self-test"
+  ignore(run("rm", ["-rf", dir]))
+  ignore(run("mkdir", ["-p", dir]))
+  let good = "\{dir}/good.pdf"
+  let r = run(spike, ["--fonts-dir", fonts, "-o", good, "pdf/tests/sampler.adoc"])
+  if r.code != 0 {
+    println("self-test: the spike failed on the sampler: \{r.err}")
+    return false
+  }
+  let results = []
+  let check = fn(label : String, ok : Bool, detail : String) {
+    results.push((label, ok, detail))
+  }
+  let measure_to = async fn(other : String, sub : String) -> Measured? {
+    let d = "\{dir}/\{sub}"
+    ignore(run("mkdir", ["-p", d]))
+    try {
+      Some(measure(good, other, d, false))
+    } catch {
+      e => {
+        check("\{sub}: measurable", false, e.to_string())
+        None
       }
     }
   }
-  0
+  // identity
+  match measure_to(good, "identity") {
+    Some(m) => {
+      let failures = m.gate_failures()
+      check("identity passes the gate", failures.is_empty(), failures.join("; "))
+      let t = m.text
+      check(
+        "identity measures every word",
+        t.measured == t.ruby_words && t.ruby_words > 0,
+        ratio(t.measured, t.ruby_words),
+      )
+    }
+    None => ()
+  }
+  // repeated oracle renders
+  {
+    let root = @fs.realpath(".") catch { _ => "." }
+    let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+    let a = "\{dir}/oracle-a.pdf"
+    let b = "\{dir}/oracle-b.pdf"
+    ignore(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"], env~))
+    ignore(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"], env~))
+    let d = "\{dir}/oracle"
+    ignore(run("mkdir", ["-p", d]))
+    try {
+      let pages = compare_raster(a, b, d, 4)
+      let mut differing = 0
+      let mut missing = 0
+      for p in pages {
+        differing += p.counts[0]
+        if p.missing != "" {
+          missing += 1
+        }
+      }
+      check(
+        "repeated oracle renders are identical",
+        differing == 0 && missing == 0,
+        "\{differing} pixels differ by >16, \{missing} pages missing",
+      )
+    } catch {
+      e => check("repeated oracle renders are identical", false, e.to_string())
+    }
+  }
+  let mutations = [
+    "delete-text", "reorder-lines", "shift-block", "drop-graphics", "extra-page",
+    "remove-link", "name-order",
+  ]
+  for kind in mutations {
+    let mutant = "\{dir}/\{kind}.pdf"
+    let mr = run(inspector, ["mutate", kind, good, mutant])
+    if mr.code != 0 {
+      check("\{kind}: mutation written", false, mr.err)
+      continue
+    }
+    guard measure_to(mutant, kind) is Some(m) else { continue }
+    let t = m.text
+    let failures = m.gate_failures()
+    check("\{kind}: gate fails", !failures.is_empty(), failures.join("; "))
+    let lines_ok = t.ordered_lines == t.ruby_lines && t.ordered_lines == t.spike_lines
+    let structure = fn(name : String) {
+      m.structure.iter().any(c => c.name == name && !c.ok)
+    }
+    match kind {
+      "delete-text" => {
+        check("delete-text: words flag it", t.common_words < t.ruby_words, ratio(t.common_words, t.ruby_words))
+        check("delete-text: lines flag it", t.ruby_lines > t.ordered_lines, "\{t.ruby_lines - t.ordered_lines} missing")
+        // one line is too little ink to cross the raster threshold, but it
+        // must register
+        check("delete-text: raster registers it", m.worst_raster().0 > 0.0, share_pct(m.worst_raster().0))
+      }
+      "reorder-lines" => {
+        check(
+          "reorder-lines: word multiset unchanged",
+          t.common_words == t.ruby_words && t.common_words == t.spike_words,
+          ratio(t.common_words, t.ruby_words),
+        )
+        check("reorder-lines: ordered lines flag it", !lines_ok && t.common_lines > t.ordered_lines, "\{t.common_lines - t.ordered_lines} reordered")
+      }
+      "shift-block" => {
+        check("shift-block: text unchanged", t.common_words == t.ruby_words, ratio(t.common_words, t.ruby_words))
+        check("shift-block: geometry flags it", m.within_share() < gate_min_within, ratio(t.within, t.measured))
+        check("shift-block: raster flags it", m.worst_raster().0 > gate_max_raster, share_pct(m.worst_raster().0))
+      }
+      "drop-graphics" => {
+        check("drop-graphics: text and geometry unchanged", lines_ok && m.within_share() == 1.0, ratio(t.within, t.measured))
+        check("drop-graphics: flat raster differences flag it", m.worst_flat().0 > gate_max_flat, share_pct(m.worst_flat().0))
+      }
+      "extra-page" => {
+        check("extra-page: page count flags it", m.ruby.pages != m.spike.pages, "\{m.ruby.pages} vs \{m.spike.pages}")
+        check(
+          "extra-page: raster reports the missing page",
+          m.raster.iter().any(p => p.missing == "ruby"),
+          m.raster.map(p => p.missing).join(","),
+        )
+      }
+      "remove-link" => check("remove-link: links check flags it", structure("links"), "")
+      "name-order" => {
+        check("name-order: name-tree order check flags it", structure("name-tree order"), "")
+        check("name-order: destinations still resolve", !structure("destinations"), "")
+      }
+      _ => ()
+    }
+  }
+  let mut all = true
+  for entry in results {
+    let (label, ok, detail) = entry
+    if !ok {
+      all = false
+    }
+    println("\{if ok { "PASS" } else { "FAIL" }}  \{label}\{if detail == "" { "" } else { "  (" + detail + ")" }}")
+  }
+  all
 }
 
-///|
-async fn now_ms() -> Double {
-  let (_, out, _) = run("/bin/date", ["+%s%N"])
-  // macOS date lacks %N; fall back to seconds
-  let text = out.trim().to_owned()
-  if text.has_suffix("N") {
-    let secs = @string.parse_double(text.replace(old="N", new="")) catch { _ => 0.0 }
-    secs * 1000.0
-  } else {
-    (@string.parse_double(text) catch { _ => 0.0 }) / 1.0e6
-  }
-}
+// ---------------------------------------------------------------------------
 
 ///|
 async fn main {
   let args = @env.args()
   let mut build = true
   let mut verbose = false
+  let mut gate = false
+  let mut testing = false
+  let mut jobs = 4
   let selected = []
   let mut gallery = default_gallery
   let mut list : String? = None
+  let mut known_path = default_known
   let mut i = 1
   while i < args.length() {
     match args[i] {
       "--no-build" => build = false
       "-v" => verbose = true
+      "--gate" => gate = true
+      "--self-test" => testing = true
       "--out" if i + 1 < args.length() => {
         gallery = args[i + 1]
         i += 1
@@ -477,25 +2488,36 @@ async fn main {
         list = Some(args[i + 1])
         i += 1
       }
+      "--known" if i + 1 < args.length() => {
+        known_path = args[i + 1]
+        i += 1
+      }
+      "--jobs" if i + 1 < args.length() => {
+        jobs = @string.parse_int(args[i + 1]) catch { _ => 4 }
+        i += 1
+      }
       "--" => ()
       name => selected.push(name)
     }
     i += 1
   }
   if build {
-    let (code, _, err) = run("moon", [
-      "-C", "pdf", "build", "--target", "native", "--release",
-    ])
-    if code != 0 {
-      println(err)
+    let r = run("moon", ["-C", "pdf", "build", "--target", "native", "--release"], timeout=1_800_000)
+    if r.code != 0 {
+      println(r.err)
       fail("building the spike failed")
     }
   }
-  let root = @fs.realpath(".")
-  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
   ignore(run("mkdir", ["-p", gallery]))
-  let sections = []
-  let summary = []
+  if testing {
+    let ok = self_test(gallery)
+    if !ok {
+      fail("self-test failed")
+    }
+    println("self-test passed")
+    return
+  }
+  let known = read_known(known_path)
   let all_cases = match list {
     None => cases
     Some(file) =>
@@ -505,144 +2527,43 @@ async fn main {
         (name, p, "")
       }).collect()
   }
-  for c in all_cases {
-    let (name, input, wrapper) = c
-    if selected.length() > 0 && !selected.contains(name) {
-      continue
-    }
-    let dir = "\{gallery}/\{name}"
-    ignore(run("rm", ["-rf", dir]))
-    ignore(run("mkdir", ["-p", dir]))
-    if wrapper != "" {
-      @fs.write_file(input, wrapper, create_mode=CreateOrTruncate)
-    }
-    let ruby_pdf = "\{dir}/ruby.pdf"
-    let spike_pdf = "\{dir}/spike.pdf"
-    let t0 = now_ms()
-    let (rc, _, rerr) = run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input], env~)
-    let t1 = now_ms()
-    let (sc, _, serr) = run(spike, ["--fonts-dir", fonts, "-o", spike_pdf, input])
-    let t2 = now_ms()
-    if wrapper != "" {
-      @fs.remove(input)
-    }
-    if rc != 0 || sc != 0 {
-      println("\{name}: ruby exit \{rc}, spike exit \{sc}\n\{rerr}\n\{serr}")
-      continue
-    }
-    let pages_ruby = page_count(ruby_pdf)
-    let pages_spike = page_count(spike_pdf)
-    ignore(run("pdftoppm", ["-r", "60", "-png", ruby_pdf, "\{dir}/ruby"]))
-    ignore(run("pdftoppm", ["-r", "60", "-png", spike_pdf, "\{dir}/spike"]))
-    // grey rasters for the pixel comparison
-    ignore(run("pdftoppm", ["-r", "60", "-gray", ruby_pdf, "\{dir}/g-ruby"]))
-    ignore(run("pdftoppm", ["-r", "60", "-gray", spike_pdf, "\{dir}/g-spike"]))
-    let pixel_pages = []
-    for name in @fs.readdir(dir, sort=true) {
-      if name.has_prefix("g-ruby-") && name.has_suffix(".pgm") {
-        let other = name.replace(old="g-ruby-", new="g-spike-")
-        pixel_pages.push(pixel_diff("\{dir}/\{name}", "\{dir}/\{other}"))
-      }
-    }
-    for name in @fs.readdir(dir, sort=true) {
-      if name.has_suffix(".pgm") {
-        @fs.remove("\{dir}/\{name}")
-      }
-    }
-    let mut pixel_sum = 0.0
-    let mut pixel_max = 0.0
-    for d in pixel_pages {
-      pixel_sum += d
-      if d > pixel_max {
-        pixel_max = d
-      }
-    }
-    let pixel_mean = if pixel_pages.is_empty() {
-      0.0
-    } else {
-      pixel_sum / pixel_pages.length().to_double()
-    }
-    let (_, ruby_text, _) = run("pdftotext", ["-layout", ruby_pdf, "-"])
-    let (_, spike_text, _) = run("pdftotext", ["-layout", spike_pdf, "-"])
-    @fs.write_file("\{dir}/ruby.txt", ruby_text, create_mode=CreateOrTruncate)
-    @fs.write_file("\{dir}/spike.txt", spike_text, create_mode=CreateOrTruncate)
-    let (_, ruby_bbox, _) = run("pdftotext", ["-bbox", ruby_pdf, "-"])
-    let (_, spike_bbox, _) = run("pdftotext", ["-bbox", spike_pdf, "-"])
-    let off = []
-    let m = compare(
-      parse_bbox(ruby_bbox),
-      parse_bbox(spike_bbox),
-      ruby_text,
-      spike_text,
-      pages_ruby,
-      pages_spike,
-      verbose~,
-      off~,
-    )
-    let line = "\{name}: pages \{pages_ruby} vs \{pages_spike}, recall \{fmt(m.recall)}, precision \{fmt(m.precision)}, aligned \{fmt(m.aligned)}, same page \{fmt(m.same_page)}, lines \{fmt(m.lines)}, ±1pt \{fmt(m.within_1pt)}, median |dx| \{fmt(m.median_dx, digits=2)}pt |dy| \{fmt(m.median_dy, digits=2)}pt, pixels differing mean \{fmt(pixel_mean * 100.0, digits=2)}% max \{fmt(pixel_max * 100.0, digits=2)}%; ruby \{fmt((t1 - t0) / 1000.0, digits=2)}s, spike \{fmt((t2 - t1) / 1000.0, digits=2)}s"
-    println(line)
-    for o in off {
-      println(o)
-    }
-    summary.push(
-      "<tr><td><a href=\"#\{name}\">\{name}</a></td><td>\{pages_ruby}</td><td>\{pages_spike}</td><td>\{fmt(m.recall)}</td><td>\{fmt(m.precision)}</td><td>\{fmt(m.aligned)}</td><td>\{fmt(m.same_page)}</td><td>\{fmt(m.lines)}</td><td>\{fmt(m.within_1pt)}</td><td>\{fmt(m.median_dx, digits=2)}</td><td>\{fmt(m.median_dy, digits=2)}</td><td>\{fmt(pixel_mean * 100.0, digits=2)}% / \{fmt(pixel_max * 100.0, digits=2)}%</td><td>\{fmt((t1 - t0) / 1000.0, digits=2)}s / \{fmt((t2 - t1) / 1000.0, digits=2)}s</td></tr>",
-    )
-    // page images, pairing by page number
-    let files = @fs.readdir(dir, sort=true)
-    let ruby_pngs = files.filter(f => f.has_prefix("ruby-") && f.has_suffix(".png"))
-    let spike_pngs = files.filter(f => f.has_prefix("spike-") && f.has_suffix(".png"))
-    let rows = []
-    let count = @cmp.maximum(ruby_pngs.length(), spike_pngs.length())
-    for p in 0..<count {
-      let cell = fn(list : Array[String]) {
-        if p < list.length() {
-          "<img src=\"\{name}/\{list[p]}\" loading=\"lazy\">"
-        } else {
-          "<div class=\"missing\">no page</div>"
+  let todo = all_cases.filter(c => selected.is_empty() || selected.contains(c.0))
+  let tools = tool_versions()
+  let results : Array[Record?] = Array::make(todo.length(), None)
+  let next : Ref[Int] = { val: 0 }
+  @async.with_task_group(group => {
+    for _ in 0..<@cmp.maximum(1, jobs) {
+      group.spawn_bg(() => {
+        while next.val < todo.length() {
+          let index = next.val
+          next.val += 1
+          let (name, input, wrapper) = todo[index]
+          let record = compare_case(name, input, wrapper, gallery, known, verbose)
+          println(record.summary_line())
+          if verbose {
+            match record.measured {
+              Some(m) => for o in m.text.off_examples { println("  \{o}") }
+              None => ()
+            }
+          }
+          results[index] = Some(record)
         }
-      }
-      let lines = if p < m.page_lines.length() {
-        let (hit, total) = m.page_lines[p]
-        let px = if p < pixel_pages.length() { fmt(pixel_pages[p] * 100.0, digits=2) } else { "-" }
-        "\{hit}/\{total} lines identical, \{px}% pixels differ"
-      } else {
-        ""
-      }
-      rows.push(
-        "<tr><th colspan=\"2\">page \{p + 1} <span class=\"stat\">\{lines}</span></th></tr><tr><td>\{cell(ruby_pngs)}</td><td>\{cell(spike_pngs)}</td></tr>",
-      )
+      })
     }
-    sections.push(
-      "<section id=\"\{name}\"><h2>\{name}</h2><p class=\"stat\">\{html_escape(line)}</p><p><a href=\"\{name}/ruby.pdf\">ruby.pdf</a> · <a href=\"\{name}/spike.pdf\">spike.pdf</a> · <a href=\"\{name}/ruby.txt\">ruby.txt</a> · <a href=\"\{name}/spike.txt\">spike.txt</a></p><table class=\"pages\"><tr><th>Ruby asciidoctor-pdf 2.3.27</th><th>asciidoctor.mbt spike</th></tr>\{rows.join("\n")}</table></section>",
-    )
+  })
+  let records = results.filter_map(r => r)
+  let title = match list {
+    Some(file) => "PDF backend comparison: \{file}"
+    None => "PDF backend comparison: built-in cases"
   }
-  let html =
-    $|<!DOCTYPE html>
-    $|<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    $|<title>PDF backend spike</title>
-    $|<style>
-    $|:root { color-scheme: light dark; --bg: #fff; --fg: #222; --muted: #666; --line: #ddd; }
-    $|@media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #eee; --muted: #aaa; --line: #444; } }
-    $|body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; margin: 16px; }
-    $|table { border-collapse: collapse; }
-    $|.summary td, .summary th { border: 1px solid var(--line); padding: 4px 8px; text-align: right; }
-    $|.summary td:first-child { text-align: left; }
-    $|.pages td { vertical-align: top; padding: 4px; }
-    $|.pages img { width: 100%; max-width: 500px; border: 1px solid var(--line); background: #fff; }
-    $|.pages th { text-align: left; font-weight: 600; padding-top: 12px; }
-    $|.stat { color: var(--muted); font-weight: normal; font-size: 12px; }
-    $|.missing { width: 500px; height: 100px; border: 1px dashed var(--line); }
-    $|</style></head><body>
-    $|<h1>PDF backend spike: Ruby asciidoctor-pdf (left) vs asciidoctor.mbt (right)</h1>
-    $|<p>Generated by <code>scripts/pdf_compare.mbtx</code>. Oracle: asciidoctor-pdf 2.3.27 (prawn 2.4.0, ttfunk 1.7.0, asciidoctor 2.0.26, Ruby 4.0.7), default theme. Metrics: <b>recall</b>/<b>precision</b> of words (multiset), <b>aligned</b> words in reading order, <b>same page</b> share of Ruby words on the same page, <b>lines</b> share of Ruby text lines reproduced verbatim on the same page, <b>±1pt</b> share of same-page words whose position is within 1pt, median |dx| |dy| in points (y only where both font descriptors give the same box height), <b>pixels differing</b> share of 60 dpi grey pixels that differ by more than 64 levels.</p>
-    $|<p><b>Summary.</b> The spike (<code>pdf/</code>, module <code>bobzhang/asciidoctor-pdf</code>) walks the <code>@asciidoctor.load</code> tree with a Prawn-like cursor flow that emits the <code>moonbitlang/pagelayout</code> page model, rendered by <code>pagelayout/pdf</code> with the theme's own Noto Serif and M+ 1mn fonts. It covers the document title, sections, prose with inline formatting, links and cross references, lists, description lists, listing/literal blocks, tables, admonitions (text labels), images, example/sidebar/quote blocks, footnotes, the running footer, the PDF outline and named destinations. Known visual differences: square instead of rounded block corners, no syntax highlighting, no admonition icons, no title page or TOC.</p>
-    $|<table class="summary"><tr><th>document</th><th>pages (Ruby)</th><th>pages (spike)</th><th>recall</th><th>precision</th><th>aligned</th><th>same page</th><th>lines</th><th>±1pt</th><th>|dx|</th><th>|dy|</th><th>pixels differing (mean / max page)</th><th>time Ruby / spike</th></tr>
-  let out =
-    $|\{html}
-    $|\{summary.join("\n")}
-    $|</table>
-    $|\{sections.join("\n")}
-    $|</body></html>
-  @fs.write_file("\{gallery}/index.html", out, create_mode=CreateOrTruncate)
-  println("wrote \{gallery}/index.html")
+  write_outputs(gallery, records, tools, title)
+  let failing = records.filter(r => !r.passes() && r.known is None)
+  let passing = records.filter(r => r.passes()).length()
+  println(
+    "\{records.length()} documents: \{passing} pass, \{records.length() - passing - failing.length()} known, \{failing.length()} fail",
+  )
+  println("wrote \{gallery}/index.html and \{gallery}/summary.json")
+  if gate && !failing.is_empty() {
+    fail("gate: \{failing.length()} documents fail: \{failing.map(r => r.name).join(", ")}")
+  }
 }
