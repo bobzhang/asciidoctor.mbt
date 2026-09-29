@@ -38,6 +38,10 @@ More text.
 
 Appendix text.
 
+=== `(ApplicationScoped.class)`
+
+A title that is all code.
+
 == Last words
 
 The end.

@@ -206,6 +206,7 @@ fn Converter::ink_toc_level(
           metrics,
           style,
           align=self.text_align,
+          normalize_line_height=true,
         )
       })
     } else {
@@ -223,7 +224,13 @@ fn Converter::ink_toc_level(
       let linked = { ..style, link: Some("#" + pdf_anchor_name(anchor)), }
       let fragments = parse_formatted(title, linked, normalize=false)
       flow.indent(0.0, placeholder, fn() {
-        flow.typeset(fragments, metrics, style, align=Left)
+        flow.typeset(
+          fragments,
+          metrics,
+          style,
+          align=Left,
+          normalize_line_height=true,
+        )
       })
       guard flow.last_line is Some((line, line_page, baseline)) else { break }
       // the dots start after the title's last fragment, on its line: Prawn

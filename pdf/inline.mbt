@@ -472,9 +472,9 @@ fn convert_inline_footnote(node : @core.Node) -> String {
         Some(label) => label
         None => (number - session.rendered_footnotes).to_string()
       }
-      "<sup>\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{label}</a>]</sup>"
+      "<sup class=\"wj\">\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{label}</a>]</sup>"
     }
-    None => "<sup>[\{node.text().unwrap_or("")}]</sup>"
+    None => "<sup class=\"wj\">[\{node.text().unwrap_or("")}]</sup>"
   }
 }
 

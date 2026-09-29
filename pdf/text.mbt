@@ -22,6 +22,9 @@ priv struct Style {
   border_offset : Double
   underline : Bool
   strike : Bool
+  /// a word joiner (`class="wj"`, a footnote's label): the word before it
+  /// must fit on its line together with it
+  wj : Bool
   /// the style of the document font the text is set in (Prawn's current
   /// font, as `theme_font` sets it); `bold` and `italic` are the styles of
   /// the markup (and those inherited explicitly, as headings do)
@@ -56,6 +59,7 @@ fn Style::new(
     border_offset: 0.0,
     underline: false,
     strike: false,
+    wj: false,
   }
 }
 
@@ -240,6 +244,11 @@ fn parse_decimal(text : String) -> Double {
 ///|
 /// Apply the style of an opening tag.
 fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
+  let style = match attrs.get("class") {
+    Some(classes) if classes.split(" ").any(c => c == "wj") =>
+      { ..style, wj: true, }
+    _ => style
+  }
   match tag {
     "strong" | "b" => { ..style, bold: true, }
     "em" | "i" => { ..style, italic: true, }
@@ -573,7 +582,14 @@ fn parse_formatted(
             text.write_string(pending[:end].to_owned())
           }
           flush()
-          fragments.push({ text: "", style, anchor: Some(id), })
+          // a fresh fragment (Transform#build_fragment): none of the
+          // markup around it applies, so it is in the text's own font and
+          // size, which count towards its line's height
+          fragments.push({
+            text: "",
+            style: { ..base, wj: style.wj, },
+            anchor: Some(id),
+          })
           if !self_closing {
             stack.push((tag, style))
           }

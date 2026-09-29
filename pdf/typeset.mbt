@@ -247,6 +247,7 @@ fn typeset_lines(
       items[i].fit += items[i].kern
     }
   }
+  let joined = joined_widths(fragments, faces)
   let ranges : Array[(Int, Int, Bool)] = [] // start, end, ended by hard break
   let mut start = 0
   while start <= n {
@@ -279,13 +280,24 @@ fn typeset_lines(
         if !visible {
           // dropped: it becomes a zero-width space, which draws nothing
           items[i] = { ..item, unit: 0x200B, fit: 0.0, draw: 0.0, }
+        } else if w + item.fit > limit + 0.0001 {
+          // a space that does not fit ends the line before it, as any
+          // segment does: it goes to the next line (and is dropped there),
+          // so its fragment takes no part in this line's height
+          end = i
+          break
         } else {
           w += item.fit
         }
         i += 1
         continue
       }
-      if w + item.fit > limit + 0.0001 && visible {
+      // the last word of a fragment a word joiner follows must fit with
+      // the joiner's first word (asciidoctor-pdf's LineWrap)
+      let last_of_fragment = i + 1 >= n ||
+        items[i + 1].fragment != item.fragment
+      let joiner = if last_of_fragment { joined[item.fragment] } else { 0.0 }
+      if w + item.fit + joiner > limit + 0.0001 && visible {
         end = if last_break > start {
           pull_back_limit(items, start, last_break, i)
         } else {
@@ -332,6 +344,48 @@ fn typeset_lines(
 }
 
 ///|
+/// For each fragment followed by word joiners (`class="wj"`) and not one
+/// itself: the width of the joiners' first word, measured in the
+/// fragment's own font (Arranger#preview_joined_string, as LineWrap
+/// measures it: the joined text of the following joiners, their NUL
+/// placeholders left out, up to its first break character); else 0.
+fn joined_widths(
+  fragments : Array[Fragment],
+  faces : Array[Face],
+) -> Array[Double] {
+  let widths = Array::make(fragments.length(), 0.0)
+  for f in 0..<fragments.length() {
+    if fragments[f].style.wj ||
+      f + 1 >= fragments.length() ||
+      !fragments[f + 1].style.wj {
+      continue
+    }
+    let sb = StringBuilder()
+    let mut g = f + 1
+    while g < fragments.length() && fragments[g].style.wj {
+      if fragments[g].anchor is None {
+        sb.write_string(fragments[g].text)
+      }
+      g += 1
+    }
+    let text = sb.to_string()
+    let face = faces[f]
+    let size = fragments[f].style.size
+    let mut width = 0.0
+    let mut k = 0
+    while k < text.length() && !is_break_char(text[k].to_int()) {
+      width += face.prawn_width(text[k].to_int())
+      if k + 1 < text.length() && !is_break_char(text[k + 1].to_int()) {
+        width += face.kerning(text[k].to_int(), text[k + 1].to_int())
+      }
+      k += 1
+    }
+    widths[f] = width * size / 1000.0
+  }
+  widths
+}
+
+///|
 /// Where a line without a break opportunity ends when its word overflows
 /// at `items[i]` (`w` wide before it): Prawn wraps that word by character
 /// (`wrap_by_char`), measuring each character on its own, without the
@@ -354,8 +408,12 @@ fn char_wrap_limit(
       items[k].fit
     }
   }
+  // the segment that overflowed: its token, within its fragment (what
+  // came before it in other fragments was measured as it fit)
   let mut token = i
-  while token > start && !starts[token] {
+  while token > start &&
+        !starts[token] &&
+        items[token - 1].fragment == items[i].fragment {
     token -= 1
   }
   let mut acc = w
