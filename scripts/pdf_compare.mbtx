@@ -1,6 +1,8 @@
 // Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf.
 //
-// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [CASE...]
+// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [-v] [--out DIR] [CASE...]
+//   --out DIR   write the gallery to DIR (default _build/gallery/pdf-spike)
+//   -v          list the words placed more than 1pt away from Ruby's
 //
 // Renders each case with Ruby asciidoctor-pdf 2.3.x (Homebrew Ruby, gems in
 // .repos/gems-pdf) and with the spike CLI, then compares them with poppler:
@@ -40,7 +42,7 @@ let fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
 let spike : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.exe"
 
 ///|
-let gallery : String = "_build/gallery/pdf-spike"
+let default_gallery : String = "_build/gallery/pdf-spike"
 
 ///|
 /// (name, input, wrapper text written to `input` for the run and removed
@@ -458,17 +460,24 @@ async fn main {
   let mut build = true
   let mut verbose = false
   let selected = []
-  for i in 1..<args.length() {
+  let mut gallery = default_gallery
+  let mut i = 1
+  while i < args.length() {
     match args[i] {
       "--no-build" => build = false
       "-v" => verbose = true
+      "--out" if i + 1 < args.length() => {
+        gallery = args[i + 1]
+        i += 1
+      }
       "--" => ()
       name => selected.push(name)
     }
+    i += 1
   }
   if build {
     let (code, _, err) = run("moon", [
-      "-C", "pdf", "build", "--target", "native", "--release", "cmd/asciidoctor-pdf",
+      "-C", "pdf", "build", "--target", "native", "--release",
     ])
     if code != 0 {
       println(err)
