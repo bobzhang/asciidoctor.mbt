@@ -2,7 +2,6 @@ import {
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
   "moonbitlang/pagelayout/fonts",
-  "moonbitlang/pagelayout/fontoutlines",
   "moonbitlang/pagelayout/pdf",
   "moonbitlang/pdflite",
   "moonbitlang/core/string",
@@ -15,4 +14,5 @@ supported_targets = "native+wasm"
 
 import {
   "bobzhang/asciidoctor",
+  "moonbitlang/pagelayout/fontoutlines",
 } for "wbtest"

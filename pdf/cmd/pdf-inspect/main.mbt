@@ -76,6 +76,68 @@ fn text_string(bytes : Bytes) -> String {
 }
 
 ///|
+/// The URI a link action opens, as the ASCII URI a conforming writer
+/// stores (the rule pagelayout's PDF backend writes by): a UTF-16 text
+/// string is decoded first, the bytes are taken as UTF-8, and every byte
+/// outside printable ASCII, and every ASCII character RFC 3986 never allows
+/// (space, `"<>\^`{|}`), is percent-encoded; a `%` beginning an escape is
+/// kept, a stray one becomes `%25`. Prawn writes an IRI as raw UTF-8 (text
+/// links) or as a UTF-16 text string (image links), neither of them ASCII,
+/// so both sides of a comparison are brought to this form first.
+fn uri_text(stored : Bytes) -> String {
+  let bytes : Array[Byte] = []
+  if stored.length() >= 2 && stored[0] == b'\xFE' && stored[1] == b'\xFF' {
+    for c in text_string(stored) {
+      let cp = c.to_int()
+      if cp < 0x80 {
+        bytes.push(cp.to_byte())
+      } else if cp < 0x800 {
+        bytes.push((0xC0 | (cp >> 6)).to_byte())
+        bytes.push((0x80 | (cp & 0x3F)).to_byte())
+      } else if cp < 0x10000 {
+        bytes.push((0xE0 | (cp >> 12)).to_byte())
+        bytes.push((0x80 | ((cp >> 6) & 0x3F)).to_byte())
+        bytes.push((0x80 | (cp & 0x3F)).to_byte())
+      } else {
+        bytes.push((0xF0 | (cp >> 18)).to_byte())
+        bytes.push((0x80 | ((cp >> 12) & 0x3F)).to_byte())
+        bytes.push((0x80 | ((cp >> 6) & 0x3F)).to_byte())
+        bytes.push((0x80 | (cp & 0x3F)).to_byte())
+      }
+    }
+  } else {
+    for b in stored {
+      bytes.push(b)
+    }
+  }
+  let is_hex = fn(i : Int) {
+    i < bytes.length() &&
+    (
+      (bytes[i] >= b'0' && bytes[i] <= b'9') ||
+      (bytes[i] >= b'A' && bytes[i] <= b'F') ||
+      (bytes[i] >= b'a' && bytes[i] <= b'f')
+    )
+  }
+  let hex = "0123456789ABCDEF"
+  let sb = StringBuilder()
+  for i, b in bytes {
+    let keep = match b {
+      b'%' => is_hex(i + 1) && is_hex(i + 2)
+      b'"' | b'<' | b'>' | b'\\' | b'^' | b'`' | b'{' | b'|' | b'}' => false
+      _ => b > b' ' && b < b'\x7F'
+    }
+    if keep {
+      sb.write_char(b.to_int().unsafe_to_char())
+    } else {
+      sb.write_char('%')
+      sb.write_char(hex[b.to_int() >> 4].unsafe_to_char())
+      sb.write_char(hex[b.to_int() & 0xF].unsafe_to_char())
+    }
+  }
+  sb.to_string()
+}
+
+///|
 priv struct Inspector {
   doc : @pdflite.PdfDocument
   /// page object number to page index
@@ -255,7 +317,7 @@ fn Inspector::action_target(self : Inspector, dict : @syntax.PdfObject) -> Json 
           match kind {
             "URI" =>
               match self.get(action, "/URI") {
-                Some(PdfString(uri)) => { "uri": latin1(uri) }
+                Some(PdfString(uri)) => { "uri": uri_text(uri) }
                 _ => { "uri": "" }
               }
             "GoTo" =>

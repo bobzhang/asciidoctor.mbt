@@ -112,8 +112,19 @@ test "document info, top anchor and outline levels" {
     "= Title\nJane Doe; John Roe\n:publisher: ACME\n:keywords: a, b\n:outlinelevels: 3:1\n:reproducible:\n\ntext\n",
     options=@core.Options::new(backend="pdf", standalone=true),
   )
+  let info = pdf_info(doc)
+  let entries = [
+    ("Title", info.title),
+    ("Author", info.author),
+    ("Subject", info.subject),
+    ("Keywords", info.keywords),
+    ("Creator", info.creator),
+    ("Producer", info.producer),
+    ("CreationDate", info.creation_date),
+    ("ModDate", info.mod_date),
+  ].filter_map(entry => entry.1.map(value => "\{entry.0}=\{value}"))
   inspect(
-    pdf_info(doc).map(entry => "\{entry.0}=\{entry.1}").join("; "),
+    entries.join("; "),
     content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=asciidoctor.mbt (spike)",
   )
   inspect(top_anchor(doc), content="__anchor-top")
@@ -137,7 +148,7 @@ test "destination names and the untitled document title follow asciidoctor-pdf" 
     options=@core.Options::new(backend="pdf", standalone=true),
   )
   inspect(resolve_doctitle(untitled).unwrap_or("-"), content="Untitled")
-  inspect(pdf_info(untitled)[0].1, content="Untitled")
+  inspect(pdf_info(untitled).title.unwrap_or("-"), content="Untitled")
 }
 
 ///|

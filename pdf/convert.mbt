@@ -197,7 +197,9 @@ fn pdf_date_of_attribute(value : String) -> String? {
   let zone = value[i:].trim().to_owned()
   let offset = if zone == "" || zone == "UTC" || zone == "Z" {
     "+00'00'"
-  } else if zone.length() == 5 && (zone[0] == '+' || zone[0] == '-') {
+  } else if zone.length() == 5 &&
+    (zone[0] == '+' || zone[0] == '-') &&
+    zone[1:].iter().all(c => c >= '0' && c <= '9') {
     "\{zone[0:3]}'\{zone[3:5]}'"
   } else {
     return None
@@ -208,12 +210,7 @@ fn pdf_date_of_attribute(value : String) -> String? {
 ///|
 /// The document information entries asciidoctor-pdf writes
 /// (`build_pdf_info`).
-fn pdf_info(doc : @core.Node) -> Array[(String, String)] {
-  let info = []
-  match resolve_doctitle(doc) {
-    Some(title) => info.push(("Title", sanitize(title)))
-    None => ()
-  }
+fn pdf_info(doc : @core.Node) -> @pdf.DocumentInfo {
   let author = if doc.attribute_locked("author") &&
     !doc.attribute_locked("authors") {
     doc.attr("author")
@@ -223,42 +220,33 @@ fn pdf_info(doc : @core.Node) -> Array[(String, String)] {
       None => doc.attr("author")
     }
   }
-  match author {
-    Some(author) => info.push(("Author", sanitize(author)))
-    None => ()
-  }
-  match doc.attr("subject") {
-    Some(subject) => info.push(("Subject", sanitize(subject)))
-    None => ()
-  }
-  match doc.attr("keywords") {
-    Some(keywords) => info.push(("Keywords", sanitize(keywords)))
-    None => ()
-  }
   let creator = match doc.attr("publisher") {
     Some(publisher) => sanitize(publisher)
     None => author.map(sanitize).unwrap_or("")
   }
-  info.push(("Creator", creator))
-  info.push(
+  // the modification date is the input's, the creation date the
+  // conversion's
+  let (mod_date, creation_date) = if doc.has_attr("reproducible") {
+    (None, None)
+  } else {
     (
-      "Producer",
-      doc.attr("producer").map(sanitize).unwrap_or("asciidoctor.mbt (spike)"),
-    ),
-  )
-  if !doc.has_attr("reproducible") {
-    // the modification date is the input's, the creation date the
-    // conversion's
-    match doc.attr("docdatetime").bind(pdf_date_of_attribute) {
-      Some(date) => info.push(("ModDate", date))
-      None => ()
-    }
-    match doc.attr("localdatetime").bind(pdf_date_of_attribute) {
-      Some(date) => info.push(("CreationDate", date))
-      None => ()
-    }
+      doc.attr("docdatetime").bind(pdf_date_of_attribute),
+      doc.attr("localdatetime").bind(pdf_date_of_attribute),
+    )
   }
-  info
+  @pdf.DocumentInfo::new(
+    title?=resolve_doctitle(doc).map(sanitize),
+    author?=author.map(sanitize),
+    subject?=doc.attr("subject").map(sanitize),
+    keywords?=doc.attr("keywords").map(sanitize),
+    creator~,
+    producer=doc
+      .attr("producer")
+      .map(sanitize)
+      .unwrap_or("asciidoctor.mbt (spike)"),
+    creation_date?,
+    mod_date?,
+  )
 }
 
 ///|
@@ -369,17 +357,21 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   }
   @pdf.render_pdf(
     flow.model,
-    outline=c.document_outline(),
-    info=pdf_info(doc),
-    // the default theme's `page_initial_zoom: FitH` and `page_mode: outline`
-    initial_zoom=FitH,
-    page_mode="UseOutlines",
-    display_doc_title=true,
-    page_boxes=true,
-    truncate_widths=true,
-    page_labels=Array::makei(flow.model.pages.length(), i => {
-      page_label(i + 1, front_matter)
-    }),
+    options=@pdf.RenderOptions::new(
+      // the faces the flow measured with, drawn and embedded as they are
+      fonts=catalog.registry,
+      outline=c.document_outline(),
+      info=pdf_info(doc),
+      // the default theme's `page_initial_zoom: FitH` and `page_mode: outline`
+      initial_zoom=FitH,
+      page_mode=UseOutlines,
+      display_doc_title=true,
+      page_boxes=true,
+      truncate_widths=true,
+      page_labels=Array::makei(flow.model.pages.length(), i => {
+        page_label(i + 1, front_matter)
+      }),
+    ),
   )
 }
 
@@ -429,8 +421,7 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
       outline.push({
         title: sanitize(title),
         level: 0,
-        anchor: "",
-        dest: Some((0, 0.0, 0.0)),
+        dest: Position(page=0, x=0.0, y=0.0),
         open: false,
       })
     None => ()
@@ -446,8 +437,7 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
           let entry : @pdf.OutlineEntry = {
             title: sanitize(toc_title),
             level: 0,
-            anchor,
-            dest: None,
+            dest: Named(anchor),
             open: false,
           }
           match node.parent() {
@@ -458,7 +448,7 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
               let mut at = -1
               let mut level = 0
               for i, e in sections {
-                if at < 0 && e.anchor == parent_anchor && e.dest is None {
+                if at < 0 && e.dest == Named(parent_anchor) {
                   at = i + 1
                   level = e.level
                 } else if at == i && e.level > level {
@@ -482,8 +472,7 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
               {
                 title: sanitize(toc_title),
                 level: 0,
-                anchor: "",
-                dest: Some((extent.from_page, 0.0, 0.0)),
+                dest: Position(page=extent.from_page, x=0.0, y=0.0),
                 open: false,
               },
             ),
@@ -882,8 +871,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     self.outline.push({
       title: sanitize(title),
       level: depth,
-      anchor,
-      dest: None,
+      dest: Named(anchor),
       // `closed: expand_levels < 1`, counted down one per level
       open: depth < expand_levels,
     })

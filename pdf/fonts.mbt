@@ -121,16 +121,17 @@ fn parse_kern(data : Bytes, scale : Double) -> Map[Int, Double] {
 }
 
 ///|
-/// Build a face from a TrueType file and register it with pagelayout for
-/// measurement and embedding.
+/// Build a face from a TrueType file, registering it in `registry`: the
+/// metrics measured with here and the program the PDF embeds are the same
+/// bytes.
 fn load_face(
+  registry : @fonts.FontRegistry,
   family : String,
   bold : Bool,
   italic : Bool,
   data : Bytes,
 ) -> Face raise {
-  let metrics = @fonts.register_face(family, data, bold~, italic~)
-  @fontoutlines.register_outline(family, data, bold~, italic~)
+  let metrics = registry.register(family, data, bold~, italic~)
   let scale = 1000.0 / metrics.units_per_em.to_double()
   // ttfunk: the OS/2 typo value when present and nonzero, else hhea
   let mut ascent = metrics.ascender
@@ -163,9 +164,11 @@ fn load_face(
 }
 
 ///|
-/// The font catalog of the theme: family → the four styles.
+/// The font catalog of the theme: family → the four styles, and the
+/// pagelayout registry holding them, which the renderer draws with.
 pub struct FontCatalog {
   priv faces : Map[String, Face]
+  priv registry : @fonts.FontRegistry
 }
 
 ///|
@@ -195,13 +198,16 @@ pub fn FontCatalog::load(
   files : Array[(String, Bool, Bool, Bytes)],
 ) -> FontCatalog raise {
   let faces : Map[String, Face] = Map([])
+  let registry = @fonts.FontRegistry::new()
   for file in files {
     let (family, bold, italic, data) = file
     faces[face_key(family, bold, italic)] = load_face(
-      family, bold, italic, data,
+      registry, family, bold, italic, data,
     )
   }
-  { faces, }
+  // complete: nothing may join it once a document is measured with it
+  registry.seal()
+  { faces, registry, }
 }
 
 ///|
