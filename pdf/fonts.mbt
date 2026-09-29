@@ -41,8 +41,8 @@ fn Face::kerning(self : Face, left : Int, right : Int) -> Double {
   if self.kern.is_empty() {
     return 0.0
   }
-  let l = self.metrics.cmap.get(left).unwrap_or(0)
-  let r = self.metrics.cmap.get(right).unwrap_or(0)
+  let l = self.metrics.glyph_id(left).unwrap_or(0)
+  let r = self.metrics.glyph_id(right).unwrap_or(0)
   self.kern.get((l << 16) | r).unwrap_or(0.0)
 }
 

@@ -103,6 +103,14 @@ test "information dictionary dates follow Prawn's form" {
     content="D:20190102030405-05'30'",
   )
   inspect(pdf_date_of_attribute("yesterday").unwrap_or("-"), content="-")
+  // digits in the right places, but no such time: left out, not refused
+  for
+    value in [
+      "2026-13-01 00:00:00 UTC", "2026-02-30 00:00:00 UTC", "2026-09-29 24:00:00 UTC",
+      "2026-09-29 15:12:28 +2400",
+    ] {
+    inspect(pdf_date_of_attribute(value).unwrap_or("-"), content="-")
+  }
 }
 
 ///|

@@ -175,7 +175,10 @@ fn resolve_doctitle(doc : @core.Node) -> String? {
 ///|
 /// A date attribute as Asciidoctor writes it (`2026-09-29 15:12:28 +0800`,
 /// or `... UTC`) in PDF date form, `D:20260929151228+08'00'`, as Prawn
-/// writes the Ruby `Time` it parses to. None when it does not parse.
+/// writes the Ruby `Time` it parses to. None when it does not parse, or
+/// when the result is not a valid PDF date (month 13, 30 February, hour
+/// 24): the date is then left out, where `render_pdf` would refuse the
+/// whole document.
 fn pdf_date_of_attribute(value : String) -> String? {
   let digits = StringBuilder()
   let mut count = 0
@@ -204,7 +207,12 @@ fn pdf_date_of_attribute(value : String) -> String? {
   } else {
     return None
   }
-  Some("D:\{digits.to_string()}\{offset}")
+  let date = "D:\{digits.to_string()}\{offset}"
+  if @pdf.is_pdf_date(date) {
+    Some(date)
+  } else {
+    None
+  }
 }
 
 ///|
