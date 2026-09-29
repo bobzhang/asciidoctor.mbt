@@ -32,28 +32,51 @@ priv struct Mark {
 }
 
 ///|
+/// A column box (Prawn's ColumnBox with `reflow_margins`): the bounds are
+/// split into `count` columns `gap` apart; running out of room moves to
+/// the next column at the box's top, and past the last one to a new page,
+/// where the box starts at the page's top.
+priv struct Columns {
+  count : Int
+  /// the distance between the left edges of adjacent columns
+  stride : Double
+  mut current : Int
+}
+
+///|
 priv struct Flow {
   catalog : FontCatalog
   model : @pagelayout.PageModel
-  top : Double
+  /// a dry run (asciidoctor-pdf's scratch document): destinations and
+  /// index pages are not recorded
+  scratch : Bool
+  /// the top of the page's content area
+  page_top : Double
+  /// the top of the current frame: `page_top`, or where a column box
+  /// starts on its first page
+  mut top : Double
   bottom : Double
   mut page : Int
   mut y : Double
   mut left : Double
   mut right : Double
+  mut columns : Columns?
 }
 
 ///|
-fn Flow::new(catalog : FontCatalog) -> Flow {
+fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
   {
     catalog,
     model: @pagelayout.PageModel::new(),
+    scratch,
+    page_top: margin_top,
     top: margin_top,
     bottom: page_height - margin_bottom,
     page: -1,
     y: margin_top,
     left: margin_side,
     right: page_width - margin_side,
+    columns: None,
   }
 }
 
@@ -65,18 +88,68 @@ fn Flow::start_new_page(self : Flow) -> Unit {
     items: [],
   })
   self.page = self.model.pages.length() - 1
+  self.top = self.page_top
   self.y = self.top
 }
 
 ///|
 /// Move to the next page, creating it unless an earlier pass already did
-/// (a block's background revisits pages its content spilled onto).
+/// (a block's background revisits pages its content spilled onto); in a
+/// column box, to the next column first (Prawn's `move_past_bottom`).
 fn Flow::advance_page(self : Flow) -> Unit {
+  match self.columns {
+    Some(columns) if columns.current < columns.count - 1 => {
+      columns.current += 1
+      self.left += columns.stride
+      self.right += columns.stride
+      self.y = self.top
+      return
+    }
+    Some(columns) => {
+      let back = columns.stride * columns.current.to_double()
+      self.left -= back
+      self.right -= back
+      columns.current = 0
+    }
+    None => ()
+  }
   if self.page + 1 < self.model.pages.length() {
     self.page += 1
+    self.top = self.page_top
     self.y = self.top
   } else {
     self.start_new_page()
+  }
+}
+
+///|
+/// Lay out `body` in `count` columns `gap` apart, starting at the cursor
+/// (Prawn's `column_box` with `reflow_margins: true`); the cursor ends
+/// where the first column did, or, when the box went on past it, at the
+/// bottom of the last one.
+fn Flow::column_box(
+  self : Flow,
+  count : Int,
+  gap : Double,
+  body : () -> Unit,
+) -> Unit {
+  let width = self.width()
+  let bare = (width - gap * (count - 1).to_double()) / count.to_double()
+  let saved = (self.left, self.right, self.top, self.columns)
+  let columns : Columns = { count, stride: bare + gap, current: 0, }
+  self.columns = Some(columns)
+  self.top = self.y
+  self.right = self.left + bare
+  let start_page = self.page
+  body()
+  let current = columns.current
+  self.columns = saved.3
+  self.left = saved.0
+  self.right = saved.1
+  self.top = if self.page == start_page { saved.2 } else { self.page_top }
+  if current > 0 {
+    // the box stretched to the bottom of the columns before the last
+    self.y = self.bottom
   }
 }
 
@@ -161,7 +234,8 @@ fn Flow::mark(self : Flow) -> Mark {
 
 ///|
 fn Flow::font(self : Flow, style : Style) -> Face {
-  self.catalog.face(style.family, style.bold, style.italic)
+  let (bold, italic) = style.face_style()
+  self.catalog.face(style.family, bold, italic)
 }
 
 ///|
@@ -280,11 +354,8 @@ fn Flow::line_items(
         )
       None => ()
     }
-    let font = self.model.add_font({
-      family: style.family,
-      bold: style.bold,
-      italic: style.italic,
-    })
+    let (bold, italic) = style.face_style()
+    let font = self.model.add_font({ family: style.family, bold, italic, })
     items.push(
       Text({
         font,
@@ -345,6 +416,15 @@ fn Flow::ink_line(
   baseline : Double,
 ) -> Unit {
   self.items().append(self.line_items(line, x0, baseline))
+  if !self.scratch {
+    // an index term's anchor tells the index its page
+    // (InlineDestinationMarker)
+    for anchor in line.anchors {
+      if anchor.0.has_prefix("__indexterm-") {
+        session.index.link_dest_to_page(anchor.0, self.page + 1)
+      }
+    }
+  }
 }
 
 ///|
@@ -449,7 +529,7 @@ fn Flow::underlay(
   for page in start.page..<=end_page {
     let first = page == start.page
     let last = page == end_page
-    let top = if first { start.y } else { self.top }
+    let top = if first { start.y } else { self.page_top }
     let bottom = if last { end_y } else { self.bottom }
     if bottom - top <= 0.0 {
       continue

@@ -22,6 +22,13 @@ priv struct Style {
   border_offset : Double
   underline : Bool
   strike : Bool
+  /// the style of the document font the text is set in (Prawn's current
+  /// font, as `theme_font` sets it); `bold` and `italic` are the styles of
+  /// the markup (and those inherited explicitly, as headings do)
+  doc_bold : Bool
+  doc_italic : Bool
+  /// the markup names a font family (`<code>`, `<kbd>`, `<font name>`)
+  font_set : Bool
 }
 
 ///|
@@ -30,6 +37,8 @@ fn Style::new(
   size? : Double = base_font_size,
   bold? : Bool = false,
   italic? : Bool = false,
+  doc_bold? : Bool = false,
+  doc_italic? : Bool = false,
   color? : Color = base_font_color,
 ) -> Style {
   {
@@ -37,6 +46,9 @@ fn Style::new(
     size,
     bold,
     italic,
+    doc_bold,
+    doc_italic,
+    font_set: false,
     color,
     link: None,
     background: None,
@@ -44,6 +56,19 @@ fn Style::new(
     border_offset: 0.0,
     underline: false,
     strike: false,
+  }
+}
+
+///|
+/// The (bold, italic) face a fragment is set in, as Prawn's arranger picks
+/// it (`apply_font_settings`): a fragment whose markup names a font or a
+/// bold or italic style takes exactly those styles; any other fragment is
+/// set in the document font, whatever its style.
+fn Style::face_style(self : Style) -> (Bool, Bool) {
+  if self.font_set || self.bold || self.italic {
+    (self.bold, self.italic)
+  } else {
+    (self.doc_bold, self.doc_italic)
   }
 }
 
@@ -218,11 +243,18 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
   match tag {
     "strong" | "b" => { ..style, bold: true, }
     "em" | "i" => { ..style, italic: true, }
-    "code" => { ..style, family: mono_font_family, color: codespan_font_color, }
+    "code" =>
+      {
+        ..style,
+        family: mono_font_family,
+        color: codespan_font_color,
+        font_set: true,
+      }
     "kbd" =>
       {
         ..style,
         family: mono_font_family,
+        font_set: true,
         background: Some(rgb_hex(0xF5F5F5)),
         border_offset: 2.0,
       }
@@ -254,7 +286,7 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
         None => ()
       }
       match attrs.get("name") {
-        Some(family) => s = { ..s, family, }
+        Some(family) => s = { ..s, family, font_set: true, }
         None => ()
       }
       match

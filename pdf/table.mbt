@@ -54,24 +54,28 @@ fn Converter::layout_row(
     }
     column += span
     let (base, text, normalize) = if head {
-      (Style::new(bold=true), cell.text().unwrap_or("").trim().to_owned(), true)
+      (
+        Style::new(doc_bold=true),
+        cell.text().unwrap_or("").trim().to_owned(),
+        true,
+      )
     } else {
       match cell.style {
         Some("strong") =>
           (
-            Style::new(bold=true),
+            Style::new(doc_bold=true),
             cell.text().unwrap_or("").trim().to_owned(),
             true,
           )
         Some("emphasis") =>
           (
-            Style::new(italic=true),
+            Style::new(doc_italic=true),
             cell.text().unwrap_or("").trim().to_owned(),
             true,
           )
         Some("header") =>
           (
-            Style::new(bold=true),
+            Style::new(doc_bold=true),
             cell.text().unwrap_or("").trim().to_owned(),
             true,
           )

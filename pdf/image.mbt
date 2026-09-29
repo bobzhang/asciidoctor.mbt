@@ -127,7 +127,7 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   let mut height = width * aspect
   // the image keeps its caption (below it) on the same page
   let caption_height = if node.has_title() {
-    let style = Style::new(size=caption_font_size, italic=true)
+    let style = Style::new(size=caption_font_size, doc_italic=true)
     flow.height_of(
       parse_formatted(node.captioned_title(), style, normalize=false),
       line_metrics(base_line_height, flow.font(style), caption_font_size),

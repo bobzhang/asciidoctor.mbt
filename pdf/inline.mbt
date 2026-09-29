@@ -10,10 +10,31 @@ priv struct InlineConverter {
 }
 
 ///|
+/// State shared by the inline conversions of one document and its block
+/// conversion. Inline content is converted whenever the core asks (section
+/// titles already while parsing), so this lives with the converter the
+/// core creates for the document, as asciidoctor-pdf's converter instance
+/// does.
+priv struct Session {
+  /// how deep in dry runs (asciidoctor-pdf's scratch document): inline
+  /// conversions there must leave no trace (index terms are not stored)
+  mut scratch : Int
+  /// the index terms met so far
+  mut index : IndexCatalog
+}
+
+///|
+let session : Session = { scratch: 0, index: IndexCatalog::new(), }
+
+///|
 /// Registers the `pdf` backend with the core so that `backend=pdf` loads
 /// resolve inline content to formatted text.
 pub fn register() -> Unit {
   @core.register_converter(["pdf"], fn(_backend, _htmlsyntax, _doc) {
+    // a new document: a new index (nested documents share their parent's
+    // converter)
+    session.index = IndexCatalog::new()
+    session.scratch = 0
     ({ resolving_xref: false, } : InlineConverter)
   })
 }
@@ -46,16 +67,7 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
       unsupported("inline", "image", node)
       "[\{node.attr("alt").unwrap_or("")}]"
     }
-    "inline_indexterm" => {
-      // asciidoctor-pdf anchors every term (`__indexterm-N`) and collects
-      // it for the index section; the spike keeps only the visible text
-      unsupported("inline", "indexterm", node)
-      if node.inline_type == Some("visible") {
-        node.text().unwrap_or("")
-      } else {
-        ""
-      }
-    }
+    "inline_indexterm" => convert_inline_indexterm(node)
     // block content reached through `content()` (e.g. a pass block)
     "pass" => node.content()
     // the nested document of an AsciiDoc table cell (`a|`), which the
@@ -68,6 +80,42 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
       unsupported("inline", other, node)
       ""
     }
+  }
+}
+
+///|
+/// A string list attribute (`terms`, `see-also`).
+fn list_attr(node : @core.Node, name : String) -> Array[String] {
+  match node.attributes.get(name) {
+    Some(List(items)) => items
+    Some(Str(item)) => [item]
+    _ => []
+  }
+}
+
+///|
+/// asciidoctor-pdf's `convert_inline_indexterm`: an anchor named
+/// `__indexterm-N` where the term occurs (whose page the index lists),
+/// followed by the term when it is visible. A dry run (scratch) keeps only
+/// the visible text and stores nothing.
+fn convert_inline_indexterm(node : @core.Node) -> String {
+  let visible = node.inline_type == Some("visible")
+  if session.scratch > 0 {
+    return if visible { node.text().unwrap_or("") } else { "" }
+  }
+  let index = session.index
+  let anchor_name = index.next_anchor_name()
+  let dest : IndexDest = { anchor: anchor_name, page: None, page_sortable: 0, }
+  let anchor = "<a id=\"\{anchor_name}\" type=\"indexterm\"></a>"
+  let see = node.attr("see")
+  let see_also = list_attr(node, "see-also")
+  if visible {
+    let term = node.text().unwrap_or("")
+    index.store_term([term], dest, see~, see_also~)
+    anchor + term
+  } else {
+    index.store_term(list_attr(node, "terms"), dest, see~, see_also~)
+    anchor
   }
 }
 

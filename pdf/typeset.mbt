@@ -153,7 +153,8 @@ fn build_items(
   let faces : Array[Face] = []
   for index, fragment in fragments {
     let style = fragment.style
-    let face = catalog.face(style.family, style.bold, style.italic)
+    let (bold, italic) = style.face_style()
+    let face = catalog.face(style.family, bold, italic)
     faces.push(face)
     let blank : Item = {
       unit: 0,
@@ -278,7 +279,11 @@ fn typeset_lines(
         continue
       }
       if w + item.fit > limit + 0.0001 && visible {
-        end = if last_break > start { last_break } else { i }
+        end = if last_break > start {
+          pull_back_limit(items, start, last_break, i)
+        } else {
+          i
+        }
         break
       }
       w += item.fit
@@ -316,6 +321,52 @@ fn typeset_lines(
     )
   }
   lines
+}
+
+///|
+/// Prawn's break characters (`LineWrap#break_chars`): whitespace, the
+/// zero-width space, the soft hyphen and the hyphen.
+fn is_break_char(unit : Int) -> Bool {
+  is_whitespace(unit) || unit == 0xAD || unit == 0x2D
+}
+
+///|
+/// Where a line that overflows at `items[i]` ends, when the word that does
+/// not fit starts at `token` (a token start after the line's `start`).
+///
+/// Prawn wraps fragment by fragment: when not even the first segment of a
+/// fragment fits, it moves the last word of the fragment before it to the
+/// next line with it (`pull_preceding_fragment_to_join_this_one?`), but no
+/// further back. So a word made of several fragments (`(` `iss91v2` `),`)
+/// breaks at the start of the last word of the fragment before the one
+/// that overflowed, even when the word began in an earlier fragment.
+fn pull_back_limit(
+  items : Array[Item],
+  start : Int,
+  token : Int,
+  i : Int,
+) -> Int {
+  let fragment = items[i].fragment
+  if items[token].fragment == fragment {
+    return token
+  }
+  // the first item of the overflowing fragment on this line
+  let mut first = i
+  while first > start && items[first - 1].fragment == fragment {
+    first -= 1
+  }
+  if first <= token {
+    return token
+  }
+  // the last word of the fragment before it
+  let previous = items[first - 1].fragment
+  let mut word = first
+  while word > start &&
+        items[word - 1].fragment == previous &&
+        !is_break_char(items[word - 1].unit) {
+    word -= 1
+  }
+  @cmp.maximum(word, token)
 }
 
 ///|

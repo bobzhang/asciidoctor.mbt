@@ -242,6 +242,8 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // the top of the document, for `<<_top>>`-style references
   let top = top_anchor(doc)
   flow.add_anchor(top, 0.0, 0.0)
+  // the index numbers pages from the body's first
+  session.index.start_page_number = 1
   let doctitle = doc.doctitle()
   if doc.has_header() && !doc.notitle() {
     match doctitle {
@@ -674,7 +676,7 @@ fn Converter::ink_caption(
   text : String,
   bottom? : Bool = false,
 ) -> Unit {
-  let style = Style::new(size=caption_font_size, italic=true)
+  let style = Style::new(size=caption_font_size, doc_italic=true)
   if bottom {
     self.flow.margin(caption_margin_inside)
   }
@@ -738,7 +740,7 @@ fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
     ).length() <=
     1
   let caption_height = if node.has_title() {
-    let caption_style = Style::new(size=caption_font_size, italic=true)
+    let caption_style = Style::new(size=caption_font_size, doc_italic=true)
     flow.height_of(
       parse_formatted(node.captioned_title(), caption_style, normalize=false),
       line_metrics(
@@ -1249,7 +1251,7 @@ fn Converter::bordered_block(
       // sidebar title: centred, bold, heading h4 size
       self.ink_prose(
         node.title().unwrap_or(""),
-        style=Style::new(size=heading_font_size(4), bold=true),
+        style=Style::new(size=heading_font_size(4), doc_bold=true),
         align=Center,
         margin_bottom=heading_margin_bottom,
         // the heading line height, 1
