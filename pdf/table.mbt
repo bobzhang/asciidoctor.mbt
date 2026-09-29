@@ -532,18 +532,38 @@ fn Converter::draw_cell_content(
       } else {
         0.0
       }
-      let (page, y, left, right) = (flow.page, flow.y, flow.left, flow.right)
+      let (page, y, left, right, bottom) = (
+        flow.page,
+        flow.y,
+        flow.left,
+        flow.right,
+        flow.bottom,
+      )
       let pages = flow.model.pages.length()
       flow.left = cell.x + pad_left
       flow.right = cell.x + cell.width - pad_right
+      // the content may take a page's height from the cell's top (less the
+      // padding), even past the bottom margin (`draw_content`)
+      flow.bottom = top +
+        (bottom - flow.page_top) -
+        cell.padding.0 -
+        cell.padding.2
       flow.y = top + offset
       self.with_text_align(align, () => self.traverse(inner))
-      if flow.model.pages.length() > pages {
-        // Ruby deletes the pages the cell ran onto
-        warning(
-          "the table cell on page \{page + 1} has been truncated; Asciidoctor PDF does not support table cell content that exceeds the height of a single page",
-          cell.node,
-        )
+      flow.bottom = bottom
+      let extra = flow.model.pages.length() - pages
+      if extra > 0 {
+        // Ruby deletes the pages the cell ran onto, and says so unless it
+        // only started an empty one
+        let empty = flow.model.pages[flow.model.pages.length() - 1].items
+          .iter()
+          .all(i => i is Anchor(_))
+        if !(extra == 1 && empty) {
+          warning(
+            "the table cell on page \{page + 1} has been truncated; Asciidoctor PDF does not support table cell content that exceeds the height of a single page",
+            cell.node,
+          )
+        }
         while flow.model.pages.length() > pages {
           ignore(flow.model.pages.pop())
         }

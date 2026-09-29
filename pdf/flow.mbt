@@ -55,7 +55,7 @@ priv struct Flow {
   /// the top of the current frame: `page_top`, or where a column box
   /// starts on its first page
   mut top : Double
-  bottom : Double
+  mut bottom : Double
   mut page : Int
   mut y : Double
   mut left : Double

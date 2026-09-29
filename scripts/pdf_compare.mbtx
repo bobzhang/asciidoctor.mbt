@@ -163,7 +163,11 @@ let cases : Array[(String, String, String)] = [
   ("toc-article", "pdf/tests/toc-article.adoc", ""),
   ("toc-macro", "pdf/tests/toc-macro.adoc", ""),
   ("index-terms", "pdf/tests/index-terms.adoc", ""),
+  ("index-ranges", "pdf/tests/index-ranges.adoc", ""),
+  ("table-tall", "pdf/tests/table-tall.adoc", ""),
+  ("toc-long", "pdf/tests/toc-long.adoc", ""),
   ("book", "pdf/tests/book.adoc", ""),
+  ("book-parts", "pdf/tests/book-parts.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",

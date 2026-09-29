@@ -363,6 +363,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     ignore(pages.pop())
   }
   c.ink_footers(front_matter)
+  keep_last_anchors(flow.model)
   for entry in @pdf.unembeddable_images(flow.model) {
     diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
   }
@@ -380,6 +381,35 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       page_label(i + 1, front_matter)
     }),
   )
+}
+
+///|
+/// A name given to several destinations (an index term and a subterm of
+/// the same name, a repeated id) goes to the last one: Prawn's name tree
+/// inserts a new entry before an equal one, so a reader finds the latest
+/// (pdf-core's `NameTree::Node#insertion_point`). Pagelayout keeps the
+/// first, so the earlier ones are dropped.
+fn keep_last_anchors(model : @pagelayout.PageModel) -> Unit {
+  let seen : Map[String, Bool] = Map([])
+  for p = model.pages.length() - 1; p >= 0; p = p - 1 {
+    let items = model.pages[p].items
+    let kept : Array[@pagelayout.PageItem] = []
+    for i = items.length() - 1; i >= 0; i = i - 1 {
+      match items[i] {
+        Anchor(anchor) if seen.contains(anchor.name) => ()
+        Anchor(anchor) => {
+          seen[anchor.name] = true
+          kept.push(items[i])
+        }
+        item => kept.push(item)
+      }
+    }
+    if kept.length() != items.length() {
+      kept.rev_in_place()
+      items.clear()
+      items.append(kept)
+    }
+  }
 }
 
 ///|

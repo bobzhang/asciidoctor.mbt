@@ -442,6 +442,48 @@ fn Converter::ink_prose_fragments(
 }
 
 ///|
+/// A term's page numbers and what each links to, after
+/// `index-pagenum-sequence-style`: every occurrence (the default, `term`),
+/// each page once (`page`), or runs of consecutive pages as ranges
+/// (`range`, `consolidate_ranges`), each linked to its first occurrence.
+fn index_pagenums(term : IndexTerm, style : String?) -> Array[(String, String)] {
+  let dests = term.paged_dests()
+  match style {
+    Some("page") | Some("range") => {
+      // the first occurrence on each page
+      let pages : Array[(String, String)] = []
+      for dest in dests {
+        let label = dest.page.unwrap_or("")
+        if !pages.iter().any(p => p.0 == label) {
+          pages.push((label, dest.anchor))
+        }
+      }
+      if style == Some("page") || pages.length() < 2 {
+        return pages
+      }
+      let to_i = fn(label : String) {
+        @string.parse_int(label) catch {
+          _ => 0
+        }
+      }
+      let ranges : Array[(String, String, String)] = [] // first, last, anchor
+      for page in pages {
+        match ranges.last() {
+          Some((first, last, anchor)) if to_i(last) + 1 == to_i(page.0) =>
+            ranges[ranges.length() - 1] = (first, page.0, anchor)
+          _ => ranges.push((page.0, page.0, page.1))
+        }
+      }
+      ranges.map(r => {
+        let (first, last, anchor) = r
+        (if first == last { first } else { "\{first}-\{last}" }, anchor)
+      })
+    }
+    _ => dests.map(d => (d.page.unwrap_or(""), d.anchor))
+  }
+}
+
+///|
 /// Merge adjacent fragments of the same style (`consolidate_fragments`).
 fn consolidate_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
   let result : Array[Fragment] = []
@@ -486,13 +528,14 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
         fragments.push({ text: ")", style: base, anchor: None, })
       }
       None => {
-        for dest in term.paged_dests() {
+        for
+          pagenum in index_pagenums(
+            term,
+            self.doc.attr("index-pagenum-sequence-style"),
+          ) {
+          let (label, anchor) = pagenum
           fragments.push({ text: ", ", style: base, anchor: None, })
-          fragments.push({
-            text: dest.page.unwrap_or(""),
-            style: linked(dest.anchor),
-            anchor: None,
-          })
+          fragments.push({ text: label, style: linked(anchor), anchor: None, })
         }
         let also = term.see_also.copy()
         also.sort_by((a, b) => compare_index_names(a.name, b.name))
