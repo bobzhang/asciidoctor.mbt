@@ -193,41 +193,6 @@ fn Converter::text_cell_content(
 }
 
 ///|
-/// Lay out `body` in a scratch document (asciidoctor-pdf's `dry_run`) whose
-/// bounds are `left`..`right`, starting at the top of a new page: returns
-/// how many pages it took and the cursor where it started and ended. The
-/// scratch run stores no index terms and registers nothing in the
-/// document (`push_scratch`/`pop_scratch`).
-fn Converter::dry_run(
-  self : Converter,
-  left : Double,
-  right : Double,
-  body : (Converter) -> Unit,
-) -> (Int, Double, Double) {
-  let flow = Flow::new(self.flow.catalog, scratch=true)
-  flow.start_new_page()
-  flow.left = left
-  flow.right = right
-  let scratch : Converter = {
-    doc: self.doc,
-    flow,
-    outline: [],
-    gutters: self.gutters.copy(),
-    text_align: self.text_align,
-  }
-  let start_y = flow.y
-  session.scratch += 1
-  let footnotes = self.doc.catalog().footnotes
-  let registered = footnotes.length()
-  body(scratch)
-  while footnotes.length() > registered {
-    ignore(footnotes.pop())
-  }
-  session.scratch -= 1
-  (flow.model.pages.length(), start_y, flow.y)
-}
-
-///|
 /// The height the nested document of an AsciiDoc cell takes in the cell's
 /// content width (Cell::AsciiDoc#dry_run): laid out from the top of a page
 /// after moving down by the vertical padding; when it does not fit on
@@ -240,15 +205,15 @@ fn Converter::asciidoc_cell_height(
   right : Double,
   padding_y : Double,
 ) -> Double {
-  let (pages, start_y, end_y) = self.dry_run(left, right, fn(scratch) {
+  let scratch = self.dry_run(left, right, fn(scratch) {
     scratch.flow.move_down(padding_y)
     scratch.with_text_align(align, () => scratch.traverse(inner))
   })
   let flow = self.flow
-  if pages > 1 {
+  if scratch.model.pages.length() > 1 {
     flow.bottom - flow.page_top - padding_y
   } else {
-    end_y - start_y - padding_y
+    scratch.y - flow.page_top - padding_y
   }
 }
 

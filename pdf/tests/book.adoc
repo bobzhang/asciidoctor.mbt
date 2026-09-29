@@ -1,0 +1,32 @@
+= The Book Title: A Subtitle
+Jane Doe; John Roe
+v1.2, 2024-01-02: First edition
+:doctype: book
+:toc:
+:sectnums:
+:reproducible:
+
+[preface]
+== Preface
+
+A preface before the chapters.
+
+== The first chapter
+
+The first chapter starts on its own page.(((chapters, first)))
+
+=== A section
+
+A section in the first chapter.
+
+== The second chapter
+
+The second chapter((footnote)) also starts on a new page.footnote:[A footnote at the end of the chapter.]
+
+[appendix]
+== An appendix
+
+The appendix.((appendix))
+
+[index]
+== Index

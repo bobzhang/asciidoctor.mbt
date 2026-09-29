@@ -29,7 +29,7 @@ priv struct Style {
   doc_italic : Bool
   /// the markup names a font family (`<code>`, `<kbd>`, `<font name>`)
   font_set : Bool
-}
+} derive(Eq)
 
 ///|
 fn Style::new(
@@ -401,6 +401,28 @@ fn parse_formatted(
         "a" if attrs.get("id") is Some(id) &&
           !attrs.contains("href") &&
           !attrs.contains("anchor") => {
+          // a concealed index term swallows the space before it
+          // (asciidoctor-pdf's Transform#apply)
+          if attrs.get("type") == Some("indexterm") &&
+            !attrs.contains("visible") &&
+            !text.is_empty() {
+            let pending = text.to_string()
+            let mut end = pending.length()
+            if normalize {
+              while end > 0 &&
+                    (
+                      pending[end - 1] == ' ' ||
+                      pending[end - 1] == '\n' ||
+                      pending[end - 1] == '\t'
+                    ) {
+                end -= 1
+              }
+            } else if pending[end - 1] == ' ' {
+              end -= 1
+            }
+            text.reset()
+            text.write_string(pending[:end].to_string())
+          }
           flush()
           fragments.push({ text: "", style, anchor: Some(id), })
           if !self_closing {

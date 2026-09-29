@@ -375,3 +375,159 @@ fn IndexCatalog::sorted_categories(self : IndexCatalog) -> Array[IndexTerm] {
   categories.sort_by((a, b) => compare_index_names(a.name, b.name))
   categories
 }
+
+///|
+/// asciidoctor-pdf's `convert_index_section`: the categories in columns
+/// (`index_columns`, unless already in a column box).
+fn Converter::convert_index_section(self : Converter) -> Unit {
+  let index = session.index
+  index.link_associations()
+  let flow = self.flow
+  if flow.columns is Some(_) || index_columns < 2 {
+    self.convert_index_categories()
+  } else {
+    flow.column_box(index_columns, index_column_gap, () => {
+      self.convert_index_categories()
+    })
+  }
+}
+
+///|
+/// `convert_index_categories`: each category's letter, in bold, then its
+/// terms; a category moves to the next column when its letter and a line
+/// would not fit.
+fn Converter::convert_index_categories(self : Converter) -> Unit {
+  let flow = self.flow
+  let base = Style::new()
+  let face = flow.font(base)
+  let metrics = line_metrics(base_line_height, face, base.size)
+  let space_needed = description_list_term_spacing +
+    2.0 *
+    flow.height_of([{ text: "A", style: base, anchor: None, }], metrics, base)
+  for category in session.index.sorted_categories() {
+    if space_needed > flow.cursor() {
+      flow.advance_page()
+    }
+    // plain text: the letter is not formatted
+    let style = Style::new(doc_bold=true)
+    self.ink_prose_fragments(
+      [{ text: category.name, style, anchor: None, }],
+      style,
+      margin_bottom=description_list_term_spacing,
+    )
+    for term in category.sorted_terms() {
+      self.convert_index_term(term)
+    }
+    if prose_margin_bottom > flow.cursor() {
+      flow.advance_page()
+    } else {
+      flow.move_down(prose_margin_bottom)
+    }
+  }
+}
+
+///|
+/// Ink fragments as prose, left-aligned, with a bottom margin.
+fn Converter::ink_prose_fragments(
+  self : Converter,
+  fragments : Array[Fragment],
+  style : Style,
+  margin_bottom? : Double = 0.0,
+  hanging_indent? : Double = 0.0,
+) -> Unit {
+  let flow = self.flow
+  let metrics = line_metrics(base_line_height, flow.font(style), style.size)
+  flow.typeset(fragments, metrics, style, align=Left, hanging_indent~)
+  flow.margin(margin_bottom)
+}
+
+///|
+/// Merge adjacent fragments of the same style (`consolidate_fragments`).
+fn consolidate_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
+  let result : Array[Fragment] = []
+  for fragment in fragments {
+    match result.last() {
+      Some(last) if last.anchor is None &&
+        fragment.anchor is None &&
+        last.style == fragment.style =>
+        result[result.length() - 1] = {
+          ..last,
+          text: last.text + fragment.text,
+        }
+      _ => result.push(fragment)
+    }
+  }
+  result
+}
+
+///|
+/// `convert_index_term`: the term, anchored for `see` links, then its
+/// pages (every occurrence, linked to it) or what to see instead, with a
+/// hanging indent; then its `see also` lines and its subterms, indented.
+fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
+  let flow = self.flow
+  let base = Style::new()
+  let linked = fn(anchor : String) -> Style {
+    {
+      ..base,
+      color: link_font_color,
+      link: Some("#" + pdf_anchor_name(anchor)),
+    }
+  }
+  let fragments = parse_formatted(term.markup, base)
+  let see_also : Array[Array[Fragment]] = []
+  if !term.is_container() {
+    fragments.insert(0, { text: "", style: base, anchor: Some(term.anchor()), })
+    match term.see {
+      Some(see) => {
+        fragments.push({ text: " (see ", style: base, anchor: None, })
+        let style = if see.is_term { linked(see.anchor()) } else { base }
+        fragments.append(parse_formatted(see.markup, style))
+        fragments.push({ text: ")", style: base, anchor: None, })
+      }
+      None => {
+        for dest in term.paged_dests() {
+          fragments.push({ text: ", ", style: base, anchor: None, })
+          fragments.push({
+            text: dest.page.unwrap_or(""),
+            style: linked(dest.anchor),
+            anchor: None,
+          })
+        }
+        let also = term.see_also.copy()
+        also.sort_by((a, b) => compare_index_names(a.name, b.name))
+        for also_term in also {
+          let style = if also_term.is_term {
+            linked(also_term.anchor())
+          } else {
+            base
+          }
+          let item = [{ text: "(see also ", style: base, anchor: None, }]
+          item.append(parse_formatted(also_term.markup, style))
+          item.push({ text: ")", style: base, anchor: None, })
+          see_also.push(item)
+        }
+      }
+    }
+  }
+  let hanging = description_list_description_indent * 2.0
+  self.ink_prose_fragments(
+    consolidate_fragments(fragments),
+    base,
+    hanging_indent=hanging,
+  )
+  if !see_also.is_empty() || !term.terms.is_empty() {
+    flow.indent(description_list_description_indent, 0.0, () => {
+      for item in see_also {
+        self.ink_prose_fragments(
+          consolidate_fragments(item),
+          base,
+          hanging_indent=hanging,
+        )
+      }
+      for subterm in term.sorted_terms() {
+        self.convert_index_term(subterm)
+      }
+    })
+  }
+}

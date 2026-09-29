@@ -13,6 +13,62 @@ priv struct Converter {
   gutters : Array[(@core.Node, Double)?]
   /// asciidoctor-pdf's `@base_text_align`: how prose aligns by default
   mut text_align : Alignment
+  /// the pages reserved for the TOC (`@toc_extent`), once allocated
+  mut toc_extent : TocExtent?
+  /// the `toc::[]` block the TOC was placed at, and its destination
+  mut toc_node : (@core.Node, String)?
+  /// how many footnotes are inked (`@rendered_footnotes`)
+  mut rendered_footnotes : Int
+}
+
+///|
+fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
+  {
+    doc,
+    flow,
+    outline: [],
+    gutters: [],
+    text_align: Justify,
+    toc_extent: None,
+    toc_node: None,
+    rendered_footnotes: 0,
+  }
+}
+
+///|
+/// Lay out `body` in a scratch document (asciidoctor-pdf's `dry_run`) on a
+/// new page, with bounds `left`..`right` and the cursor at `start_y` (by
+/// default the page's top); returns the scratch flow, whose pages and
+/// cursor tell how far the content went. The run stores no index terms
+/// and leaves no footnotes registered (`push_scratch`/`pop_scratch`).
+fn Converter::dry_run(
+  self : Converter,
+  left : Double,
+  right : Double,
+  start_y? : Double,
+  body : (Converter) -> Unit,
+) -> Flow {
+  let flow = Flow::new(self.flow.catalog, scratch=true)
+  flow.start_new_page()
+  flow.left = left
+  flow.right = right
+  match start_y {
+    Some(y) => flow.y = y
+    None => ()
+  }
+  let scratch = Converter::new(self.doc, flow)
+  scratch.gutters.append(self.gutters)
+  scratch.text_align = self.text_align
+  scratch.rendered_footnotes = self.rendered_footnotes
+  session.scratch += 1
+  let footnotes = self.doc.catalog().footnotes
+  let registered = footnotes.length()
+  body(scratch)
+  while footnotes.length() > registered {
+    ignore(footnotes.pop())
+  }
+  session.scratch -= 1
+  flow
 }
 
 ///|
@@ -38,12 +94,14 @@ fn Converter::with_text_align(
 /// What the last `convert_document` could not render, one line each:
 /// `UNSUPPORTED <kind> <what> at <file>:<line>`. Content the spike does not
 /// implement is left out of the PDF (or approximated), and this is where it
-/// says so; the CLI prints these lines on stderr.
+/// says so; the CLI prints these lines on stderr. Problems Ruby
+/// asciidoctor-pdf reports too (content it cuts off, such as a table cell
+/// taller than a page) are `WARNING <message> at <file>:<line>`.
 let diagnostics : Array[String] = []
 
 ///|
-/// The unsupported content the last `convert_document` met (see
-/// `diagnostics`), in document order.
+/// The unsupported content and the warnings the last `convert_document`
+/// met (see `diagnostics`), in document order.
 pub fn conversion_warnings() -> Array[String] {
   diagnostics.copy()
 }
@@ -244,12 +302,6 @@ fn outline_levels(doc : @core.Node) -> (Int, Int) {
 ///|
 /// Report document-level features the spike does not implement.
 fn report_document_features(doc : @core.Node) -> Unit {
-  if doc.has_attr("toc") {
-    unsupported("attribute", "toc", doc)
-  }
-  if doc.doctype() == "book" {
-    unsupported("attribute", "doctype=book (title page, chapters)", doc)
-  }
   if doc.attr("icons") == Some("font") {
     unsupported("attribute", "icons=font", doc)
   }
@@ -266,65 +318,232 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   diagnostics.clear()
   report_document_features(doc)
   let flow = Flow::new(catalog)
-  let c : Converter = {
-    doc,
-    flow,
-    outline: [],
-    gutters: [],
-    text_align: Justify,
-  }
+  let c = Converter::new(doc, flow)
   flow.start_new_page()
-  // the top of the document, for `<<_top>>`-style references
-  let top = top_anchor(doc)
-  flow.add_anchor(top, 0.0, 0.0)
-  // the index numbers pages from the body's first
-  session.index.start_page_number = 1
-  let doctitle = doc.doctitle()
-  if doc.has_header() && !doc.notitle() {
-    match doctitle {
+  let is_book = doc.doctype() == "book"
+  // a book (or `title-page`) has a title page instead of a title heading
+  let title_as_page = is_book || doc.has_attr("title-page")
+  let has_title_page = title_as_page && doc.has_header() && !doc.notitle()
+  if has_title_page {
+    c.ink_title_page()
+    flow.start_new_page()
+  }
+  if !title_as_page && doc.has_header() && !doc.notitle() {
+    match doc.doctitle() {
       Some(title) => c.ink_heading(title, 1, align=Center)
       None => ()
     }
   }
-  // the outline starts with the document title (`outline-title`, which
-  // defaults to the resolved title: `untitled-label` without a header)
-  let outline_title = match doc.attr("outline-title") {
-    Some(t) if t != "" => Some(t)
-    _ => resolve_doctitle(doc)
+  let levels = resolve_toclevels(doc)
+  // the TOC at the top, unless the macro or the preamble places it
+  let placement = doc.attr("toc-placement").unwrap_or("auto")
+  if has_toc(doc) && placement != "macro" && placement != "preamble" {
+    flow.add_anchor("toc", 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
+    c.toc_extent = Some(c.allocate_toc(levels, title_as_page))
   }
-  match outline_title {
-    Some(title) =>
-      c.outline.push({
-        title: sanitize(title),
-        level: 0,
-        anchor: top,
-        open: false,
-      })
+  // pages before the body are front matter: numbered in roman, without
+  // running content (the default theme starts both at the body)
+  let body_start = flow.page
+  let front_matter = if title_as_page { body_start } else { 0 }
+  session.index.start_page_number = front_matter + 1
+  // the top of the document, for `<<_top>>`-style references: the top of
+  // the page the body starts on (`add_dest_for_top`)
+  let top = top_anchor(doc)
+  flow.add_anchor(top, 0.0, 0.0)
+  c.traverse(doc)
+  c.ink_footnotes(doc)
+  match c.toc_extent {
+    Some(extent) => {
+      let last = flow.page
+      ignore(c.ink_toc(levels, extent.from_page, extent.from_y, front_matter))
+      flow.page = last
+    }
     None => ()
   }
-  c.traverse(doc)
-  c.ink_footnotes()
   // a page started but never written to is dropped
   let pages = flow.model.pages
   if pages.length() > 1 &&
     pages[pages.length() - 1].items.iter().all(fn(i) { i is Anchor(_) }) {
     ignore(pages.pop())
   }
-  c.ink_footers()
+  c.ink_footers(front_matter)
   for entry in @pdf.unembeddable_images(flow.model) {
     diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
   }
   @pdf.render_pdf(
     flow.model,
-    outline=c.outline,
+    outline=c.document_outline(),
     info=pdf_info(doc),
     // the default theme's `page_initial_zoom: FitH` and `page_mode: outline`
     initial_zoom=FitH,
     page_mode="UseOutlines",
     display_doc_title=true,
     page_boxes=true,
-    page_labels=Array::makei(flow.model.pages.length(), i => (i + 1).to_string()),
+    truncate_widths=true,
+    page_labels=Array::makei(flow.model.pages.length(), i => {
+      page_label(i + 1, front_matter)
+    }),
   )
+}
+
+///|
+/// The document outline (asciidoctor-pdf's `add_outline`): the document
+/// title (`outline-title`, which defaults to the resolved title), going to
+/// the top of the first page, then the sections, with the TOC among them
+/// when there is one (`insert_toc_section`).
+fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
+  let doc = self.doc
+  let outline : Array[@pdf.OutlineEntry] = []
+  let outline_title = match doc.attr("outline-title") {
+    Some(t) if t != "" => Some(t)
+    _ => resolve_doctitle(doc)
+  }
+  match outline_title {
+    Some(title) =>
+      outline.push({
+        title: sanitize(title),
+        level: 0,
+        anchor: "",
+        dest: Some((0, 0.0, 0.0)),
+        open: false,
+      })
+    None => ()
+  }
+  let sections = self.outline
+  let toc_title = doc.attr("toc-title").unwrap_or("")
+  let toc_entry = match self.toc_extent {
+    Some(extent) if toc_title != "" && !doc.sections().is_empty() =>
+      match self.toc_node {
+        // the macro: after the section it is in (at that section's level),
+        // going to its destination
+        Some((node, anchor)) => {
+          let entry : @pdf.OutlineEntry = {
+            title: sanitize(toc_title),
+            level: 0,
+            anchor,
+            dest: None,
+            open: false,
+          }
+          match node.parent() {
+            Some(parent) if parent.context == Section => {
+              let parent_anchor = pdf_anchor_name(
+                parent.attr("pdf-anchor").unwrap_or(""),
+              )
+              let mut at = -1
+              let mut level = 0
+              for i, e in sections {
+                if at < 0 && e.anchor == parent_anchor && e.dest is None {
+                  at = i + 1
+                  level = e.level
+                } else if at == i && e.level > level {
+                  at = i + 1
+                }
+              }
+              if at < 0 {
+                None
+              } else {
+                Some((at, { ..entry, level, }))
+              }
+            }
+            _ => Some((0, entry))
+          }
+        }
+        // at the top: first, going to the top of the TOC's first page
+        None =>
+          Some(
+            (
+              0,
+              {
+                title: sanitize(toc_title),
+                level: 0,
+                anchor: "",
+                dest: Some((extent.from_page, 0.0, 0.0)),
+                open: false,
+              },
+            ),
+          )
+      }
+    _ => None
+  }
+  for i, entry in sections {
+    match toc_entry {
+      Some((at, toc)) if at == i => outline.push(toc)
+      _ => ()
+    }
+    outline.push(entry)
+  }
+  match toc_entry {
+    Some((at, toc)) if at == sections.length() => outline.push(toc)
+    _ => ()
+  }
+  outline
+}
+
+///|
+/// The title page of a book (asciidoctor-pdf's `ink_title_page` with the
+/// default theme): the title from 55% down the page, in #999999, then the
+/// subtitle, authors and revision, all right-aligned.
+fn Converter::ink_title_page(self : Converter) -> Unit {
+  let doc = self.doc
+  let flow = self.flow
+  flow.y = flow.page_top + (flow.bottom - flow.page_top) * 0.55
+  let (main, subtitle) = match doc.doctitle_partitioned() {
+    Some(t) => (t.main, t.subtitle)
+    None => (doc.doctitle().unwrap_or(""), None)
+  }
+  self.ink_prose(
+    main,
+    style=Style::new(size=heading_font_size(1), color=rgb_hex(0x999999)),
+    align=Right,
+    margin_bottom=0.0,
+    line_height=0.9,
+  )
+  match subtitle {
+    Some(sub) =>
+      self.ink_prose(
+        sub,
+        style=Style::new(
+          size=heading_font_size(3),
+          doc_bold=true,
+          doc_italic=true,
+        ),
+        align=Right,
+        margin_bottom=0.0,
+        line_height=1.0,
+      )
+    None => ()
+  }
+  let authors = doc.authors()
+  if !authors.is_empty() {
+    flow.move_down(base_font_size * 1.25)
+    self.ink_prose(
+      authors.map(a => a.name.unwrap_or("")).join(", "),
+      style=Style::new(
+        size=(base_font_size * 1.25).round(),
+        color=rgb_hex(0x181818),
+      ),
+      align=Right,
+      margin_bottom=0.0,
+    )
+  }
+  let revision = []
+  match doc.attr("revnumber") {
+    Some(n) =>
+      revision.push("\{doc.attr("version-label").unwrap_or("Version")} \{n}")
+    None => ()
+  }
+  match doc.attr("revdate") {
+    Some(d) => revision.push(d)
+    None => ()
+  }
+  if !revision.is_empty() {
+    flow.move_down(base_font_size * 1.25)
+    let text = match doc.attr("revremark") {
+      Some(remark) => "\{revision.join(", ")}: \{remark}"
+      None => revision.join(", ")
+    }
+    self.ink_prose(text, align=Right, margin_bottom=0.0, normalize=false)
+  }
 }
 
 ///|
@@ -383,6 +602,7 @@ fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
     Open => self.convert_open(node)
     ThematicBreak => self.convert_thematic_break(node)
     PageBreak => if !self.flow.at_page_top() { self.flow.advance_page() }
+    Toc => self.convert_toc(node, "macro")
     FloatingTitle => {
       self.add_dest(node)
       self.ink_heading(node.title().unwrap_or(""), node.level + 1)
@@ -560,29 +780,32 @@ fn Converter::ink_heading(
 }
 
 ///|
-fn Converter::section_title(self : Converter, section : @core.Node) -> String {
-  let doc = self.doc
-  let sectnumlevels = doc.attributes
-    .get("sectnumlevels")
-    .map(v => v.to_i())
-    .unwrap_or(3)
-  let title = section.title().unwrap_or("")
-  if section.caption() is Some(_) {
-    section.captioned_title()
-  } else if section.numbered != NotNumbered && section.level <= sectnumlevels {
-    "\{section.sectnum()} \{title}"
-  } else {
-    title
-  }
-}
-
-///|
+/// asciidoctor-pdf's `convert_section`: parts and chapters (a book's
+/// level-1 sections) start a new page; other headings keep with the
+/// content after them (`arrange_heading`). The section records the page it
+/// starts on and its destination (`pdf-page-start`, `pdf-anchor`), which
+/// the TOC reads; chapters end with their footnotes. The index section
+/// lists the index, and is left out while there are no index terms.
 fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   let flow = self.flow
-  let title = self.section_title(section)
+  let is_index = section.sectname == Some("index")
+  if is_index && session.index.is_empty() {
+    return
+  }
+  let title = numbered_title(section, formal=true)
   let hlevel = section.level + 1
+  let is_book = self.doc.doctype() == "book"
+  let part = section.sectname == Some("part")
+  let chapterlike = !part &&
+    (section.sectname == Some("chapter") || (is_book && section.level == 1))
   let hidden = section.has_option("notitle")
-  if !hidden && !flow.at_page_top() {
+  // the default theme breaks before parts and chapters
+  // (`start_new_chapter`)
+  let started_new = part || chapterlike
+  if started_new && !flow.at_page_top() {
+    flow.advance_page()
+  }
+  if !hidden && !started_new && !flow.at_page_top() {
     // asciidoctor-pdf's `arrange_heading`: keep the heading with the
     // content after it
     let size = heading_font_size(hlevel)
@@ -606,36 +829,46 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
       }
     }
   }
-  match section.id {
-    Some(id) => {
-      let y = if flow.at_page_top() { 0.0 } else { flow.y }
-      flow.add_anchor(id, 0.0, y)
-      let (num_levels, expand_levels) = outline_levels(self.doc)
-      if section.level <= num_levels && sanitize(title) != "" {
-        // the depth in the section tree, not the section level: a
-        // document without a header may start at `===`, and its first
-        // sections are still top-level entries
-        let mut depth = 0
-        let mut parent = section.parent()
-        while parent is Some(p) && p.context == Section {
-          depth += 1
-          parent = p.parent()
-        }
-        self.outline.push({
-          title: sanitize(title),
-          level: depth,
-          anchor: pdf_anchor_name(id),
-          // `closed: expand_levels < 1`, counted down one per level
-          open: depth < expand_levels,
-        })
-      }
+  let start_page = flow.page + 1
+  section.set_attr("pdf-page-start", value=Int(start_page)) |> ignore
+  // a section without an id is named after where it starts
+  let anchor = match section.id {
+    Some(id) => pdf_anchor_name(id)
+    None => "__anchor-\{start_page}-\{(page_height - flow.y).ceil().to_int()}"
+  }
+  section.set_attr("pdf-anchor", value=Str(anchor)) |> ignore
+  flow.add_anchor(anchor, 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
+  let (num_levels, expand_levels) = outline_levels(self.doc)
+  if section.level <= num_levels && sanitize(title) != "" {
+    // the depth in the section tree, not the section level: a document
+    // without a header may start at `===`, and its first sections are
+    // still top-level entries
+    let mut depth = 0
+    let mut parent = section.parent()
+    while parent is Some(p) && p.context == Section {
+      depth += 1
+      parent = p.parent()
     }
-    None => ()
+    self.outline.push({
+      title: sanitize(title),
+      level: depth,
+      anchor,
+      dest: None,
+      // `closed: expand_levels < 1`, counted down one per level
+      open: depth < expand_levels,
+    })
   }
   if !hidden {
     self.ink_heading(title, hlevel)
   }
-  self.traverse(section)
+  if is_index {
+    self.convert_index_section()
+  } else {
+    self.traverse(section)
+  }
+  if chapterlike {
+    self.ink_footnotes(section)
+  }
 }
 
 ///|
@@ -649,6 +882,7 @@ fn Converter::convert_preamble(self : Converter, node : @core.Node) -> Unit {
   }
   self.traverse(node)
   self.block_margin_bottom(node)
+  self.convert_toc(node, "preamble")
 }
 
 ///|
@@ -1402,20 +1636,30 @@ fn Converter::convert_thematic_break(
 }
 
 ///|
-/// Footnotes of the document, at the bottom of the last page
-/// (asciidoctor-pdf's `ink_footnotes` with `footnotes_margin_top: auto`).
-fn Converter::ink_footnotes(self : Converter) -> Unit {
+/// Footnotes not yet inked, at the bottom of the page (asciidoctor-pdf's
+/// `ink_footnotes` with `footnotes_margin_top: auto`): after the document,
+/// and in a book after each chapter. Labels count from the first footnote
+/// inked here.
+fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
   let footnotes = self.doc.footnotes()
-  if footnotes.is_empty() {
+  if footnotes.length() <= self.rendered_footnotes {
     return
   }
+  let pending = footnotes[self.rendered_footnotes:].to_owned()
   let flow = self.flow
-  flow.margin(block_margin_bottom)
+  let is_last = match self.doc.blocks.last() {
+    Some(last) => physical_equal(last, node)
+    None => false
+  }
+  if node.context == Document || is_last {
+    flow.margin(block_margin_bottom)
+  }
   let style = Style::new(size=(base_font_size * 0.75).round())
   let face = flow.font(style)
   let metrics = line_metrics(base_line_height, face, style.size)
-  let texts = footnotes.map(fn(fn_) {
-    "<a id=\"_footnotedef_\{fn_.index}\"></a>[<a anchor=\"_footnoteref_\{fn_.index}\">\{fn_.index}</a>] \{fn_.text}"
+  let offset = self.rendered_footnotes
+  let texts = pending.map(fn(fn_) {
+    "<a id=\"_footnotedef_\{fn_.index}\"></a>[<a anchor=\"_footnoteref_\{fn_.index}\">\{fn_.index - offset}</a>] \{fn_.text}"
   })
   let mut height = 0.0
   for text in texts {
@@ -1427,12 +1671,17 @@ fn Converter::ink_footnotes(self : Converter) -> Unit {
   for text in texts {
     self.ink_prose(text, style~, margin_bottom=3.0)
   }
+  if !flow.scratch {
+    self.rendered_footnotes = footnotes.length()
+  }
 }
 
 ///|
-/// Running footer: a rule and the page number, right on odd pages and left
-/// on even ones (the default theme's `footer_*` keys).
-fn Converter::ink_footers(self : Converter) -> Unit {
+/// Running footer: a rule and the page number, right on recto pages and
+/// left on verso ones (the default theme's `footer_*` keys), from the body
+/// on: the first `front_matter` pages have none, and pages are numbered
+/// from the body's first (`ink_running_content`).
+fn Converter::ink_footers(self : Converter, front_matter : Int) -> Unit {
   let flow = self.flow
   let style = Style::new(size=footer_font_size)
   let face = flow.font(style)
@@ -1440,15 +1689,19 @@ fn Converter::ink_footers(self : Converter) -> Unit {
   let left = margin_side
   let right = page_width - margin_side
   for index, page in flow.model.pages {
-    let number = (index + 1).to_string()
+    if index < front_matter {
+      continue
+    }
+    let number = index + 1 - front_matter
     page.items.push(
       hrule(left, right, top, footer_border_width, footer_border_color),
     )
     let lines = typeset_lines(
-      [{ text: number, style, anchor: None, }],
+      [{ text: number.to_string(), style, anchor: None, }],
       flow.catalog,
       right - left - 2.0,
-      if index % 2 == 0 {
+      // the side follows the page number (`folio_placement` virtual)
+      if number % 2 == 1 {
         Right
       } else {
         Left

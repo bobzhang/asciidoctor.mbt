@@ -106,7 +106,11 @@ fn convert_inline_indexterm(node : @core.Node) -> String {
   let index = session.index
   let anchor_name = index.next_anchor_name()
   let dest : IndexDest = { anchor: anchor_name, page: None, page_sortable: 0, }
-  let anchor = "<a id=\"\{anchor_name}\" type=\"indexterm\"></a>"
+  let anchor = if visible {
+    "<a id=\"\{anchor_name}\" type=\"indexterm\" visible=\"true\"></a>"
+  } else {
+    "<a id=\"\{anchor_name}\" type=\"indexterm\"></a>"
+  }
   let see = node.attr("see")
   let see_also = list_attr(node, "see-also")
   if visible {

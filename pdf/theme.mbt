@@ -182,3 +182,23 @@ let margin_side : Double = 0.67 * 72.0
 
 ///|
 let margin_bottom : Double = 0.67 * 72.0
+
+///|
+/// `toc_line_height`
+let toc_line_height = 1.4
+
+///|
+/// `toc_indent`
+let toc_indent : Double = horizontal_rhythm
+
+///|
+/// `toc_dot_leader_font_color`
+let toc_dot_leader_font_color : Color = rgb_hex(0xA9A9A9)
+
+///|
+/// `index_columns` (asciidoctor-pdf's default when the theme sets none)
+let index_columns = 2
+
+///|
+/// `index_column_gap`
+let index_column_gap : Double = vertical_rhythm

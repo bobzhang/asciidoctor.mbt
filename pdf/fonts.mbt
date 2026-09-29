@@ -28,10 +28,11 @@ fn Face::prawn_width(self : Face, codepoint : Int) -> Double {
 }
 
 ///|
-/// The width the PDF declares for the glyph (`/Widths`, rounded), used to
-/// place glyphs so that no per-glyph displacement is needed.
+/// The width the PDF declares for the glyph (`/Widths`, truncated as Prawn
+/// writes it: `render_pdf` gets `truncate_widths`), used to place glyphs,
+/// so they sit where Prawn draws them and need no per-glyph displacement.
 fn Face::drawn_width(self : Face, codepoint : Int) -> Double {
-  self.metrics.advance_pt(codepoint, 1000.0).round()
+  self.prawn_width(codepoint)
 }
 
 ///|

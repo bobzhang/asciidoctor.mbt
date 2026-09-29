@@ -61,6 +61,8 @@ priv struct Flow {
   mut left : Double
   mut right : Double
   mut columns : Columns?
+  /// the last line `typeset` placed: the line, its page and its baseline
+  mut last_line : (Line, Int, Double)?
 }
 
 ///|
@@ -77,6 +79,7 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
     left: margin_side,
     right: page_width - margin_side,
     columns: None,
+    last_line: None,
   }
 }
 
@@ -437,8 +440,18 @@ fn Flow::typeset(
   base : Style,
   align? : Alignment = Left,
   bottom_gutter? : Double = 0.0,
+  hanging_indent? : Double = 0.0,
 ) -> Unit {
-  let lines = typeset_lines(fragments, self.catalog, self.width(), align)
+  self.last_line = None
+  // a hanging indent: the first line takes the whole width, the next ones
+  // are indented (Prawn's `indent_paragraphs` negated inside an indent)
+  let lines = typeset_lines(
+    fragments,
+    self.catalog,
+    self.width() - hanging_indent,
+    align,
+    first_width=self.width(),
+  )
   let base_face = self.font(base)
   let mut index = 0
   while index < lines.length() {
@@ -472,7 +485,9 @@ fn Flow::typeset(
       }
       baseline = next
       depth = d
-      self.ink_line(line, self.left, box_top + baseline)
+      let x = if index == 0 { self.left } else { self.left + hanging_indent }
+      self.ink_line(line, x, box_top + baseline)
+      self.last_line = Some((line, self.page, box_top + baseline))
       placed += 1
       index += 1
     }
