@@ -84,11 +84,28 @@ async fn main {
     standalone=true,
     attributes=doc_attributes,
     vfs~,
+    // block locations, for the warnings about unsupported content
+    sourcemap=true,
   )
+  // `docdatetime` (the PDF's ModDate) is the input's modification time,
+  // unless SOURCE_DATE_EPOCH pins every date
+  let (mtime, _) = @fs.mtime(path) catch { _ => (0L, 0) }
+  options.input_mtime = Some(mtime)
+  match @env.get_env_var("SOURCE_DATE_EPOCH") {
+    Some(s) =>
+      @core.set_source_date_epoch(
+        Some(@string.parse_int64(s.trim()) catch { _ => 0L }),
+      )
+    None => ()
+  }
   let pdf = @io.run_with_files(vfs, () => {
     let doc = @asciidoctor.load(text, options~)
     @asciidoctor_pdf.convert_document(doc, catalog)
   })
+  // what the spike left out or approximated, with its source location
+  for warning in @asciidoctor_pdf.conversion_warnings() {
+    @stdio.stderr.write("asciidoctor-pdf: \{warning}\n")
+  }
   let out = match output {
     Some(o) => @core.expand_path_from(cwd, o)
     None =>

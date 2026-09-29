@@ -60,3 +60,82 @@ test "inline markup becomes styled fragments" {
     ),
   )
 }
+
+///|
+test "unsupported blocks and inline nodes are reported with their location" {
+  register()
+  let catalog = test_catalog()
+  let doc = @asciidoctor.load(
+    "= Title\n\nSee image:logo.png[Logo] here.\n\nvideo::intro.mp4[]\n\n++++\n<b>raw</b>\n++++\n",
+    options=@core.Options::new(backend="pdf", standalone=true, sourcemap=true),
+  )
+  ignore(convert_document(doc, catalog))
+  inspect(
+    conversion_warnings().join("\n"),
+    content=(
+      #|UNSUPPORTED inline image at <stdin>:3
+      #|UNSUPPORTED block video at <stdin>:5
+      #|UNSUPPORTED block pass at <stdin>:7
+    ),
+  )
+  // a new conversion starts a new report
+  ignore(
+    convert_document(
+      @asciidoctor.load("plain", options=@core.Options::new(backend="pdf")),
+      catalog,
+    ),
+  )
+  inspect(conversion_warnings().length(), content="0")
+}
+
+///|
+test "information dictionary dates follow Prawn's form" {
+  inspect(
+    pdf_date_of_attribute("2026-09-29 15:12:28 +0800").unwrap_or("-"),
+    content="D:20260929151228+08'00'",
+  )
+  inspect(
+    pdf_date_of_attribute("2019-01-02 03:04:05 UTC").unwrap_or("-"),
+    content="D:20190102030405+00'00'",
+  )
+  inspect(
+    pdf_date_of_attribute("2019-01-02 03:04:05 -0530").unwrap_or("-"),
+    content="D:20190102030405-05'30'",
+  )
+  inspect(pdf_date_of_attribute("yesterday").unwrap_or("-"), content="-")
+}
+
+///|
+test "document info, top anchor and outline levels" {
+  register()
+  let doc = @asciidoctor.load(
+    "= Title\nJane Doe; John Roe\n:publisher: ACME\n:keywords: a, b\n:outlinelevels: 3:1\n:reproducible:\n\ntext\n",
+    options=@core.Options::new(backend="pdf", standalone=true),
+  )
+  inspect(
+    pdf_info(doc).map(entry => "\{entry.0}=\{entry.1}").join("; "),
+    content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=asciidoctor.mbt (spike)",
+  )
+  inspect(top_anchor(doc), content="__anchor-top")
+  let (num, expand) = outline_levels(doc)
+  inspect("\{num}:\{expand}", content="3:1")
+  let plain = @asciidoctor.load(
+    "= T\n:toclevels: 3\n\nx\n",
+    options=@core.Options::new(backend="pdf"),
+  )
+  let (num, expand) = outline_levels(plain)
+  inspect("\{num}:\{expand}", content="3:3")
+}
+
+///|
+test "destination names and the untitled document title follow asciidoctor-pdf" {
+  inspect(pdf_anchor_name("_intro"), content="_intro")
+  inspect(pdf_anchor_name("test-é"), content="0x746573742dc3a9")
+  register()
+  let untitled = @asciidoctor.load(
+    "== Section\n\ntext\n",
+    options=@core.Options::new(backend="pdf", standalone=true),
+  )
+  inspect(resolve_doctitle(untitled).unwrap_or("-"), content="Untitled")
+  inspect(pdf_info(untitled)[0].1, content="Untitled")
+}

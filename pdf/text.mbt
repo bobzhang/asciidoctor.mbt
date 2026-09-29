@@ -239,7 +239,11 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
         None =>
           match attrs.get("anchor") {
             Some(anchor) =>
-              { ..style, link: Some("#" + anchor), color: link_font_color, }
+              {
+                ..style,
+                link: Some("#" + pdf_anchor_name(anchor)),
+                color: link_font_color,
+              }
             None => style
           }
       }

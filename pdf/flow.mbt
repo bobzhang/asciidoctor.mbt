@@ -166,7 +166,7 @@ fn Flow::font(self : Flow, style : Style) -> Face {
 
 ///|
 fn Flow::add_anchor(self : Flow, name : String, x : Double, y : Double) -> Unit {
-  self.push(Anchor({ name, x_pt: x, y_pt: y, }))
+  self.push(Anchor({ name: pdf_anchor_name(name), x_pt: x, y_pt: y, }))
 }
 
 ///|
@@ -248,7 +248,7 @@ fn Flow::line_items(
   for anchor in line.anchors {
     items.push(
       Anchor({
-        name: anchor.0,
+        name: pdf_anchor_name(anchor.0),
         x_pt: x0 + anchor.1,
         y_pt: baseline - line.ascender,
       }),

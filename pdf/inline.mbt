@@ -41,16 +41,33 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
     "inline_footnote" => convert_inline_footnote(node)
     "inline_kbd" => convert_inline_kbd(node)
     "inline_menu" => convert_inline_menu(node)
-    "inline_image" => "[\{node.attr("alt").unwrap_or("")}]"
-    "inline_indexterm" =>
+    "inline_image" => {
+      // drawn as its alt text; asciidoctor-pdf places the image in the line
+      unsupported("inline", "image", node)
+      "[\{node.attr("alt").unwrap_or("")}]"
+    }
+    "inline_indexterm" => {
+      // asciidoctor-pdf anchors every term (`__indexterm-N`) and collects
+      // it for the index section; the spike keeps only the visible text
+      unsupported("inline", "indexterm", node)
       if node.inline_type == Some("visible") {
         node.text().unwrap_or("")
       } else {
         ""
       }
+    }
     // block content reached through `content()` (e.g. a pass block)
     "pass" => node.content()
-    _ => ""
+    // the nested document of an AsciiDoc table cell (`a|`), which the
+    // spike's tables leave empty
+    "embedded" => {
+      unsupported("block", "AsciiDoc table cell", node)
+      ""
+    }
+    other => {
+      unsupported("inline", other, node)
+      ""
+    }
   }
 }
 
@@ -139,7 +156,7 @@ fn InlineConverter::convert_inline_anchor(
           }
           match refid {
             Some(id) => "<a anchor=\"\{id}\">\{text}</a>"
-            None => "<a anchor=\"__top\">\{text}</a>"
+            None => "<a anchor=\"\{top_anchor(node.document())}\">\{text}</a>"
           }
         }
       }
@@ -152,7 +169,10 @@ fn InlineConverter::convert_inline_anchor(
       }
       "<a id=\"\{id}\"></a>[\{reftext}]"
     }
-    _ => ""
+    other => {
+      unsupported("inline", "anchor type \{other.unwrap_or("none")}", node)
+      ""
+    }
   }
 }
 

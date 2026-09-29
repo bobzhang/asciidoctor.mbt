@@ -14,14 +14,234 @@ priv struct Converter {
 }
 
 ///|
+/// What the last `convert_document` could not render, one line each:
+/// `UNSUPPORTED <kind> <what> at <file>:<line>`. Content the spike does not
+/// implement is left out of the PDF (or approximated), and this is where it
+/// says so; the CLI prints these lines on stderr.
+let diagnostics : Array[String] = []
+
+///|
+/// The unsupported content the last `convert_document` met (see
+/// `diagnostics`), in document order.
+pub fn conversion_warnings() -> Array[String] {
+  diagnostics.copy()
+}
+
+///|
+/// `file:line` of a node, or of its nearest ancestor that has one (inline
+/// nodes carry no location of their own). Locations exist only when the
+/// document was loaded with `sourcemap`.
+fn source_location(node : @core.Node) -> String {
+  let mut current : @core.Node? = Some(node)
+  while current is Some(n) {
+    match n.lineno() {
+      Some(line) => return "\{n.file().unwrap_or("<stdin>")}:\{line}"
+      None => current = n.parent()
+    }
+  }
+  "<unknown>"
+}
+
+///|
+/// Record content the spike leaves out or approximates.
+fn unsupported(kind : String, what : String, node : @core.Node) -> Unit {
+  diagnostics.push("UNSUPPORTED \{kind} \{what} at \{source_location(node)}")
+}
+
+///|
+/// The name of the destination at the top of the document
+/// (asciidoctor-pdf's `pdf-anchor` of the document): its id, else
+/// `__anchor-top`.
+fn top_anchor(doc : @core.Node) -> String {
+  match doc.id {
+    Some(id) => pdf_anchor_name(id)
+    None => "__anchor-top"
+  }
+}
+
+///|
+/// The PDF destination name for an id (asciidoctor-pdf's
+/// `derive_anchor_from_id`): the id itself when it is ASCII, else `0x` and
+/// the hex of its UTF-8 bytes.
+fn pdf_anchor_name(id : String) -> String {
+  if id.iter().all(c => c.to_int() < 0x80) {
+    return id
+  }
+  let sb = StringBuilder()
+  sb.write_string("0x")
+  for byte in @utf8.encode(id) {
+    let v = byte.to_int()
+    sb.write_char("0123456789abcdef"[v >> 4].unsafe_to_char())
+    sb.write_char("0123456789abcdef"[v & 15].unsafe_to_char())
+  }
+  sb.to_string()
+}
+
+///|
+/// The document title as asciidoctor-pdf resolves it for the outline and
+/// the information dictionary (`resolve_doctitle`): the header's title, or
+/// `untitled-label` for a document without a header.
+fn resolve_doctitle(doc : @core.Node) -> String? {
+  if doc.has_header() {
+    doc.doctitle()
+  } else {
+    doc.attr("untitled-label")
+  }
+}
+
+///|
+/// A date attribute as Asciidoctor writes it (`2026-09-29 15:12:28 +0800`,
+/// or `... UTC`) in PDF date form, `D:20260929151228+08'00'`, as Prawn
+/// writes the Ruby `Time` it parses to. None when it does not parse.
+fn pdf_date_of_attribute(value : String) -> String? {
+  let digits = StringBuilder()
+  let mut count = 0
+  let mut i = 0
+  // the fourteen digits of the date and time, skipping their separators
+  while i < value.length() && count < 14 {
+    let c = value[i]
+    if c >= '0' && c <= '9' {
+      digits.write_char(c.to_int().unsafe_to_char())
+      count += 1
+    } else if c != '-' && c != ':' && c != ' ' {
+      return None
+    }
+    i += 1
+  }
+  if count != 14 {
+    return None
+  }
+  let zone = value[i:].trim().to_owned()
+  let offset = if zone == "" || zone == "UTC" || zone == "Z" {
+    "+00'00'"
+  } else if zone.length() == 5 && (zone[0] == '+' || zone[0] == '-') {
+    "\{zone[0:3]}'\{zone[3:5]}'"
+  } else {
+    return None
+  }
+  Some("D:\{digits.to_string()}\{offset}")
+}
+
+///|
+/// The document information entries asciidoctor-pdf writes
+/// (`build_pdf_info`).
+fn pdf_info(doc : @core.Node) -> Array[(String, String)] {
+  let info = []
+  match resolve_doctitle(doc) {
+    Some(title) => info.push(("Title", sanitize(title)))
+    None => ()
+  }
+  let author = if doc.attribute_locked("author") &&
+    !doc.attribute_locked("authors") {
+    doc.attr("author")
+  } else {
+    match doc.attr("authors") {
+      Some(authors) => Some(authors)
+      None => doc.attr("author")
+    }
+  }
+  match author {
+    Some(author) => info.push(("Author", sanitize(author)))
+    None => ()
+  }
+  match doc.attr("subject") {
+    Some(subject) => info.push(("Subject", sanitize(subject)))
+    None => ()
+  }
+  match doc.attr("keywords") {
+    Some(keywords) => info.push(("Keywords", sanitize(keywords)))
+    None => ()
+  }
+  let creator = match doc.attr("publisher") {
+    Some(publisher) => sanitize(publisher)
+    None => author.map(sanitize).unwrap_or("")
+  }
+  info.push(("Creator", creator))
+  info.push(
+    (
+      "Producer",
+      doc.attr("producer").map(sanitize).unwrap_or("asciidoctor.mbt (spike)"),
+    ),
+  )
+  if !doc.has_attr("reproducible") {
+    // the modification date is the input's, the creation date the
+    // conversion's
+    match doc.attr("docdatetime").bind(pdf_date_of_attribute) {
+      Some(date) => info.push(("ModDate", date))
+      None => ()
+    }
+    match doc.attr("localdatetime").bind(pdf_date_of_attribute) {
+      Some(date) => info.push(("CreationDate", date))
+      None => ()
+    }
+  }
+  info
+}
+
+///|
+/// asciidoctor-pdf's outline depth and how many levels start expanded:
+/// `outlinelevels` (default `toclevels`, default 2), where `N:M` expands
+/// only the first M levels.
+fn outline_levels(doc : @core.Node) -> (Int, Int) {
+  let toclevels = @string.parse_int(doc.attr("toclevels").unwrap_or("2")) catch {
+    _ => 2
+  }
+  match doc.attr("outlinelevels") {
+    Some(spec) =>
+      match spec.find(":") {
+        Some(i) => {
+          let levels = spec[:i].to_owned()
+          let num = if levels == "" {
+            toclevels
+          } else {
+            @string.parse_int(levels) catch {
+              _ => toclevels
+            }
+          }
+          let expand = @string.parse_int(spec[i + 1:].to_owned()) catch {
+            _ => 0
+          }
+          (num, expand)
+        }
+        None => {
+          let num = @string.parse_int(spec) catch { _ => toclevels }
+          (num, num)
+        }
+      }
+    None => (toclevels, toclevels)
+  }
+}
+
+///|
+/// Report document-level features the spike does not implement.
+fn report_document_features(doc : @core.Node) -> Unit {
+  if doc.has_attr("toc") {
+    unsupported("attribute", "toc", doc)
+  }
+  if doc.doctype() == "book" {
+    unsupported("attribute", "doctype=book (title page, chapters)", doc)
+  }
+  if doc.attr("icons") == Some("font") {
+    unsupported("attribute", "icons=font", doc)
+  }
+  if doc.has_attr("source-highlighter") {
+    unsupported("attribute", "source-highlighter", doc)
+  }
+}
+
+///|
 /// Convert a document loaded with `backend=pdf` (see `register`) to PDF.
+/// Load it with `sourcemap` for `conversion_warnings` to say where the
+/// unsupported content is.
 pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise {
+  diagnostics.clear()
+  report_document_features(doc)
   let flow = Flow::new(catalog)
   let c : Converter = { doc, flow, outline: [], gutters: [], }
   flow.start_new_page()
-  // the top of the document, for `<<_top>>`-style references and the
-  // outline's title entry
-  flow.add_anchor("__top", 0.0, 0.0)
+  // the top of the document, for `<<_top>>`-style references
+  let top = top_anchor(doc)
+  flow.add_anchor(top, 0.0, 0.0)
   let doctitle = doc.doctitle()
   if doc.has_header() && !doc.notitle() {
     match doctitle {
@@ -29,9 +249,20 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       None => ()
     }
   }
-  match doctitle {
+  // the outline starts with the document title (`outline-title`, which
+  // defaults to the resolved title: `untitled-label` without a header)
+  let outline_title = match doc.attr("outline-title") {
+    Some(t) if t != "" => Some(t)
+    _ => resolve_doctitle(doc)
+  }
+  match outline_title {
     Some(title) =>
-      c.outline.push({ title: sanitize(title), level: 0, anchor: "__top", })
+      c.outline.push({
+        title: sanitize(title),
+        level: 0,
+        anchor: top,
+        open: false,
+      })
     None => ()
   }
   c.traverse(doc)
@@ -43,16 +274,20 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     ignore(pages.pop())
   }
   c.ink_footers()
-  let info = [("Producer", "asciidoctor.mbt (spike)")]
-  match doctitle {
-    Some(title) => info.push(("Title", sanitize(title)))
-    None => ()
+  for entry in @pdf.unembeddable_images(flow.model) {
+    diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
   }
-  match doc.attr("author") {
-    Some(author) => info.push(("Author", author))
-    None => ()
-  }
-  @pdf.render_pdf(flow.model, outline=c.outline, info~)
+  @pdf.render_pdf(
+    flow.model,
+    outline=c.outline,
+    info=pdf_info(doc),
+    // the default theme's `page_initial_zoom: FitH` and `page_mode: outline`
+    initial_zoom=FitH,
+    page_mode="UseOutlines",
+    display_doc_title=true,
+    page_boxes=true,
+    page_labels=Array::makei(flow.model.pages.length(), i => (i + 1).to_string()),
+  )
 }
 
 ///|
@@ -115,7 +350,7 @@ fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
       self.add_dest(node)
       self.ink_heading(node.title().unwrap_or(""), node.level + 1)
     }
-    _ => ()
+    other => unsupported("block", other.name(), node)
   }
 }
 
@@ -125,9 +360,12 @@ fn Converter::convert_block(self : Converter, node : @core.Node) -> Unit {
 fn Converter::add_dest(self : Converter, node : @core.Node) -> Unit {
   match node.id {
     Some(id) => {
-      let x = if self.flow.left <= margin_side { 0.0 } else { self.flow.left }
-      let y = if self.flow.at_page_top() { 0.0 } else { self.flow.y }
-      self.flow.add_anchor(id, x, y)
+      // `bounds.absolute_left.truncate 4`, 0 when at the margin; the y is
+      // the cursor even at the top of a page (only sections jump to the
+      // page's top edge)
+      let left = (self.flow.left * 10000.0).floor() / 10000.0
+      let x = if left <= margin_side { 0.0 } else { left }
+      self.flow.add_anchor(id, x, self.flow.y)
     }
     None => ()
   }
@@ -335,11 +573,23 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     Some(id) => {
       let y = if flow.at_page_top() { 0.0 } else { flow.y }
       flow.add_anchor(id, 0.0, y)
-      if section.level <= 2 {
+      let (num_levels, expand_levels) = outline_levels(self.doc)
+      if section.level <= num_levels && sanitize(title) != "" {
+        // the depth in the section tree, not the section level: a
+        // document without a header may start at `===`, and its first
+        // sections are still top-level entries
+        let mut depth = 0
+        let mut parent = section.parent()
+        while parent is Some(p) && p.context == Section {
+          depth += 1
+          parent = p.parent()
+        }
         self.outline.push({
           title: sanitize(title),
-          level: section.level - 1,
-          anchor: id,
+          level: depth,
+          anchor: pdf_anchor_name(id),
+          // `closed: expand_levels < 1`, counted down one per level
+          open: depth < expand_levels,
         })
       }
     }

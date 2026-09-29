@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn conversion_warnings() -> Array[String]
+
 pub fn convert_document(@core.Node, FontCatalog) -> Bytes raise
 
 pub fn default_font_files() -> Array[(String, Bool, Bool, String)]

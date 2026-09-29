@@ -92,6 +92,10 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   let data = node.vfs().read(path)
   let info = data.bind(image_info)
   guard data is Some(bytes) && info is Some((px_w, px_h, mime)) else {
+    if data is Some(_) {
+      // asciidoctor-pdf draws SVG, GIF, ... itself
+      unsupported("image", "format of \{target}", node)
+    }
     // asciidoctor-pdf prints the alt text in brackets
     self.ink_prose(
       "[\{node.attr("alt").unwrap_or(target)}] | \{target}",
