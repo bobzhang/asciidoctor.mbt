@@ -540,7 +540,13 @@ fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
     let width = code_border_width * 1.2
     if !first {
       items.append(
-        dashed_hrule(left + inset, right - inset, top, width, code_background_color),
+        dashed_hrule(
+          left + inset,
+          right - inset,
+          top,
+          width,
+          code_background_color,
+        ),
       )
     }
     if !last {

@@ -121,12 +121,24 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   }
   let aspect = px_h.to_double() / px_w.to_double()
   let mut height = width * aspect
-  if height > flow.cursor() {
+  // the image keeps its caption (below it) on the same page
+  let caption_height = if node.has_title() {
+    let style = Style::new(size=caption_font_size, italic=true)
+    flow.height_of(
+      parse_formatted(node.captioned_title(), style, normalize=false),
+      line_metrics(base_line_height, flow.font(style), caption_font_size),
+      style,
+    ) +
+    caption_margin_inside
+  } else {
+    0.0
+  }
+  if height > flow.cursor() - caption_height {
     if !flow.at_page_top() {
       flow.advance_page()
     }
-    if height > flow.cursor() {
-      height = flow.cursor()
+    if height > flow.cursor() - caption_height {
+      height = flow.cursor() - caption_height
       width = height / aspect
     }
   }

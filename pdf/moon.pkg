@@ -10,6 +10,7 @@ import {
 }
 
 supported_targets = "native+wasm"
+
 import {
   "bobzhang/asciidoctor",
 } for "wbtest"

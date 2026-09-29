@@ -29,7 +29,9 @@ test "a document converts to a paginated pdf" {
   let body = StringBuilder()
   body.write_string("= Title\n\n== Section\n\n")
   for i in 0..<120 {
-    body.write_string("Paragraph \{i} with *bold* and a https://example.org[link].\n\n")
+    body.write_string(
+      "Paragraph \{i} with *bold* and a https://example.org[link].\n\n",
+    )
   }
   body.write_string("----\ncode\n----\n")
   let doc = @asciidoctor.load(

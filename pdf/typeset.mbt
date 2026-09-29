@@ -1,15 +1,21 @@
 ///|
-// Line breaking of formatted text, following Prawn's greedy wrap: break
-// after spaces, hyphens and zero-width spaces; a word longer than the line
-// wraps by character; trailing spaces do not count; a justified line
-// widens its spaces, except on the last line of a paragraph and before a
-// hard break.
+// Line breaking of formatted text, following Prawn's greedy wrap
+// (Prawn::Text::Formatted::LineWrap): each fragment is cut into tokens —
+// runs of word characters (ending in hyphens or a soft hyphen when they
+// have them), runs of whitespace, and runs of hyphens with the word after
+// them — and a line may break between any two tokens, and between
+// fragments. A token longer than the line wraps by character, spaces
+// starting a line are dropped and trailing ones do not count, and a
+// justified line widens its spaces, except on the last line of a paragraph
+// and before a hard break.
 //
 // Two widths are tracked per character. `fit` is Prawn's (glyph widths
-// truncated to 1/1000 em) and decides where lines break, so breaks match
-// Ruby; `draw` is the width the PDF declares for the glyph, and places
-// glyphs, so the emitted text needs no per-glyph correction. Both include
-// kerning with the next character of the same fragment.
+// truncated to 1/1000 em, kerned within a token only, as Prawn measures
+// token by token) and decides where lines break, so breaks match Ruby;
+// `draw` is the width the PDF declares for the glyph, kerned with the next
+// character of the fragment as Prawn draws it, and places glyphs, so the
+// emitted text needs a displacement only where kerning or justification
+// moves a glyph.
 
 ///|
 priv enum Alignment {
@@ -23,8 +29,11 @@ priv enum Alignment {
 priv struct Item {
   unit : Int
   fragment : Int
-  fit : Double
+  mut fit : Double
   draw : Double
+  /// kerning with the next character, points; part of `draw`, and of
+  /// `fit` unless a token boundary falls between the two
+  kern : Double
   hard_break : Bool
   anchor : String?
 }
@@ -62,24 +71,77 @@ fn is_break_space(unit : Int) -> Bool {
 }
 
 ///|
-/// Whether a line may break after `items[i]`: the end of a run of hyphens
-/// that follows a word character (Prawn's `[^break]+-+` token). A run that
-/// starts a word, as in `--staged`, stays with the word.
-fn breaks_after_hyphen(items : Array[Item], i : Int) -> Bool {
-  if items[i].unit != 0x2D {
-    return false
+/// Prawn's whitespace break characters: space, tab, zero-width space.
+fn is_whitespace(unit : Int) -> Bool {
+  unit == 0x20 || unit == 0x09 || unit == 0x200B
+}
+
+///|
+/// Where Prawn's tokens start: `starts[i]` when a line may break before
+/// `items[i]`.
+fn token_starts(items : Array[Item]) -> Array[Bool] {
+  let n = items.length()
+  let starts = Array::make(n, false)
+  let kind = fn(i : Int) -> Int {
+    let unit = items[i].unit
+    // an anchor stands for asciidoctor-pdf's zero-width-space placeholder
+    if is_whitespace(unit) || items[i].anchor is Some(_) {
+      1
+    } else if unit == 0x2D {
+      2
+    } else if unit == 0xAD {
+      3
+    } else {
+      0
+    }
   }
-  if i + 1 < items.length() && items[i + 1].unit == 0x2D {
-    return false
+  let mut i = 0
+  while i < n {
+
+    // tokens run across fragments: Prawn pulls the last word of a fragment
+    // onto the next line with the word the next fragment starts with (its
+    // `pull_preceding_fragment_to_join_this_one?`), so a style change
+    // inside a word is no break opportunity; a hard break ends every token
+    let mut end = i + 1
+    while end < n && !items[end].hard_break {
+      end += 1
+    }
+    let mut pos = i
+    while pos < end {
+      starts[pos] = true
+      let mut j = pos
+      match kind(pos) {
+        0 => {
+          while j < end && kind(j) == 0 {
+            j += 1
+          }
+          if j < end && kind(j) == 3 {
+            j += 1
+          } else {
+            while j < end && kind(j) == 2 {
+              j += 1
+            }
+          }
+        }
+        1 =>
+          while j < end && kind(j) == 1 {
+            j += 1
+          }
+        2 => {
+          while j < end && kind(j) == 2 {
+            j += 1
+          }
+          while j < end && kind(j) == 0 {
+            j += 1
+          }
+        }
+        _ => j += 1
+      }
+      pos = j
+    }
+    i = end
   }
-  let mut j = i
-  while j >= 0 && items[j].unit == 0x2D {
-    j -= 1
-  }
-  j >= 0 &&
-  !is_break_space(items[j].unit) &&
-  items[j].unit != 0x200B &&
-  !items[j].hard_break
+  starts
 }
 
 ///|
@@ -93,16 +155,18 @@ fn build_items(
     let style = fragment.style
     let face = catalog.face(style.family, style.bold, style.italic)
     faces.push(face)
+    let blank : Item = {
+      unit: 0,
+      fragment: index,
+      fit: 0.0,
+      draw: 0.0,
+      kern: 0.0,
+      hard_break: false,
+      anchor: None,
+    }
     match fragment.anchor {
       Some(name) => {
-        items.push({
-          unit: 0,
-          fragment: index,
-          fit: 0.0,
-          draw: 0.0,
-          hard_break: false,
-          anchor: Some(name),
-        })
+        items.push({ ..blank, anchor: Some(name), })
         continue
       }
       None => ()
@@ -111,12 +175,10 @@ fn build_items(
     let n = text.length()
     let scale = style.size / 1000.0
     let pad : Item = {
+      ..blank,
       unit: pad_unit,
-      fragment: index,
       fit: style.border_offset,
       draw: style.border_offset,
-      hard_break: false,
-      anchor: None,
     }
     if style.border_offset > 0.0 && n > 0 {
       items.push(pad)
@@ -124,26 +186,13 @@ fn build_items(
     for i in 0..<n {
       let unit = text[i].to_int()
       if unit == 0x0A {
-        items.push({
-          unit,
-          fragment: index,
-          fit: 0.0,
-          draw: 0.0,
-          hard_break: true,
-          anchor: None,
-        })
+        items.push({ ..blank, unit, hard_break: true, })
         continue
       }
-      // a zero-width space is a break opportunity that draws nothing
+      // a zero-width space is a break opportunity that draws nothing; the
+      // low half of a surrogate pair rides on the high half's advance
       if unit == 0x200B || (unit >= 0xDC00 && unit <= 0xDFFF) {
-        items.push({
-          unit,
-          fragment: index,
-          fit: 0.0,
-          draw: 0.0,
-          hard_break: false,
-          anchor: None,
-        })
+        items.push({ ..blank, unit, })
         continue
       }
       let cp = if unit >= 0xD800 && unit <= 0xDBFF && i + 1 < n {
@@ -151,21 +200,17 @@ fn build_items(
       } else {
         unit
       }
-      let next = if i + 1 < n { text[i + 1].to_int() } else { -1 }
-      let kern = if next >= 0 { face.kerning(cp, next) } else { 0.0 }
-      // Prawn measures each word and each run of spaces on its own, so a
-      // pair straddling a word boundary kerns when drawn but not when
-      // fitting
-      let boundary = is_break_space(unit) != is_break_space(next) ||
-        unit == 0x2D
+      let kern = if i + 1 < n {
+        face.kerning(cp, text[i + 1].to_int()) * scale
+      } else {
+        0.0
+      }
       items.push({
+        ..blank,
         unit,
-        fragment: index,
-        fit: (face.prawn_width(cp) + (if boundary { 0.0 } else { kern })) *
-        scale,
-        draw: (face.drawn_width(cp) + kern) * scale,
-        hard_break: false,
-        anchor: None,
+        fit: face.prawn_width(cp) * scale,
+        draw: face.drawn_width(cp) * scale + kern,
+        kern,
       })
     }
     if style.border_offset > 0.0 && n > 0 {
@@ -186,10 +231,15 @@ fn typeset_lines(
   first_width? : Double = width,
 ) -> Array[Line] {
   let (items, faces) = build_items(fragments, catalog)
-  let ranges : Array[(Int, Int, Bool)] = [] // start, end, ended by hard break
   let n = items.length()
-  // spaces a line starts with are dropped, as Prawn strips the first
-  // fragment of each line (anchors in front of them notwithstanding)
+  let starts = token_starts(items)
+  // kerning counts towards fitting only inside a token
+  for i in 0..<n {
+    if i + 1 >= n || !starts[i + 1] {
+      items[i].fit += items[i].kern
+    }
+  }
+  let ranges : Array[(Int, Int, Bool)] = [] // start, end, ended by hard break
   let mut start = 0
   while start <= n {
     if start >= n {
@@ -200,6 +250,8 @@ fn typeset_lines(
     }
     let limit = if ranges.is_empty() { first_width } else { width }
     let mut w = 0.0
+    // spaces a line starts with are dropped, as Prawn strips the first
+    // fragment of each line (anchors in front of them notwithstanding)
     let mut visible = false
     let mut last_break = -1
     let mut i = start
@@ -212,13 +264,15 @@ fn typeset_lines(
         hard = true
         break
       }
+      if visible && starts[i] {
+        last_break = i
+      }
       if is_break_space(item.unit) {
         if !visible {
           // dropped: it becomes a zero-width space, which draws nothing
           items[i] = { ..item, unit: 0x200B, fit: 0.0, draw: 0.0, }
         } else {
           w += item.fit
-          last_break = i + 1
         }
         i += 1
         continue
@@ -228,11 +282,8 @@ fn typeset_lines(
         break
       }
       w += item.fit
-      if item.anchor is None {
+      if item.anchor is None && item.unit != 0x200B {
         visible = true
-      }
-      if item.unit == 0x200B || breaks_after_hyphen(items, i) {
-        last_break = i + 1
       }
       i += 1
     }

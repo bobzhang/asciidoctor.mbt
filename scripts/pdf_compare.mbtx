@@ -52,6 +52,16 @@ let cases : Array[(String, String, String)] = [
     ".repos/progit2/pdf-spike-ch02.adoc",
     "= Pro Git: Git Basics\nScott Chacon; Ben Straub\n\ninclude::ch02-git-basics-chapter.asc[]\n",
   ),
+  (
+    "progit-ch03",
+    ".repos/progit2/pdf-spike-ch03.adoc",
+    "= Pro Git: Git Branching\nScott Chacon; Ben Straub\n\ninclude::ch03-git-branching.asc[]\n",
+  ),
+  (
+    "asciidoctor-pdf-features",
+    ".repos/asciidoctor-pdf/docs/modules/ROOT/pages/features.adoc",
+    "",
+  ),
 ]
 
 ///|
