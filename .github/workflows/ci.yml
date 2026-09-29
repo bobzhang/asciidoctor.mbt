@@ -43,3 +43,9 @@ jobs:
       # type-check all targets, unit tests on wasm-gc/native/js, golden parity
       - name: Check
         run: moon run --target native scripts/check.mbtx
+
+      # the PDF backend is a separate module (pdf/), built on moonbitlang/pagelayout
+      - name: PDF backend
+        run: |
+          moon -C pdf check --target all
+          moon -C pdf test --target native
