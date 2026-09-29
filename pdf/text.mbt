@@ -244,11 +244,60 @@ fn parse_decimal(text : String) -> Double {
 ///|
 /// Apply the style of an opening tag.
 fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
-  let style = match attrs.get("class") {
-    Some(classes) if classes.split(" ").any(c => c == "wj") =>
-      { ..style, wj: true, }
-    _ => style
+  let tagged = tag_style(tag, attrs, style)
+  // then the roles of its classes the theme styles, whatever the tag
+  // (Transform#build_fragment)
+  match attrs.get("class") {
+    Some(classes) => apply_roles(tagged, classes)
+    None => tagged
   }
+}
+
+///|
+/// The default theme's `role_*` keys for inline text (and `wj`, a word
+/// joiner), applied in order: `lead` 13pt, `big` 1.2em, `small` 0.8em,
+/// `subtitle` 0.8em in #999999 and upright italic, `underline` and
+/// `line-through`.
+fn apply_roles(style : Style, classes : String) -> Style {
+  let mut s = style
+  for role in classes.split(" ") {
+    match role.to_owned() {
+      "wj" => s = { ..s, wj: true, }
+      "lead" => s = { ..s, size: (base_font_size * 1.25).round(), }
+      "underline" => s = { ..s, underline: true, }
+      "line-through" => s = { ..s, strike: true, }
+      "big" => s = { ..s, size: s.size * 1.2, }
+      "small" => s = { ..s, size: s.size * 0.8, }
+      // `font_style: normal_italic` clears bold and italic only the first
+      // time: Transform#update_fragment deletes :normal from the theme's
+      // own set as it applies it, so later uses just add italic
+      "subtitle" =>
+        if session.subtitle_normal_spent {
+          s = {
+            ..s,
+            size: s.size * 0.8,
+            color: rgb_hex(0x999999),
+            italic: true,
+          }
+        } else {
+          session.subtitle_normal_spent = true
+          s = {
+            ..s,
+            size: s.size * 0.8,
+            color: rgb_hex(0x999999),
+            bold: false,
+            italic: true,
+          }
+        }
+      _ => ()
+    }
+  }
+  s
+}
+
+///|
+/// The style a tag gives its content.
+fn tag_style(tag : String, attrs : Map[String, String], style : Style) -> Style {
   match tag {
     "strong" | "b" => { ..style, bold: true, }
     "em" | "i" => { ..style, italic: true, }
@@ -307,21 +356,6 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
           match parse_color(color) {
             Some(c) => s = { ..s, color: c, }
             None => ()
-          }
-        None => ()
-      }
-      match attrs.get("class") {
-        Some(classes) =>
-          for role in classes.split(" ") {
-            match role.to_owned() {
-              "underline" => s = { ..s, underline: true, }
-              "line-through" => s = { ..s, strike: true, }
-              "big" => s = { ..s, size: s.size * 1.2, }
-              "small" => s = { ..s, size: s.size * 0.8, }
-              "subtitle" =>
-                s = { ..s, size: s.size * 0.8, color: rgb_hex(0x999999), }
-              _ => ()
-            }
           }
         None => ()
       }

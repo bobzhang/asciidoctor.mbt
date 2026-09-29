@@ -436,6 +436,16 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   let flow = Flow::new(catalog)
   let c = Converter::new(doc, flow)
   flow.start_new_page()
+  // an article's abstract section becomes an abstract block, out of the
+  // TOC and the outline (the "demote abstract section" hack)
+  match doc.sections().get(0) {
+    Some(first) if doc.doctype() == "article" &&
+      first.sectname == Some("abstract") => {
+      first.set_context(Open)
+      first.style = Some("abstract")
+    }
+    _ => ()
+  }
   let is_book = doc.doctype() == "book"
   // a book (or `title-page`) has a title page instead of a title heading
   let title_as_page = is_book || doc.has_attr("title-page")
@@ -878,6 +888,7 @@ fn Converter::ink_prose(
   normalize? : Bool = true,
   bottom_gutter? : Double = 0.0,
   normalize_line_height? : Bool = false,
+  first_line_style? : Style,
 ) -> Unit {
   let face = self.flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
@@ -888,6 +899,7 @@ fn Converter::ink_prose(
     align=align.unwrap_or(self.text_align),
     bottom_gutter~,
     normalize_line_height~,
+    first_line_style?,
   )
   self.flow.margin(margin_bottom)
 }
@@ -940,7 +952,7 @@ fn Converter::ink_heading(
   }
   let face = flow.font(style)
   flow.typeset(
-    parse_formatted(title, style),
+    parse_formatted(title, style, normalize=false),
     line_metrics(1.0, face, style.size),
     style,
     align~,
@@ -973,7 +985,7 @@ fn Converter::arrange_heading(
     0.0
   }
   let height = flow.height_of(
-    parse_formatted(title, style),
+    parse_formatted(title, style, normalize=false),
     line_metrics(1.0, face, size),
     style,
   )
@@ -1017,6 +1029,20 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     return
   }
   let title = numbered_title(section, formal=true)
+  // a title separator (`separator`, `title-separator`) splits off a subtitle,
+  // set on its own line
+  let separator = match section.attr("separator") {
+    Some(s) => s
+    None => section.document().attr("title-separator").unwrap_or("")
+  }
+  let heading = match title.rev_find(separator + " ") {
+    Some(i) if separator != "" => {
+      let main = title[:i].to_owned()
+      let subtitle = title[i + separator.length() + 1:].to_owned()
+      "\{main}\n<em class=\"subtitle\">\{subtitle}</em>"
+    }
+    _ => title
+  }
   let hlevel = section.level + 1
   let is_book = self.doc.doctype() == "book"
   let part = section.sectname == Some("part")
@@ -1030,7 +1056,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     flow.advance_page()
   }
   if !hidden && !started_new && !flow.at_page_top() {
-    self.arrange_heading(title, hlevel, section.has_blocks())
+    self.arrange_heading(heading, hlevel, section.has_blocks())
   }
   let start_page = flow.page + 1
   section.set_attr("pdf-page-start", value=Int(start_page)) |> ignore
@@ -1061,7 +1087,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     })
   }
   if !hidden {
-    self.ink_heading(title, hlevel)
+    self.ink_heading(heading, hlevel)
   }
   if is_index {
     self.convert_index_section()
@@ -1098,8 +1124,15 @@ fn role_style(roles : Array[String], base : Style) -> Style {
       "small" => style = { ..style, size: style.size * 0.8, }
       "underline" => style = { ..style, underline: true, }
       "line-through" => style = { ..style, strike: true, }
+      // `font_style: normal_italic`: the document font upright italic
       "subtitle" =>
-        style = { ..style, size: style.size * 0.8, color: rgb_hex(0x999999), }
+        style = {
+          ..style,
+          size: style.size * 0.8,
+          color: rgb_hex(0x999999),
+          doc_bold: false,
+          doc_italic: true,
+        }
       _ => ()
     }
   }
@@ -1982,6 +2015,73 @@ fn Converter::convert_sidebar(self : Converter, node : @core.Node) -> Unit {
 }
 
 ///|
+/// asciidoctor-pdf's `convert_abstract` with the default theme: its title
+/// centred in the h4 heading font, then its paragraphs in the abstract font
+/// (#5C6266, 13pt, italic, line height 1.4), the first line of the first
+/// one in bold italic (`abstract_first_line_font_style`); other blocks as
+/// usual.
+fn Converter::convert_abstract(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
+  self.add_dest(node)
+  if node.has_title() {
+    flow.margin(heading_margin_top)
+    self.ink_prose(
+      node.title().unwrap_or(""),
+      style=Style::new(size=heading_font_size(4), doc_bold=true),
+      align=Center,
+      margin_bottom=heading_margin_bottom,
+      line_height=1.0,
+    )
+  }
+  let style = Style::new(
+    size=abstract_font_size,
+    color=abstract_font_color,
+    doc_italic=true,
+  )
+  let first = { ..style, doc_bold: true, }
+  let mut first_line = true
+  if node.has_blocks() {
+    for child in node.blocks {
+      if child.context != Paragraph {
+        self.convert_block(child)
+        continue
+      }
+      child.document().playback_attributes(child.attributes)
+      self.add_dest(child)
+      if child.has_title() {
+        self.ink_caption(child.title().unwrap_or(""))
+      }
+      self.ink_prose(
+        child.content(),
+        style~,
+        align=role_align(child.roles(), self.text_align),
+        margin_bottom=0.0,
+        line_height=abstract_line_height,
+        bottom_gutter=self.gutter(child),
+        first_line_style?=if first_line { Some(first) } else { None },
+      )
+      first_line = false
+      if next_enclosed_block(child) is Some(_) {
+        flow.margin(prose_margin_bottom)
+      }
+    }
+  } else {
+    let text = node.content()
+    if !text.is_empty() {
+      self.ink_prose(
+        text,
+        style~,
+        align=role_align(node.roles(), self.text_align),
+        margin_bottom=0.0,
+        line_height=abstract_line_height,
+        first_line_style=first,
+      )
+    }
+  }
+  self.block_margin_bottom(node)
+}
+
+///|
 /// asciidoctor-pdf's `convert_collapsible`: an example block with the
 /// `collapsible` option is its title (default `Details`) after a
 /// down-pointing triangle, as a caption, then its content indented by the
@@ -2176,6 +2276,10 @@ fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
 
 ///|
 fn Converter::convert_open(self : Converter, node : @core.Node) -> Unit {
+  if node.style == Some("abstract") {
+    self.convert_abstract(node)
+    return
+  }
   // a titled open block, or one with an id, is arranged: its caption is
   // tared, so it moves on with the content after it
   if !self.flow.at_page_top() &&

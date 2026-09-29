@@ -30,6 +30,9 @@ priv struct Session {
   mut catalog : FontCatalog?
   /// the bibliography entries referenced so far (`@bibref_refs`)
   bibref_refs : Map[String, Bool]
+  /// the `subtitle` role's `normal` style was applied once (see
+  /// `apply_roles`)
+  mut subtitle_normal_spent : Bool
 }
 
 ///|
@@ -40,6 +43,7 @@ let session : Session = {
   footnote_labels: Map([]),
   catalog: None,
   bibref_refs: Map([]),
+  subtitle_normal_spent: false,
 }
 
 ///|
@@ -56,6 +60,7 @@ pub fn register(catalog? : FontCatalog) -> Unit {
     session.rendered_footnotes = 0
     session.footnote_labels.clear()
     session.bibref_refs.clear()
+    session.subtitle_normal_spent = false
     ({ resolving_xref: false, } : InlineConverter)
   })
 }

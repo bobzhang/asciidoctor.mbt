@@ -36,6 +36,8 @@ priv struct Item {
   kern : Double
   hard_break : Bool
   anchor : String?
+  /// the position of its code unit in its fragment's text, or -1
+  offset : Int
 }
 
 ///|
@@ -177,6 +179,7 @@ fn build_items(
       kern: 0.0,
       hard_break: false,
       anchor: None,
+      offset: -1,
     }
     match fragment.anchor {
       Some(name) => {
@@ -200,13 +203,13 @@ fn build_items(
     for i in 0..<n {
       let unit = text[i].to_int()
       if unit == 0x0A {
-        items.push({ ..blank, unit, hard_break: true, })
+        items.push({ ..blank, unit, hard_break: true, offset: i, })
         continue
       }
       // a zero-width space is a break opportunity that draws nothing; the
       // low half of a surrogate pair rides on the high half's advance
       if unit == 0x200B || (unit >= 0xDC00 && unit <= 0xDFFF) {
-        items.push({ ..blank, unit, })
+        items.push({ ..blank, unit, offset: i, })
         continue
       }
       let cp = if unit >= 0xD800 && unit <= 0xDBFF && i + 1 < n {
@@ -222,6 +225,7 @@ fn build_items(
       items.push({
         ..blank,
         unit,
+        offset: i,
         fit: face.prawn_width(cp) * scale,
         draw: face.drawn_width(cp) * scale + kern,
         kern,
@@ -244,6 +248,40 @@ fn typeset_lines(
   align : Alignment,
   first_width? : Double = width,
 ) -> Array[Line] {
+  let (items, faces, ranges) = break_lines(
+    fragments, catalog, width, first_width,
+  )
+  let lines : Array[Line] = []
+  for index, range in ranges {
+    let (from, to, hard) = range
+    let is_last = index == ranges.length() - 1
+    let limit = if index == 0 { first_width } else { width }
+    lines.push(
+      place_line(
+        fragments,
+        faces,
+        items,
+        from,
+        to,
+        limit,
+        align,
+        align == Justify && !is_last && !hard,
+        hard,
+      ),
+    )
+  }
+  lines
+}
+
+///|
+/// Break `fragments` into lines: their items (see `build_items`), faces,
+/// and each line's item range (start, end, whether a hard break ends it).
+fn break_lines(
+  fragments : Array[Fragment],
+  catalog : FontCatalog,
+  width : Double,
+  first_width : Double,
+) -> (Array[Item], Array[Face], Array[(Int, Int, Bool)]) {
   let (items, faces) = build_items(fragments, catalog)
   let n = items.length()
   let starts = token_starts(items)
@@ -327,26 +365,65 @@ fn typeset_lines(
       break
     }
   }
-  let lines : Array[Line] = []
-  for index, range in ranges {
-    let (from, to, hard) = range
-    let is_last = index == ranges.length() - 1
-    let limit = if index == 0 { first_width } else { width }
-    lines.push(
-      place_line(
-        fragments,
-        faces,
-        items,
-        from,
-        to,
-        limit,
-        align,
-        align == Justify && !is_last && !hard,
-        hard,
-      ),
-    )
+  (items, faces, ranges)
+}
+
+///|
+/// Prawn's first-line box (`text_with_formatted_first_line`): the first
+/// line of `first` (the fragments in the first line's style), placed and
+/// justified when text follows, and what follows of `rest` (the same
+/// fragments in the regular style) from where the next line starts.
+fn split_first_line(
+  first : Array[Fragment],
+  rest : Array[Fragment],
+  catalog : FontCatalog,
+  width : Double,
+  align : Alignment,
+) -> (Line, Array[Fragment]) {
+  let (items, faces, ranges) = break_lines(first, catalog, width, width)
+  let (from, to, hard) = ranges[0]
+  let next = if hard { to + 1 } else { to }
+  let remaining : Array[Fragment] = []
+  let mut previous = -1
+  for k in next..<items.length() {
+    let item = items[k]
+    if item.fragment == previous {
+      continue
+    }
+    if item.anchor is Some(_) {
+      remaining.push(rest[item.fragment])
+      previous = item.fragment
+    } else if item.offset >= 0 {
+      let fragment = rest[item.fragment]
+      remaining.push({
+        ..fragment,
+        text: fragment.text[item.offset:].to_owned(),
+      })
+      previous = item.fragment
+    }
   }
-  lines
+  let justify = align == Justify && !hard && !remaining.is_empty()
+  let line = place_line(
+    first, faces, items, from, to, width, align, justify, hard,
+  )
+  (line, remaining)
+}
+
+///|
+/// `fragments` set in `style`'s document font style (bold, italic) where
+/// their markup does not name one (Prawn's box `:style` option).
+fn restyle_fragments(
+  fragments : Array[Fragment],
+  style : Style,
+) -> Array[Fragment] {
+  fragments.map(f => {
+    ..f,
+    style: {
+      ..f.style,
+      doc_bold: style.doc_bold,
+      doc_italic: style.doc_italic,
+    },
+  })
 }
 
 ///|

@@ -1,0 +1,20 @@
+= Abstracts
+:toc:
+
+[abstract]
+== Abstract
+
+Documentation is a distillation of many long adventures, and the first line of an abstract is set in bold italic, which changes where it breaks, while the lines after it are in italic.
+
+A second paragraph of the abstract, whose first line is in the regular abstract font.
+
+== A Section
+
+.An abstract block
+[abstract]
+--
+An abstract block with a title, whose first line is bold: *strong* and _emphasized_ text keep their own styles in it.
+
+--
+
+After the abstract.

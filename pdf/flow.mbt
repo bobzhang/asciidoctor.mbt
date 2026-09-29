@@ -539,17 +539,36 @@ fn Flow::typeset(
   bottom_gutter? : Double = 0.0,
   hanging_indent? : Double = 0.0,
   normalize_line_height? : Bool = false,
+  first_line_style? : Style,
 ) -> Unit {
   self.last_line = None
   // a hanging indent: the first line takes the whole width, the next ones
-  // are indented (Prawn's `indent_paragraphs` negated inside an indent)
-  let lines = typeset_lines(
-    fragments,
-    self.catalog,
-    self.width() - hanging_indent,
-    align,
-    first_width=self.width(),
-  )
+  // are indented (Prawn's `indent_paragraphs` negated inside an indent);
+  // a first line in a style of its own is broken off first
+  let lines = match first_line_style {
+    Some(first) => {
+      let (line, rest) = split_first_line(
+        restyle_fragments(fragments, first),
+        fragments,
+        self.catalog,
+        self.width(),
+        align,
+      )
+      if rest.is_empty() {
+        [line]
+      } else {
+        [line, ..typeset_lines(rest, self.catalog, self.width(), align)]
+      }
+    }
+    None =>
+      typeset_lines(
+        fragments,
+        self.catalog,
+        self.width() - hanging_indent,
+        align,
+        first_width=self.width(),
+      )
+  }
   let base_face = self.font(base)
   let mut index = 0
   while index < lines.length() {

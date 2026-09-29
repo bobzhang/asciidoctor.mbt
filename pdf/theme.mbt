@@ -184,6 +184,18 @@ let margin_side : Double = 0.67 * 72.0
 let margin_bottom : Double = 0.67 * 72.0
 
 ///|
+/// `abstract_font_size` (the base font size large)
+let abstract_font_size : Double = (base_font_size * 1.25).round()
+
+///|
+/// `abstract_font_color`
+let abstract_font_color : Color = rgb_hex(0x5C6266)
+
+///|
+/// `abstract_line_height`
+let abstract_line_height = 1.4
+
+///|
 /// `conum_line_height`: in `theme_font :conum`, the base line height
 let conum_line_height : Double = 4.0 / 3.0
 

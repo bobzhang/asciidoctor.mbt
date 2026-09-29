@@ -41,3 +41,8 @@ Services are allowed to declare dependencies on other services using either of t
 The registries.
 
 An element with nothing in it takes the space before it away: the `+pass:[]+` macro, and *strong* text.
+
+:title-separator: {sp}|
+== A section title | with a subtitle
+
+A title separator splits a subtitle off onto its own line, in the subtitle role.
