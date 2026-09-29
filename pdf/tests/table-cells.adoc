@@ -1,0 +1,98 @@
+= Table Cells
+:reproducible:
+
+== AsciiDoc cells
+
+[cols="1,2a"]
+|===
+|Name |Description
+
+|Plain
+|A paragraph in an AsciiDoc cell, long enough to wrap onto a second line within the cell's width.
+
+Another paragraph, with *strong* and `code` text.
+
+|List
+|* one
+* two with a longer item that should wrap onto the next line of the cell
+* three
+
+|Code
+|----
+$ echo "code in a cell"
+code in a cell
+----
+
+|Admonition
+|NOTE: An admonition inside a table cell.
+
+|Mixed
+|A lead-in paragraph.
+
+. first
+. second
+
+[source]
+----
+def x = 1
+----
+|===
+
+== Cell styles
+
+[cols="1h,1m,1s,1e,1l,1v"]
+|===
+|Header |Mono |Strong |Emphasis |Literal |Verse
+
+|header cell with some words
+|monospaced cell
+|strong cell text
+|emphasis cell text
+|literal  cell
+  indented line
+|verse cell
+second line
+|===
+
+== Alignment and spans
+
+[cols="3*"]
+|===
+|Top |Middle |Bottom
+
+|A cell with enough text to span several lines so that its neighbours have room to align vertically.
+.^|middle
+.>|bottom
+
+^|centered
+>|right
+|left
+
+2+|spans two columns
+|one
+
+.2+|spans two rows
+|a
+|b
+
+|c
+|d
+|===
+
+== Nested AsciiDoc
+
+[cols="1a,1a"]
+|===
+|
+[cols="2*"]
+!===
+!inner !table
+!one !two
+!===
+
+|
+Term:: definition
+Other term:: another definition
+|===
+
+After the tables.

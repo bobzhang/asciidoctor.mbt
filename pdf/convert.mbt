@@ -11,6 +11,27 @@ priv struct Converter {
   /// asciidoctor-pdf's `@bottom_gutters`: the block whose last line must
   /// keep clear of an enclosing padding, and by how much
   gutters : Array[(@core.Node, Double)?]
+  /// asciidoctor-pdf's `@base_text_align`: how prose aligns by default
+  mut text_align : Alignment
+}
+
+///|
+/// Run `body` with prose aligned to `align` by default, when given
+/// (asciidoctor-pdf swaps `@base_text_align`).
+fn Converter::with_text_align(
+  self : Converter,
+  align : Alignment?,
+  body : () -> Unit,
+) -> Unit {
+  match align {
+    Some(a) => {
+      let saved = self.text_align
+      self.text_align = a
+      body()
+      self.text_align = saved
+    }
+    None => body()
+  }
 }
 
 ///|
@@ -46,6 +67,14 @@ fn source_location(node : @core.Node) -> String {
 /// Record content the spike leaves out or approximates.
 fn unsupported(kind : String, what : String, node : @core.Node) -> Unit {
   diagnostics.push("UNSUPPORTED \{kind} \{what} at \{source_location(node)}")
+}
+
+///|
+/// Record a problem Ruby asciidoctor-pdf also reports (as a warning or
+/// error on its log), e.g. content cut off: `WARNING <message> at
+/// <file>:<line>`.
+fn warning(message : String, node : @core.Node) -> Unit {
+  diagnostics.push("WARNING \{message} at \{source_location(node)}")
 }
 
 ///|
@@ -237,7 +266,13 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   diagnostics.clear()
   report_document_features(doc)
   let flow = Flow::new(catalog)
-  let c : Converter = { doc, flow, outline: [], gutters: [], }
+  let c : Converter = {
+    doc,
+    flow,
+    outline: [],
+    gutters: [],
+    text_align: Justify,
+  }
   flow.start_new_page()
   // the top of the document, for `<<_top>>`-style references
   let top = top_anchor(doc)
@@ -321,7 +356,7 @@ fn Converter::traverse(self : Converter, node : @core.Node) -> Unit {
     if !text.is_empty() {
       self.ink_prose(
         text,
-        align=role_align(node.roles(), Justify),
+        align=role_align(node.roles(), self.text_align),
         margin_bottom=0.0,
         bottom_gutter=self.gutter(node),
       )
@@ -450,7 +485,7 @@ fn Converter::ink_prose(
   self : Converter,
   text : String,
   style? : Style = base_style(),
-  align? : Alignment = Justify,
+  align? : Alignment,
   margin_bottom? : Double = prose_margin_bottom,
   line_height? : Double = base_line_height,
   normalize? : Bool = true,
@@ -462,7 +497,7 @@ fn Converter::ink_prose(
     parse_formatted(text, style, normalize~),
     metrics,
     style,
-    align~,
+    align=align.unwrap_or(self.text_align),
     bottom_gutter~,
   )
   self.flow.margin(margin_bottom)
@@ -659,7 +694,7 @@ fn Converter::convert_paragraph(self : Converter, node : @core.Node) -> Unit {
   self.ink_prose(
     node.content(),
     style=role_style(roles, base_style()),
-    align=role_align(roles, Justify),
+    align=role_align(roles, self.text_align),
     margin_bottom=0.0,
     bottom_gutter=self.gutter(node),
   )

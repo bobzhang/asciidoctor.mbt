@@ -158,6 +158,8 @@ let gate_threshold_index : Int = 1
 /// afterwards, or "" when the input is a checked-in file)
 let cases : Array[(String, String, String)] = [
   ("sampler", "pdf/tests/sampler.adoc", ""),
+  ("table-cells", "pdf/tests/table-cells.adoc", ""),
+  ("table-pages", "pdf/tests/table-pages.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",

@@ -1,0 +1,93 @@
+= Tables Across Pages
+:reproducible:
+
+A table with a header, striped rows and a footer, long enough to continue on the next page, where its header repeats.
+
+[%header%footer,cols="1,3",stripes=even]
+|===
+|Row |Text
+
+|1 |The first body row.
+|2 |A row whose text is long enough to wrap onto a second line in its column, so that rows differ in height.
+|3 |Three.
+|4 |Four.
+|5 |Five, with `code` and *bold* text.
+|6 |Six.
+|7 |Seven.
+|8 |Eight: a longer row that wraps onto another line, as some rows in real tables do.
+|9 |Nine.
+|10 |Ten.
+|11 |Eleven.
+|12 |Twelve.
+|13 |Thirteen.
+|14 |Fourteen.
+|15 |Fifteen.
+|16 |Sixteen.
+|17 |Seventeen.
+|18 |Eighteen.
+|19 |Nineteen.
+|20 |Twenty.
+|21 |Twenty-one.
+|22 |Twenty-two.
+|23 |Twenty-three.
+|24 |Twenty-four.
+|25 |Twenty-five.
+|26 |Twenty-six.
+|27 |Twenty-seven.
+|28 |Twenty-eight.
+|29 |Twenty-nine.
+|30 |Thirty.
+|31 |Thirty-one.
+|32 |Thirty-two.
+|33 |Thirty-three.
+|34 |Thirty-four.
+|35 |Thirty-five.
+|36 |Thirty-six.
+|37 |Thirty-seven.
+|38 |Thirty-eight.
+|39 |Thirty-nine.
+|40 |Forty.
+|41 |Forty-one.
+|42 |Forty-two.
+|43 |Forty-three.
+|44 |Forty-four.
+|45 |Forty-five.
+|46 |Forty-six.
+|47 |Forty-seven.
+|48 |Forty-eight.
+|49 |Forty-nine.
+|50 |Fifty.
+|Total |Fifty rows.
+|===
+
+.A table with a title
+[cols="2*a",options=header]
+|===
+|Left |Right
+
+.^|A middle-aligned AsciiDoc cell.
+|A taller cell:
+
+* with
+* a
+* list
+
+^|Centred paragraph.
+
+Another centred paragraph.
+|
+[TIP]
+====
+An example block, with a tip.
+====
+|===
+
+[cols="1,1"]
+|===
+.3+|Spans three rows |a
+|b
+|c
+|d |e
+|===
+
+The end.

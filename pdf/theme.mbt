@@ -115,6 +115,11 @@ let table_cell_padding = 3.0
 let table_foot_background_color : Color = rgb_hex(0xF0F0F0)
 
 ///|
+/// `table_body_stripe_background_color`; the body's own background is the
+/// page's (white), which the spike does not paint
+let table_body_stripe_background_color : Color = rgb_hex(0xF9F9F9)
+
+///|
 let admonition_column_rule_color : Color = rgb_hex(0xEEEEEE)
 
 ///|
