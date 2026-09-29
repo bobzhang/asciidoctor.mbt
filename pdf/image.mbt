@@ -119,19 +119,38 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
     return
   }
   let bounds = flow.width()
+  let intrinsic = px_w.to_double() * 0.75
+  // resolve_explicit_width: `pdfwidth` (`iw`: of the intrinsic width),
+  // `scale`, `scaledwidth`, then `width` (a percentage, or digits taken
+  // as pixels, and no wider than the bounds; other values are ignored)
   let explicit = match node.attr("pdfwidth") {
+    Some(w) if w.has_suffix("iw") => {
+      let percent = @string.parse_double(w[:w.length() - 2].to_owned()) catch {
+        _ => 100.0
+      }
+      Some(percent / 100.0 * intrinsic)
+    }
     Some(w) => resolve_length(w, bounds, bare_px=false)
     None =>
-      match node.attr("scaledwidth") {
-        Some(w) => resolve_length(w, bounds, bare_px=false)
+      match node.attr("scale") {
+        Some(s) =>
+          Some(
+            (@string.parse_double(s) catch { _ => 100.0 }) / 100.0 * intrinsic,
+          )
         None =>
-          match node.attr("width") {
-            Some(w) => resolve_length(w, bounds)
-            None => None
+          match node.attr("scaledwidth") {
+            Some(w) => resolve_length(w, bounds, bare_px=false)
+            None =>
+              match node.attr("width") {
+                Some(w) if w.has_suffix("%") =>
+                  resolve_length(w, bounds).map(v => @cmp.minimum(v, bounds))
+                Some(w) if w != "" && w.iter().all(c => c >= '0' && c <= '9') =>
+                  resolve_length(w, bounds).map(v => @cmp.minimum(v, bounds))
+                _ => None
+              }
           }
       }
   }
-  let intrinsic = px_w.to_double() * 0.75
   let mut width = match explicit {
     Some(w) => w
     None => @cmp.minimum(intrinsic, bounds)
@@ -160,7 +179,16 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
     }
   }
   self.add_dest(node)
-  let x = match node.attr("align") {
+  // the `align` attribute, else the last alignment role
+  let alignment = match node.attr("align") {
+    Some(a) => Some(a)
+    None =>
+      node
+      .roles()
+      .rev_iter()
+      .find_first(r => r == "left" || r == "center" || r == "right")
+  }
+  let x = match alignment {
     Some("center") => flow.left + (bounds - width) / 2.0
     Some("right") => flow.left + bounds - width
     _ => flow.left

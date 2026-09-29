@@ -90,11 +90,28 @@ fn Converter::dry_run(
 /// caption, its background: `Flow::tared`) before moving to the next page
 /// (`dry_run` with `stop_if_first_page_empty`), in which case the block
 /// starts on the next page.
+///
+/// With `keep_together` (the `unbreakable` option), a first dry run from
+/// the top of a page tells whether the block fits on one page; when it
+/// does but not in the room left here, it starts on the next page
+/// (`ScratchExtent#position_onto`); when it does not, it is arranged as
+/// above.
 fn Converter::arrange_block(
   self : Converter,
+  keep_together? : Bool = false,
   body : (Converter) -> Unit,
 ) -> Unit {
   let flow = self.flow
+  if !flow.at_page_top() && keep_together {
+    let scratch = self.dry_run(flow.left, flow.right, bottom=flow.bottom, body)
+    if scratch.model.pages.length() == 1 {
+      if scratch.y - scratch.page_top > flow.cursor() {
+        flow.advance_page()
+      }
+      body(self)
+      return
+    }
+  }
   if !flow.at_page_top() {
     let scratch = self.dry_run(
       flow.left,
@@ -1178,7 +1195,7 @@ fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
   // arrange_block: the caption and the background are tared, so the block
   // starts on the next page when not even its first line (with the room
   // its bottom padding needs, when it is the last) fits here
-  self.arrange_block(fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
     let flow = c.flow
     c.add_dest(node)
     if node.has_title() {
@@ -1237,20 +1254,22 @@ fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
 }
 
 ///|
-fn ulist_marker(node : @core.Node, depth : Int) -> String {
-  if node.has_option("checklist") {
-    return "•"
-  }
+/// asciidoctor-pdf's bullet for an unordered list (`convert_ulist`): its
+/// style's (`bibliography` is a square, an unknown style a disc), else the
+/// one for its depth; None for `unstyled` and `no-bullet`, which have no
+/// marker and a narrower indent.
+fn ulist_marker(node : @core.Node, depth : Int) -> String? {
   match node.style {
-    Some("circle") => "◦"
-    Some("square") | Some("bibliography") => "▪"
-    Some("none") | Some("unstyled") | Some("no-bullet") => ""
-    Some("disc") => "•"
-    _ =>
+    Some("circle") => Some("◦")
+    Some("square") | Some("bibliography") => Some("▪")
+    Some("none") => Some("")
+    Some("unstyled") | Some("no-bullet") => None
+    Some(_) => Some("•")
+    None =>
       match depth {
-        1 => "•"
-        2 => "◦"
-        _ => "▪"
+        1 => Some("•")
+        2 => Some("◦")
+        _ => Some("▪")
       }
   }
 }
@@ -1273,18 +1292,23 @@ fn list_level(node : @core.Node) -> Int {
 ///|
 fn Converter::convert_ulist(self : Converter, node : @core.Node) -> Unit {
   self.add_dest(node)
-  let marker = ulist_marker(node, list_level(node))
-  self.convert_list(node, fn(_index, item) {
-    if node.has_option("checklist") && item.has_attr("checkbox") {
-      if item.has_attr("checked") {
+  if node.has_option("checklist") {
+    // a checkbox for an item that has one, nothing for the others
+    self.convert_list(node, fn(_index, item) {
+      if !item.has_attr("checkbox") {
+        ""
+      } else if item.has_attr("checked") {
         "☑"
       } else {
         "☐"
       }
-    } else {
-      marker
-    }
-  })
+    })
+    return
+  }
+  match ulist_marker(node, list_level(node)) {
+    Some(marker) => self.convert_list(node, fn(_index, _item) { marker })
+    None => self.convert_list(node, fn(_index, _item) { "" }, unmarked=true)
+  }
 }
 
 ///|
@@ -1436,18 +1460,27 @@ fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
     Some(style) => style
     None => "arabic"
   }
-  self.convert_list(node, fn(index, _item) {
-    let n = start + index
-    match style {
-      "loweralpha" => "\{alpha(n, false)}."
-      "upperalpha" => "\{alpha(n, true)}."
-      "lowerroman" => "\{roman(n, false)}."
-      "upperroman" => "\{roman(n, true)}."
-      "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
-      "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
-      _ => "\{n}."
-    }
-  })
+  // `unstyled`, `unnumbered` and `no-bullet` have no numbers and a narrower
+  // indent; `none` has empty ones
+  let unmarked = style == "unstyled" ||
+    style == "unnumbered" ||
+    style == "no-bullet"
+  self.convert_list(
+    node,
+    fn(index, _item) {
+      let n = start + index
+      match style {
+        "loweralpha" => "\{alpha(n, false)}."
+        "upperalpha" => "\{alpha(n, true)}."
+        "lowerroman" => "\{roman(n, false)}."
+        "upperroman" => "\{roman(n, true)}."
+        "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
+        "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
+        _ => "\{n}."
+      }
+    },
+    unmarked~,
+  )
 }
 
 ///|
@@ -1455,6 +1488,7 @@ fn Converter::convert_list(
   self : Converter,
   node : @core.Node,
   marker_of : (Int, @core.Node) -> String,
+  unmarked? : Bool = false,
 ) -> Unit {
   let flow = self.flow
   if node.has_title() {
@@ -1463,7 +1497,23 @@ fn Converter::convert_list(
   let base = base_style()
   let face = flow.font(base)
   let metrics = line_metrics(base_line_height, face, base.size)
-  flow.indent(list_indent, 0.0, fn() {
+  // a list without markers is indented less: not at all when unstyled,
+  // else by the room a marker and an `x` would take less
+  let indent = if !unmarked {
+    list_indent
+  } else if node.style == Some("unstyled") {
+    0.0
+  } else {
+    let sample = if node.context == Ulist { "•x" } else { "1.x" }
+    @cmp.maximum(list_indent - flow.width_of(sample, base), 0.0)
+  }
+  // the items' text (not their blocks) aligns by the list's role, and a
+  // bibliography's to the left
+  let align = match node.roles().iter().find_first(r => r.has_prefix("text-")) {
+    Some(_) => Some(role_align(node.roles(), self.text_align))
+    None => if node.style == Some("bibliography") { Some(Left) } else { None }
+  }
+  flow.indent(indent, 0.0, fn() {
     for index, item in node.items() {
       // allocate_space_for_list_item
       if !flow.at_page_top() &&
@@ -1473,7 +1523,7 @@ fn Converter::convert_list(
       }
       let marker = marker_of(index, item)
       self.traced(item, "list_item", () => {
-        self.convert_list_item(item, marker, metrics)
+        self.convert_list_item(item, marker, metrics, align?)
       })
     }
   })
@@ -1504,6 +1554,7 @@ fn Converter::convert_list_item(
   item : @core.Node,
   marker : String,
   metrics : LineMetrics,
+  align? : Alignment,
 ) -> Unit {
   let flow = self.flow
   let base = base_style()
@@ -1559,7 +1610,7 @@ fn Converter::convert_list_item(
   }
   match item.text() {
     Some(text) if !text.is_empty() =>
-      self.ink_prose(text, margin_bottom~, normalize_line_height=true)
+      self.ink_prose(text, align?, margin_bottom~, normalize_line_height=true)
     // an item without text or blocks still takes a line (`DummyText`)
     _ =>
       if !item.has_blocks() {
@@ -1800,7 +1851,7 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
   // arrange_block: the label and the rule are drawn once the extent is
   // known, so they take no part in keeping the block on this page; the
   // title is content
-  self.arrange_block(fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
     let flow = c.flow
     c.add_dest(node)
     let start = flow.mark()
@@ -1936,8 +1987,9 @@ fn Converter::convert_collapsible(self : Converter, node : @core.Node) -> Unit {
     c.flow.tared(() => c.ink_caption(title))
     c.flow.indent(indent_by, 0.0, () => c.traverse(node))
   }
-  if !self.flow.at_page_top() && node.id is Some(_) {
-    self.arrange_block(body)
+  if !self.flow.at_page_top() &&
+    (node.id is Some(_) || node.has_option("unbreakable")) {
+    self.arrange_block(keep_together=node.has_option("unbreakable"), body)
   } else {
     body(self)
   }
@@ -1960,7 +2012,7 @@ fn Converter::bordered_block(
   stroke_width~ : Double,
   caption~ : Bool,
 ) -> Unit {
-  self.arrange_block(fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
     let flow = c.flow
     c.add_dest(node)
     if caption && node.has_title() {
@@ -2026,7 +2078,7 @@ fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
   // arrange_block: the destination, the caption (tared), then the content
   // in the quote padding, whose bottom the last line keeps clear of
   // unless an attribution follows
-  self.arrange_block(fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
     let flow = c.flow
     c.add_dest(node)
     if node.has_title() {
@@ -2051,6 +2103,19 @@ fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
           normalize=false,
           bottom_gutter=c.gutter(node),
         )
+      } else if !node.has_blocks() {
+        // a quoted paragraph (`[quote]` on a paragraph) carries its text
+        // itself (`traverse`)
+        let text = node.content()
+        if !text.is_empty() {
+          c.ink_prose(
+            text,
+            style~,
+            align=role_align(node.roles(), c.text_align),
+            margin_bottom=0.0,
+            bottom_gutter=c.gutter(node),
+          )
+        }
       } else {
         // quote paragraphs take the quote font size
         for block in node.blocks {
@@ -2104,8 +2169,9 @@ fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
 fn Converter::convert_open(self : Converter, node : @core.Node) -> Unit {
   // a titled open block, or one with an id, is arranged: its caption is
   // tared, so it moves on with the content after it
-  if !self.flow.at_page_top() && (node.has_title() || node.id is Some(_)) {
-    self.arrange_block(fn(c) {
+  if !self.flow.at_page_top() &&
+    (node.has_title() || node.id is Some(_) || node.has_option("unbreakable")) {
+    self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
       c.add_dest(node)
       if node.has_title() {
         c.flow.tared(() => c.ink_caption(node.title().unwrap_or("")))

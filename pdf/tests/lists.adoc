@@ -1,0 +1,45 @@
+= List styles
+
+A checklist marks only its items with a checkbox:
+
+* [*] checked
+* [x] also checked
+* [ ] not checked
+* normal list item
+
+[unstyled]
+* an unstyled list has no bullets and no indent
+* second
+
+[no-bullet]
+* a list without bullets keeps a narrower indent
+* second
+
+[none]
+* a list whose bullets are empty keeps the full indent
+* second
+
+[square]
+* square
+
+[circle]
+* circle
+
+[unknown-style]
+* an unknown style falls back to a disc
+
+[unnumbered]
+. an unnumbered list
+. second
+
+[none]
+. an ordered list with empty numbers
+. second
+
+[.text-center]
+* a list whose items are centred by its role, which is a long enough item to wrap onto a second line
+* second
+
+[bibliography]
+* [[[pp]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer: From Journeyman to Master. Addison-Wesley. 1999.
+* [[[gof,gang]]] Erich Gamma, Richard Helm, Ralph Johnson & John Vlissides. Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley. 1994.

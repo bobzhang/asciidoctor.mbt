@@ -902,8 +902,41 @@ fn Flow::fits(self : Flow, height : Double, y? : Double = self.y) -> Bool {
 
 ///|
 fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
+  let unbreakable = node.has_option("unbreakable")
+  if !self.flow.at_page_top() &&
+    (
+      unbreakable ||
+      (node.has_option("breakable") && (node.has_title() || node.id is Some(_)))
+    ) {
+    // asciidoctor-pdf puts the table in an open block holding its id and
+    // its caption (as a tared caption, full width), and arranges that; the
+    // margin below is the table's (`next_enclosed_block` of a table
+    // container)
+    self.arrange_block(keep_together=unbreakable, fn(c) {
+      c.add_dest(node)
+      if node.has_title() {
+        c.flow.tared(() => c.ink_caption(node.captioned_title()))
+      }
+      c.convert_table_body(node, contained=true)
+    })
+    return
+  }
+  self.convert_table_body(node)
+}
+
+///|
+/// A table as prawn-table draws it; `contained` when inside the open block
+/// asciidoctor-pdf wraps a titled breakable or an unbreakable table in:
+/// the block has the destination and the caption.
+fn Converter::convert_table_body(
+  self : Converter,
+  node : @core.Node,
+  contained? : Bool = false,
+) -> Unit {
   let flow = self.flow
-  self.add_dest(node)
+  if !contained {
+    self.add_dest(node)
+  }
   let pct = node.attributes
     .get("tablepcwidth")
     .map(v => v.to_f())
@@ -959,7 +992,7 @@ fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
     _ => flow.left
   }
   let layout = self.layout_table(node, columns, left)
-  if node.has_title() {
+  if !contained && node.has_title() {
     // the default `table_caption_max_width: fit-content`: the caption is
     // no wider than the table, and aligned with it
     let remainder = flow.width() - table_width
