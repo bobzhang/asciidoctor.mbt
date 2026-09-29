@@ -1,0 +1,253 @@
+// Group the failing documents of a pdf_compare run by the first thing that
+// differs, to find root causes that affect many documents.
+//
+// Usage: moon run --target native scripts/pdf_triage.mbtx -- SUMMARY.json
+//          [--dump] [--all] [--pass-set FILE] [--compare OLD.json]
+//   --dump        print one compact line per failing document
+//   --all         include documents with unsupported features
+//   --pass-set F  write the names of the passing documents to F
+//   --compare OLD print the documents that pass in one summary only
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+}
+
+///|
+fn field(j : Json, key : String) -> Json {
+  match j {
+    Object(m) => m.get(key).unwrap_or(Json::null())
+    _ => Json::null()
+  }
+}
+
+///|
+fn items(j : Json) -> Array[Json] {
+  match j {
+    Array(a) => a
+    _ => []
+  }
+}
+
+///|
+fn str(j : Json) -> String {
+  match j {
+    String(s) => s
+    Null => ""
+    other => other.stringify()
+  }
+}
+
+///|
+fn num(j : Json) -> Double {
+  match j {
+    Number(n, ..) => n
+    _ => 0.0
+  }
+}
+
+///|
+/// `what@line` → `what`
+fn kind_of(block : String) -> String {
+  match block.rev_find("@") {
+    Some(i) => block[:i].to_owned()
+    None => if block == "" { "?" } else { block }
+  }
+}
+
+///|
+fn fixed2(v : Double) -> String {
+  let r = (v * 100.0).round() / 100.0
+  r.to_string()
+}
+
+///|
+async fn load(path : String) -> Json {
+  @json.parse(@fs.read_file(path).text()) catch {
+    e => fail("\{path}: \{e}")
+  }
+}
+
+///|
+fn passes(doc : Json) -> Bool {
+  str(field(doc, "gate")) == "pass"
+}
+
+///|
+/// The failing structure checks, by name, with their details.
+fn failed_checks(doc : Json) -> Array[(String, String)] {
+  let out = []
+  for check in items(field(field(doc, "measurements"), "structure")) {
+    if field(check, "ok") is False {
+      out.push((str(field(check, "name")), str(field(check, "detail"))))
+    }
+  }
+  out
+}
+
+///|
+/// A coarse signature of what differs first: the kind of the first
+/// difference and its detail.
+fn signature(doc : Json) -> (String, String) {
+  let m = field(doc, "measurements")
+  let pages = field(m, "pages")
+  let rp = num(field(pages, "ruby"))
+  let sp = num(field(pages, "spike"))
+  let first_off = field(field(m, "geometry"), "first_off")
+  let first_line = field(field(m, "lines"), "first_diff")
+  let lines = field(m, "lines")
+  let words = field(m, "words")
+  let text_same = num(field(words, "ruby")) == num(field(words, "spike")) &&
+    num(field(words, "common")) == num(field(words, "ruby"))
+  if first_off is Object(_) {
+    let block = str(field(first_off, "block"))
+    let prev = field(first_off, "prev")
+    let prev_block = str(field(prev, "block"))
+    let dy = num(field(first_off, "dy"))
+    let dx = num(field(first_off, "dx"))
+    let kind = if dx.abs() > 1.0 && dy.abs() <= 1.0 { "dx" } else { "dy" }
+    // the block kind without its line; whether the previous (good) word
+    // is in the same block, and whether the page changed in between
+    let what = kind_of(block)
+    let where_ = if prev == Json::null() {
+      "first word"
+    } else if prev_block == block {
+      "same block"
+    } else if num(field(prev, "page")) != num(field(first_off, "page")) {
+      "after page break, prev \{kind_of(prev_block)}"
+    } else {
+      "after \{kind_of(prev_block)}"
+    }
+    return (
+      "\{kind} in \{what} (\{where_})",
+      "\{str(field(first_off, "text"))} p\{num(field(first_off, "page"))} dx \{fixed2(dx)} dy \{fixed2(dy)} [\{block} / \{prev_block}]",
+    )
+  }
+  let examples = items(field(field(m, "geometry"), "examples"))
+  if examples.length() > 0 {
+    return ("geometry", str(examples[0]))
+  }
+  if num(field(lines, "ordered")) < num(field(lines, "ruby")) ||
+    num(field(lines, "spike")) > num(field(lines, "ordered")) {
+    return (
+      if text_same {
+        "lines (same words)"
+      } else {
+        "lines/words"
+      },
+      "p\{num(field(first_line, "page"))} R «\{str(field(first_line, "ruby"))}» S «\{str(field(first_line, "spike"))}»",
+    )
+  }
+  if rp != sp {
+    return ("pages", "\{rp} vs \{sp}")
+  }
+  let checks = failed_checks(doc)
+  if checks.length() > 0 {
+    return ("structure \{checks[0].0}", checks[0].1)
+  }
+  ("other", doc |> field("gate_failures") |> items |> fn(a) { a.map(str).join("; ") })
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let mut path = ""
+  let mut dump = false
+  let mut all = false
+  let mut pass_set : String? = None
+  let mut compare : String? = None
+  let mut i = 1
+  while i < args.length() {
+    match args[i] {
+      "--dump" => dump = true
+      "--all" => all = true
+      "--pass-set" if i + 1 < args.length() => {
+        pass_set = Some(args[i + 1])
+        i += 1
+      }
+      "--compare" if i + 1 < args.length() => {
+        compare = Some(args[i + 1])
+        i += 1
+      }
+      "--" => ()
+      a => path = a
+    }
+    i += 1
+  }
+  let summary = load(path)
+  let docs = items(field(summary, "documents"))
+  match pass_set {
+    Some(file) => {
+      let names = docs.filter(passes).map(d => str(field(d, "name")))
+      @fs.write_file(file, names.join("\n") + "\n", create_mode=CreateOrTruncate)
+    }
+    None => ()
+  }
+  match compare {
+    Some(old_path) => {
+      let old = items(field(load(old_path), "documents"))
+      let old_pass : Map[String, Bool] = Map([])
+      for d in old {
+        old_pass[str(field(d, "name"))] = passes(d)
+      }
+      let gained = []
+      let lost = []
+      for d in docs {
+        let name = str(field(d, "name"))
+        match old_pass.get(name) {
+          Some(before) =>
+            if before && !passes(d) {
+              lost.push(name)
+            } else if !before && passes(d) {
+              gained.push(name)
+            }
+          None => ()
+        }
+      }
+      println("newly passing: \{gained.length()}")
+      for n in gained {
+        println("  + \{n}")
+      }
+      println("newly failing: \{lost.length()}")
+      for n in lost {
+        println("  - \{n}")
+      }
+    }
+    None => ()
+  }
+  let groups : Map[String, Array[(String, String)]] = Map([])
+  let mut considered = 0
+  for doc in docs {
+    if passes(doc) || str(field(doc, "status")) != "ok" {
+      continue
+    }
+    let unsupported = match field(doc, "unsupported_summary") {
+      Object(m) => m.length()
+      _ => 0
+    }
+    if unsupported > 0 && !all {
+      continue
+    }
+    considered += 1
+    let (sig, detail) = signature(doc)
+    let name = str(field(doc, "name"))
+    if dump {
+      println("\{name}\t\{sig}\t\{detail}")
+    }
+    match groups.get(sig) {
+      Some(a) => a.push((name, detail))
+      None => groups[sig] = [(name, detail)]
+    }
+  }
+  let sorted = groups.to_array()
+  sorted.sort_by((a, b) => b.1.length().compare(a.1.length()))
+  println("\{considered} failing documents")
+  for g in sorted {
+    println("\{g.1.length()}\t\{g.0}")
+    for k in 0..<@cmp.minimum(3, g.1.length()) {
+      println("\t\t\{g.1[k].0}: \{g.1[k].1}")
+    }
+  }
+}

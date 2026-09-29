@@ -12,6 +12,10 @@
 //   --gate        exit non-zero when a document (not a known difference)
 //                 violates the acceptance thresholds below or failed
 //   --jobs N      documents compared in parallel (default 4)
+//   --spike EXE   the spike executable to run (default: the release build)
+//   --oracle-cache DIR
+//                 reuse Ruby's PDFs from DIR while the input is unchanged
+//                 (see `oracle_cache`)
 //   --self-test   check that every metric flags a deliberately corrupted
 //                 copy of a good spike PDF (see `self_test`)
 //   --no-build    do not rebuild the spike first
@@ -54,6 +58,11 @@
 //              in either rendering), plus flat differences (see
 //              gate_max_flat); per-page difference images (red: ink only
 //              in Ruby's, blue: only in the spike's, orange: flat)
+//   triage     the first measured word off by more than 1pt
+//              (`geometry.first_off`: its positions, the last good word
+//              before it, and the spike block each is in, from the spike's
+//              `--trace`) and the first differing line (`lines.first_diff`);
+//              scripts/pdf_triage.mbtx groups failing documents by them
 //   structure  fonts (embedded, ToUnicode, same families), page boxes,
 //              link annotations (count, target, rectangle within 1pt),
 //              outline (titles, depth, open state, targets), named
@@ -97,10 +106,19 @@ let gems : String = ".repos/gems-pdf"
 let fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
 
 ///|
+/// prawn-icon's icon fonts (Font Awesome and others), for `icons=font`
+let icon_fonts : String = ".repos/gems-pdf/gems/prawn-icon-3.0.0/data/fonts"
+
+///|
 let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"
 
 ///|
-let spike : String = "\{bin}/asciidoctor-pdf/asciidoctor-pdf.exe"
+let default_spike : String = "\{bin}/asciidoctor-pdf/asciidoctor-pdf.exe"
+
+///|
+/// The spike executable: `default_spike`, or `--spike EXE` (e.g. a copy, so
+/// that a long run is not disturbed by rebuilds)
+let spike_exe : Ref[String] = { val: default_spike }
 
 ///|
 let inspector : String = "\{bin}/pdf-inspect/pdf-inspect.exe"
@@ -168,6 +186,9 @@ let cases : Array[(String, String, String)] = [
   ("toc-long", "pdf/tests/toc-long.adoc", ""),
   ("book", "pdf/tests/book.adoc", ""),
   ("book-parts", "pdf/tests/book-parts.adoc", ""),
+  ("line-metrics", "pdf/tests/line-metrics.adoc", ""),
+  ("callouts", "pdf/tests/callouts.adoc", ""),
+  ("icons", "pdf/tests/icons.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",
@@ -853,6 +874,11 @@ priv struct TextMetrics {
   dx_right : Array[Double]
   page_off : Array[Int]
   off_examples : Array[String]
+  /// the first aligned same-page word off by more than the tolerance, with
+  /// the last one within it before (triage: see scripts/pdf_triage.mbtx)
+  first_off : Json
+  /// the first page whose lines differ, with its first differing lines
+  first_line : Json
 }
 
 ///|
@@ -888,6 +914,8 @@ fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
   let dy = []
   let dx_right = []
   let off = []
+  let mut first_off = Json::null()
+  let mut last_in = Json::null()
   for pair in pairs {
     let w = r.words[pair.0]
     let v = s.words[pair.1]
@@ -906,7 +934,27 @@ fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
     dx_right.push((v.x1 - w.x1).abs())
     if ddx <= tolerance_pt && ddy <= tolerance_pt {
       within += 1
+      last_in = {
+        "text": js(w.text),
+        "page": jn(v.page + 1),
+        "ruby_y": jd(yr),
+        "spike_y": jd(ys),
+      }
     } else {
+      if first_off == Json::null() {
+        first_off = {
+          "text": js(w.text),
+          "page": jn(w.page + 1),
+          "ruby_x": jd(w.x0),
+          "ruby_y": jd(yr),
+          "spike_x": jd(v.x0),
+          "spike_y": jd(ys),
+          "dx": jd(v.x0 - w.x0),
+          "dy": jd(ys - yr),
+          "word": jn(pair.0),
+          "prev": last_in,
+        }
+      }
       page_off[w.page] += 1
       if off.length() < (if verbose { 40 } else { 12 }) {
         off.push(
@@ -930,6 +978,7 @@ fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
   let mut indent_mismatches = 0
   let all_r = []
   let all_s = []
+  let mut first_line = Json::null()
   for p in 0..<union {
     let rl = if p < r.lines.length() { r.lines[p] } else { [] }
     let sl = if p < s.lines.length() { s.lines[p] } else { [] }
@@ -952,6 +1001,18 @@ fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
     }
     // the first differences of the page, as a diff
     if lp.length() < a.length() || lp.length() < b.length() {
+      if first_line == Json::null() {
+        let mut i = 0
+        while i < lp.length() && lp[i].0 == i && lp[i].1 == i {
+          i += 1
+        }
+        first_line = {
+          "page": jn(p + 1),
+          "line": jn(i + 1),
+          "ruby": if i < rl.length() { js(rl[i].text) } else { Json::null() },
+          "spike": if i < sl.length() { js(sl[i].text) } else { Json::null() },
+        }
+      }
       let mut i = 0
       let mut j = 0
       let mut shown = 0
@@ -1011,6 +1072,8 @@ fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
     dx_right,
     page_off,
     off_examples: off,
+    first_off,
+    first_line,
   }
 }
 
@@ -1555,6 +1618,86 @@ priv struct Measured {
   text : TextMetrics
   structure : Array[Check]
   raster : Array[PageRaster]
+  /// where the spike put each block (its `--trace`)
+  trace : Array[Traced]
+}
+
+///|
+/// One block of the spike's `--trace`: nesting depth, what it is, its
+/// source line, and where its conversion started and ended (page from 1,
+/// y in points from the page top).
+priv struct Traced {
+  depth : Int
+  what : String
+  line : Int
+  start : (Int, Double)
+  end : (Int, Double)
+}
+
+///|
+async fn read_trace(path : String) -> Array[Traced] {
+  let text = @fs.read_file(path).text() catch { _ => return [] }
+  let out = []
+  for line in text.split("\n") {
+    let f = line.split("\t").map(s => s.to_owned()).collect()
+    if f.length() != 7 {
+      continue
+    }
+    let int = fn(s : String) { @string.parse_int(s) catch { _ => 0 } }
+    let dbl = fn(s : String) { @string.parse_double(s) catch { _ => 0.0 } }
+    out.push({
+      depth: int(f[0]),
+      what: f[1],
+      line: int(f[2]),
+      start: (int(f[3]), dbl(f[4])),
+      end: (int(f[5]), dbl(f[6])),
+    })
+  }
+  out
+}
+
+///|
+fn before_or_at(a : (Int, Double), b : (Int, Double)) -> Bool {
+  a.0 < b.0 || (a.0 == b.0 && a.1 <= b.1 + 0.01)
+}
+
+///|
+/// The innermost traced block whose extent holds `(page, y)`, as
+/// `what@line`, or "" when none does.
+fn block_at(trace : Array[Traced], page : Int, y : Double) -> String {
+  let mut best : Traced? = None
+  for t in trace {
+    if before_or_at(t.start, (page, y)) && before_or_at((page, y), t.end) {
+      match best {
+        Some(b) if b.depth > t.depth => ()
+        _ => best = Some(t)
+      }
+    }
+  }
+  match best {
+    Some(t) => "\{t.what}@\{t.line}"
+    None => ""
+  }
+}
+
+///|
+/// A position record of the triage (`first_off`, its `prev`) with the
+/// spike block it is in.
+fn with_block(trace : Array[Traced], j : Json) -> Json {
+  match j {
+    Object(m) => {
+      let copy = m.copy()
+      let page = num(field(j, "page")).unwrap_or(0.0).to_int()
+      let y = num(field(j, "spike_y")).unwrap_or(0.0)
+      copy["block"] = js(block_at(trace, page, y))
+      match m.get("prev") {
+        Some(prev) => copy["prev"] = with_block(trace, prev)
+        None => ()
+      }
+      Json::object(copy)
+    }
+    other => other
+  }
 }
 
 ///|
@@ -1569,7 +1712,8 @@ async fn measure(
   let text = compare_text(r, s, verbose)
   let structure = compare_structure(r.info, s.info)
   let raster = compare_raster(ruby_pdf, spike_pdf, dir, @cmp.maximum(r.pages, s.pages))
-  { ruby: r, spike: s, text, structure, raster }
+  let trace = read_trace("\{dir}/trace.tsv")
+  { ruby: r, spike: s, text, structure, raster, trace }
 }
 
 ///|
@@ -1741,6 +1885,7 @@ fn Measured::to_json(self : Measured) -> Json {
       "identical_pages": jn(t.identical_pages),
       "indent_mismatches": jn(t.indent_mismatches),
       "examples": jstrings(t.line_examples),
+      "first_diff": t.first_line,
     },
     "geometry": {
       "aligned_same_page": jn(t.aligned_same_page),
@@ -1754,6 +1899,7 @@ fn Measured::to_json(self : Measured) -> Json {
         worst_pages[:@cmp.minimum(5, worst_pages.length())].iter().map(e => ({ "page": jn(e.0), "off": jn(e.1) } : Json)).collect(),
       ),
       "examples": jstrings(t.off_examples),
+      "first_off": with_block(self.trace, t.first_off),
     },
     "raster": {
       "dpi": 150,
@@ -1906,6 +2052,70 @@ fn unsupported_lines(stderr : String) -> Array[String] {
 }
 
 ///|
+/// `--oracle-cache DIR`: Ruby's PDFs (and its exit status and output) are
+/// kept in DIR by document name and input hash, and reused while the input
+/// is unchanged. Ruby is the slow side of a comparison and its output only
+/// changes with the input (or with an included file, or the asciidoctor-pdf
+/// version: clear the cache then). Dates differ between a cached and a
+/// fresh render, but the comparison only checks that both PDFs have them.
+let oracle_cache : Ref[String?] = { val: None }
+
+///|
+/// Run Ruby asciidoctor-pdf on `input`, or reuse its cached result.
+async fn run_oracle(
+  name : String,
+  input : String,
+  input_sha : String,
+  ruby_pdf : String,
+  env : Map[String, String],
+) -> Run {
+  let args = ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input]
+  // a document that shows the time of its conversion (`{localtime}` and
+  // the like) is always converted afresh
+  let shows_time = (@fs.read_file(input).text() catch { _ => "" }).contains(
+    "{local",
+  )
+  guard oracle_cache.val is Some(cache) && !shows_time else {
+    return run(ruby, args, env~, timeout=conversion_timeout_ms)
+  }
+  let key = "\{cache}/\{name}-\{input_sha[:16]}"
+  if file_exists("\{key}.json") {
+    let saved = @json.parse(@fs.read_file("\{key}.json").text()) catch {
+      _ => Json::null()
+    }
+    let code = num(field(saved, "code")).unwrap_or(-1.0).to_int()
+    let restored = code != 0 || run("cp", ["\{key}.pdf", ruby_pdf]).code == 0
+    if saved != Json::null() && restored {
+      return {
+        command: str(field(saved, "command")),
+        code,
+        out: str(field(saved, "out")),
+        err: str(field(saved, "err")),
+        seconds: num(field(saved, "seconds")).unwrap_or(0.0),
+        timed_out: false,
+      }
+    }
+  }
+  let r = run(ruby, args, env~, timeout=conversion_timeout_ms)
+  if !r.timed_out {
+    if r.code == 0 {
+      ignore(run("cp", [ruby_pdf, "\{key}.pdf"]))
+    }
+    let saved : Json = {
+      "command": js(r.command),
+      "code": jn(r.code),
+      "out": js(r.out),
+      "err": js(r.err),
+      "seconds": jd(r.seconds),
+    }
+    @fs.write_file("\{key}.json", saved.stringify(), create_mode=CreateOrTruncate) catch {
+      _ => ()
+    }
+  }
+  r
+}
+
+///|
 async fn compare_case(
   name : String,
   input : String,
@@ -1927,10 +2137,20 @@ async fn compare_case(
   let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
   let ruby_pdf = "\{dir}/ruby.pdf"
   let spike_pdf = "\{dir}/spike.pdf"
-  let rr = run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input], env~, timeout=conversion_timeout_ms)
+  let rr = run_oracle(name, input, input_sha, ruby_pdf, env)
   let sr = run(
-    spike,
-    ["--fonts-dir", fonts, "-o", spike_pdf, input],
+    spike_exe.val,
+    [
+      "--fonts-dir",
+      fonts,
+      "--icon-fonts-dir",
+      icon_fonts,
+      "--trace",
+      "\{dir}/trace.tsv",
+      "-o",
+      spike_pdf,
+      input,
+    ],
     timeout=conversion_timeout_ms,
   )
   if wrapper != "" {
@@ -2299,7 +2519,7 @@ async fn tool_versions() -> Json {
     "asciidoctor_mbt_commit": js(run("git", ["rev-parse", "HEAD"]).out.trim().to_owned() + (if dirty { " (modified)" } else { "" })),
     "office_mbt": js(office),
     "office_mbt_commit": js(office_rev),
-    "spike": js(spike),
+    "spike": js(spike_exe.val),
     "inspector": js(inspector),
   }
 }
@@ -2334,7 +2554,7 @@ async fn self_test(gallery : String) -> Bool {
   ignore(run("rm", ["-rf", dir]))
   ignore(run("mkdir", ["-p", dir]))
   let good = "\{dir}/good.pdf"
-  let r = run(spike, ["--fonts-dir", fonts, "-o", good, "pdf/tests/sampler.adoc"])
+  let r = run(spike_exe.val, ["--fonts-dir", fonts, "-o", good, "pdf/tests/sampler.adoc"])
   if r.code != 0 {
     println("self-test: the spike failed on the sampler: \{r.err}")
     return false
@@ -2502,6 +2722,14 @@ async fn main {
         known_path = args[i + 1]
         i += 1
       }
+      "--spike" if i + 1 < args.length() => {
+        spike_exe.val = args[i + 1]
+        i += 1
+      }
+      "--oracle-cache" if i + 1 < args.length() => {
+        oracle_cache.val = Some(args[i + 1])
+        i += 1
+      }
       "--jobs" if i + 1 < args.length() => {
         jobs = @string.parse_int(args[i + 1]) catch { _ => 4 }
         i += 1
@@ -2519,6 +2747,10 @@ async fn main {
     }
   }
   ignore(run("mkdir", ["-p", gallery]))
+  match oracle_cache.val {
+    Some(dir) => ignore(run("mkdir", ["-p", dir]))
+    None => ()
+  }
   if testing {
     let ok = self_test(gallery)
     if !ok {
