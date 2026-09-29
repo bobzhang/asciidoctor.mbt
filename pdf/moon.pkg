@@ -1,0 +1,15 @@
+import {
+  "bobzhang/asciidoctor/core",
+  "moonbitlang/pagelayout",
+  "moonbitlang/pagelayout/fonts",
+  "moonbitlang/pagelayout/fontoutlines",
+  "moonbitlang/pagelayout/pdf",
+  "moonbitlang/pdflite",
+  "moonbitlang/core/string",
+  "moonbitlang/core/cmp",
+}
+
+supported_targets = "native+wasm"
+import {
+  "bobzhang/asciidoctor",
+} for "wbtest"

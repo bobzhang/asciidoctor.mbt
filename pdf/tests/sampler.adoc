@@ -1,0 +1,136 @@
+= PDF Backend Sampler
+Jane Doe <jane@example.org>
+
+This sampler exercises the features the PDF backend spike covers: headings, paragraphs with *bold*, _italic_, `monospace` and https://asciidoctor.org[links], lists, code blocks, tables and admonitions.
+
+== Paragraphs and inline formatting
+
+A paragraph set in the base font is justified across the full width of the page, and the last line of the paragraph is left ragged, which is what the default theme of Ruby asciidoctor-pdf does for body text.
+It contains *strong text*, _emphasized text_, *_both at once_*, `monospaced code`, a superscript E=mc^2^, a subscript H~2~O, #highlighted text# and a link to https://github.com/asciidoctor/asciidoctor-pdf[the asciidoctor-pdf project].
+
+A second paragraph refers back to <<_lists>> with an internal cross reference, and to a bare URL: https://example.org.
+Typographic quotes such as "`double`" and '`single`' and the apostrophe in it's are replaced by curly quotes -- and double hyphens by an em dash.
+
+=== A level-three heading
+
+Text under a level-three heading.
+
+==== A level-four heading
+
+Text under a level-four heading, with a line break +
+in the middle.
+
+== Lists
+
+* An unordered list item
+* A second item with *bold* text
+** A nested item
+** Another nested item
+*** A third level
+* Back at the top level
+
+. First ordered item
+. Second ordered item
+.. Nested ordered item
+.. Another nested ordered item
+. Third ordered item
+
+[loweralpha]
+. alpha one
+. alpha two
+
+CPU:: The brain of the computer.
+Hard drive:: Permanent storage for operating system and/or user files.
+RAM:: Temporarily stores information the CPU uses during operation.
+
+== Code blocks
+
+.A titled listing
+----
+$ git clone https://github.com/asciidoctor/asciidoctor-pdf
+$ cd asciidoctor-pdf
+$ bundle install
+----
+
+[source,ruby]
+----
+require 'asciidoctor'
+
+class Greeter
+  def initialize name
+    @name = name
+  end
+
+  def greet
+    puts "Hello, #{@name}!"
+  end
+end
+----
+
+ A literal block
+   keeps its indentation.
+
+== Tables
+
+.A table with a header row
+[cols="1,2,1",options="header"]
+|===
+|Name |Description |Value
+
+|alpha
+|The first letter of the Greek alphabet, with enough text to wrap onto a second line in its cell.
+|1
+
+|beta
+|The second letter.
+|2
+
+|gamma
+|The third letter.
+|3
+|===
+
+[cols="3*",frame=ends,grid=rows]
+|===
+|No header |in |this table
+|a |b |c
+|===
+
+== Admonitions
+
+NOTE: This is a note admonition with a single paragraph of text that is long enough to wrap onto a second line.
+
+TIP: Tips are rendered the same way, with a different label.
+
+[WARNING]
+====
+A compound warning with two paragraphs.
+
+The second paragraph.
+====
+
+== More blocks
+
+.An example
+====
+An example block has a thin border and padding.footnote:[Footnotes are collected at the end of the document.]
+====
+
+.A sidebar
+****
+A sidebar has a shaded background.
+****
+
+[quote,Abraham Lincoln,Gettysburg Address]
+____
+Four score and seven years ago our fathers brought forth on this continent a new nation.
+____
+
+'''
+
+* [x] a checked item
+* [ ] an unchecked item
+
+== Page flow
+
+include::flow.adoc[]

@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor-pdf"
+
+import {
+  "bobzhang/asciidoctor/core",
+}
+
+// Values
+pub fn convert_document(@core.Node, FontCatalog) -> Bytes raise
+
+pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
+
+pub fn register() -> Unit
+
+// Errors
+
+// Types and methods
+pub struct FontCatalog {
+  // private fields
+}
+pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)]) -> Self raise
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,613 @@
+// Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf.
+//
+// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [CASE...]
+//
+// Renders each case with Ruby asciidoctor-pdf 2.3.x (Homebrew Ruby, gems in
+// .repos/gems-pdf) and with the spike CLI, then compares them with poppler:
+// page counts, per-page text (`pdftotext -layout`), and word positions
+// (`pdftotext -bbox`). Pages are rasterized (`pdftoppm -r 60`) into a
+// side-by-side gallery at _build/gallery/pdf-spike/index.html.
+//
+// Parity metrics, per document:
+//   pages      page count, Ruby vs spike (must be equal)
+//   recall     Ruby words present in the spike output (multiset), and
+//   precision  spike words present in the Ruby output (catches invented text)
+//   aligned    Ruby words matched in reading order
+//   same page  aligned words the spike puts on the same page number
+//   lines      Ruby text lines (whitespace-normalised) found verbatim on the
+//              same page of the spike output: line breaks and page breaks
+//   ±1pt       same-page aligned words whose box is within 1pt of Ruby's
+//              (both x and y); median |dx| and |dy| in points
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/core/cmp",
+}
+
+///|
+let ruby : String = "/opt/homebrew/opt/ruby/bin/ruby"
+
+///|
+let gems : String = ".repos/gems-pdf"
+
+///|
+let fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
+
+///|
+let spike : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.exe"
+
+///|
+let gallery : String = "_build/gallery/pdf-spike"
+
+///|
+/// (name, input, wrapper text written to `input` for the run and removed
+/// afterwards, or "" when the input is a checked-in file)
+let cases : Array[(String, String, String)] = [
+  ("sampler", "pdf/tests/sampler.adoc", ""),
+  (
+    "progit-ch02",
+    ".repos/progit2/pdf-spike-ch02.adoc",
+    "= Pro Git: Git Basics\nScott Chacon; Ben Straub\n\ninclude::ch02-git-basics-chapter.asc[]\n",
+  ),
+]
+
+///|
+async fn run(
+  cmd : String,
+  args : Array[String],
+  env? : Map[String, String] = {},
+) -> (Int, String, String) {
+  let (code, out, err) = @process.collect_output(cmd, args, extra_env=env)
+  (code, out.text(), err.text())
+}
+
+///|
+priv struct Word {
+  text : String
+  page : Int
+  x : Double
+  y : Double
+  /// box height, which depends on the font descriptor's ascent and descent
+  h : Double
+}
+
+///|
+fn attr_value(tag : String, name : String) -> Double {
+  match tag.find("\{name}=\"") {
+    Some(i) => {
+      let start = i + name.length() + 2
+      let rest = tag.unsafe_substring(start~, end=tag.length())
+      let end = rest.find("\"").unwrap_or(rest.length())
+      @string.parse_double(rest.unsafe_substring(start=0, end~)) catch {
+        _ => 0.0
+      }
+    }
+    None => 0.0
+  }
+}
+
+///|
+fn unescape(text : String) -> String {
+  text
+  .replace_all(old="&lt;", new="<")
+  .replace_all(old="&gt;", new=">")
+  .replace_all(old="&quot;", new="\"")
+  .replace_all(old="&apos;", new="'")
+  .replace_all(old="&amp;", new="&")
+}
+
+///|
+/// Words with their boxes from `pdftotext -bbox` output.
+fn parse_bbox(html : String) -> Array[Word] {
+  let words = []
+  let mut page = 0
+  for line in html.split("\n") {
+    let line = line.trim().to_owned()
+    if line.has_prefix("<page ") {
+      page += 1
+    } else if line.has_prefix("<word ") {
+      let close = line.find(">").unwrap_or(0)
+      let tag = line.unsafe_substring(start=0, end=close)
+      let end = line.rev_find("</word>").unwrap_or(line.length())
+      let text = unescape(line.unsafe_substring(start=close + 1, end~))
+      let y = attr_value(tag, "yMax")
+      words.push({ text, page, x: attr_value(tag, "xMin"), y, h: y - attr_value(tag, "yMin") })
+    }
+  }
+  words
+}
+
+///|
+fn normalize_line(line : String) -> String {
+  let parts = []
+  for part in line.split(" ") {
+    if part.length() > 0 {
+      parts.push(part.to_owned())
+    }
+  }
+  parts.join(" ")
+}
+
+///|
+/// The non-empty lines of each page of `pdftotext -layout` output.
+fn page_lines(text : String) -> Array[Array[String]] {
+  let pages = []
+  for page in text.split("\u000c") {
+    let lines = []
+    for line in page.split("\n") {
+      let l = normalize_line(line.to_owned())
+      if l.length() > 0 {
+        lines.push(l)
+      }
+    }
+    pages.push(lines)
+  }
+  // pdftotext ends every page with a form feed
+  if pages.length() > 0 && pages[pages.length() - 1].is_empty() {
+    ignore(pages.pop())
+  }
+  pages
+}
+
+///|
+fn median(values : Array[Double]) -> Double {
+  if values.is_empty() {
+    return 0.0
+  }
+  let sorted = values.copy()
+  sorted.sort()
+  sorted[sorted.length() / 2]
+}
+
+///|
+fn fmt(value : Double, digits? : Int = 3) -> String {
+  let scale = 10.0.pow(digits.to_double())
+  let rounded = (value * scale).round() / scale
+  rounded.to_string()
+}
+
+///|
+priv struct Metrics {
+  pages_ruby : Int
+  pages_spike : Int
+  recall : Double
+  precision : Double
+  aligned : Double
+  same_page : Double
+  lines : Double
+  within_1pt : Double
+  median_dx : Double
+  median_dy : Double
+  page_lines : Array[(Int, Int)] // per Ruby page: (lines matched, lines)
+}
+
+///|
+fn multiset_share(from : Array[Word], into : Array[Word]) -> Double {
+  let counts : Map[String, Int] = {}
+  for w in into {
+    counts[w.text] = counts.get(w.text).unwrap_or(0) + 1
+  }
+  let mut hit = 0
+  for w in from {
+    match counts.get(w.text) {
+      Some(n) if n > 0 => {
+        counts[w.text] = n - 1
+        hit += 1
+      }
+      _ => ()
+    }
+  }
+  if from.is_empty() {
+    1.0
+  } else {
+    hit.to_double() / from.length().to_double()
+  }
+}
+
+///|
+/// Index pairs of a longest common subsequence of `a` and `b` (Myers'
+/// O(ND) diff, keeping only the diagonals each step can reach).
+fn myers(a : Array[String], b : Array[String]) -> Array[(Int, Int)] {
+  let n = a.length()
+  let m = b.length()
+  let max = n + m
+  let offset = max + 1
+  let v = Array::make(2 * max + 3, 0)
+  let trace : Array[Array[Int]] = []
+  let mut last = 0
+  for d in 0..=max {
+    // v as it stood after step d - 1, on the diagonals step d reads
+    let snap = Array::make(2 * d + 3, 0)
+    for k in (-d - 1)..=(d + 1) {
+      snap[k + d + 1] = v[offset + k]
+    }
+    trace.push(snap)
+    let mut done = false
+    let mut k = -d
+    while k <= d {
+      let mut x = if k == -d || (k != d && v[offset + k - 1] < v[offset + k + 1]) {
+        v[offset + k + 1]
+      } else {
+        v[offset + k - 1] + 1
+      }
+      let mut y = x - k
+      while x < n && y < m && a[x] == b[y] {
+        x += 1
+        y += 1
+      }
+      v[offset + k] = x
+      if x >= n && y >= m {
+        done = true
+        break
+      }
+      k += 2
+    }
+    if done {
+      last = d
+      break
+    }
+  }
+  let pairs = []
+  let mut x = n
+  let mut y = m
+  for d = last; d > 0; d = d - 1 {
+    let snap = trace[d]
+    let k = x - y
+    let prev_k = if k == -d || (k != d && snap[k - 1 + d + 1] < snap[k + 1 + d + 1]) {
+      k + 1
+    } else {
+      k - 1
+    }
+    let prev_x = snap[prev_k + d + 1]
+    let prev_y = prev_x - prev_k
+    while x > prev_x && y > prev_y {
+      x -= 1
+      y -= 1
+      pairs.push((x, y))
+    }
+    x = prev_x
+    y = prev_y
+  }
+  while x > 0 && y > 0 {
+    x -= 1
+    y -= 1
+    pairs.push((x, y))
+  }
+  pairs.rev_in_place()
+  pairs
+}
+
+///|
+fn compare(
+  ruby_words : Array[Word],
+  spike_words : Array[Word],
+  ruby_text : String,
+  spike_text : String,
+  pages_ruby : Int,
+  pages_spike : Int,
+  verbose~ : Bool,
+  off~ : Array[String],
+) -> Metrics {
+  // align words in reading order: a longest common subsequence of the
+  // word texts
+  let pairs = myers(ruby_words.map(w => w.text), spike_words.map(w => w.text))
+  let aligned = pairs.length()
+  let mut same_page = 0
+  let mut within = 0
+  let dxs = []
+  let dys = []
+  for pair in pairs {
+    let w = ruby_words[pair.0]
+    let s = spike_words[pair.1]
+    if s.page == w.page {
+      same_page += 1
+      let dx = (s.x - w.x).abs()
+      // boxes only locate the baseline alike when both descriptors agree
+      // (Prawn writes OS/2 typo metrics, pagelayout hhea ones: M+ 1mn
+      // differs); compare x alone otherwise
+      let dy = if (s.h - w.h).abs() < 0.1 { (s.y - w.y).abs() } else { 0.0 }
+      dxs.push(dx)
+      dys.push(dy)
+      if dx <= 1.0 && dy <= 1.0 {
+        within += 1
+      } else if verbose && off.length() < 20 {
+        off.push("  p\{w.page} \{w.text}: dx \{fmt(s.x - w.x, digits=2)} dy \{fmt(s.y - w.y, digits=2)}")
+      }
+    }
+  }
+  let rl = page_lines(ruby_text)
+  let sl = page_lines(spike_text)
+  let mut matched_lines = 0
+  let mut total_lines = 0
+  let per_page = []
+  for p, lines in rl {
+    let available : Map[String, Int] = {}
+    if p < sl.length() {
+      for l in sl[p] {
+        available[l] = available.get(l).unwrap_or(0) + 1
+      }
+    }
+    let mut hit = 0
+    for l in lines {
+      match available.get(l) {
+        Some(n) if n > 0 => {
+          available[l] = n - 1
+          hit += 1
+        }
+        _ => ()
+      }
+    }
+    per_page.push((hit, lines.length()))
+    matched_lines += hit
+    total_lines += lines.length()
+  }
+  let n = ruby_words.length().to_double()
+  {
+    pages_ruby,
+    pages_spike,
+    recall: multiset_share(ruby_words, spike_words),
+    precision: multiset_share(spike_words, ruby_words),
+    aligned: aligned.to_double() / n,
+    same_page: same_page.to_double() / n,
+    lines: matched_lines.to_double() / total_lines.to_double(),
+    within_1pt: if dxs.is_empty() {
+      0.0
+    } else {
+      within.to_double() / dxs.length().to_double()
+    },
+    median_dx: median(dxs),
+    median_dy: median(dys),
+    page_lines: per_page,
+  }
+}
+
+///|
+/// The pixels of a binary PGM (P5) file: (width, height, offset of the
+/// data).
+fn pgm_header(data : Bytes) -> (Int, Int, Int) {
+  let fields = []
+  let mut i = 0
+  while fields.length() < 4 && i < data.length() {
+    while i < data.length() && (data[i] == b' ' || data[i] == b'\n') {
+      i += 1
+    }
+    let start = i
+    while i < data.length() && data[i] != b' ' && data[i] != b'\n' {
+      i += 1
+    }
+    let sb = StringBuilder()
+    for j in start..<i {
+      sb.write_char(data[j].to_int().unsafe_to_char())
+    }
+    fields.push(sb.to_string())
+  }
+  let num = fn(s : String) { @string.parse_int(s) catch { _ => 0 } }
+  (num(fields[1]), num(fields[2]), i + 1)
+}
+
+///|
+/// Share of pixels whose grey level differs by more than 64 between two
+/// renderings of a page (1.0 when a page is missing or sizes differ).
+async fn pixel_diff(a : String, b : String) -> Double {
+  let da = @fs.read_file(a).binary() catch { _ => return 1.0 }
+  let db = @fs.read_file(b).binary() catch { _ => return 1.0 }
+  let (wa, ha, oa) = pgm_header(da)
+  let (wb, hb, ob) = pgm_header(db)
+  if wa != wb || ha != hb || wa == 0 {
+    return 1.0
+  }
+  let mut differ = 0
+  for i in 0..<(wa * ha) {
+    if (da[oa + i].to_int() - db[ob + i].to_int()).abs() > 64 {
+      differ += 1
+    }
+  }
+  differ.to_double() / (wa * ha).to_double()
+}
+
+///|
+fn html_escape(text : String) -> String {
+  text
+  .replace_all(old="&", new="&amp;")
+  .replace_all(old="<", new="&lt;")
+  .replace_all(old=">", new="&gt;")
+}
+
+///|
+async fn page_count(pdf : String) -> Int {
+  let (_, out, _) = run("pdfinfo", [pdf])
+  for line in out.split("\n") {
+    if line.has_prefix("Pages:") {
+      return @string.parse_int(line.to_owned().replace(old="Pages:", new="").trim()) catch {
+        _ => 0
+      }
+    }
+  }
+  0
+}
+
+///|
+async fn now_ms() -> Double {
+  let (_, out, _) = run("/bin/date", ["+%s%N"])
+  // macOS date lacks %N; fall back to seconds
+  let text = out.trim().to_owned()
+  if text.has_suffix("N") {
+    let secs = @string.parse_double(text.replace(old="N", new="")) catch { _ => 0.0 }
+    secs * 1000.0
+  } else {
+    (@string.parse_double(text) catch { _ => 0.0 }) / 1.0e6
+  }
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let mut build = true
+  let mut verbose = false
+  let selected = []
+  for i in 1..<args.length() {
+    match args[i] {
+      "--no-build" => build = false
+      "-v" => verbose = true
+      "--" => ()
+      name => selected.push(name)
+    }
+  }
+  if build {
+    let (code, _, err) = run("moon", [
+      "-C", "pdf", "build", "--target", "native", "--release", "cmd/asciidoctor-pdf",
+    ])
+    if code != 0 {
+      println(err)
+      fail("building the spike failed")
+    }
+  }
+  let root = @fs.realpath(".")
+  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+  ignore(run("mkdir", ["-p", gallery]))
+  let sections = []
+  let summary = []
+  for c in cases {
+    let (name, input, wrapper) = c
+    if selected.length() > 0 && !selected.contains(name) {
+      continue
+    }
+    let dir = "\{gallery}/\{name}"
+    ignore(run("rm", ["-rf", dir]))
+    ignore(run("mkdir", ["-p", dir]))
+    if wrapper != "" {
+      @fs.write_file(input, wrapper, create_mode=CreateOrTruncate)
+    }
+    let ruby_pdf = "\{dir}/ruby.pdf"
+    let spike_pdf = "\{dir}/spike.pdf"
+    let t0 = now_ms()
+    let (rc, _, rerr) = run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input], env~)
+    let t1 = now_ms()
+    let (sc, _, serr) = run(spike, ["--fonts-dir", fonts, "-o", spike_pdf, input])
+    let t2 = now_ms()
+    if wrapper != "" {
+      @fs.remove(input)
+    }
+    if rc != 0 || sc != 0 {
+      println("\{name}: ruby exit \{rc}, spike exit \{sc}\n\{rerr}\n\{serr}")
+      continue
+    }
+    let pages_ruby = page_count(ruby_pdf)
+    let pages_spike = page_count(spike_pdf)
+    ignore(run("pdftoppm", ["-r", "60", "-png", ruby_pdf, "\{dir}/ruby"]))
+    ignore(run("pdftoppm", ["-r", "60", "-png", spike_pdf, "\{dir}/spike"]))
+    // grey rasters for the pixel comparison
+    ignore(run("pdftoppm", ["-r", "60", "-gray", ruby_pdf, "\{dir}/g-ruby"]))
+    ignore(run("pdftoppm", ["-r", "60", "-gray", spike_pdf, "\{dir}/g-spike"]))
+    let pixel_pages = []
+    for name in @fs.readdir(dir, sort=true) {
+      if name.has_prefix("g-ruby-") && name.has_suffix(".pgm") {
+        let other = name.replace(old="g-ruby-", new="g-spike-")
+        pixel_pages.push(pixel_diff("\{dir}/\{name}", "\{dir}/\{other}"))
+      }
+    }
+    for name in @fs.readdir(dir, sort=true) {
+      if name.has_suffix(".pgm") {
+        @fs.remove("\{dir}/\{name}")
+      }
+    }
+    let mut pixel_sum = 0.0
+    let mut pixel_max = 0.0
+    for d in pixel_pages {
+      pixel_sum += d
+      if d > pixel_max {
+        pixel_max = d
+      }
+    }
+    let pixel_mean = if pixel_pages.is_empty() {
+      0.0
+    } else {
+      pixel_sum / pixel_pages.length().to_double()
+    }
+    let (_, ruby_text, _) = run("pdftotext", ["-layout", ruby_pdf, "-"])
+    let (_, spike_text, _) = run("pdftotext", ["-layout", spike_pdf, "-"])
+    @fs.write_file("\{dir}/ruby.txt", ruby_text, create_mode=CreateOrTruncate)
+    @fs.write_file("\{dir}/spike.txt", spike_text, create_mode=CreateOrTruncate)
+    let (_, ruby_bbox, _) = run("pdftotext", ["-bbox", ruby_pdf, "-"])
+    let (_, spike_bbox, _) = run("pdftotext", ["-bbox", spike_pdf, "-"])
+    let off = []
+    let m = compare(
+      parse_bbox(ruby_bbox),
+      parse_bbox(spike_bbox),
+      ruby_text,
+      spike_text,
+      pages_ruby,
+      pages_spike,
+      verbose~,
+      off~,
+    )
+    let line = "\{name}: pages \{pages_ruby} vs \{pages_spike}, recall \{fmt(m.recall)}, precision \{fmt(m.precision)}, aligned \{fmt(m.aligned)}, same page \{fmt(m.same_page)}, lines \{fmt(m.lines)}, ±1pt \{fmt(m.within_1pt)}, median |dx| \{fmt(m.median_dx, digits=2)}pt |dy| \{fmt(m.median_dy, digits=2)}pt, pixels differing mean \{fmt(pixel_mean * 100.0, digits=2)}% max \{fmt(pixel_max * 100.0, digits=2)}%; ruby \{fmt((t1 - t0) / 1000.0, digits=2)}s, spike \{fmt((t2 - t1) / 1000.0, digits=2)}s"
+    println(line)
+    for o in off {
+      println(o)
+    }
+    summary.push(
+      "<tr><td><a href=\"#\{name}\">\{name}</a></td><td>\{pages_ruby}</td><td>\{pages_spike}</td><td>\{fmt(m.recall)}</td><td>\{fmt(m.precision)}</td><td>\{fmt(m.aligned)}</td><td>\{fmt(m.same_page)}</td><td>\{fmt(m.lines)}</td><td>\{fmt(m.within_1pt)}</td><td>\{fmt(m.median_dx, digits=2)}</td><td>\{fmt(m.median_dy, digits=2)}</td><td>\{fmt(pixel_mean * 100.0, digits=2)}% / \{fmt(pixel_max * 100.0, digits=2)}%</td><td>\{fmt((t1 - t0) / 1000.0, digits=2)}s / \{fmt((t2 - t1) / 1000.0, digits=2)}s</td></tr>",
+    )
+    // page images, pairing by page number
+    let files = @fs.readdir(dir, sort=true)
+    let ruby_pngs = files.filter(f => f.has_prefix("ruby-") && f.has_suffix(".png"))
+    let spike_pngs = files.filter(f => f.has_prefix("spike-") && f.has_suffix(".png"))
+    let rows = []
+    let count = @cmp.maximum(ruby_pngs.length(), spike_pngs.length())
+    for p in 0..<count {
+      let cell = fn(list : Array[String]) {
+        if p < list.length() {
+          "<img src=\"\{name}/\{list[p]}\" loading=\"lazy\">"
+        } else {
+          "<div class=\"missing\">no page</div>"
+        }
+      }
+      let lines = if p < m.page_lines.length() {
+        let (hit, total) = m.page_lines[p]
+        let px = if p < pixel_pages.length() { fmt(pixel_pages[p] * 100.0, digits=2) } else { "-" }
+        "\{hit}/\{total} lines identical, \{px}% pixels differ"
+      } else {
+        ""
+      }
+      rows.push(
+        "<tr><th colspan=\"2\">page \{p + 1} <span class=\"stat\">\{lines}</span></th></tr><tr><td>\{cell(ruby_pngs)}</td><td>\{cell(spike_pngs)}</td></tr>",
+      )
+    }
+    sections.push(
+      "<section id=\"\{name}\"><h2>\{name}</h2><p class=\"stat\">\{html_escape(line)}</p><p><a href=\"\{name}/ruby.pdf\">ruby.pdf</a> · <a href=\"\{name}/spike.pdf\">spike.pdf</a> · <a href=\"\{name}/ruby.txt\">ruby.txt</a> · <a href=\"\{name}/spike.txt\">spike.txt</a></p><table class=\"pages\"><tr><th>Ruby asciidoctor-pdf 2.3.27</th><th>asciidoctor.mbt spike</th></tr>\{rows.join("\n")}</table></section>",
+    )
+  }
+  let html =
+    $|<!DOCTYPE html>
+    $|<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    $|<title>PDF backend spike</title>
+    $|<style>
+    $|:root { color-scheme: light dark; --bg: #fff; --fg: #222; --muted: #666; --line: #ddd; }
+    $|@media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #eee; --muted: #aaa; --line: #444; } }
+    $|body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; margin: 16px; }
+    $|table { border-collapse: collapse; }
+    $|.summary td, .summary th { border: 1px solid var(--line); padding: 4px 8px; text-align: right; }
+    $|.summary td:first-child { text-align: left; }
+    $|.pages td { vertical-align: top; padding: 4px; }
+    $|.pages img { width: 100%; max-width: 500px; border: 1px solid var(--line); background: #fff; }
+    $|.pages th { text-align: left; font-weight: 600; padding-top: 12px; }
+    $|.stat { color: var(--muted); font-weight: normal; font-size: 12px; }
+    $|.missing { width: 500px; height: 100px; border: 1px dashed var(--line); }
+    $|</style></head><body>
+    $|<h1>PDF backend spike: Ruby asciidoctor-pdf (left) vs asciidoctor.mbt (right)</h1>
+    $|<p>Generated by <code>scripts/pdf_compare.mbtx</code>. Oracle: asciidoctor-pdf 2.3.27 (prawn 2.4.0, ttfunk 1.7.0, asciidoctor 2.0.26, Ruby 4.0.7), default theme. Metrics: <b>recall</b>/<b>precision</b> of words (multiset), <b>aligned</b> words in reading order, <b>same page</b> share of Ruby words on the same page, <b>lines</b> share of Ruby text lines reproduced verbatim on the same page, <b>±1pt</b> share of same-page words whose position is within 1pt, median |dx| |dy| in points (y only where both font descriptors give the same box height), <b>pixels differing</b> share of 60 dpi grey pixels that differ by more than 64 levels.</p>
+    $|<p><b>Summary.</b> The spike (<code>pdf/</code>, module <code>bobzhang/asciidoctor-pdf</code>) walks the <code>@asciidoctor.load</code> tree with a Prawn-like cursor flow that emits the <code>moonbitlang/pagelayout</code> page model, rendered by <code>pagelayout/pdf</code> with the theme's own Noto Serif and M+ 1mn fonts. It covers the document title, sections, prose with inline formatting, links and cross references, lists, description lists, listing/literal blocks, tables, admonitions (text labels), images, example/sidebar/quote blocks, footnotes, the running footer, the PDF outline and named destinations. Known visual differences: square instead of rounded block corners, no syntax highlighting, no admonition icons, no title page or TOC.</p>
+    $|<table class="summary"><tr><th>document</th><th>pages (Ruby)</th><th>pages (spike)</th><th>recall</th><th>precision</th><th>aligned</th><th>same page</th><th>lines</th><th>±1pt</th><th>|dx|</th><th>|dy|</th><th>pixels differing (mean / max page)</th><th>time Ruby / spike</th></tr>
+  let out =
+    $|\{html}
+    $|\{summary.join("\n")}
+    $|</table>
+    $|\{sections.join("\n")}
+    $|</body></html>
+  @fs.write_file("\{gallery}/index.html", out, create_mode=CreateOrTruncate)
+  println("wrote \{gallery}/index.html")
+}
