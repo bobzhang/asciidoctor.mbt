@@ -25,6 +25,9 @@ priv struct Style {
   /// a word joiner (`class="wj"`, a footnote's label): the word before it
   /// must fit on its line together with it
   wj : Bool
+  /// an inline image (the index of its `InlineImage` in the session), set
+  /// as a placeholder as wide as the image; -1 for text
+  image : Int
   /// the style of the document font the text is set in (Prawn's current
   /// font, as `theme_font` sets it); `bold` and `italic` are the styles of
   /// the markup (and those inherited explicitly, as headings do)
@@ -60,6 +63,7 @@ fn Style::new(
     underline: false,
     strike: false,
     wj: false,
+    image: -1,
   }
 }
 
@@ -643,7 +647,22 @@ fn parse_formatted(
             stack.push((tag, style, -1, -1))
           }
         }
-        "img" => ()
+        "img" => {
+          // an inline image: a placeholder the size of the image (see
+          // `inline_image_size`), drawn as the image
+          let index = match attrs.get("src") {
+            Some(s) => @string.parse_int(s) catch { _ => -1 }
+            None => -1
+          }
+          if index >= 0 && index < session.inline_images.length() {
+            flush()
+            fragments.push({
+              text: "\u{2063}",
+              style: { ..style, image: index, },
+              anchor: None,
+            })
+          }
+        }
         _ =>
           if !self_closing {
             let before = if text.is_empty() { -1 } else { fragments.length() }

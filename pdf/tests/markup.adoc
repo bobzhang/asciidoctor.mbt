@@ -46,3 +46,24 @@ An element with nothing in it takes the space before it away: the `+pass:[]+` ma
 == A section title | with a subtitle
 
 A title separator splits a subtitle off onto its own line, in the subtitle role.
+
+=== OpenShift [[s2i]]
+
+An anchor after the last word of a line [[line-end]]
+sits where the text ends, not after the space before it: see <<s2i>> and <<line-end>>.
+
+[.text-center]
+A centered line that ends with an anchor [[centered-end]]
+
+A link whose text ends with a space that wraps to the next line still links there:
+
+[cols="35%,65%",options="header"]
+|===
+|Property |Description
+
+|[[batch-enabled]]<<batch-enabled, `debezium.sink.http.batch.enabled` >>
+|Aggregates all change events.
+
+|[[batch-max-size]]<<batch-max-size, `debezium.sink.http.batch.max-size` >>
+|The batch size.
+|===

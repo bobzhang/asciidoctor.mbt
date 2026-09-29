@@ -1,0 +1,29 @@
+= Media, passthrough and STEM blocks
+:stem: latexmath
+
+A video is a link to it, after a play symbol:
+
+video::video-file.mp4[]
+
+.A walkthrough of the product
+video::RvRhUHTV_8k[youtube]
+
+video::67480300[vimeo]
+
+audio::ocean-waves.wav[]
+
+A passthrough block is set in the code font as it is:
+
+++++
+<p>
+Content in a passthrough block is passed to the output unprocessed.
+</p>
+++++
+
+.A STEM block
+[stem]
+++++
+sqrt(4) = 2
+++++
+
+After the blocks.

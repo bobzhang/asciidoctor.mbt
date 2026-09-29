@@ -374,6 +374,43 @@ fn Flow::line_items(
   baseline : Double,
 ) -> Array[@pagelayout.PageItem] {
   let items : Array[@pagelayout.PageItem] = []
+  // inline images (InlineImageRenderer): one taller than one and a half
+  // lines sits on the text's descender, a smaller one is centred on its
+  // placeholder's box
+  for placed in line.images {
+    let (x, index, w, h, increased, style, face) = placed
+    let image = session.inline_images[index]
+    let a = face.ascender_pt(style.size)
+    let d = face.descender_pt(style.size)
+    let (top, box_top, box_height) = if increased {
+      (baseline + d - h, baseline + d - h, h)
+    } else {
+      (baseline - a + (a + d - h) / 2.0, baseline - a, a + d)
+    }
+    items.push(
+      Image({
+        x_pt: x0 + x,
+        y_pt: top,
+        w_pt: w,
+        h_pt: h,
+        data: image.data,
+        mime: image.mime,
+      }),
+    )
+    match style.link {
+      Some(target) =>
+        items.push(
+          Link({
+            x_pt: x0 + x,
+            y_pt: box_top,
+            w_pt: w,
+            h_pt: box_height,
+            target,
+          }),
+        )
+      None => ()
+    }
+  }
   for link in line.empty_links {
     let (x, style, face) = link
     let a = face.ascender_pt(style.size)
@@ -483,7 +520,7 @@ fn Flow::ink_line(
   x0 : Double,
   baseline : Double,
 ) -> Unit {
-  if !line.runs.is_empty() {
+  if !line.runs.is_empty() || !line.images.is_empty() {
     self.mark_inked()
   }
   self.items().append(self.line_items(line, x0, baseline))

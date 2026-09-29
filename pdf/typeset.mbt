@@ -66,6 +66,9 @@ priv struct Line {
   /// it: Prawn still annotates them, with no width, at the line's end
   /// (x, style, face)
   empty_links : Array[(Double, Style, Face)]
+  /// inline images: x, their index, width, height, whether they make the
+  /// line taller, and their fragment's style and face
+  images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
 }
 
 ///|
@@ -163,6 +166,7 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
 fn build_items(
   fragments : Array[Fragment],
   catalog : FontCatalog,
+  available? : Double = 1.0e9,
 ) -> (Array[Item], Array[Face]) {
   let items : Array[Item] = []
   let faces : Array[Face] = []
@@ -187,6 +191,16 @@ fn build_items(
         continue
       }
       None => ()
+    }
+    if style.image >= 0 {
+      // an inline image: one placeholder as wide as the image
+      let (width, _, _) = inline_image_size(
+        session.inline_images[style.image],
+        available,
+        face.height_pt(style.size),
+      )
+      items.push({ ..blank, unit: 0x2063, fit: width, draw: width, offset: 0, })
+      continue
     }
     let text = fragment.text
     let n = text.length()
@@ -282,7 +296,7 @@ fn break_lines(
   width : Double,
   first_width : Double,
 ) -> (Array[Item], Array[Face], Array[(Int, Int, Bool)]) {
-  let (items, faces) = build_items(fragments, catalog)
+  let (items, faces) = build_items(fragments, catalog, available=width)
   let n = items.length()
   let starts = token_starts(items)
   // kerning counts towards fitting only inside a token
@@ -573,9 +587,16 @@ fn place_line(
   justify : Bool,
   hard : Bool,
 ) -> Line {
-  // trailing spaces are not part of the line
+  // trailing spaces are not part of the line, nor are the spaces before
+  // anchors that end it: Prawn's `omit_trailing_whitespace_from_line_width`
+  // takes a fragment whose text Ruby's `strip` empties as white space, and
+  // asciidoctor-pdf's anchor text is a NUL, which `strip` removes
   let mut visible_end = to
-  while visible_end > from && is_break_space(items[visible_end - 1].unit) {
+  while visible_end > from &&
+        (
+          is_break_space(items[visible_end - 1].unit) ||
+          items[visible_end - 1].anchor is Some(_)
+        ) {
     visible_end -= 1
   }
   let mut draw_width = 0.0
@@ -605,12 +626,26 @@ fn place_line(
   let mut ascender = 0.0
   let mut descender = 0.0
   let mut height = 0.0
+  let images : Array[(Double, Int, Double, Double, Bool, Style, Face)] = []
   fn measure(fragment : Int) {
     let style = fragments[fragment].style
     let face = faces[fragment]
-    let a = face.ascender_pt(style.size)
+    let mut a = face.ascender_pt(style.size)
     let d = face.descender_pt(style.size)
-    let h = face.height_pt(style.size)
+    let mut h = face.height_pt(style.size)
+    if style.image >= 0 {
+      // an image more than one and a half lines tall makes the line as
+      // tall as the image, over the text's descender
+      let (_, image_h, increased) = inline_image_size(
+        session.inline_images[style.image],
+        limit,
+        h,
+      )
+      if increased {
+        a = image_h - d
+        h = image_h
+      }
+    }
     if a > ascender {
       ascender = a
     }
@@ -636,6 +671,20 @@ fn place_line(
         continue
       }
       None => ()
+    }
+    let style = fragments[fragment].style
+    if style.image >= 0 {
+      let face = faces[fragment]
+      let (w, h, increased) = inline_image_size(
+        session.inline_images[style.image],
+        limit,
+        face.height_pt(style.size),
+      )
+      images.push((x, style.image, w, h, increased, style, face))
+      x += items[i].draw
+      measure(fragment)
+      i += 1
+      continue
     }
     let sb = StringBuilder()
     let advances : Array[Double] = []
@@ -667,6 +716,13 @@ fn place_line(
       measure(fragment)
     }
   }
+  // the anchors among the trailing white space, where the line's text ends
+  for k in visible_end..<to {
+    match items[k].anchor {
+      Some(name) => anchors.push((name, x))
+      None => ()
+    }
+  }
   // every fragment the line holds counts towards its height, as Prawn's
   // arranger measures each fragment it consumed for the line: spaces that
   // end it or were dropped from its start, anchors (asciidoctor-pdf's
@@ -692,16 +748,39 @@ fn place_line(
       measure(fragment)
     }
   }
+  // a link fragment the line holds that draws nothing on it (spaces
+  // dropped from its start or left out at its end) still gets its link,
+  // zero wide where the fragment sits, as Prawn annotates every fragment
+  // of the line
   let empty_links : Array[(Double, Style, Face)] = []
   let mut seen = -1
-  for k in visible_end..<to {
-    let f = items[k].fragment
+  let mut position = offset
+  for k in from..<to {
+    let item = items[k]
+    let f = item.fragment
+    let style = fragments[f].style
     if f != seen &&
-      fragments[f].style.link is Some(_) &&
+      style.link is Some(_) &&
+      style.image < 0 &&
       !runs.iter().any(r => r.fragment == f) {
-      empty_links.push((x, fragments[f].style, faces[f]))
+      empty_links.push(
+        (if k < visible_end { position } else { x }, style, faces[f]),
+      )
     }
     seen = f
+    if k < visible_end && item.anchor is None && item.unit != 0x200B {
+      position += item.draw +
+        (if is_break_space(item.unit) { extra } else { 0.0 })
+    }
   }
-  { runs, anchors, fit_width, ascender, descender, height, empty_links, }
+  {
+    runs,
+    anchors,
+    fit_width,
+    ascender,
+    descender,
+    height,
+    empty_links,
+    images,
+  }
 }

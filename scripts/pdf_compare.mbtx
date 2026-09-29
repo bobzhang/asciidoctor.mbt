@@ -195,8 +195,10 @@ let cases : Array[(String, String, String)] = [
   ("wrap", "pdf/tests/wrap.adoc", ""),
   ("lists", "pdf/tests/lists.adoc", ""),
   ("images", "pdf/tests/images.adoc", ""),
+  ("inline-images", "pdf/tests/inline-images.adoc", ""),
   ("manpage", "pdf/tests/manpage.adoc", ""),
   ("abstract", "pdf/tests/abstract.adoc", ""),
+  ("media", "pdf/tests/media.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",

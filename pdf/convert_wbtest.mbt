@@ -66,16 +66,14 @@ test "unsupported blocks and inline nodes are reported with their location" {
   register()
   let catalog = test_catalog()
   let doc = @asciidoctor.load(
-    "= Title\n\nSee image:logo.png[Logo] here.\n\nvideo::intro.mp4[]\n\n++++\n<b>raw</b>\n++++\n",
+    "= Title\n\nvideo::intro.mp4[poster=cover.png]\n\n|===\na|An AsciiDoc cell\n|===\n",
     options=@core.Options::new(backend="pdf", standalone=true, sourcemap=true),
   )
   ignore(convert_document(doc, catalog))
   inspect(
     conversion_warnings().join("\n"),
     content=(
-      #|UNSUPPORTED inline image at <stdin>:3
-      #|UNSUPPORTED block video at <stdin>:5
-      #|UNSUPPORTED block pass at <stdin>:7
+      #|UNSUPPORTED block video poster image at <stdin>:3
     ),
   )
   // a new conversion starts a new report
@@ -136,13 +134,13 @@ test "document info, top anchor and outline levels" {
     content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=asciidoctor.mbt (spike)",
   )
   inspect(top_anchor(doc), content="__anchor-top")
-  let (num, expand) = outline_levels(doc)
+  let (num, expand) = outline_levels(doc, resolve_toclevels(doc))
   inspect("\{num}:\{expand}", content="3:1")
   let plain = @asciidoctor.load(
     "= T\n:toclevels: 3\n\nx\n",
     options=@core.Options::new(backend="pdf"),
   )
-  let (num, expand) = outline_levels(plain)
+  let (num, expand) = outline_levels(plain, resolve_toclevels(plain))
   inspect("\{num}:\{expand}", content="3:3")
 }
 

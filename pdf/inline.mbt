@@ -33,6 +33,8 @@ priv struct Session {
   /// the `subtitle` role's `normal` style was applied once (see
   /// `apply_roles`)
   mut subtitle_normal_spent : Bool
+  /// the inline images met so far (`<img src="N">` is the Nth)
+  inline_images : Array[InlineImage]
 }
 
 ///|
@@ -44,6 +46,7 @@ let session : Session = {
   catalog: None,
   bibref_refs: Map([]),
   subtitle_normal_spent: false,
+  inline_images: [],
 }
 
 ///|
@@ -61,6 +64,7 @@ pub fn register(catalog? : FontCatalog) -> Unit {
     session.footnote_labels.clear()
     session.bibref_refs.clear()
     session.subtitle_normal_spent = false
+    session.inline_images.clear()
     ({ resolving_xref: false, } : InlineConverter)
   })
 }
@@ -90,11 +94,7 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
     "inline_menu" => convert_inline_menu(node)
     "inline_image" if node.inline_type == Some("icon") =>
       convert_inline_icon(node)
-    "inline_image" => {
-      // drawn as its alt text; asciidoctor-pdf places the image in the line
-      unsupported("inline", "image", node)
-      "[\{node.attr("alt").unwrap_or("")}]"
-    }
+    "inline_image" => convert_inline_image(node)
     "inline_indexterm" => convert_inline_indexterm(node)
     // block content reached through `content()` (e.g. a pass block)
     "pass" => node.content()

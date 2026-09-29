@@ -17,6 +17,9 @@ priv struct Converter {
   mut toc_extent : TocExtent?
   /// the `toc::[]` block the TOC was placed at, and its destination
   mut toc_node : (@core.Node, String)?
+  /// `toclevels` as the conversion starts (`toc_num_levels`), before the
+  /// body's attribute entries: the TOC's depth and the outline's default
+  mut toc_levels : Int
 }
 
 ///|
@@ -29,6 +32,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     text_align: Justify,
     toc_extent: None,
     toc_node: None,
+    toc_levels: resolve_toclevels(doc),
   }
 }
 
@@ -381,12 +385,9 @@ fn pdf_info(doc : @core.Node) -> @pdf.DocumentInfo {
 
 ///|
 /// asciidoctor-pdf's outline depth and how many levels start expanded:
-/// `outlinelevels` (default `toclevels`, default 2), where `N:M` expands
-/// only the first M levels.
-fn outline_levels(doc : @core.Node) -> (Int, Int) {
-  let toclevels = @string.parse_int(doc.attr("toclevels").unwrap_or("2")) catch {
-    _ => 2
-  }
+/// `outlinelevels` (default `toclevels` as the conversion starts, see
+/// `Converter::toc_levels`), where `N:M` expands only the first M levels.
+fn outline_levels(doc : @core.Node, toclevels : Int) -> (Int, Int) {
   match doc.attr("outlinelevels") {
     Some(spec) =>
       match spec.find(":") {
@@ -461,6 +462,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     }
   }
   let levels = resolve_toclevels(doc)
+  c.toc_levels = levels
   // the TOC at the top, unless the macro or the preamble places it
   let placement = doc.attr("toc-placement").unwrap_or("auto")
   if has_toc(doc) && placement != "macro" && placement != "preamble" {
@@ -717,16 +719,35 @@ fn Converter::ink_title_page(self : Converter) -> Unit {
 fn sanitize(text : String) -> String {
   let sb = StringBuilder()
   let mut in_tag = false
+  let mut after_tag = false
   for c in text {
     if c == '<' {
       in_tag = true
     } else if c == '>' && in_tag {
       in_tag = false
-    } else if !in_tag {
+      after_tag = true
+      continue
+    } else if !in_tag && !(after_tag && c == '\u{0}') {
       sb.write_char(c)
     }
+    after_tag = false
   }
-  decode_entities(sb.to_string())
+  // `compact`: stripped, runs of spaces squeezed
+  let decoded = decode_entities(sb.to_string())
+  let out = StringBuilder()
+  let mut space = false
+  for c in decoded.trim(chars=" \t\n") {
+    if c == ' ' {
+      if !space {
+        out.write_char(c)
+      }
+      space = true
+    } else {
+      out.write_char(c)
+      space = false
+    }
+  }
+  out.to_string()
 }
 
 ///|
@@ -769,6 +790,10 @@ fn Converter::convert_block_body(self : Converter, node : @core.Node) -> Unit {
     Preamble => self.convert_preamble(node)
     Paragraph => self.convert_paragraph(node)
     Listing | Literal => self.convert_code(node)
+    Stem => self.convert_code(node, plain=true)
+    Pass => self.convert_pass(node)
+    Video => self.convert_media(node, "video")
+    Audio => self.convert_media(node, "audio")
     Ulist => self.convert_ulist(node)
     Olist => self.convert_olist(node)
     Colist => self.convert_colist(node)
@@ -1067,7 +1092,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   }
   section.set_attr("pdf-anchor", value=Str(anchor)) |> ignore
   flow.add_anchor(anchor, 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
-  let (num_levels, expand_levels) = outline_levels(self.doc)
+  let (num_levels, expand_levels) = outline_levels(self.doc, self.toc_levels)
   if section.level <= num_levels && sanitize(title) != "" {
     // the depth in the section tree, not the section level: a document
     // without a header may start at `===`, and its first sections are
@@ -1224,16 +1249,21 @@ fn guard_indentation(text : String) -> String {
 }
 
 ///|
-fn Converter::convert_code(self : Converter, node : @core.Node) -> Unit {
+fn Converter::convert_code(
+  self : Converter,
+  node : @core.Node,
+  plain? : Bool = false,
+) -> Unit {
   let flow = self.flow
   let style = Style::new(family=mono_font_family, size=code_font_size)
   let face = flow.font(style)
   let metrics = line_metrics(code_line_height, face, code_font_size)
-  let fragments = parse_formatted(
-    guard_indentation(node.content()),
-    style,
-    normalize=false,
-  )
+  // a stem block's text is shown as it is, without inline formatting
+  let fragments = if plain {
+    [{ text: guard_indentation(node.content()), style, anchor: None, }]
+  } else {
+    parse_formatted(guard_indentation(node.content()), style, normalize=false)
+  }
   // arrange_block: the caption and the background are tared, so the block
   // starts on the next page when not even its first line (with the room
   // its bottom padding needs, when it is the last) fits here
@@ -1516,6 +1546,10 @@ fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
         "upperalpha" => "\{alpha(n, true)}."
         "lowerroman" => "\{roman(n, false)}."
         "upperroman" => "\{roman(n, true)}."
+        // LowercaseGreekA, counted on by `String#next` one code point a step
+        // (a start below 1 does not count back from a letter)
+        "lowergreek" =>
+          "\{Int::unsafe_to_char(0x3B1 + @cmp.maximum(start - 1, 0) + index)}."
         "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
         "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
         _ => "\{n}."
@@ -2012,6 +2046,59 @@ fn Converter::convert_sidebar(self : Converter, node : @core.Node) -> Unit {
     stroke_width=0.5,
     caption=false,
   )
+}
+
+///|
+/// asciidoctor-pdf's `convert_pass`: the content as it is, in the code font
+/// and the base colour, with no box around it.
+fn Converter::convert_pass(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
+  let style = Style::new(family=mono_font_family, size=code_font_size)
+  let face = flow.font(style)
+  flow.typeset(
+    [{ text: guard_indentation(node.content()), style, anchor: None, }],
+    line_metrics(code_line_height, face, code_font_size),
+    style,
+  )
+  self.block_margin_bottom(node)
+}
+
+///|
+/// asciidoctor-pdf's `convert_video` and `convert_audio` without a poster
+/// image: a play symbol (the `fas-play` icon with `icons=font`), the link
+/// to the media and its kind, then the caption below.
+fn Converter::convert_media(
+  self : Converter,
+  node : @core.Node,
+  kind : String,
+) -> Unit {
+  let target = node.attr("target").unwrap_or("")
+  let (path, what) = match node.attr("poster") {
+    Some("youtube") if kind == "video" =>
+      ("https://www.youtube.com/watch?v=\{target}", "YouTube video")
+    Some("vimeo") if kind == "video" =>
+      ("https://vimeo.com/\{target}", "Vimeo video")
+    Some(poster) if kind == "video" && poster != "" => {
+      unsupported("block", "video poster image", node)
+      (node.media_uri(target), kind)
+    }
+    _ => (node.media_uri(target), kind)
+  }
+  self.add_dest(node)
+  let play = match
+    (self.doc.attr("icons"), self.flow.catalog.icon_glyph("fas", "play")) {
+    (Some("font"), Some(glyph)) => "<font name=\"fas\">\{glyph}</font>"
+    _ => "\u{25ba}"
+  }
+  self.ink_prose(
+    "\{play}\u{a0}<a href=\"\{path}\">\{path}</a> <em>(\{what})</em>",
+    normalize=false,
+    margin_bottom=0.0,
+  )
+  if node.has_title() {
+    self.ink_caption(node.title().unwrap_or(""), bottom=true)
+  }
+  self.block_margin_bottom(node)
 }
 
 ///|
