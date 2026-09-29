@@ -1,7 +1,9 @@
 // Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf.
 //
-// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [-v] [--out DIR] [CASE...]
+// Usage: moon run --target native scripts/pdf_compare.mbtx -- [--no-build] [-v] [--out DIR] [--list FILE] [CASE...]
 //   --out DIR   write the gallery to DIR (default _build/gallery/pdf-spike)
+//   --list FILE compare the documents listed in FILE (one path per line)
+//               instead of the built-in cases
 //   -v          list the words placed more than 1pt away from Ruby's
 //
 // Renders each case with Ruby asciidoctor-pdf 2.3.x (Homebrew Ruby, gems in
@@ -461,6 +463,7 @@ async fn main {
   let mut verbose = false
   let selected = []
   let mut gallery = default_gallery
+  let mut list : String? = None
   let mut i = 1
   while i < args.length() {
     match args[i] {
@@ -468,6 +471,10 @@ async fn main {
       "-v" => verbose = true
       "--out" if i + 1 < args.length() => {
         gallery = args[i + 1]
+        i += 1
+      }
+      "--list" if i + 1 < args.length() => {
+        list = Some(args[i + 1])
         i += 1
       }
       "--" => ()
@@ -489,7 +496,16 @@ async fn main {
   ignore(run("mkdir", ["-p", gallery]))
   let sections = []
   let summary = []
-  for c in cases {
+  let all_cases = match list {
+    None => cases
+    Some(file) =>
+      @fs.read_file(file).text().split("\n").map(l => l.trim().to_owned()).filter(l => l != "" && !l.has_prefix("#")).map(p => {
+        // a readable, unique name from the path
+        let name = p.replace_all(old=".repos/", new="").replace_all(old="/", new="__")
+        (name, p, "")
+      }).collect()
+  }
+  for c in all_cases {
     let (name, input, wrapper) = c
     if selected.length() > 0 && !selected.contains(name) {
       continue
