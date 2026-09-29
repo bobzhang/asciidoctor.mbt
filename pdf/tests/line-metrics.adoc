@@ -50,3 +50,15 @@ The content of this file has moved to link:./documentation/src/main/asciidoc/dia
 Going forward, it will be published in rendered form at https://docs.hibernate.org/stable/orm/dialect/.
 
 See https://example.org/a/b/c?x=1&y=2#frag for details, and https://example.org/ab/c too, then https://example.org/very/long/path/that/keeps/going/and/going/until/it/has/to/wrap/somewhere.html in the middle.
+
+A list numbered by explicit markers is numbered 1, 2, ... (its implied style is a Symbol asciidoctor-pdf does not match):
+
+a. one
+b. two
+
+[loweralpha]
+. x
+. y
+
+. top
+.. nested

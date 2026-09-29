@@ -1427,7 +1427,15 @@ fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
     Some(s) => @string.parse_int(s) catch { _ => 1 }
     None => 1
   }
-  let style = node.style.unwrap_or("arabic")
+  // a style the marker implies (`a.`) is a Symbol in Asciidoctor, which
+  // asciidoctor-pdf's `case node.style when 'loweralpha'` never matches:
+  // (the core marks such a style: it has no list marker keyword)
+  let style = match node.style {
+    Some("loweralpha" | "upperalpha" | "lowerroman" | "upperroman") if node.list_marker_keyword()
+      is None => "arabic"
+    Some(style) => style
+    None => "arabic"
+  }
   self.convert_list(node, fn(index, _item) {
     let n = start + index
     match style {

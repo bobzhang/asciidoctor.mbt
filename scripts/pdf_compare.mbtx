@@ -192,6 +192,7 @@ let cases : Array[(String, String, String)] = [
   ("table-autowidth", "pdf/tests/table-autowidth.adoc", ""),
   ("arrange-block", "pdf/tests/arrange-block.adoc", ""),
   ("markup", "pdf/tests/markup.adoc", ""),
+  ("wrap", "pdf/tests/wrap.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",

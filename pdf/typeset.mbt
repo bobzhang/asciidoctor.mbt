@@ -118,10 +118,14 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
           while j < end && kind(j) == 0 {
             j += 1
           }
-          if j < end && kind(j) == 3 {
+          // the hyphens ending a word are its own, not those a next
+          // fragment starts with (Prawn tokenizes each fragment: `-common`
+          // is a token of its own, and a place to break)
+          let own = fn(k : Int) { items[k].fragment == items[k - 1].fragment }
+          if j < end && kind(j) == 3 && own(j) {
             j += 1
           } else {
-            while j < end && kind(j) == 2 {
+            while j < end && kind(j) == 2 && own(j) {
               j += 1
             }
           }
@@ -285,7 +289,7 @@ fn typeset_lines(
         end = if last_break > start {
           pull_back_limit(items, start, last_break, i)
         } else {
-          i
+          char_wrap_limit(items, starts, start, i, w, limit)
         }
         break
       }
@@ -325,6 +329,49 @@ fn typeset_lines(
     )
   }
   lines
+}
+
+///|
+/// Where a line without a break opportunity ends when its word overflows
+/// at `items[i]` (`w` wide before it): Prawn wraps that word by character
+/// (`wrap_by_char`), measuring each character on its own, without the
+/// kerning its word was measured with, and keeps it while it fits.
+fn char_wrap_limit(
+  items : Array[Item],
+  starts : Array[Bool],
+  start : Int,
+  i : Int,
+  w : Double,
+  limit : Double,
+) -> Int {
+  let n = items.length()
+  // the width of an item without the kerning with the next character of
+  // its token (see `typeset_lines`)
+  let plain = fn(k : Int) {
+    if k + 1 < n && !starts[k + 1] {
+      items[k].fit - items[k].kern
+    } else {
+      items[k].fit
+    }
+  }
+  let mut token = i
+  while token > start && !starts[token] {
+    token -= 1
+  }
+  let mut acc = w
+  for k in token..<i {
+    acc -= items[k].fit
+  }
+  let mut k = token
+  while k < n && !items[k].hard_break && acc + plain(k) <= limit {
+    acc += plain(k)
+    k += 1
+  }
+  if k <= start {
+    i
+  } else {
+    k
+  }
 }
 
 ///|
