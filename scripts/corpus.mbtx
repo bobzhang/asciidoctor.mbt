@@ -24,7 +24,9 @@ import {
 ///|
 let known_corpora : Array[String] = [
   ".repos/asciidoctor/docs", ".repos/asciidoctor-pdf", ".repos/asciidoctor-diagram",
-  ".repos/asciidoctor-epub3", ".repos/asciidoctorj",
+  ".repos/asciidoctor-epub3", ".repos/asciidoctorj", ".repos/progit2", ".repos/git",
+  ".repos/quarkus", ".repos/spring-boot", ".repos/hibernate-orm", ".repos/debezium",
+  ".repos/asciidoc-lang",
 ]
 
 ///|
@@ -34,7 +36,9 @@ async fn collect_adoc(dir : String, out : Array[String]) -> Unit {
     let path = "\{dir}/\{name}"
     match (@fs.kind(path) catch { _ => continue }) {
       Directory => collect_adoc(path, out)
-      Regular => if name.has_suffix(".adoc") { out.push(path) }
+      Regular => if name.has_suffix(".adoc") || name.has_suffix(".asc") || name.has_suffix(".asciidoc") {
+        out.push(path)
+      }
       _ => ()
     }
   }

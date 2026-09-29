@@ -178,11 +178,13 @@ running Python Pygments 2.21, the release `bobzhang/pygments` ports. About 900 h
 cover the reader, parser, substitutions, path resolver, attribute lists, logging and the document
 API.
 
-In addition, 506 real-world documents (the Asciidoctor, asciidoctor-pdf, -diagram, -epub3 and
-AsciidoctorJ documentation and fixtures) convert byte-identically to Ruby — output and warnings —
-with all three backends (`scripts/corpus.mbtx`), and with Pygments highlighting for HTML5, embedded
-and standalone (`--pygments`). The only difference is an empty table where Ruby itself crashes
-(manpage).
+In addition, 2,840 real-world documents convert byte-identically to Ruby — output, warnings and
+exit status — with all three backends (`scripts/corpus.mbtx`), and with Pygments highlighting for
+HTML5, embedded and standalone (`--pygments`): the documentation of Asciidoctor, asciidoctor-pdf,
+-diagram, -epub3 and AsciidoctorJ, the Pro Git book, Git's manual pages and release notes, the
+Quarkus, Spring Boot, Hibernate ORM and Debezium docs, and the AsciiDoc language specification
+(`scripts/fetch_corpora.mbtx` clones them at pinned commits). The only differences are three tables
+where Ruby itself crashes (manpage).
 
 ## Layout
 

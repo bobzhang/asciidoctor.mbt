@@ -1,0 +1,74 @@
+// Fetches the real-world AsciiDoc corpora used by scripts/corpus.mbtx into
+// .repos/ (shallow clones at pinned commits, so results are reproducible).
+// Existing checkouts are moved to the pinned commit.
+//
+// Usage: moon run --target native scripts/fetch_corpora.mbtx -- [NAME...]
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+/// (directory under .repos, repository URL, pinned commit)
+let corpora : Array[(String, String, String)] = [
+  (
+    "asciidoctor-pdf", "https://github.com/asciidoctor/asciidoctor-pdf", "7ea543badd3677d6b6b860bc167f699bbe9a9d62",
+  ),
+  (
+    "asciidoctor-diagram", "https://github.com/asciidoctor/asciidoctor-diagram",
+    "c559bce56772453bb7446b7a12126ad6980fcda4",
+  ),
+  (
+    "asciidoctor-epub3", "https://github.com/asciidoctor/asciidoctor-epub3", "199ab4c43d65421f3bb399a7fb40bb267e9d339b",
+  ),
+  (
+    "asciidoctorj", "https://github.com/asciidoctor/asciidoctorj", "e0af8078712c7f1f7c7f284a91bfb19d6a95816d",
+  ),
+  ("progit2", "https://github.com/progit/progit2", "a013e3230a1207cfa5ae94d28ba7d2021063c337"),
+  ("git", "https://github.com/git/git", "a018953688f1b10bddf91bff8747068f5f4746a4"),
+  ("quarkus", "https://github.com/quarkusio/quarkus", "0d58874c815bd49a4e3b279726483141cf23818d"),
+  (
+    "spring-boot", "https://github.com/spring-projects/spring-boot", "ab1843bbf6d855ca066ea6b9ccf7e64b83139469",
+  ),
+  (
+    "hibernate-orm", "https://github.com/hibernate/hibernate-orm", "ec6c0f1918af0c457036c696a190bfcb09ea78cf",
+  ),
+  ("debezium", "https://github.com/debezium/debezium", "e9aa4d8721a92e216a1789fa358cb62d86364dff"),
+  (
+    "asciidoc-lang", "https://gitlab.eclipse.org/eclipse/asciidoc-lang/asciidoc-lang.git",
+    "68ed0b22e8d9b919897542d8ae14f03e7dbdd2e4",
+  ),
+]
+
+///|
+async fn git(args : Array[String]) -> String {
+  let (code, out, err) = @process.collect_output("git", args)
+  if code != 0 {
+    fail("git \{args.join(" ")}: \{err.text()}")
+  }
+  out.text().trim().to_owned()
+}
+
+///|
+async fn main {
+  let only = @env.args()[1:].to_array().filter(a => a != "--")
+  for entry in corpora {
+    let (name, url, commit) = entry
+    if !only.is_empty() && !only.contains(name) {
+      continue
+    }
+    let dir = ".repos/\{name}"
+    if !@fs.exists(dir) {
+      println("clone \{name}")
+      git(["clone", "--quiet", "--depth", "1", "--filter=blob:limit=2m", url, dir]) |> ignore
+    }
+    if git(["-C", dir, "rev-parse", "HEAD"]) != commit {
+      println("checkout \{name} \{commit}")
+      git(["-C", dir, "fetch", "--quiet", "--depth", "1", "origin", commit]) |> ignore
+      git(["-C", dir, "checkout", "--quiet", "--detach", commit]) |> ignore
+    }
+    println("\{name}\t\{commit}")
+  }
+}

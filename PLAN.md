@@ -287,6 +287,16 @@ parser async would slow it and infect every API. Instead:
   hottest patterns get dedicated scanners or the quote passes are fused. wasm: ~0.2 s is instantiating
   the 11 MB module (Pygments lexers); compute is ~4.5x slower than native.
 
+
+### 2026-09-29 (larger real-world corpus)
+* Added the Pro Git book, Git's Documentation (manual pages, release notes), Quarkus, Spring Boot,
+  Hibernate ORM, Debezium and the AsciiDoc language spec to the corpus (`scripts/fetch_corpora.mbtx`
+  pins every corpus commit; `corpus.mbtx` also picks up `.asc`/`.asciidoc`). 2,840 documents × 3
+  backends: 8,517 / 8,520 identical to Ruby; standalone HTML5 and Pygments identical too.
+* Found one bug: the manpage converter's `WrappedIndentRx` was hand-translated as `[ \t]` instead of
+  Ruby's `\p{Blank}`, so U+3000 around line breaks survived (git RelNotes/2.3.0). The 3 remaining
+  differences are tables on which Ruby itself crashes (`undefined method 'empty?' for nil`).
+
 ## 10. Next steps
 1. Hand-port API-level tests not expressible as goldens (reader/document/node APIs, API mutation cases).
 2. Server-side syntax highlighting: Pygments is ported (`highlighter/pygments`); Rouge and CodeRay are

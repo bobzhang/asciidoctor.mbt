@@ -1,3 +1,6 @@
 # Corpus differences tolerated by scripts/corpus.mbtx: BACKEND<TAB>PATH
-# Ruby Asciidoctor crashes (NoMethodError) converting an empty table to manpage.
+# Ruby Asciidoctor crashes (NoMethodError: undefined method `empty?' for nil) converting these
+# tables to manpage; the port converts them.
 manpage	.repos/asciidoctorj/asciidoctorj-distribution/src/test/resources/empty-table.adoc
+manpage	.repos/asciidoc-lang/docs/modules/tables/pages/table-ref.adoc
+manpage	.repos/asciidoc-lang/docs/modules/tables/examples/cell.adoc

@@ -141,7 +141,7 @@ let em_dash_char_ref_rx : @regex.Regex = @regex.re("&#8212;(?:&#8203;)?")
 let ellipsis_char_ref_rx : @regex.Regex = @regex.re("&#8230;(?:&#8203;)?")
 
 ///|
-let wrapped_indent_rx : @regex.Regex = @regex.re("[ \\t]*\\n[ \\t]*")
+let wrapped_indent_rx : @regex.Regex = @regex.re("\\p{Blank}*\\n\\p{Blank}*")
 
 ///|
 let xml_markup_rx : @regex.Regex = @regex.re("&#?[a-z\\d]+;|<")
