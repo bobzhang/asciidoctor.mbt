@@ -185,18 +185,40 @@ fn Lowering::paint(self : Lowering, set : SetPaint) -> @pagelayout.Paint {
         offset: s.0,
         color: color_of(s.1),
       })
+      let x2 = g.to.0 - g.from.0
+      let y2 = -(g.to.1 - g.from.1)
       GradientPaint({
-        radial: g.radial,
-        x1: 0,
-        y1: 0,
-        r1: g.r1,
-        x2: g.to.0 - g.from.0,
-        y2: -(g.to.1 - g.from.1),
-        r2: g.r2,
+        shape: if g.radial {
+          Radial(x1=0, y1=0, r1=g.r1, x2~, y2~, r2=g.r2)
+        } else {
+          Linear(x1=0, y1=0, x2~, y2~)
+        },
         stops,
         transform: relative,
       })
     }
+  }
+}
+
+///|
+/// Prawn's stroke style in effect, `width` wide: a line width of 0 (or
+/// less) is written as `0 w`, which PDF draws as the thinnest line the
+/// device can, a hairline.
+fn Lowering::stroke_style(
+  self : Lowering,
+  width? : Double = self.state.width,
+) -> @pagelayout.StrokeStyle {
+  {
+    width: if width > 0.0 {
+      Width(width)
+    } else {
+      Hairline
+    },
+    cap: self.state.cap,
+    join: self.state.join,
+    miter_limit: 10,
+    dash: self.state.dash,
+    dash_phase: 0,
   }
 }
 
@@ -311,14 +333,7 @@ fn Lowering::call(self : Lowering, call : Call) -> Unit {
             NonZero
           },
           stroke,
-          stroke_style: {
-            width: self.state.width,
-            cap: self.state.cap,
-            join: self.state.join,
-            miter_limit: 10,
-            dash: self.state.dash,
-            dash_phase: 0,
-          },
+          stroke_style: self.stroke_style(),
         }),
       )
     }
@@ -510,14 +525,7 @@ fn Lowering::draw_text(self : Lowering, text : String, o : TextOptions) -> Unit 
         fill: None,
         fill_rule: NonZero,
         stroke: Some(self.paint(self.state.stroke)),
-        stroke_style: {
-          width: 1,
-          cap: self.state.cap,
-          join: self.state.join,
-          miter_limit: 10,
-          dash: self.state.dash,
-          dash_phase: 0,
-        },
+        stroke_style: self.stroke_style(width=1),
       }),
     )
     self.restore()
@@ -563,28 +571,22 @@ fn Lowering::draw_text(self : Lowering, text : String, o : TextOptions) -> Unit 
     advances_pt: spaced,
     color,
   }
-  // the text rendering mode, the stroke in the stroke colour and the line
-  // width in effect
+  // the text rendering mode, the stroke in the stroke colour and the
+  // stroke style in effect (Prawn outlines glyphs with the graphics
+  // state's line width, cap, join and dash)
   let stroke = match self.state.stroke.gradient {
     None => color_of(self.state.stroke.rgb)
     Some((g, _)) => color_of(g.stops[0].1)
   }
+  let stroke_style = self.stroke_style()
   self.ops.push(
     match self.mode {
       "fill" => Text(run)
       "stroke" =>
-        PaintedText(run, {
-          fill: false,
-          stroke: Some(stroke),
-          stroke_width: self.state.width,
-        })
+        PaintedText(run, { fill: false, stroke: Some(stroke), stroke_style, })
       "fill_stroke" =>
-        PaintedText(run, {
-          fill: true,
-          stroke: Some(stroke),
-          stroke_width: self.state.width,
-        })
-      _ => PaintedText(run, { fill: false, stroke: None, stroke_width: 0, })
+        PaintedText(run, { fill: true, stroke: Some(stroke), stroke_style, })
+      _ => PaintedText(run, { fill: false, stroke: None, stroke_style, })
     },
   )
   if transformed {

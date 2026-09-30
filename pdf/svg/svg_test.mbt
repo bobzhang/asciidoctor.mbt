@@ -89,7 +89,7 @@ test "a rectangle: fill, stroke and the viewBox transformation" {
       #|      fill_rule: NonZero,
       #|      stroke: Some(Solid({ r: 0, g: 0, b: 255 })),
       #|      stroke_style: {
-      #|        width: 2,
+      #|        width: Width(2),
       #|        cap: ButtCap,
       #|        join: MiterJoin,
       #|        miter_limit: 10,
@@ -101,6 +101,38 @@ test "a rectangle: fill, stroke and the viewBox transformation" {
       #|  Restore,
       #|  Restore,
       #|]
+    ),
+  )
+}
+
+///|
+test "stroke width 0 is a hairline; text outlines take the whole stroke style" {
+  let ops = render(
+    "<svg width='100' height='100'><line x1='0' y1='0' x2='10' y2='10' stroke='black' stroke-width='0'/><text x='5' y='20' fill='none' stroke='red' stroke-width='0.5' stroke-dasharray='2 1' stroke-linecap='round'>A</text></svg>",
+  )
+  guard ops.iter().find_first(op => op is Path(_)) is Some(Path(path)) else {
+    fail("no path")
+  }
+  debug_inspect(path.stroke_style.width, content="Hairline")
+  guard ops.iter().find_first(op => op is PaintedText(_))
+    is Some(PaintedText(_, paint)) else {
+    fail("no outlined text")
+  }
+  debug_inspect(
+    paint,
+    content=(
+      #|{
+      #|  fill: false,
+      #|  stroke: Some({ r: 255, g: 0, b: 0 }),
+      #|  stroke_style: {
+      #|    width: Width(0.5),
+      #|    cap: RoundCap,
+      #|    join: MiterJoin,
+      #|    miter_limit: 10,
+      #|    dash: [2, 1],
+      #|    dash_phase: 0,
+      #|  },
+      #|}
     ),
   )
 }
