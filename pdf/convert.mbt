@@ -103,6 +103,53 @@ fn Converter::dry_run(
 fn Converter::arrange_block(
   self : Converter,
   keep_together? : Bool = false,
+  node? : @core.Node,
+  body : (Converter) -> Unit,
+) -> Unit {
+  // `pdf-at-top`: the block starts at the top of a page, or is the first
+  // child of one that does (read by block images)
+  match node {
+    Some(n) => {
+      if self.flow.at_page_top() || first_child_at_top(n) {
+        ignore(n.set_attr("pdf-at-top", value=Str("")))
+      }
+      // a dry run from the top of a page sets it too, for good
+      let body_for_scratch = fn(c : Converter) {
+        if c.flow.scratch && c.flow.at_page_top() {
+          ignore(n.set_attr("pdf-at-top", value=Str("")))
+        }
+        body(c)
+      }
+      self.arrange_block_at(
+        keep_together~,
+        moved=() => ignore(n.set_attr("pdf-at-top", value=Str(""))),
+        body_for_scratch,
+      )
+      ignore(n.remove_attr("pdf-at-top"))
+    }
+    None => self.arrange_block_at(keep_together~, body)
+  }
+}
+
+///|
+/// Whether `node` is its parent's first block and the parent is arranged
+/// at the top of a page (asciidoctor-pdf's `node.first_child? &&
+/// node.parent.attr?('pdf-at-top')`).
+fn first_child_at_top(node : @core.Node) -> Bool {
+  match node.parent() {
+    Some(parent) =>
+      parent.blocks.get(0) is Some(first) &&
+      physical_equal(first, node) &&
+      parent.has_attr("pdf-at-top")
+    None => false
+  }
+}
+
+///|
+fn Converter::arrange_block_at(
+  self : Converter,
+  keep_together? : Bool = false,
+  moved? : () -> Unit = () => (),
   body : (Converter) -> Unit,
 ) -> Unit {
   let flow = self.flow
@@ -126,6 +173,9 @@ fn Converter::arrange_block(
     )
     if scratch.first_break_empty == Some(true) {
       flow.advance_page()
+      // asciidoctor-pdf's dry run goes on from the top of the next page,
+      // where the block is at the top (see `arrange_block`)
+      moved()
     }
   }
   body(self)
@@ -1273,7 +1323,9 @@ fn Converter::convert_code(
   // arrange_block: the caption and the background are tared, so the block
   // starts on the next page when not even its first line (with the room
   // its bottom padding needs, when it is the last) fits here
-  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
+    c,
+  ) {
     let flow = c.flow
     c.add_dest(node)
     if node.has_title() {
@@ -1933,7 +1985,9 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
   // arrange_block: the label and the rule are drawn once the extent is
   // known, so they take no part in keeping the block on this page; the
   // title is content
-  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
+    c,
+  ) {
     let flow = c.flow
     c.add_dest(node)
     let start = flow.mark()
@@ -2191,7 +2245,11 @@ fn Converter::convert_collapsible(self : Converter, node : @core.Node) -> Unit {
   }
   if !self.flow.at_page_top() &&
     (node.id is Some(_) || node.has_option("unbreakable")) {
-    self.arrange_block(keep_together=node.has_option("unbreakable"), body)
+    self.arrange_block(
+      keep_together=node.has_option("unbreakable"),
+      node~,
+      body,
+    )
   } else {
     body(self)
   }
@@ -2214,7 +2272,9 @@ fn Converter::bordered_block(
   stroke_width~ : Double,
   caption~ : Bool,
 ) -> Unit {
-  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
+    c,
+  ) {
     let flow = c.flow
     c.add_dest(node)
     if caption && node.has_title() {
@@ -2280,7 +2340,9 @@ fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
   // arrange_block: the destination, the caption (tared), then the content
   // in the quote padding, whose bottom the last line keeps clear of
   // unless an attribution follows
-  self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
+  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
+    c,
+  ) {
     let flow = c.flow
     c.add_dest(node)
     if node.has_title() {
@@ -2377,7 +2439,9 @@ fn Converter::convert_open(self : Converter, node : @core.Node) -> Unit {
   // tared, so it moves on with the content after it
   if !self.flow.at_page_top() &&
     (node.has_title() || node.id is Some(_) || node.has_option("unbreakable")) {
-    self.arrange_block(keep_together=node.has_option("unbreakable"), fn(c) {
+    self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
+      c,
+    ) {
       c.add_dest(node)
       if node.has_title() {
         c.flow.tared(() => c.ink_caption(node.title().unwrap_or("")))

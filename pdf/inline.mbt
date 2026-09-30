@@ -65,6 +65,7 @@ pub fn register(catalog? : FontCatalog) -> Unit {
     session.bibref_refs.clear()
     session.subtitle_normal_spent = false
     session.inline_images.clear()
+    reset_svg_stacks()
     ({ resolving_xref: false, } : InlineConverter)
   })
 }

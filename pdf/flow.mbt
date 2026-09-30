@@ -387,16 +387,24 @@ fn Flow::line_items(
     } else {
       (baseline - a + (a + d - h) / 2.0, baseline - a, a + d)
     }
-    items.push(
-      Image({
-        x_pt: x0 + x,
-        y_pt: top,
-        w_pt: w,
-        h_pt: h,
-        data: image.data,
-        mime: image.mime,
-      }),
-    )
+    match image.svg {
+      Some(svg) =>
+        match self.inline_svg_item(svg, x0 + x, top, w) {
+          Some(item) => items.push(item)
+          None => ()
+        }
+      None =>
+        items.push(
+          Image({
+            x_pt: x0 + x,
+            y_pt: top,
+            w_pt: w,
+            h_pt: h,
+            data: image.data,
+            mime: image.mime,
+          }),
+        )
+    }
     match style.link {
       Some(target) =>
         items.push(

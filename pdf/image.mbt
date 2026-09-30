@@ -109,8 +109,14 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
           .unwrap_or("left")
       }
   }
-  guard data is Some(bytes) && info is Some((px_w, px_h, mime)) else {
-    if data is Some(_) {
+  let svg = is_svg(node, target)
+  if data is Some(bytes) && svg {
+    if self.convert_svg_image(node, path, bytes, alignment) {
+      return
+    }
+  }
+  guard !svg && data is Some(bytes) && info is Some((px_w, px_h, mime)) else {
+    if data is Some(_) && !svg {
       // asciidoctor-pdf draws SVG, GIF, ... itself
       unsupported("image", "format of \{target}", node)
     }
@@ -188,7 +194,7 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
     0.0
   }
   if height > flow.cursor() - caption_height {
-    if !flow.at_page_top() {
+    if !flow.at_page_top() && !first_child_at_top(node) {
       flow.advance_page()
     }
     if height > flow.cursor() - caption_height {
@@ -258,6 +264,9 @@ priv struct InlineImage {
   px_h : Int
   width : String
   fit : String?
+  /// an SVG image: the document (drawn at the size its line gives it), its
+  /// path and the image node
+  svg : (@svg.SvgDocument, String, @core.Node)?
 }
 
 ///|
@@ -274,10 +283,20 @@ fn convert_inline_image(node : @core.Node) -> String {
     start=node.document().attr("imagesdir").unwrap_or(""),
   )
   let bytes = if is_gif(node, target) { None } else { node.vfs().read(path) }
-  let img = match
-    bytes.bind(data => image_info(data).map(info => (data, info))) {
-    Some((data, (px_w, px_h, mime))) => {
-      let intrinsic = px_w.to_double() * 0.75
+  let svg = is_svg(node, target)
+  let loaded = bytes.bind(data => {
+    if svg {
+      // prawn-svg's intrinsic size, in the bounds of the page's content
+      inline_svg(data, path, node).map(doc => {
+        let s = doc.sizing
+        (data, (1, 1, "image/svg+xml"), s.output_width, Some((doc, path, node)))
+      })
+    } else {
+      image_info(data).map(info => (data, info, info.0.to_double() * 0.75, None))
+    }
+  })
+  let img = match loaded {
+    Some((data, (px_w, px_h, mime), intrinsic, svg_image)) => {
       // resolve_explicit_width without bounds: a percentage stays one (of
       // the intrinsic width, in a table cell), `iw` and `scale` are of the
       // intrinsic width, digits are pixels; else the intrinsic width
@@ -332,13 +351,14 @@ fn convert_inline_image(node : @core.Node) -> String {
         px_h,
         width,
         fit: node.attr("fit"),
+        svg: svg_image,
       })
       "<img src=\"\{index}\">"
     }
     None => {
       // a missing image is its alt text in Ruby too; asciidoctor-pdf draws
-      // SVG and GIF (with prawn-gmagick) images this backend cannot
-      if bytes is Some(_) {
+      // GIF (with prawn-gmagick) images this backend cannot
+      if bytes is Some(_) && !svg {
         unsupported("inline", "image \{target}", node)
       }
       "[\{alt}&#93;"
@@ -393,6 +413,21 @@ fn inline_image_size(
     @cmp.minimum(content_height, font_height)
   } else {
     content_height
+  }
+  match image.svg {
+    Some((doc, _, _)) => {
+      // prawn-svg sized to the width, then to the height if too tall
+      let sizing = doc.sizing
+      sizing.resize(width~)
+      let mut height = sizing.output_height
+      if height > max_height {
+        sizing.resize(height=max_height)
+        height = max_height
+      }
+      width = sizing.output_width
+      return (width, height, height > font_height * 1.5)
+    }
+    None => ()
   }
   let aspect = image.px_h.to_double() / image.px_w.to_double()
   let mut height = width * aspect

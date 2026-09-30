@@ -1,6 +1,7 @@
 import {
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
+  "bobzhang/asciidoctor-pdf/svg",
   "moonbitlang/pagelayout/fonts",
   "moonbitlang/pagelayout/pdf",
   "moonbitlang/pdflite",
