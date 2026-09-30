@@ -228,7 +228,8 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
         if dir == "GEM_FONTS_DIR" || dir == "" {
           @theme.fonts_dir
         } else {
-          dir
+          // relative to the working directory
+          @core.expand_path_from(vfs.cwd(), dir)
         },
       )
       start = i + 1

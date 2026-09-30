@@ -206,6 +206,7 @@ let cases : Array[(String, String, String)] = [
   ("theme-fallbacks", "pdf/tests/theme-fallbacks.adoc", ""),
   ("theme-book", "pdf/tests/theme-book.adoc", ""),
   ("theme-print", "pdf/tests/theme-print.adoc", ""),
+  ("theme-fontsdir", "pdf/tests/theme-fontsdir.adoc", ""),
   (
     "progit-ch02",
     ".repos/progit2/pdf-spike-ch02.adoc",

@@ -1,0 +1,22 @@
+# A theme whose fonts are found through pdf-fontsdir (relative file names)
+extends: default
+font:
+  catalog:
+    merge: false
+    Body:
+      normal: notosans-regular-subset.ttf
+      bold: notosans-bold-subset.ttf
+      italic: notosans-italic-subset.ttf
+      bold_italic: notosans-bold_italic-subset.ttf
+    Mono: mplus1mn-regular-subset.ttf
+base:
+  font-family: Body
+  font-size: 11
+codespan:
+  font-family: Mono
+code:
+  font-family: Mono
+conum:
+  font-family: Mono
+heading:
+  font-family: Body
