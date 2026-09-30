@@ -413,6 +413,7 @@ fn Flow::line_items(
   }
   for link in line.empty_links {
     let (x, style, face) = link
+    guard style.link is Some(target) else { continue }
     let a = face.ascender_pt(style.size)
     items.push(
       Link({
@@ -420,7 +421,7 @@ fn Flow::line_items(
         y_pt: baseline - a,
         w_pt: 0.0,
         h_pt: a + face.descender_pt(style.size),
-        target: style.link.unwrap_or(""),
+        target,
       }),
     )
   }

@@ -513,7 +513,7 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
     {
       ..base,
       color: link_font_color,
-      link: Some("#" + pdf_anchor_name(anchor)),
+      link: Some(Named(pdf_anchor_name(anchor))),
     }
   }
   let fragments = parse_formatted(term.markup, base)

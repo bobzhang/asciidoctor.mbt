@@ -11,8 +11,10 @@ priv struct Style {
   bold : Bool
   italic : Bool
   color : Color
-  /// `#name` for an internal link, otherwise a URI
-  link : String?
+  /// where the text links to, as Prawn draws it: `<a anchor>` jumps to a
+  /// named destination, `<a href>` is a URI action even when the URI is
+  /// only a fragment (`link:#name[]`)
+  link : @pagelayout.LinkTarget?
   background : Color?
   /// 1 for superscript, -1 for subscript (Prawn raises a superscript by 0.85
   /// of its ascender and drops a subscript by its descender)
@@ -329,13 +331,14 @@ fn tag_style(tag : String, attrs : Map[String, String], style : Style) -> Style 
     "del" | "s" | "strikethrough" => { ..style, strike: true, }
     "a" =>
       match attrs.get("href") {
-        Some(href) => { ..style, link: Some(href), color: link_font_color, }
+        Some(href) =>
+          { ..style, link: Some(Uri(href)), color: link_font_color, }
         None =>
           match attrs.get("anchor") {
             Some(anchor) =>
               {
                 ..style,
-                link: Some("#" + pdf_anchor_name(anchor)),
+                link: Some(Named(pdf_anchor_name(anchor))),
                 color: link_font_color,
               }
             None => style

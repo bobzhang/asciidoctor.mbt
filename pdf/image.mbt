@@ -221,10 +221,12 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
           y_pt: flow.y,
           w_pt: width,
           h_pt: height,
+          // add_link_to_image: `#name` is a destination, anything else a
+          // URI action
           target: if link.has_prefix("#") {
-            "#" + pdf_anchor_name(link[1:].to_owned())
+            Named(pdf_anchor_name(link[1:].to_owned()))
           } else {
-            link
+            Uri(link)
           },
         }),
       )

@@ -521,6 +521,12 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       display_doc_title=true,
       page_boxes=true,
       truncate_widths=true,
+      // Prawn draws a character the font lacks as its .notdef glyph and
+      // keeps it in the text layer
+      notdef_text=true,
+      // ttfunk reads the descriptor's ascent, descent and cap height from
+      // the OS/2 typographic metrics
+      typo_metrics=true,
       page_labels=Array::makei(flow.model.pages.length(), i => {
         page_label(i + 1, front_matter)
       }),

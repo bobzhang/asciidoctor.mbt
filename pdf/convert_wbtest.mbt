@@ -44,13 +44,33 @@ test "a document converts to a paginated pdf" {
 }
 
 ///|
+test "href is a URI action even for a fragment, anchor a destination" {
+  // Prawn: `<a href>` (what `link:#x[]` becomes) is a URI action,
+  // `<a anchor>` (an xref) jumps to a named destination
+  let fragments = parse_formatted(
+    "<a href=\"#x\">a</a><a anchor=\"x\">b</a>",
+    Style::new(),
+  )
+  debug_inspect(
+    fragments.map(f => f.style.link),
+    content=(
+      #|[Some(Uri("#x")), Some(Named("x"))]
+    ),
+  )
+}
+
+///|
 test "inline markup becomes styled fragments" {
   let fragments = parse_formatted(
     "a <strong>b</strong> <a href=\"https://x\">c</a>&#8217;s",
     Style::new(),
   )
   let described = fragments.map(fn(f) {
-    let link = f.style.link.unwrap_or("-")
+    let link = match f.style.link {
+      Some(Uri(uri)) => uri
+      Some(Named(name)) => "#" + name
+      None => "-"
+    }
     "[\{f.text}] bold=\{f.style.bold} link=\{link}"
   })
   inspect(

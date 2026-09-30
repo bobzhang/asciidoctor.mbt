@@ -221,7 +221,7 @@ fn Converter::ink_toc_level(
       }
       let start_page = flow.page
       let mut start_y = flow.y
-      let linked = { ..style, link: Some("#" + pdf_anchor_name(anchor)), }
+      let linked = { ..style, link: Some(Named(pdf_anchor_name(anchor))), }
       let fragments = parse_formatted(title, linked, normalize=false)
       flow.indent(0.0, placeholder, fn() {
         flow.typeset(
