@@ -371,7 +371,14 @@ fn load_standard_face(
     advances~,
     cmap~,
   )
-  registry.register_standard(family, metrics, standard=name, bold~, italic~)
+  // measure with the registered face: the one the renderer draws
+  let metrics = registry.register_standard(
+    family,
+    metrics,
+    standard=name,
+    bold~,
+    italic~,
+  )
   Some({ metrics, ascender, descender, line_gap, kern, standard: true, })
 }
 
