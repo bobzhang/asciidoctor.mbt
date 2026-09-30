@@ -1,4 +1,5 @@
 import {
+  "bobzhang/asciidoctor-pdf/theme",
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
   "moonbitlang/pagelayout/fonts",

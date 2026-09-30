@@ -317,7 +317,7 @@ fn FontCatalog::face(
       match self.faces.get(face_key(family, false, false)) {
         Some(face) => face
         None =>
-          match self.faces.get(face_key(base_font_family, bold, italic)) {
+          match self.faces.get(face_key(base_font_family(), bold, italic)) {
             Some(face) => face
             None => abort("font catalog has no face for \{family}")
           }

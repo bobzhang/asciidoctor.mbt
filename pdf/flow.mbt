@@ -63,6 +63,8 @@ priv struct Flow {
   mut columns : Columns?
   /// the last line `typeset` placed: the line, its page and its baseline
   mut last_line : (Line, Int, Double)?
+  /// whether that line was the first of its text (no hanging indent)
+  mut last_line_first : Bool
   /// while above zero, what is inked does not count as content (Prawn's
   /// `tare_first_page_content_stream`: captions and backgrounds)
   mut taring : Int
@@ -75,19 +77,21 @@ priv struct Flow {
 
 ///|
 fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
+  let setup = page_setup.val
   {
     catalog,
     model: @pagelayout.PageModel::new(),
     scratch,
-    page_top: margin_top,
-    top: margin_top,
-    bottom: page_height - margin_bottom,
+    page_top: setup.margin_top,
+    top: setup.margin_top,
+    bottom: setup.height - setup.margin_bottom,
     page: -1,
-    y: margin_top,
-    left: margin_side,
-    right: page_width - margin_side,
+    y: setup.margin_top,
+    left: setup.margin_left,
+    right: setup.width - setup.margin_right,
     columns: None,
     last_line: None,
+    last_line_first: false,
     taring: 0,
     inked: false,
     first_break_empty: None,
@@ -97,8 +101,8 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
 ///|
 fn Flow::start_new_page(self : Flow) -> Unit {
   self.model.pages.push({
-    width_pt: page_width,
-    height_pt: page_height,
+    width_pt: page_width(),
+    height_pt: page_height(),
     items: [],
   })
   self.page = self.model.pages.length() - 1
@@ -640,6 +644,7 @@ fn Flow::typeset(
       let x = if index == 0 { self.left } else { self.left + hanging_indent }
       self.ink_line(line, x, box_top + baseline)
       self.last_line = Some((line, self.page, box_top + baseline))
+      self.last_line_first = index == 0
       placed += 1
       index += 1
     }

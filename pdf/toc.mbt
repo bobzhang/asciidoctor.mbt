@@ -11,6 +11,8 @@
 priv struct TocExtent {
   from_page : Int
   from_y : Double
+  /// the last page reserved
+  to_page : Int
 }
 
 ///|
@@ -146,20 +148,76 @@ fn Converter::ink_toc(
   flow.y = y
   flow.top = flow.page_top
   match self.doc.attr("toc-title") {
-    Some(title) if title != "" => self.ink_heading(title, 2)
+    Some(title) if title != "" => {
+      let align = match t_str("toc_title_text_align") {
+        Some(a) => alignment_of(a)
+        None => self.heading_align(2)
+      }
+      self.ink_heading(title, 2, align~, category="toc_title")
+    }
     _ => ()
   }
   if levels >= 0 {
+    flow.margin(t_num_or("toc_margin_top", 0.0))
     self.ink_toc_level(self.doc.sections(), levels, front_matter)
   }
   flow.page
 }
 
 ///|
-/// The TOC's font (the default theme's `toc_*` keys: the base font, line
-/// height 1.4).
-fn toc_style() -> Style {
-  Style::new()
+/// The TOC's font for entries of `level` (`theme_font :toc, level:`: the
+/// `toc_h<n>_*` keys, else the `toc_*` ones) and its line height.
+fn toc_font(level : Int) -> (Style, Double) {
+  theme_font_heading(base_style(), base_line_height(), level, category="toc")
+}
+
+///|
+/// The dot leader of the TOC (`toc_dot_leader_*`): its text (default `. `,
+/// in `toc_dot_leader_font_color`, style and size), and the levels that
+/// have one (None: all).
+priv struct DotLeader {
+  text : String
+  style : Style
+  levels : Array[Int]?
+}
+
+///|
+fn toc_dot_leader() -> DotLeader {
+  let (base, _) = theme_font(base_style(), base_line_height(), "toc")
+  let (bold, italic) = font_style_of(
+    t_str("toc_dot_leader_font_style").unwrap_or("normal"),
+  )
+  let size = resolve_font_size(tv("toc_dot_leader_font_size"), base.size).unwrap_or(
+    base.size,
+  )
+  let color = t_color("toc_dot_leader_font_color").unwrap_or(base.color)
+  let levels = match tv("toc_dot_leader_levels") {
+    Str("none") => Some([])
+    Null | Str("all") => None
+    v =>
+      Some(
+        v
+        .to_ruby_s()
+        .split(" ")
+        .filter(s => s != "")
+        .map(s => @theme.ruby_string_to_i(s.to_owned()).to_int())
+        .collect(),
+      )
+  }
+  {
+    text: t_str("toc_dot_leader_content").unwrap_or(". "),
+    style: {
+      ..base,
+      size,
+      color,
+      doc_bold: bold,
+      doc_italic: italic,
+      bold,
+      italic,
+      font_set: true,
+    },
+    levels,
+  }
 }
 
 ///|
@@ -170,13 +228,8 @@ fn Converter::ink_toc_level(
   front_matter : Int,
 ) -> Unit {
   let flow = self.flow
-  let style = toc_style()
-  let face = flow.font(style)
-  let metrics = line_metrics(toc_line_height, face, style.size)
-  let placeholder = self.string_width(
-    "0".repeat(toc_max_pagenum_digits(self.doc)),
-    style,
-  )
+  let hanging_indent = t_num_or("toc_hanging_indent", 0.0)
+  let dot_leader = toc_dot_leader()
   for entry in entries {
     let entry_level = entry.level + 1
     let levels_for_entry = match entry.attr("toclevels") {
@@ -196,7 +249,19 @@ fn Converter::ink_toc_level(
     if title == "" {
       continue
     }
+    let (style, line_height) = toc_font(entry_level)
+    let face = flow.font(style)
+    let metrics = line_metrics(line_height, face, style.size)
     let title = drop_anchors(title)
+    let title = match style.text_transform {
+      Some(transform) => transform_text(title, transform)
+      None => title
+    }
+    let style = { ..style, text_transform: None, }
+    let placeholder = self.string_width(
+      "0".repeat(toc_max_pagenum_digits(self.doc)),
+      style,
+    )
     if flow.scratch {
       // the title alone, as prose (justified), narrowed by the page
       // number's room
@@ -206,6 +271,7 @@ fn Converter::ink_toc_level(
           metrics,
           style,
           align=self.text_align,
+          hanging_indent~,
           normalize_line_height=true,
         )
       })
@@ -229,13 +295,18 @@ fn Converter::ink_toc_level(
           metrics,
           style,
           align=Left,
+          hanging_indent~,
           normalize_line_height=true,
         )
       })
       guard flow.last_line is Some((line, line_page, baseline)) else { break }
       // the dots start after the title's last fragment, on its line: Prawn
       // places fragments by their kerned widths
-      let mut start_dots = 0.0
+      let mut start_dots = if flow.last_line_first {
+        0.0
+      } else {
+        hanging_indent
+      }
       for run in line.runs {
         start_dots += self.string_width(run.text, run.style)
       }
@@ -247,33 +318,47 @@ fn Converter::ink_toc_level(
       let (end_page, end_y) = (flow.page, flow.y)
       flow.page = line_page
       flow.y = start_y
-      // the default theme's dot leader: `. ` in #A9A9A9, a quarter-size
-      // no-break space, then the page number
-      let dot = self.string_width(". ", style)
-      let spacer_style = { ..style, size: style.size * 0.25, }
-      let spacer = self.string_width("\u{a0}", spacer_style)
-      let label_width = self.string_width(label, style)
-      let count = @cmp.maximum(
-        ((flow.width() - start_dots - spacer - label_width) / dot)
-        .floor()
-        .to_int(),
-        0,
-      )
-      let leader : Array[Fragment] = [
-        {
-          text: ". ".repeat(count),
-          style: { ..style, color: toc_dot_leader_font_color, },
-          anchor: None,
-        },
-        { text: "\u{a0}", style: spacer_style, anchor: None, },
-        { text: label, style: linked, anchor: None, },
-      ]
-      flow.typeset(leader, metrics, style, align=Right)
+      let leader_here = dot_leader.text != "" &&
+        (match dot_leader.levels {
+          Some(levels) => levels.contains(entry_level - 1)
+          None => true
+        })
+      let label_fragment : Fragment = {
+        text: label,
+        style: linked,
+        anchor: None,
+      }
+      if leader_here {
+        // the dot leader, a quarter-size no-break space, then the page
+        // number
+        let dot = self.string_width(dot_leader.text, dot_leader.style)
+        let spacer_style = { ..style, size: style.size * 0.25, }
+        let spacer = self.string_width("\u{a0}", spacer_style)
+        let label_width = self.string_width(label, style)
+        let count = @cmp.maximum(
+          ((flow.width() - start_dots - spacer - label_width) / dot)
+          .floor()
+          .to_int(),
+          0,
+        )
+        let leader : Array[Fragment] = [
+          {
+            text: dot_leader.text.repeat(count),
+            style: dot_leader.style,
+            anchor: None,
+          },
+          { text: "\u{a0}", style: spacer_style, anchor: None, },
+          label_fragment,
+        ]
+        flow.typeset(leader, metrics, style, align=Right)
+      } else {
+        flow.typeset([label_fragment], metrics, style, align=Right)
+      }
       flow.page = end_page
       flow.y = end_y
     }
     if levels_for_entry >= entry_level {
-      flow.indent(toc_indent, 0.0, fn() {
+      flow.indent(toc_indent(), 0.0, fn() {
         self.ink_toc_level(entry.sections(), levels_for_entry, front_matter)
       })
     }
@@ -305,7 +390,7 @@ fn Converter::allocate_toc(
     self.dry_run(flow.left, flow.right, start_y~, fn(scratch) {
       ignore(scratch.ink_toc(levels, 0, start_y, 0))
       if !break_after {
-        scratch.flow.margin(block_margin_bottom)
+        scratch.flow.margin(block_margin_bottom())
       }
     })
   }
@@ -341,7 +426,7 @@ fn Converter::allocate_toc(
     }
     flow.y = end_y
   }
-  { from_page, from_y: start_y, }
+  { from_page, from_y: start_y, to_page: from_page + pages - 1, }
 }
 
 ///|
@@ -379,7 +464,7 @@ fn Converter::convert_toc(
   if is_macro {
     let id = node.id.unwrap_or("toc")
     let left = (flow.left * 10000.0).floor() / 10000.0
-    let x = if left <= margin_side { 0.0 } else { left }
+    let x = if left <= page_setup.val.margin_left { 0.0 } else { left }
     flow.add_anchor(id, x, flow.y)
     self.toc_node = Some((node, pdf_anchor_name(id)))
   }

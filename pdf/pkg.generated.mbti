@@ -10,13 +10,15 @@ pub fn conversion_trace() -> Array[String]
 
 pub fn conversion_warnings() -> Array[String]
 
+pub fn convert(@core.Node) -> Bytes raise
+
 pub fn convert_document(@core.Node, FontCatalog) -> Bytes raise
 
 pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
 
 pub fn default_icon_font_files() -> Array[(String, String, String)]
 
-pub fn register(catalog? : FontCatalog) -> Unit
+pub fn register(catalog? : FontCatalog, fonts_dir? : String, icon_fonts_dir? : String) -> Unit
 
 // Errors
 

@@ -1,16 +1,20 @@
 ///|
-// asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME=VALUE]... [--fonts-dir DIR]
+// asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME=VALUE]... [--theme THEME]
+//                 [--fonts-dir DIR]
 //
-// Converts an AsciiDoc file to PDF with the spike backend. `--trace FILE`
-// writes where each block went (see `conversion_trace`). The default
-// theme's fonts (Noto Serif, M+ 1mn) are read from `--fonts-dir`, else
-// from $ASCIIDOCTOR_PDF_FONTS_DIR; the icon fonts of `icons=font` (Font
-// Awesome and the other sets of prawn-icon's `data/fonts`) from
-// `--icon-fonts-dir`, else $ASCIIDOCTOR_PDF_ICON_FONTS_DIR.
+// Converts an AsciiDoc file to PDF with the spike backend. The theme is
+// the `pdf-theme` attribute's (`--theme THEME` sets it), looked up in
+// `pdf-themesdir`, else the bundled default theme. `--trace FILE` writes
+// where each block went (see `conversion_trace`). The bundled fonts the
+// themes name (`GEM_FONTS_DIR`: asciidoctor-pdf's `data/fonts`) are read
+// from `--fonts-dir`, else from $ASCIIDOCTOR_PDF_FONTS_DIR; the icon fonts
+// of `icons=font` (Font Awesome and the other sets of prawn-icon's
+// `data/fonts`) from `--icon-fonts-dir`, else
+// $ASCIIDOCTOR_PDF_ICON_FONTS_DIR.
 
 ///|
 fn usage() -> String {
-  "Usage: asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME[=VALUE]]... [--fonts-dir DIR] [--icon-fonts-dir DIR] [--trace FILE]"
+  "Usage: asciidoctor-pdf INPUT [-o OUTPUT] [-a NAME[=VALUE]]... [--theme THEME] [--fonts-dir DIR] [--icon-fonts-dir DIR] [--trace FILE]"
 }
 
 ///|
@@ -34,6 +38,17 @@ async fn main {
       "-a" | "--attribute" if i + 1 < args.length() => {
         attributes.append(@asciidoctor.parse_attributes_option(args[i + 1]))
         i += 2
+        continue
+      }
+      // `--theme NAME` is `-a pdf-theme=NAME`, as in asciidoctor-pdf
+      "--theme" if i + 1 < args.length() && !args[i + 1].has_prefix("-") => {
+        attributes.push(("pdf-theme", Str(args[i + 1])))
+        i += 2
+        continue
+      }
+      arg if arg.has_prefix("--theme=") => {
+        attributes.push(("pdf-theme", Str(arg[8:].to_owned())))
+        i += 1
         continue
       }
       "--fonts-dir" if i + 1 < args.length() => {
@@ -70,38 +85,14 @@ async fn main {
     )
     fail("bad arguments")
   }
-  let files : Array[(String, Bool, Bool, Bytes)] = []
-  for entry in @asciidoctor_pdf.default_font_files() {
-    let (family, bold, italic, file) = entry
-    files.push(
-      (family, bold, italic, @fs.read_file(fonts_dir + "/" + file).binary()),
-    )
-  }
-  // the icon fonts (prawn-icon's), for `icons=font`, and asciidoctor-pdf's
-  // mapping of Font Awesome 4 icon names, next to its fonts
-  let icon_sets : Array[@asciidoctor_pdf.IconSet] = []
-  match icon_fonts_dir {
-    Some(dir) =>
-      for entry in @asciidoctor_pdf.default_icon_font_files() {
-        let (name, font, legend) = entry
-        icon_sets.push({
-          name,
-          font: @fs.read_file(dir + "/" + font).binary(),
-          legend: @fs.read_file(dir + "/" + legend).text(),
-        })
-      }
-    None => ()
-  }
-  let legacy_icon_mapping = @fs.read_file(fonts_dir + "/fa-legacy-mapping.yml").text() catch {
-    _ => ""
-  }
-  let catalog = @asciidoctor_pdf.FontCatalog::load(
-    files,
-    icon_sets~,
-    legacy_icon_mapping~,
-  )
-  @asciidoctor_pdf.register(catalog~)
   let cwd = @env.current_dir().unwrap_or("/")
+  // the theme's fonts are read as the conversion needs them: the bundled
+  // ones (`GEM_FONTS_DIR`) from the fonts directory, and the icon fonts of
+  // `icons=font` (prawn-icon's) from theirs
+  @asciidoctor_pdf.register(
+    fonts_dir=@core.expand_path_from(cwd, fonts_dir),
+    icon_fonts_dir?=icon_fonts_dir.map(d => @core.expand_path_from(cwd, d)),
+  )
   let path = @core.expand_path_from(cwd, input)
   let data = @fs.read_file(path).binary()
   let vfs = @io.FsVfs::new(cwd~)
@@ -137,7 +128,7 @@ async fn main {
   }
   let pdf = @io.run_with_files(vfs, () => {
     let doc = @asciidoctor.load(text, options~)
-    @asciidoctor_pdf.convert_document(doc, catalog)
+    @asciidoctor_pdf.convert(doc)
   })
   // what the spike left out or approximated, with its source location
   for warning in @asciidoctor_pdf.conversion_warnings() {
