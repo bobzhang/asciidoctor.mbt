@@ -1,0 +1,83 @@
+# Psych's resolution of plain scalars (YAML 1.1 rules, as Ruby reads them)
+scalar:
+  bool_yes: yes
+  bool_no: No
+  bool_on: ON
+  bool_off: off
+  bool_true: True
+  bool_false: FALSE
+  word_y: y
+  word_n: n
+  null_tilde: ~
+  null_word: Null
+  null_empty:
+  int: 42
+  int_plus: +12
+  int_neg: -7
+  int_octal: 0777
+  int_zero_octal: 00
+  int_hex: 0x1F
+  int_bin: 0b101
+  int_underscore: 1_000
+  int_comma: 1,000
+  not_octal: 09
+  sexagesimal: 1:30
+  sexagesimal_neg: -1:30
+  sexagesimal3: 1:02:03
+  sexagesimal_float: 1:30.5
+  not_sexagesimal: 1.5:30
+  float: 10.5
+  float_dot: 1.
+  float_lead: .5
+  float_exp: 1.0e+5
+  float_exp_nodot: 1e5
+  float_exp_nosign: 1.0e5
+  float_dotexp: 1.e+5
+  float_under: 1_000.5
+  float_inf: .inf
+  float_neginf: -.Inf
+  dot: .
+  minus_dot: -.
+  hexish: 5C6266
+  hexish2: 1E1E1E
+  hexish3: 428BCA
+  digits6: 999999
+  zeros6: 000000
+  mixed_zero: 0000FF
+  word: hello world
+  short_word: abc
+  dollar: $foo
+  quoted_int: '12'
+  dquoted: "a\tbé"
+  single: 'it''s'
+  literal: |
+    line one
+    line two
+  folded: >
+    folded
+    text
+  flow_seq: [1, two, 3.5, ~]
+  flow_map: {a: 1, b: [x, y]}
+  multi_plain: this is
+    continued
+  colon_in: a:b
+  hash_in: a#b
+  url: http://example.org/x?y=1
+  percent: 50%
+  unicode: Ünïcödé
+  emoji: "\U0001F600"
+  tabbed: "a	b"
+anchors:
+  base: &base
+    font_color: 333333
+    font_size: 12
+  derived:
+    <<: *base
+    font_size: 14
+  list: &list [1, 2]
+  again: *list
+  multi:
+    <<: [*base, {font_style: bold, font_size: 9}]
+duplicate: 1
+other: 2
+duplicate: 3

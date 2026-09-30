@@ -1,0 +1,71 @@
+# ThemeLoader#evaluate_math and the measurement units
+base:
+  font_size: 10.5
+  line_height_length: 12
+  line_height: $base_line_height_length / 10.5
+  font_size_large: round($base_font_size * 1.25)
+  font_size_small: round($base-font-size * 0.85)
+  font_size_min: $base_font_size * 0.75
+math:
+  add: 1 + 2
+  sub: 10 - 2.5
+  mul: 3 * 4
+  div: 1 / 3
+  pow: 2 ^ 10
+  precedence: 2 + 3 * 4
+  left_to_right: 12 / 2 * 3
+  chain: 1 + 2 + 3 - 4
+  neg: -$base_font_size
+  neg_expr: -$base_font_size / 2
+  neg_operand: 10 - -2
+  unspaced: 1+2
+  one_space_missing: 1 +2
+  many_spaces: 1   +   2
+  floor: floor($base_font_size * 2.6)
+  ceil: ceil($base_font_size)
+  round_half: round(2.5)
+  round_neg: round(-2.5)
+  round_inner: round(1 + 1.5)
+  not_outer: 1 + round(2.5)
+  whole_float: 1.5 * 2
+  float_result: 0.1 + 0.2
+  big: 100000000 * 100000000
+  tiny: 1 / 100000
+  divzero: 1 / 0
+  text_with_numbers: 3 apples + 2 pears
+  trailing: 2 * 3 px
+  interp: $base_font_size * 2 of $base_line_height_length
+  array: [$base_font_size / 2, 0.5in, $base_line_height_length * 2]
+  nested_parens: (1 + 2) * 3
+  percent: 50%
+  vw: 100vw
+  em: 1.2em
+  rem: 0.8rem
+units:
+  in: 0.5in
+  mm: 10mm
+  cm: 2.54cm
+  px: 100px
+  pc: 2pc
+  pt: 12pt
+  neg_in: -1in
+  in_expr: 0.5in + 12
+  in_paren: round(0.5in)
+  inset: 1in 2in
+  glued: 1in2in
+  margin: [0.5in, 0.67in, 0.67in, 0.67in]
+  bad_unit: 5xx
+vars:
+  lone: $base_font_size
+  lone_dash: $base-line-height-length
+  unknown: $no_such_key
+  unknown_interp: a $no_such_key b
+  interp_float: size $base_font_size
+  interp_array: $units_margin and more
+  content: $math_add
+  color_var: $link_font_color
+link:
+  font_color: 428BCA
+text:
+  from_color: $link_font_color
+  prefix_content: before $base_font_size after

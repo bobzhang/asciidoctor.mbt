@@ -11,6 +11,7 @@ import {
   "moonbitlang/pagelayout@0.4.0",
   "moonbitlang/pdflite@0.2.2",
   "moonbitlang/async@0.22.4",
+  "moonbit-community/yaml@0.0.6",
 }
 
 preferred_target = "native"
