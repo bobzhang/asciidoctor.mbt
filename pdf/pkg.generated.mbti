@@ -26,7 +26,7 @@ pub fn register(catalog? : FontCatalog, fonts_dir? : String, icon_fonts_dir? : S
 pub struct FontCatalog {
   // private fields
 }
-pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String) -> Self raise
+pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String, fallbacks? : Array[String]) -> Self raise
 
 pub(all) struct IconSet {
   name : String

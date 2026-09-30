@@ -285,5 +285,9 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
       .unwrap_or("")
     None => ""
   }
-  FontCatalog::load(files, icon_sets~, legacy_icon_mapping~)
+  let fallbacks = match theme["font_fallbacks"] {
+    Array(items) => items.map(v => v.to_ruby_s())
+    _ => []
+  }
+  FontCatalog::load(files, icon_sets~, legacy_icon_mapping~, fallbacks~)
 }

@@ -1,0 +1,5 @@
+= Default Sans Theme
+Jane Doe <jane@example.org>
+:pdf-theme: default-sans
+
+include::sampler.adoc[lines=4..-1]

@@ -246,18 +246,35 @@ fn InlineConverter::convert_inline_anchor(
         Some(role) => " class=\"\{role}\""
         None => ""
       }
-      let text = node.text().unwrap_or("")
       let doc = node.document()
+      // for print, a mailto link shows its address (`media`)
+      let screen = doc.attr("media").unwrap_or("screen") == "screen"
+      let (text, bare_target) = if !screen && target.has_prefix("mailto:") {
+        let address = target[7:].to_owned()
+        let text = node.text().unwrap_or("")
+        if address == text {
+          ignore(node.add_role("bare"))
+        }
+        (text, if doc.has_attr("hide-uri-scheme") { address } else { target })
+      } else {
+        (node.text().unwrap_or(""), target)
+      }
+      let show_uri = doc.has_attr("show-link-uri") ||
+        (
+          !screen &&
+          !doc.has_attr("show-link-uri") &&
+          !doc.attribute_locked("show-link-uri")
+        )
       if node.has_role("bare") {
         "\{anchor}<a href=\"\{target}\"\{class}>\{breakable_uri(text)}</a>"
-      } else if doc.has_attr("show-link-uri") {
+      } else if show_uri {
         let bare = if doc.has_attr("hide-uri-scheme") {
-          match target.find("://") {
-            Some(i) => target[i + 3:].to_owned()
-            None => target
+          match bare_target.find("://") {
+            Some(i) => bare_target[i + 3:].to_owned()
+            None => bare_target
           }
         } else {
-          target
+          bare_target
         }
         "\{anchor}<a href=\"\{target}\"\{class}>\{text}</a> [<font size=\"0.85em\">\{breakable_uri(bare)}</font>&#93;"
       } else {

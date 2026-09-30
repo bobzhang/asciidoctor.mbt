@@ -564,9 +564,11 @@ fn Converter::ink_running_content(
       let shift = match valign {
         "top" => 0.0
         "bottom" => prose_height - height
-        // centred, a half descender lower (`font.descender * 0.5`)
-        _ =>
-          (prose_height - height) / 2.0 + sface.descender_pt(style.size) * 0.5
+        // centred: the box starts half a descender lower
+        // (`font.descender * 0.5`), and Prawn centres the text half a
+        // descender higher (`@at[1] -= (@height - height + @descender) *
+        // 0.5`)
+        _ => (prose_height - height) / 2.0
       }
       for entry in placed {
         let (line, at) = entry
