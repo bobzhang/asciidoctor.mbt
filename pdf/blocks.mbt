@@ -406,13 +406,17 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
           if first && label_lines.length() > 0 {
             // the label is centred vertically on the part of the block on
             // its first page, and across its column
+            // (`height_of_typeset_text label, line_height: 1`: the line gap
+            // above the text, then its ascender and descender)
             let a = label_face.ascender_pt(label_style.size)
             let d = label_face.descender_pt(label_style.size)
-            let offset = if valign == "middle" {
-              @cmp.maximum((bottom - top - (a + d)) / 2.0, 0.0)
+            let gap = label_face.line_gap_pt(label_style.size)
+            let centring = if valign == "middle" {
+              @cmp.maximum((bottom - top - (gap + a + d)) / 2.0, 0.0)
             } else {
               0.0
             }
+            let offset = centring + gap
             let x = match label_align {
               Center =>
                 box_left + (label_width - label_lines[0].fit_width) / 2.0

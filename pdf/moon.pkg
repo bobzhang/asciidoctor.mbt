@@ -5,6 +5,7 @@ import {
   "moonbitlang/pagelayout/fonts",
   "moonbitlang/pagelayout/pdf",
   "moonbitlang/pdflite",
+  "moonbitlang/pdflite/font/afm",
   "moonbitlang/core/string",
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",

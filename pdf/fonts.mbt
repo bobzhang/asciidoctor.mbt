@@ -18,6 +18,9 @@ priv struct Face {
   line_gap : Int
   /// `kern` table pairs, (left glyph << 16 | right glyph) → 1/1000 em
   kern : Map[Int, Double]
+  /// a PDF standard font (Prawn's AFM fonts): its text is WinAnsi (see
+  /// `winansi_text`), and its glyphs are WinAnsi codes
+  standard : Bool
 }
 
 ///|
@@ -160,6 +163,7 @@ fn load_face(
     descender: truncate(descent.to_double() * scale),
     line_gap: truncate(gap.to_double() * scale),
     kern: parse_kern(data, scale),
+    standard: false,
   }
 }
 
@@ -282,6 +286,21 @@ pub fn FontCatalog::load(
     )
     icons[set.name] = parse_flat_yaml(set.legend)
   }
+  // the PDF standard fonts Prawn knows by family, unless the catalog has a
+  // family of that name
+  for entry in standard_families {
+    let (family, names) = entry
+    if faces.contains(face_key(family, false, false)) {
+      continue
+    }
+    for i, name in names {
+      let (bold, italic) = (i == 1 || i == 3, i >= 2)
+      match load_standard_face(registry, family, bold, italic, name) {
+        Some(face) => faces[face_key(family, bold, italic)] = face
+        None => ()
+      }
+    }
+  }
   // complete: nothing may join it once a document is measured with it
   registry.seal()
   {
@@ -291,6 +310,32 @@ pub fn FontCatalog::load(
     legacy_icons: parse_flat_yaml(legacy_icon_mapping),
     fallbacks: fallbacks.filter(f => faces.contains(face_key(f, false, false))),
   }
+}
+
+///|
+/// The text of fragments set in a standard font, in WinAnsi (see
+/// `winansi_text`).
+fn FontCatalog::apply_winansi(
+  self : FontCatalog,
+  fragments : Array[Fragment],
+) -> Array[Fragment] {
+  if !fragments.iter().any(f => self.is_standard(f.style)) {
+    return fragments
+  }
+  fragments.map(f => {
+    if f.text != "" && f.style.image < 0 && self.is_standard(f.style) {
+      { ..f, text: winansi_text(f.text), }
+    } else {
+      f
+    }
+  })
+}
+
+///|
+/// Whether a style's face is a standard font.
+fn FontCatalog::is_standard(self : FontCatalog, style : Style) -> Bool {
+  let (bold, italic) = style.face_style()
+  self.face(style.family, bold, italic).standard
 }
 
 ///|
@@ -312,6 +357,7 @@ fn FontCatalog::apply_fallbacks(
   self : FontCatalog,
   fragments : Array[Fragment],
 ) -> Array[Fragment] {
+  let fragments = self.apply_winansi(fragments)
   if self.fallbacks.is_empty() {
     return fragments
   }

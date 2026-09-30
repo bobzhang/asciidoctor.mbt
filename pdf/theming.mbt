@@ -164,7 +164,9 @@ fn prepare_theme(theme : @theme.Theme) -> Unit {
   default("title_page_revision_delimiter", Str(", "))
   default("toc_indent", Int(0))
   default("toc_hanging_indent", Int(0))
-  let typographic = ["\u{201c}", "\u{201d}", "\u{2018}", "\u{2019}"]
+  // `TypographicQuotes`: character references, which the substitutions
+  // that follow the quotes' do not take for word characters
+  let typographic = ["&#8220;", "&#8221;", "&#8216;", "&#8217;"]
   match theme["quotes"] {
     Array(items) => {
       let items = items.copy()

@@ -201,6 +201,7 @@ let cases : Array[(String, String, String)] = [
   ("media", "pdf/tests/media.adoc", ""),
   // bundled and custom themes
   ("theme-sans", "pdf/tests/theme-sans.adoc", ""),
+  ("theme-base", "pdf/tests/theme-base.adoc", ""),
   ("theme-custom", "pdf/tests/theme-custom.adoc", ""),
   ("theme-fallbacks", "pdf/tests/theme-fallbacks.adoc", ""),
   ("theme-book", "pdf/tests/theme-book.adoc", ""),
@@ -1198,11 +1199,26 @@ fn compare_structure(r : Json, s : Json) -> Array[Check] {
   // fonts
   {
     let problems = []
+    // a font Ruby leaves unembedded, or without ToUnicode (a PDF standard
+    // font), may be so in the spike's too
+    let ruby_font = (family : String) => {
+      for f in items(field(r, "fonts")) {
+        if str(field(f, "family")) == family {
+          return Some(f)
+        }
+      }
+      None
+    }
     for f in items(field(s, "fonts")) {
-      if !(field(f, "embedded") is True) {
+      let rf = ruby_font(str(field(f, "family")))
+      let ruby_has = (key : String) => match rf {
+        Some(rf) => field(rf, key) is True
+        None => true
+      }
+      if !(field(f, "embedded") is True) && ruby_has("embedded") {
         problems.push("\{str(field(f, "name"))} not embedded")
       }
-      if !(field(f, "tounicode") is True) {
+      if !(field(f, "tounicode") is True) && ruby_has("tounicode") {
         problems.push("\{str(field(f, "name"))} has no ToUnicode")
       }
     }
