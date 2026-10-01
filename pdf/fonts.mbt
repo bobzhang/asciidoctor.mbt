@@ -18,6 +18,9 @@ priv struct Face {
   line_gap : Int
   /// `kern` table pairs, (left glyph << 16 | right glyph) → 1/1000 em
   kern : Map[Int, Double]
+  /// a PDF standard font (Prawn's AFM fonts): its text is WinAnsi (see
+  /// `winansi_text`), and its glyphs are WinAnsi codes
+  standard : Bool
 }
 
 ///|
@@ -160,6 +163,7 @@ fn load_face(
     descender: truncate(descent.to_double() * scale),
     line_gap: truncate(gap.to_double() * scale),
     kern: parse_kern(data, scale),
+    standard: false,
   }
 }
 
@@ -175,6 +179,8 @@ pub struct FontCatalog {
   /// Font Awesome 4 icon name (`fa-save`) → set and name (`far-save`)
   /// (asciidoctor-pdf's `fa-legacy-mapping.yml`)
   priv legacy_icons : Map[String, String]
+  /// the theme's fallback fonts (`font_fallbacks`), in order
+  priv fallbacks : Array[String]
 }
 
 ///|
@@ -252,12 +258,14 @@ pub fn default_icon_font_files() -> Array[(String, String, String)] {
 
 ///|
 /// Load a catalog from font files: (family, bold, italic, TrueType bytes),
-/// with the icon sets `icons=font` draws from and asciidoctor-pdf's
-/// mapping of Font Awesome 4 icon names (`fa-legacy-mapping.yml`).
+/// with the icon sets `icons=font` draws from, asciidoctor-pdf's mapping of
+/// Font Awesome 4 icon names (`fa-legacy-mapping.yml`), and the families a
+/// character the text's font lacks is looked for in (`fallbacks`).
 pub fn FontCatalog::load(
   files : Array[(String, Bool, Bool, Bytes)],
   icon_sets? : Array[IconSet] = [],
   legacy_icon_mapping? : String = "",
+  fallbacks? : Array[String] = [],
 ) -> FontCatalog raise {
   let faces : Map[String, Face] = Map([])
   let registry = @fonts.FontRegistry::new()
@@ -278,6 +286,21 @@ pub fn FontCatalog::load(
     )
     icons[set.name] = parse_flat_yaml(set.legend)
   }
+  // the PDF standard fonts Prawn knows by family, unless the catalog has a
+  // family of that name
+  for entry in standard_families {
+    let (family, names) = entry
+    if faces.contains(face_key(family, false, false)) {
+      continue
+    }
+    for i, name in names {
+      let (bold, italic) = (i == 1 || i == 3, i >= 2)
+      match load_standard_face(registry, family, bold, italic, name) {
+        Some(face) => faces[face_key(family, bold, italic)] = face
+        None => ()
+      }
+    }
+  }
   // complete: nothing may join it once a document is measured with it
   registry.seal()
   {
@@ -285,7 +308,106 @@ pub fn FontCatalog::load(
     registry,
     icons,
     legacy_icons: parse_flat_yaml(legacy_icon_mapping),
+    fallbacks: fallbacks.filter(f => faces.contains(face_key(f, false, false))),
   }
+}
+
+///|
+/// The text of fragments set in a standard font, in WinAnsi (see
+/// `winansi_text`).
+fn FontCatalog::apply_winansi(
+  self : FontCatalog,
+  fragments : Array[Fragment],
+) -> Array[Fragment] {
+  if !fragments.iter().any(f => self.is_standard(f.style)) {
+    return fragments
+  }
+  fragments.map(f => {
+    if f.text != "" && f.style.image < 0 && self.is_standard(f.style) {
+      { ..f, text: winansi_text(f.text), }
+    } else {
+      f
+    }
+  })
+}
+
+///|
+/// Whether a style's face is a standard font.
+fn FontCatalog::is_standard(self : FontCatalog, style : Style) -> Bool {
+  let (bold, italic) = style.face_style()
+  self.face(style.family, bold, italic).standard
+}
+
+///|
+/// Whether the face has a glyph for the character (Prawn's
+/// `glyph_present?`).
+fn Face::has_glyph(self : Face, codepoint : Int) -> Bool {
+  match self.metrics.glyph_id(codepoint) {
+    Some(gid) => gid != 0
+    None => false
+  }
+}
+
+///|
+/// Prawn's fallback fonts (`process_fallback_fonts`): the characters of a
+/// fragment its font lacks are set in the first fallback font that has
+/// them (a character none has stays in the fragment's font, where it shows
+/// as the .notdef glyph).
+fn FontCatalog::apply_fallbacks(
+  self : FontCatalog,
+  fragments : Array[Fragment],
+) -> Array[Fragment] {
+  let fragments = self.apply_winansi(fragments)
+  if self.fallbacks.is_empty() {
+    return fragments
+  }
+  let out : Array[Fragment] = []
+  for fragment in fragments {
+    if fragment.text == "" || fragment.style.image >= 0 {
+      out.push(fragment)
+      continue
+    }
+    let (bold, italic) = fragment.style.face_style()
+    let face = self.face(fragment.style.family, bold, italic)
+    // the family of each character
+    let family_of = (c : Char) => {
+      let cp = c.to_int()
+      if cp == 0x0A || face.has_glyph(cp) {
+        return fragment.style.family
+      }
+      for f in self.fallbacks {
+        if self.face(f, bold, italic).has_glyph(cp) {
+          return f
+        }
+      }
+      fragment.style.family
+    }
+    let sb = StringBuilder()
+    let mut current = ""
+    let mut first = true
+    let flush = (family : String) => {
+      if !sb.is_empty() {
+        let style = if family == fragment.style.family {
+          fragment.style
+        } else {
+          { ..fragment.style, family, font_set: true, bold, italic, }
+        }
+        out.push({ ..fragment, text: sb.to_string(), style, })
+        sb.reset()
+      }
+    }
+    for c in fragment.text {
+      let family = family_of(c)
+      if !first && family != current {
+        flush(current)
+      }
+      current = family
+      first = false
+      sb.write_char(c)
+    }
+    flush(current)
+  }
+  out
 }
 
 ///|
@@ -317,7 +439,7 @@ fn FontCatalog::face(
       match self.faces.get(face_key(family, false, false)) {
         Some(face) => face
         None =>
-          match self.faces.get(face_key(base_font_family, bold, italic)) {
+          match self.faces.get(face_key(base_font_family(), bold, italic)) {
             Some(face) => face
             None => abort("font catalog has no face for \{family}")
           }

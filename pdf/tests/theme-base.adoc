@@ -1,0 +1,5 @@
+= Base Theme
+Jane Doe <jane@example.org>
+:pdf-theme: base
+
+include::sampler.adoc[lines=4..-1]

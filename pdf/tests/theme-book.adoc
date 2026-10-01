@@ -1,0 +1,43 @@
+= A Themed Book: With a Subtitle
+Jane Doe; John Smith
+v2.0, 2026-09-30: Themed
+:doctype: book
+:pdf-themesdir: {docdir}/themes
+:pdf-theme: book
+:toc:
+:toclevels: 2
+:sectnums:
+
+[preface]
+== Preface
+
+The preface of the book, before its first chapter.
+
+== The First Chapter
+
+The first chapter starts on a new page, with the chapter title in the header and the page number in the footer.
+
+=== A Section
+
+Text of the first section of the first chapter, long enough to take a couple of lines on the page so that the running content has something to sit above and below.
+
+=== Another Section
+
+More text in the second section.
+
+== The Second Chapter
+
+The second chapter, with a list:
+
+* one
+* two
+* three
+
+=== Its Section
+
+The only section of the second chapter.
+
+[appendix]
+== An Appendix
+
+The appendix closes the book.

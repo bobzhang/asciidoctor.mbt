@@ -1,0 +1,105 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor-pdf/theme"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let base_theme_path : String
+
+pub fn bundled_theme_names() -> Array[String]
+
+pub fn clear_warnings() -> Unit
+
+pub let fonts_dir : String
+
+pub fn load_base_theme(Files) -> Theme raise ThemeError
+
+pub fn load_file(Files, String, theme_dir? : String) -> Theme raise ThemeError
+
+pub fn load_map(Map[String, Value], Theme) -> Unit raise ThemeError
+
+pub fn load_text(String, theme? : Theme) -> Theme raise ThemeError
+
+pub fn load_theme(Files, theme_name? : String, theme_dir? : String) -> Theme raise ThemeError
+
+pub fn resolve_measurement_values(String) -> String
+
+pub fn resolve_theme_asset(Files, String, theme_dir? : String) -> String
+
+pub fn resolve_theme_file(Files, String?, String?) -> (String, String)
+
+pub fn ruby_float_to_s(Double) -> String
+
+pub fn ruby_string_to_f(String) -> Double
+
+pub fn ruby_string_to_i(String) -> Int64
+
+pub fn safe_load(String) -> Value raise ThemeError
+
+pub fn str_to_pt(String) -> Double
+
+pub let themes_dir : String
+
+pub fn to_color(Value) -> Value
+
+pub fn to_pt(Double, String) -> Double?
+
+pub fn tokenize(String) -> Value raise ThemeError
+
+pub let warnings : Array[String]
+
+// Errors
+pub suberror ThemeError {
+  ThemeError(String)
+} derive(@debug.Debug)
+pub impl Show for ThemeError
+
+// Types and methods
+pub(all) struct Files {
+  read : (String) -> String?
+  cwd : String
+  home : String
+}
+pub fn Files::new(read? : (String) -> String?, cwd? : String, home? : String) -> Self
+
+pub struct Theme {
+  table : Map[String, Value]
+}
+#alias("_[_]")
+pub fn Theme::at(Self, String) -> Value
+pub fn Theme::copy(Self) -> Self
+pub fn Theme::dir(Self) -> String
+pub fn Theme::dump(Self) -> String
+pub fn Theme::get(Self, String) -> Value?
+pub fn Theme::has(Self, String) -> Bool
+pub fn Theme::keys(Self) -> Array[String]
+pub fn Theme::new() -> Self
+#alias("_[_]=_")
+pub fn Theme::set(Self, String, Value) -> Unit
+pub fn Theme::set_dir(Self, String) -> Unit
+
+pub(all) enum Value {
+  Null
+  Bool(Bool)
+  Int(Int64)
+  Float(Double)
+  Str(String)
+  Array(Array[Value])
+  Hash(Map[String, Value], symbols~ : Bool)
+  Hex(String)
+  Transparent
+  Cmyk(Array[Value])
+} derive(Eq, @debug.Debug)
+pub fn Value::as_number(Self) -> Double?
+pub fn Value::dump(Self) -> String
+pub fn Value::inspect_ruby(Self) -> String
+pub fn Value::is_numeric(Self) -> Bool
+pub fn Value::to_f(Self) -> Double
+pub fn Value::to_ruby_s(Self) -> String
+pub fn Value::truthy(Self) -> Bool
+
+// Type aliases
+
+// Traits

@@ -277,7 +277,7 @@ test "a word split across fragments breaks at the last word of the fragment befo
   // only "iss91v2" goes with it to the next line (as in Pro Git's third
   // chapter)
   let style = Style::new()
-  let code = { ..style, family: mono_font_family, font_set: true, }
+  let code = { ..style, family: "M+ 1mn", font_set: true, }
   let fragments : Array[Fragment] = [
     { text: "handling the same thing (", style, anchor: None, },
     { text: "iss91v2", style: code, anchor: None, },

@@ -26,13 +26,19 @@ priv struct Session {
   mut rendered_footnotes : Int
   /// the labels footnotes were inked with, by index
   footnote_labels : Map[Int, String]
-  /// the font catalog, for the glyphs of font icons (`icon:name[]`)
+  /// the font catalog: the theme's fonts, and the icon fonts, whose glyphs
+  /// font icons (`icon:name[]`) take; loaded once per document, unless
+  /// `register` was given one
   mut catalog : FontCatalog?
+  /// the catalog `register` was given, which every document uses
+  mut fixed_catalog : FontCatalog?
+  /// the document's theme, once loaded (see `document_theme`)
+  mut theme : @theme.Theme?
   /// the bibliography entries referenced so far (`@bibref_refs`)
   bibref_refs : Map[String, Bool]
   /// the `subtitle` role's `normal` style was applied once (see
   /// `apply_roles`)
-  mut subtitle_normal_spent : Bool
+  normal_spent : Map[String, Bool]
   /// the inline images met so far (`<img src="N">` is the Nth)
   inline_images : Array[InlineImage]
 }
@@ -44,26 +50,39 @@ let session : Session = {
   rendered_footnotes: 0,
   footnote_labels: Map([]),
   catalog: None,
+  fixed_catalog: None,
+  theme: None,
   bibref_refs: Map([]),
-  subtitle_normal_spent: false,
+  normal_spent: Map([]),
   inline_images: [],
 }
 
 ///|
 /// Registers the `pdf` backend with the core so that `backend=pdf` loads
-/// resolve inline content to formatted text; font icons take their glyphs
-/// from `catalog`'s icon sets.
-pub fn register(catalog? : FontCatalog) -> Unit {
-  session.catalog = catalog
+/// resolve inline content to formatted text. The fonts of a document's
+/// theme are read through its VFS: the bundled ones (the themes'
+/// `GEM_FONTS_DIR`) from `fonts_dir`, prawn-icon's icon fonts (for
+/// `icons=font`) from `icon_fonts_dir`. With `catalog`, every document is
+/// set in that catalog's fonts instead.
+pub fn register(
+  catalog? : FontCatalog,
+  fonts_dir? : String,
+  icon_fonts_dir? : String,
+) -> Unit {
+  session.fixed_catalog = catalog
+  font_sources.fonts_dir = fonts_dir
+  font_sources.icon_fonts_dir = icon_fonts_dir
   @core.register_converter(["pdf"], fn(_backend, _htmlsyntax, _doc) {
     // a new document: a new index (nested documents share their parent's
-    // converter)
+    // converter), theme and fonts
+    session.theme = None
+    session.catalog = session.fixed_catalog
     session.index = IndexCatalog::new()
     session.scratch = 0
     session.rendered_footnotes = 0
     session.footnote_labels.clear()
     session.bibref_refs.clear()
-    session.subtitle_normal_spent = false
+    session.normal_spent.clear()
     session.inline_images.clear()
     reset_svg_stacks()
     ({ resolving_xref: false, } : InlineConverter)
@@ -87,9 +106,8 @@ impl @core.Converter for InlineConverter with fn convert(self, node, transform) 
     "inline_quoted" => convert_inline_quoted(node)
     "inline_anchor" => self.convert_inline_anchor(node)
     "inline_break" => "\{node.text().unwrap_or("")}<br>"
-    "inline_button" => "<button>[ \{node.text().unwrap_or("")} ]</button>"
-    "inline_callout" =>
-      "<font color=\"#B12146\"><font name=\"M+ 1mn\">\{conum_glyph(node.text().unwrap_or("1"))}</font></font>"
+    "inline_button" => convert_inline_button(node)
+    "inline_callout" => convert_inline_callout(node)
     "inline_footnote" => convert_inline_footnote(node)
     "inline_kbd" => convert_inline_kbd(node)
     "inline_menu" => convert_inline_menu(node)
@@ -163,6 +181,16 @@ fn conum_glyph(text : String) -> String {
 }
 
 ///|
+/// The theme's typographic quote `index` (`quotes`: open and close
+/// double, open and close single).
+fn theme_quote(node : @core.Node, index : Int) -> String {
+  match document_theme(node)["quotes"] {
+    Array(items) => items.get(index).bind(value_str).unwrap_or("")
+    _ => ""
+  }
+}
+
+///|
 fn convert_inline_quoted(node : @core.Node) -> String {
   let (open, close, is_tag) = match node.inline_type {
     Some("emphasis") => ("<em>", "</em>", true)
@@ -171,12 +199,23 @@ fn convert_inline_quoted(node : @core.Node) -> String {
       ("<code>", "</code>", true)
     Some("superscript") => ("<sup>", "</sup>", true)
     Some("subscript") => ("<sub>", "</sub>", true)
-    Some("double") => ("&#8220;", "&#8221;", false)
-    Some("single") => ("&#8216;", "&#8217;", false)
+    Some("double") => (theme_quote(node, 0), theme_quote(node, 1), false)
+    Some("single") => (theme_quote(node, 2), theme_quote(node, 3), false)
     Some("mark") => ("<mark>", "</mark>", true)
     _ => ("", "", false)
   }
   let text = node.text().unwrap_or("")
+  // quoted text ending in `...` ends in an ellipsis
+  let text = if (
+      node.inline_type == Some("double") || node.inline_type == Some("single")
+    ) &&
+    text.length() > 3 &&
+    text.has_suffix("...") &&
+    !text[:text.length() - 3].has_suffix("\\") {
+    text[:text.length() - 3].to_owned() + "&#8230;"
+  } else {
+    text
+  }
   let quoted = match node.role() {
     Some(roles) =>
       if is_tag {
@@ -208,18 +247,35 @@ fn InlineConverter::convert_inline_anchor(
         Some(role) => " class=\"\{role}\""
         None => ""
       }
-      let text = node.text().unwrap_or("")
       let doc = node.document()
+      // for print, a mailto link shows its address (`media`)
+      let screen = doc.attr("media").unwrap_or("screen") == "screen"
+      let (text, bare_target) = if !screen && target.has_prefix("mailto:") {
+        let address = target[7:].to_owned()
+        let text = node.text().unwrap_or("")
+        if address == text {
+          ignore(node.add_role("bare"))
+        }
+        (text, if doc.has_attr("hide-uri-scheme") { address } else { target })
+      } else {
+        (node.text().unwrap_or(""), target)
+      }
+      let show_uri = doc.has_attr("show-link-uri") ||
+        (
+          !screen &&
+          !doc.has_attr("show-link-uri") &&
+          !doc.attribute_locked("show-link-uri")
+        )
       if node.has_role("bare") {
         "\{anchor}<a href=\"\{target}\"\{class}>\{breakable_uri(text)}</a>"
-      } else if doc.has_attr("show-link-uri") {
+      } else if show_uri {
         let bare = if doc.has_attr("hide-uri-scheme") {
-          match target.find("://") {
-            Some(i) => target[i + 3:].to_owned()
-            None => target
+          match bare_target.find("://") {
+            Some(i) => bare_target[i + 3:].to_owned()
+            None => bare_target
           }
         } else {
-          target
+          bare_target
         }
         "\{anchor}<a href=\"\{target}\"\{class}>\{text}</a> [<font size=\"0.85em\">\{breakable_uri(bare)}</font>&#93;"
       } else {
@@ -307,7 +363,12 @@ fn convert_inline_icon(node : @core.Node) -> String {
   let doc = node.document()
   let alt = "[\{node.attr("alt").unwrap_or("")}&#93;"
   let icons = doc.attr("icons")
-  guard icons == Some("font") && session.catalog is Some(catalog) else {
+  let catalog = if icons == Some("font") {
+    try? document_catalog(doc)
+  } else {
+    Err(Failure("no icons"))
+  }
+  guard catalog is Ok(catalog) && catalog.has_icons() else {
     if icons is Some(_) && icons != Some("font") {
       unsupported("inline", "image icon", node)
       return "[\{node.target.unwrap_or("")}&#93;"
@@ -480,30 +541,75 @@ fn convert_inline_footnote(node : @core.Node) -> String {
       }
       "<sup class=\"wj\">\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{label}</a>]</sup>"
     }
-    None => "<sup class=\"wj\">[\{node.text().unwrap_or("")}]</sup>"
+    None => {
+      let color = document_theme(node)["role_unresolved_font_color"].to_ruby_s()
+      "<sup class=\"wj\"><font color=\"\{color}\">[\{node.text().unwrap_or("")}]</font></sup>"
+    }
   }
 }
 
 ///|
+/// asciidoctor-pdf's `convert_inline_button`: the text in the theme's
+/// `button_content` (`%s` stands for the text).
+fn convert_inline_button(node : @core.Node) -> String {
+  let theme = document_theme(node)
+  let content = value_str(theme["button_content"]).unwrap_or("%s")
+  let text = node.text().unwrap_or("")
+  let content = match content.find("%s") {
+    Some(i) => content[:i].to_owned() + text + content[i + 2:].to_owned()
+    None => content
+  }
+  "<button>\{content}</button>"
+}
+
+///|
+/// asciidoctor-pdf's `convert_inline_callout`: the callout number's glyph
+/// in the conum font and colour (the font is named, as callouts in code
+/// are set in the code font).
+fn convert_inline_callout(node : @core.Node) -> String {
+  let theme = document_theme(node)
+  let glyph = conum_glyph(node.text().unwrap_or("1"))
+  let family = value_str(theme["conum_font_family"]).unwrap_or("")
+  let result = "<font name=\"\{family}\">\{glyph}</font>"
+  match theme["conum_font_color"] {
+    Null | Bool(false) => result
+    color => "<font color=\"\{color.to_ruby_s()}\">\{result}</font>"
+  }
+}
+
+///|
+/// asciidoctor-pdf's `convert_inline_kbd`: the keys joined by the theme's
+/// `kbd_separator`.
 fn convert_inline_kbd(node : @core.Node) -> String {
+  let separator = value_str(document_theme(node)["kbd_separator"]).unwrap_or(
+    "+",
+  )
   match node.attributes.get("keys") {
-    Some(List(keys)) => keys.map(key => "<kbd>\{key}</kbd>").join(" + ​")
+    Some(List([key])) => "<kbd>\{key}</kbd>"
+    Some(List(keys)) => keys.map(key => "<kbd>\{key}</kbd>").join(separator)
     _ => "<kbd>\{node.text().unwrap_or("")}</kbd>"
   }
 }
 
 ///|
+/// asciidoctor-pdf's `convert_inline_menu`: the menu, submenus and item
+/// joined by the theme's `menu_caret_content`.
 fn convert_inline_menu(node : @core.Node) -> String {
-  let caret = " <font size=\"1.15em\" color=\"#B12146\">›</font> "
+  let caret = value_str(document_theme(node)["menu_caret_content"]).unwrap_or(
+    " \u{203a} ",
+  )
   let menu = node.attr("menu").unwrap_or("")
-  let parts = [menu]
-  match node.attributes.get("submenus") {
-    Some(List(submenus)) => parts.append(submenus)
-    _ => ()
+  let submenus = match node.attributes.get("submenus") {
+    Some(List(submenus)) => submenus
+    _ => []
   }
-  match node.attr("menuitem") {
-    Some(item) => parts.push(item)
-    None => ()
+  if !submenus.is_empty() {
+    let parts = [menu, ..submenus, node.attr("menuitem").unwrap_or("")]
+    "<menu>\{parts.join(caret)}</menu>"
+  } else {
+    match node.attr("menuitem") {
+      Some(item) => "<menu>\{menu}\{caret}\{item}</menu>"
+      None => "<menu>\{menu}</menu>"
+    }
   }
-  "<strong>\{parts.join(caret)}</strong>"
 }

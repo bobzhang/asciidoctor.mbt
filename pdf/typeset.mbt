@@ -262,6 +262,7 @@ fn typeset_lines(
   align : Alignment,
   first_width? : Double = width,
 ) -> Array[Line] {
+  let fragments = catalog.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
     fragments, catalog, width, first_width,
   )

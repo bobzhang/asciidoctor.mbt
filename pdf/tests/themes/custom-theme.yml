@@ -1,0 +1,148 @@
+# A custom theme for the PDF backend's theme comparison case: it extends
+# the default theme and a theme of its own, and uses variables, math,
+# measurement units, colours, a font catalog and running content.
+extends:
+- default
+- ./brand-theme.yml
+font:
+  catalog:
+    merge: true
+    Sans:
+      normal: GEM_FONTS_DIR/notosans-regular-subset.ttf
+      bold: GEM_FONTS_DIR/notosans-bold-subset.ttf
+      italic: GEM_FONTS_DIR/notosans-italic-subset.ttf
+      bold_italic: GEM_FONTS_DIR/notosans-bold_italic-subset.ttf
+page:
+  size: Letter
+  margin: [0.9in, 1in, 0.8in, 1in]
+base:
+  font-size: 10
+  line-height-length: 13
+  line-height: $base-line-height-length / $base-font-size
+  font-size-large: round($base-font-size * 1.3)
+  font-size-small: $base-font-size - 1.5
+  text-align: left
+vertical-rhythm: $base-line-height-length
+horizontal-rhythm: $base-line-height-length * 1.25
+link:
+  font-color: $brand-accent
+  text-decoration: underline
+heading:
+  font-family: Sans
+  font-color: $brand-primary
+  h1-font-size: floor($base-font-size * 2.4)
+  h2-font-size: $base-font-size * 1.8
+  h3-font-size: round($base-font-size * 1.4)
+  h3-font-style: bold_italic
+  h4-font-color: $brand-muted
+  margin-top: $vertical-rhythm * 0.8
+  margin-bottom: $vertical-rhythm * 0.5
+  text-align: left
+role:
+  highlight:
+    background-color: FFF2CC
+  shout:
+    font-style: bold
+    font-color: $brand-accent
+codespan:
+  font-color: 7B2C2C
+  background-color: F2F2F2
+  border-offset: 1.5
+code:
+  font-size: $base-font-size * 0.9
+  background-color: F7F9FC
+  border-color: $brand-rule
+  border-width: 0.5
+  border-radius: 2
+  padding: [8, 10, 8, 10]
+caption:
+  font-color: $brand-muted
+  font-style: bold
+  text-align: left
+admonition:
+  column-rule-color: $brand-accent
+  column-rule-width: 2
+  padding: [4, $horizontal-rhythm * 0.6, 4, $horizontal-rhythm * 0.6]
+  label:
+    font-color: $brand-accent
+    text-transform: lowercase
+    font-style: bold_italic
+example:
+  background-color: F4F8FB
+  border-color: $brand-primary
+  border-width: 1
+  padding: [10, 12]
+sidebar:
+  background-color: FAF3E8
+  border-width: 0
+  title:
+    font-color: $brand-accent
+quote:
+  font-size: $base-font-size + 1
+  font-color: 404040
+  border-left-width: 3
+  border-color: $brand-accent
+  cite:
+    font-color: $brand-muted
+thematic-break:
+  border-color: $brand-accent
+  border-width: 1.5
+list:
+  indent: $horizontal-rhythm * 1.2
+  item-spacing: 4
+  marker-font-color: $brand-accent
+ulist:
+  marker:
+    disc:
+      content: "–"
+olist:
+  marker:
+    font-color: $brand-primary
+table:
+  border-color: $brand-primary
+  border-width: 1
+  grid-color: $brand-rule
+  grid-width: 0.5
+  cell-padding: [4, 6]
+  head:
+    background-color: $brand-primary
+    font-color: FFFFFF
+    border-bottom-width: 1.5
+  body:
+    stripe-background-color: F2F6FA
+toc:
+  indent: $horizontal-rhythm
+  line-height: 1.3
+  dot-leader:
+    content: ". "
+    font-color: $brand-muted
+  h2-font-style: bold
+header:
+  height: 0.6in
+  font-size: $base-font-size-small
+  font-color: $brand-muted
+  border-color: $brand-rule
+  border-width: 0.5
+  vertical-align: middle
+  recto:
+    left:
+      content: '{document-title}'
+    right:
+      content: '{section-title}'
+  verso:
+    left:
+      content: $header-recto-right-content
+    right:
+      content: $header-recto-left-content
+footer:
+  height: 0.5in
+  font-size: $base-font-size-small
+  border-width: 0
+  vertical-align: top
+  padding: [6, 0, 0, 0]
+  recto:
+    center:
+      content: 'Page {page-number} of {page-count}'
+  verso:
+    center:
+      content: $footer-recto-center-content

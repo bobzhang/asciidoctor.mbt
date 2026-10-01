@@ -1,0 +1,87 @@
+= Custom Theme Showcase
+Jane Doe <jane@example.org>
+:pdf-themesdir: {docdir}/themes
+:pdf-theme: custom
+:toc:
+
+This document is converted with a custom theme that extends the default theme and a theme of its own, and styles headings, inline text, blocks, lists, tables and the running content.
+It has *strong text*, _emphasized text_, `monospaced code`, a https://asciidoctor.org[link], [.highlight]#a highlighted phrase# and [.shout]#a shouted phrase#.
+
+== Paragraphs
+
+A paragraph of body text, left aligned in this theme, long enough to wrap across a few lines so that the line height of the theme shows between them, and the font size of the base font too.
+
+A second paragraph refers back to <<_lists>> with a cross reference, and to a bare URL: https://example.org.
+
+=== A third-level heading
+
+Text under a level-three heading, which is set bold italic.
+
+==== A fourth-level heading
+
+Text under a level-four heading, in the muted colour.
+
+== Lists
+
+* An unordered item with a dash marker
+* A second item
+** A nested item
+* Back at the top level
+
+. First ordered item
+. Second ordered item
+. Third ordered item
+
+CPU:: The brain of the computer.
+RAM:: Temporarily stores information the CPU uses during operation.
+
+== Blocks
+
+.A titled listing
+----
+$ git clone https://github.com/asciidoctor/asciidoctor-pdf
+$ cd asciidoctor-pdf
+----
+
+NOTE: An admonition with a label in lower case, and a coloured column rule.
+
+.An example
+====
+The content of an example block, on a tinted background with a border.
+====
+
+.A sidebar title
+****
+The content of a sidebar.
+****
+
+[quote,Abraham Lincoln,Gettysburg Address]
+____
+Four score and seven years ago our fathers brought forth on this continent a new nation.
+____
+
+'''
+
+== Tables
+
+.A table
+[cols="1,2,1",options="header"]
+|===
+|Name |Description |Size
+
+|alpha
+|The first entry of the table
+|10
+
+|beta
+|The second entry
+|20
+
+|gamma
+|The third entry
+|30
+|===
+
+== Conclusion
+
+The end of the document, with a final paragraph.

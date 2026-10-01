@@ -378,15 +378,15 @@ fn IndexCatalog::sorted_categories(self : IndexCatalog) -> Array[IndexTerm] {
 
 ///|
 /// asciidoctor-pdf's `convert_index_section`: the categories in columns
-/// (`index_columns`, unless already in a column box).
+/// (`index_columns()`, unless already in a column box).
 fn Converter::convert_index_section(self : Converter) -> Unit {
   let index = session.index
   index.link_associations()
   let flow = self.flow
-  if flow.columns is Some(_) || index_columns < 2 {
+  if flow.columns is Some(_) || index_columns() < 2 {
     self.convert_index_categories()
   } else {
-    flow.column_box(index_columns, index_column_gap, () => {
+    flow.column_box(index_columns(), index_column_gap(), () => {
       self.convert_index_categories()
     })
   }
@@ -400,28 +400,34 @@ fn Converter::convert_index_categories(self : Converter) -> Unit {
   let flow = self.flow
   let base = Style::new()
   let face = flow.font(base)
-  let metrics = line_metrics(base_line_height, face, base.size)
-  let space_needed = description_list_term_spacing +
+  let metrics = line_metrics(base_line_height(), face, base.size)
+  let space_needed = description_list_term_spacing() +
     2.0 *
     flow.height_of([{ text: "A", style: base, anchor: None, }], metrics, base)
   for category in session.index.sorted_categories() {
     if space_needed > flow.cursor() {
       flow.advance_page()
     }
-    // plain text: the letter is not formatted
-    let style = Style::new(doc_bold=true)
+    // plain text: the letter is not formatted; in the term font style
+    let style = match t_str("description_list_term_font_style") {
+      Some(fs) => {
+        let (doc_bold, doc_italic) = font_style_of(fs)
+        { ..Style::new(), doc_bold, doc_italic, }
+      }
+      None => Style::new()
+    }
     self.ink_prose_fragments(
       [{ text: category.name, style, anchor: None, }],
       style,
-      margin_bottom=description_list_term_spacing,
+      margin_bottom=description_list_term_spacing(),
     )
     for term in category.sorted_terms() {
       self.convert_index_term(term)
     }
-    if prose_margin_bottom > flow.cursor() {
+    if prose_margin_bottom() > flow.cursor() {
       flow.advance_page()
     } else {
-      flow.move_down(prose_margin_bottom)
+      flow.move_down(prose_margin_bottom())
     }
   }
 }
@@ -436,7 +442,7 @@ fn Converter::ink_prose_fragments(
   hanging_indent? : Double = 0.0,
 ) -> Unit {
   let flow = self.flow
-  let metrics = line_metrics(base_line_height, flow.font(style), style.size)
+  let metrics = line_metrics(base_line_height(), flow.font(style), style.size)
   flow.typeset(fragments, metrics, style, align=Left, hanging_indent~)
   flow.margin(margin_bottom)
 }
@@ -510,11 +516,11 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
   let flow = self.flow
   let base = Style::new()
   let linked = fn(anchor : String) -> Style {
-    {
-      ..base,
-      color: link_font_color,
-      link: Some(Named(pdf_anchor_name(anchor))),
-    }
+    apply_text_category(
+      { ..base, link: Some(Named(pdf_anchor_name(anchor))), },
+      "link",
+      decoration=true,
+    )
   }
   let fragments = parse_formatted(term.markup, base)
   let see_also : Array[Array[Fragment]] = []
@@ -553,14 +559,14 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
       }
     }
   }
-  let hanging = description_list_description_indent * 2.0
+  let hanging = description_list_description_indent() * 2.0
   self.ink_prose_fragments(
     consolidate_fragments(fragments),
     base,
     hanging_indent=hanging,
   )
   if !see_also.is_empty() || !term.terms.is_empty() {
-    flow.indent(description_list_description_indent, 0.0, () => {
+    flow.indent(description_list_description_indent(), 0.0, () => {
       for item in see_also {
         self.ink_prose_fragments(
           consolidate_fragments(item),

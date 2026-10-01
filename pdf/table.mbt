@@ -147,14 +147,16 @@ fn Converter::text_cell_content(
   cell : @core.Node,
   head : Bool,
   width : Double,
+  foot? : Bool = false,
 ) -> (CellContent, Double) {
   let flow = self.flow
-  let (base, fragments, line_height) = cell_fragments(cell, head)
+  let (base, fragments, line_height) = cell_fragments(cell, head, foot~)
   let face = flow.font(base)
   let metrics = line_metrics(line_height, face, base.size)
   // prawn-table lays text out one point wider than the content box
   // (`FPTolerance`)
-  let inner = width - 2.0 * table_cell_padding + 1.0
+  let (_, pad_right, _, pad_left) = table_cell_padding_of(head)
+  let inner = width - pad_left - pad_right + 1.0
   let lines = typeset_lines(fragments, flow.catalog, inner, cell_align(cell))
   // Cell::Text#natural_content_height: the box's height and its line gap,
   // the last line's height less its ascender and descender (Box#line_gap:
@@ -174,39 +176,145 @@ fn Converter::text_cell_content(
 fn cell_fragments(
   cell : @core.Node,
   head : Bool,
+  foot? : Bool = false,
 ) -> (Style, Array[Fragment], Double) {
+  let (table_style, table_lh) = category_font("table")
+  let text_of = (style : Style) => {
+    let text = cell.text().unwrap_or("").trim().to_owned()
+    match style.text_transform {
+      Some(transform) => transform_text(text, transform)
+      None => text
+    }
+  }
   if head {
-    let base = Style::new(doc_bold=true)
-    (
-      base,
-      parse_formatted(cell.text().unwrap_or("").trim().to_owned(), base),
-      base_line_height,
-    )
+    // `theme_font :table_head`; the text transform is the head's own
+    let (base, lh) = theme_font(table_style, table_lh, "table_head")
+    let base = {
+      ..base,
+      text_transform: t_str("table_head_text_transform").bind(t => {
+        if t == "none" {
+          None
+        } else {
+          Some(t)
+        }
+      }),
+    }
+    let text = text_of(base)
+    let line_height = t_num("table_head_line_height")
+      .or_some(t_num("table_cell_line_height"))
+      .unwrap_or(lh)
+    let base = { ..base, text_transform: None, }
+    (base, parse_formatted(text, base), line_height)
   } else {
+    let cell_lh = t_num("table_cell_line_height").unwrap_or(table_lh)
     match cell.style {
       Some("literal") => {
-        // the raw text, without inline formatting, in the code font
-        let base = Style::new(family=mono_font_family, size=code_font_size)
+        // the raw text, without inline formatting, in the code font, sized
+        // relative to the table's font
+        let (code, code_lh) = theme_font(table_style, table_lh, "code")
+        let base = {
+          ..code,
+          size: code.size * (table_style.size / base_font_size()),
+          doc_bold: false,
+          doc_italic: false,
+        }
         let text = guard_indentation(cell.cell_data().text)
-        (base, [{ text, style: base, anchor: None, }], code_line_height)
+        (base, [{ text, style: base, anchor: None, }], code_lh)
       }
       style => {
-        let base = match style {
-          Some("strong") | Some("header") => Style::new(doc_bold=true)
-          Some("emphasis") => Style::new(doc_italic=true)
+        let (base, line_height) = match style {
+          Some("strong") =>
+            ({ ..table_style, doc_bold: true, doc_italic: false, }, cell_lh)
+          Some("emphasis") =>
+            ({ ..table_style, doc_bold: false, doc_italic: true, }, cell_lh)
+          // `theme_font_cascade [:table_head, :table_header_cell]`
+          Some("header") => {
+            let (s, lh) = theme_font(table_style, table_lh, "table_head")
+            let (s, lh) = theme_font(s, lh, "table_header_cell")
+            (s, lh)
+          }
           // the codespan font and colour (`theme_font :codespan` sets the
           // colour the cell takes)
-          Some("monospaced") =>
-            Style::new(family=mono_font_family, color=codespan_font_color)
-          _ => Style::new()
+          Some("monospaced") => {
+            let (s, _) = theme_font(table_style, table_lh, "codespan")
+            ({ ..s, doc_bold: false, doc_italic: false, }, table_lh)
+          }
+          _ => (table_style, cell_lh)
         }
-        (
-          base,
-          body_cell_fragments(cell.text().unwrap_or(""), base),
-          base_line_height,
-        )
+        let text = cell.text().unwrap_or("")
+        let text = match base.text_transform {
+          Some(transform) => transform_text(text, transform)
+          None => text
+        }
+        let mut base = { ..base, text_transform: None, }
+        // the foot row's font (`table_foot_font_*`)
+        if foot {
+          match t_color("table_foot_font_color") {
+            Some(color) => base = { ..base, color, }
+            None => ()
+          }
+          match t_num("table_foot_font_size") {
+            Some(size) => base = { ..base, size, }
+            None => ()
+          }
+          match t_str("table_foot_font_family") {
+            Some(family) => base = { ..base, family, }
+            None => ()
+          }
+          match t_str("table_foot_font_style") {
+            Some(fs) => {
+              let (doc_bold, doc_italic) = font_style_of(fs)
+              base = { ..base, doc_bold, doc_italic, }
+            }
+            None => ()
+          }
+        }
+        (base, body_cell_fragments(text, base), line_height)
       }
     }
+  }
+}
+
+///|
+/// The padding of body cells (`table_cell_padding`) and of header cells
+/// (`table_head_cell_padding`, else the body's): top, right, bottom, left.
+fn table_cell_padding_of(head : Bool) -> (Double, Double, Double, Double) {
+  if head && t_set("table_head_cell_padding") {
+    t_padding("table_head_cell_padding")
+  } else {
+    t_padding("table_cell_padding")
+  }
+}
+
+///|
+/// The background colours of a table's parts: the table's
+/// (`table_background_color`) stands in for any the theme leaves out.
+priv struct TableColors {
+  head : Color?
+  foot : Color?
+  body : Color?
+  stripe : Color?
+}
+
+///|
+fn table_colors() -> TableColors {
+  let table = table_color("table_background_color", None)
+  {
+    head: table_color("table_head_background_color", table),
+    foot: table_color("table_foot_background_color", table),
+    body: table_color("table_body_background_color", table),
+    stripe: table_color("table_body_stripe_background_color", table),
+  }
+}
+
+///|
+/// A table colour key (`resolve_theme_color key, fallback`): transparent
+/// is none.
+fn table_color(key : String, fallback : Color?) -> Color? {
+  match tv(key) {
+    Null => fallback
+    Transparent => None
+    v => value_color(v)
   }
 }
 
@@ -344,7 +452,10 @@ fn Converter::autowidth_columns(
   for row in rows.foot {
     all_rows.push((row, false))
   }
-  let pad = 2.0 * table_cell_padding
+  let side_padding = (head : Bool) => {
+    let (_, right, _, left) = table_cell_padding_of(head)
+    left + right
+  }
   let occupied : Map[(Int, Int), Bool] = Map([])
   let cells : Array[WidthCell] = []
   let mut num_cols = node.columns().length()
@@ -361,6 +472,7 @@ fn Converter::autowidth_columns(
       } else {
         @cmp.maximum(cell.rowspan().unwrap_or(1), 1)
       }
+      let pad = side_padding(head)
       let (natural, min_content) = if !head &&
         cell.style == Some("asciidoc") &&
         cell.inner_document() is Some(_) {
@@ -485,38 +597,115 @@ fn Converter::asciidoc_cell_height(
 ///|
 /// Rule widths of a table, after its `frame` and `grid` attributes.
 priv struct Rules {
-  frame_ends : Double
-  frame_sides : Double
+  /// the frame: top, right, bottom, left widths and colours
+  frame : Array[Double]
+  frame_colors : Array[Color?]
   grid_rows : Double
   grid_cols : Double
-  /// under the last header row (the default theme's
-  /// `table_head_border_bottom_width`)
+  grid_row_color : Color?
+  grid_col_color : Color?
+  /// under the last header row (`table_head_border_bottom_*`)
   head : Double
+  head_color : Color?
 }
 
 ///|
-fn table_rules(node : @core.Node) -> Rules {
-  let w = table_border_width
-  let (frame_ends, frame_sides) = match
-    node.attr("frame", default="all", fallback_name="table-frame") {
-    Some("topbot") | Some("ends") => (w, 0.0)
-    Some("sides") => (0.0, w)
-    Some("none") => (0.0, 0.0)
-    _ => (w, w)
+/// `expand_rect_values`: a value, or an array of 1 to 4, for the four sides.
+fn expand_sides(v : @theme.Value) -> Array[@theme.Value] {
+  match v {
+    Array([]) => [Null, Null, Null, Null]
+    Array([a]) => [a, a, a, a]
+    Array([a, b]) => [a, b, a, b]
+    Array([a, b, c]) => [a, b, c, b]
+    Array(items) => items[:4].to_owned()
+    other => [other, other, other, other]
   }
-  let (grid_rows, grid_cols) = match
-    node.attr("grid", default="all", fallback_name="table-grid") {
-    Some("rows") => (w, 0.0)
-    Some("cols") => (0.0, w)
-    Some("none") => (0.0, 0.0)
-    _ => (w, w)
+}
+
+///|
+/// `expand_grid_values`: a value, or an array of rows and columns.
+fn expand_grid(v : @theme.Value) -> (@theme.Value, @theme.Value) {
+  match v {
+    Array([a]) => (a, a)
+    Array([a, b, ..]) => (a, b)
+    Array([]) => (Null, Null)
+    other => (other, other)
+  }
+}
+
+///|
+/// A border colour (transparent draws nothing).
+fn border_color_of(v : @theme.Value) -> Color? {
+  match v {
+    Transparent | Null => None
+    v => value_color(v)
+  }
+}
+
+///|
+/// The rules of a table, after the theme's `table_border_*`,
+/// `table_grid_*` and `table_head_border_bottom_*` and the table's `frame`
+/// and `grid` attributes.
+fn table_rules(node : @core.Node) -> Rules {
+  let border_colors = expand_sides(tv("table_border_color"))
+  let border_widths = expand_sides(tv("table_border_width")).map(v => {
+    value_num(v).unwrap_or(0.0)
+  })
+  let (grid_row_color, grid_col_color) = match tv("table_grid_color") {
+    Null => (border_colors[0], border_colors[3])
+    v => expand_grid(v)
+  }
+  let (grid_row_width, grid_col_width) = match tv("table_grid_width") {
+    Null =>
+      (
+        @theme.Value::Float(border_widths[0]),
+        @theme.Value::Float(border_widths[3]),
+      )
+    v => expand_grid(v)
+  }
+  let mut grid_rows = value_num(grid_row_width).unwrap_or(0.0)
+  let mut grid_cols = value_num(grid_col_width).unwrap_or(0.0)
+  let head = t_num("table_head_border_bottom_width").unwrap_or(grid_rows * 2.5)
+  let head_color = match tv("table_head_border_bottom_color") {
+    Null => border_color_of(grid_row_color)
+    v => border_color_of(v)
+  }
+  match node.attr("grid", default="all", fallback_name="table-grid") {
+    Some("all") => ()
+    Some("cols") => grid_rows = 0.0
+    Some("rows") => grid_cols = 0.0
+    _ => {
+      grid_rows = 0.0
+      grid_cols = 0.0
+    }
+  }
+  let frame = border_widths.copy()
+  match node.attr("frame", default="all", fallback_name="table-frame") {
+    Some("all") => ()
+    Some("topbot") | Some("ends") => {
+      frame[1] = 0.0
+      frame[3] = 0.0
+    }
+    Some("sides") => {
+      frame[0] = 0.0
+      frame[2] = 0.0
+    }
+    _ => {
+      frame[0] = 0.0
+      frame[1] = 0.0
+      frame[2] = 0.0
+      frame[3] = 0.0
+    }
   }
   {
-    frame_ends,
-    frame_sides,
+    frame,
+    frame_colors: border_colors.map(border_color_of),
     grid_rows,
     grid_cols,
-    head: table_head_border_bottom_width,
+    grid_row_color: border_color_of(grid_row_color),
+    grid_col_color: border_color_of(grid_col_color),
+    head,
+    head_color,
   }
 }
 
@@ -556,6 +745,7 @@ fn Converter::layout_table(
     all_rows.push((row, false, true))
   }
   let num_cols = columns.length()
+  let colors = table_colors()
   let occupied : Map[(Int, Int), Bool] = Map([])
   let cells : Array[TableCell] = []
   for r, entry in all_rows {
@@ -585,7 +775,9 @@ fn Converter::layout_table(
       for i in column..<@cmp.minimum(column + colspan, num_cols) {
         width += columns[i]
       }
-      let pad = table_cell_padding
+      let (pad_top, pad_right, pad_bottom, pad_left) = table_cell_padding_of(
+        head,
+      )
       let (content, padding, natural) = if !head &&
         cell.style == Some("asciidoc") &&
         cell.inner_document() is Some(inner) {
@@ -603,19 +795,32 @@ fn Converter::layout_table(
         let natural = self.asciidoc_cell_height(
           inner,
           align,
-          x + pad,
-          x + width - pad,
-          2.0 * pad,
+          x + pad_left,
+          x + width - pad_right,
+          pad_top + pad_bottom,
         )
-        (AsciiDocContent(inner, align), (pad, pad, pad, pad), natural)
+        (
+          AsciiDocContent(inner, align),
+          (pad_top, pad_right, pad_bottom, pad_left),
+          natural,
+        )
       } else {
-        let (content, natural) = self.text_cell_content(cell, head, width)
+        let (content, natural) = self.text_cell_content(
+          cell,
+          head,
+          width,
+          foot~,
+        )
         let (top, bottom) = match content {
           TextContent(_, metrics, _) =>
             (metrics.padding_top, metrics.padding_bottom)
           _ => (0.0, 0.0)
         }
-        (content, (pad + top, pad, pad + bottom, pad), natural)
+        (
+          content,
+          (pad_top + top, pad_right, pad_bottom + bottom, pad_left),
+          natural,
+        )
       }
       cells.push({
         node: cell,
@@ -630,7 +835,11 @@ fn Converter::layout_table(
         valign: cell_valign(cell),
         natural,
         background: if foot {
-          Some(table_foot_background_color)
+          colors.foot
+        } else if head {
+          colors.head
+        } else if cell.style == Some("header") {
+          table_color("table_header_cell_background_color", colors.head)
         } else {
           None
         },
@@ -662,10 +871,10 @@ fn Converter::layout_table(
     num_cols,
     rules: table_rules(node),
     row_colors: match node.attr("stripes", fallback_name="table-stripes") {
-      Some("all") => [Some(table_body_stripe_background_color)]
-      Some("even") => [None, Some(table_body_stripe_background_color)]
-      Some("odd") => [Some(table_body_stripe_background_color), None]
-      _ => [None]
+      Some("all") => [colors.stripe]
+      Some("even") => [colors.body, colors.stripe]
+      Some("odd") => [colors.stripe, colors.body]
+      _ => [colors.body]
     },
   }
 }
@@ -708,44 +917,53 @@ fn Converter::draw_cell_borders(
   let flow = self.flow
   let rules = layout.rules
   let last_row = cell.row + cell.rowspan - 1
-  let top_width = if cell.row == 0 {
-    rules.frame_ends
+  let (top_width, top_color) = if cell.row == 0 {
+    (rules.frame[0], rules.frame_colors[0])
   } else if layout.head_rows > 0 && cell.row == layout.head_rows {
-    rules.head
+    (rules.head, rules.head_color)
   } else {
-    rules.grid_rows
+    (rules.grid_rows, rules.grid_row_color)
   }
-  let bottom_width = if last_row == layout.num_rows - 1 {
-    rules.frame_ends
+  let (bottom_width, bottom_color) = if last_row == layout.num_rows - 1 {
+    (rules.frame[2], rules.frame_colors[2])
   } else if layout.head_rows > 0 && last_row == layout.head_rows - 1 {
-    rules.head
+    (rules.head, rules.head_color)
   } else {
-    rules.grid_rows
+    (rules.grid_rows, rules.grid_row_color)
   }
-  let left_width = if cell.column == 0 {
-    rules.frame_sides
+  let (left_width, left_color) = if cell.column == 0 {
+    (rules.frame[3], rules.frame_colors[3])
   } else {
-    rules.grid_cols
+    (rules.grid_cols, rules.grid_col_color)
   }
-  let right_width = if cell.column + cell.colspan >= layout.num_cols {
-    rules.frame_sides
+  let (right_width, right_color) = if cell.column + cell.colspan >=
+    layout.num_cols {
+    (rules.frame[1], rules.frame_colors[1])
   } else {
-    rules.grid_cols
+    (rules.grid_cols, rules.grid_col_color)
   }
   let right = cell.x + cell.width
   let bottom = top + height
-  if top_width > 0.0 {
-    flow.push(hrule(cell.x, right, top, top_width, table_border_color))
+  match top_color {
+    Some(color) if top_width > 0.0 =>
+      flow.push(hrule(cell.x, right, top, top_width, color))
+    _ => ()
   }
-  if bottom_width > 0.0 {
-    flow.push(hrule(cell.x, right, bottom, bottom_width, table_border_color))
+  match bottom_color {
+    Some(color) if bottom_width > 0.0 =>
+      flow.push(hrule(cell.x, right, bottom, bottom_width, color))
+    _ => ()
   }
   let (y1, y2) = (top - top_width / 2.0, bottom + bottom_width / 2.0)
-  if left_width > 0.0 {
-    flow.push(vrule(cell.x, y1, y2, left_width, table_border_color))
+  match left_color {
+    Some(color) if left_width > 0.0 =>
+      flow.push(vrule(cell.x, y1, y2, left_width, color))
+    _ => ()
   }
-  if right_width > 0.0 {
-    flow.push(vrule(right, y1, y2, right_width, table_border_color))
+  match right_color {
+    Some(color) if right_width > 0.0 =>
+      flow.push(vrule(right, y1, y2, right_width, color))
+    _ => ()
   }
 }
 
@@ -915,7 +1133,9 @@ fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
     self.arrange_block(keep_together=unbreakable, fn(c) {
       c.add_dest(node)
       if node.has_title() {
-        c.flow.tared(() => c.ink_caption(node.captioned_title()))
+        c.flow.tared(() => {
+          c.ink_caption(node.captioned_title(), category="table")
+        })
       }
       c.convert_table_body(node, contained=true)
     })
@@ -974,7 +1194,7 @@ fn Converter::convert_table_body(
     Some("right") => Right
     Some("left") => Left
     _ => {
-      let mut a = Left
+      let mut a = t_align("table_align", Left)
       for role in node.roles() {
         match role {
           "left" => a = Left
@@ -992,10 +1212,18 @@ fn Converter::convert_table_body(
     _ => flow.left
   }
   let layout = self.layout_table(node, columns, left)
-  if !contained && node.has_title() {
-    // the default `table_caption_max_width: fit-content`: the caption is
-    // no wider than the table, and aligned with it
-    let remainder = flow.width() - table_width
+  let below = caption_below("table")
+  // `table_caption_max_width` (default `fit-content`: the caption is no
+  // wider than the table, and aligned with it; `none`: the full width)
+  let caption = fn(bottom : Bool) {
+    let remainder = match t_str("table_caption_max_width") {
+      Some("none") => 0.0
+      Some(other) if other != "fit-content" && other != "fit-content()" => {
+        unsupported("theme", "table_caption_max_width: \{other}", node)
+        flow.width() - table_width
+      }
+      _ => flow.width() - table_width
+    }
     let (l, r) = if remainder > 0.0 {
       match alignment {
         Center => (remainder * 0.5, remainder * 0.5)
@@ -1005,7 +1233,17 @@ fn Converter::convert_table_body(
     } else {
       (0.0, 0.0)
     }
-    flow.indent(l, r, () => self.ink_caption(node.captioned_title()))
+    flow.indent(l, r, () => {
+      self.ink_caption(
+        node.captioned_title(),
+        bottom~,
+        category="table",
+        block_align=alignment,
+      )
+    })
+  }
+  if !contained && node.has_title() && !below {
+    caption(false)
   }
   if layout.num_rows == 0 {
     self.block_margin_bottom(node)
@@ -1054,5 +1292,8 @@ fn Converter::convert_table_body(
   flow.y = page_top
   self.draw_table_rows(layout, rows_here, start_row)
   flow.y = page_top + used
+  if node.has_title() && below {
+    caption(true)
+  }
   self.block_margin_bottom(node)
 }

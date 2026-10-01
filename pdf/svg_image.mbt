@@ -68,6 +68,21 @@ fn FontCatalog::svg_families(
 }
 
 ///|
+/// The font SVG text in a font Prawn lacks is drawn in (asciidoctor-pdf's
+/// `fallback_svg_font_name`).
+fn fallback_svg_font_name() -> String {
+  t_str("svg_fallback_font_family").unwrap_or(base_font_family())
+}
+
+///|
+/// The width of a page's content area: the bounds an inline SVG image is
+/// sized in.
+fn content_width() -> Double {
+  let setup = page_setup.val
+  setup.width - setup.margin_left - setup.margin_right
+}
+
+///|
 /// What SVG images in `node`'s document are drawn with: the catalog's
 /// fonts (added to `model` as text uses them) and files relative to
 /// `svg_path`'s directory.
@@ -84,17 +99,18 @@ fn svg_environment(
   let families = catalog.svg_families()
   let load_font = fn(family : String, subfamily : String) -> @svg.SvgFont? {
     guard families.iter().any(f => f.0 == family) else { return None }
-    let (family, bold, italic) = match family {
-      "Courier" | "Times-Roman" | "Helvetica" => {
-        // Prawn's built-in AFM fonts are not in the catalog
-        unsupported("image", "SVG text in the \{family} font", node)
-        (
-          base_font_family,
-          subfamily.contains("bold"),
-          subfamily.contains("italic"),
-        )
-      }
-      _ => (family, subfamily.contains("bold"), subfamily.contains("italic"))
+    let (bold, italic) = (
+      subfamily.contains("bold"),
+      subfamily.contains("italic"),
+    )
+    // the catalog holds the PDF standard fonts Prawn knows (its AFM fonts)
+    // unless a theme family takes their name; one it lacks altogether is
+    // drawn in the base font
+    let family = if catalog.faces.contains(face_key(family, false, false)) {
+      family
+    } else {
+      unsupported("image", "SVG text in the \{family} font", node)
+      base_font_family()
     }
     let face = catalog.face(family, bold, italic)
     let index = model.add_font({ family, bold, italic, })
@@ -133,12 +149,12 @@ fn svg_environment(
   {
     families,
     load_font,
-    fallback_font: base_font_family,
+    fallback_font: fallback_svg_font_name(),
     read_file: path => {
       let resolved = node.normalize_system_path(path, start=dir)
       node.vfs().read(resolved)
     },
-    ambient_font_size: base_font_size,
+    ambient_font_size: base_style().size,
   }
 }
 
@@ -155,7 +171,7 @@ fn inline_svg(
   try
     @svg.SvgDocument::parse(
       @utf8.decode_lossy(data),
-      (page_width - 2.0 * margin_side, content_height),
+      (content_width(), content_height()),
     )
   catch {
     @svg.SvgError(message) => {
@@ -182,7 +198,12 @@ fn Flow::inline_svg_item(
   let (doc, path, node) = image
   doc.sizing.resize(width=w)
   let env = svg_environment(self.catalog, self.model, node, path)
-  let ops = doc.render(env, origin=(x, y), page_height~, stack=self.svg_stack())
+  let ops = doc.render(
+    env,
+    origin=(x, y),
+    page_height=page_height(),
+    stack=self.svg_stack(),
+  )
   report_svg_warnings(doc, path, node, self.scratch)
   if ops.is_empty() {
     None
@@ -216,7 +237,10 @@ fn svg_explicit_width(node : @core.Node, bounds : Double) -> (Double?, Double?) 
     Some(w) if w.has_suffix("iw") =>
       (None, Some(percent(w[:w.length() - 2].to_owned()) / 100.0))
     Some(w) if w.has_suffix("vw") =>
-      (Some(page_width * percent(w[:w.length() - 2].to_owned()) / 100.0), None)
+      (
+        Some(page_width() * percent(w[:w.length() - 2].to_owned()) / 100.0),
+        None,
+      )
     Some(w) => (resolve_length(w, bounds, bare_px=false), None)
     None =>
       match node.attr("scale") {
@@ -285,13 +309,13 @@ fn Converter::convert_svg_image(
       }
   }
   let caption_height = if node.has_title() {
-    let style = Style::new(size=caption_font_size, doc_italic=true)
+    let style = Style::new(size=caption_font_size(), doc_italic=true)
     flow.height_of(
       parse_formatted(node.captioned_title(), style, normalize=false),
-      line_metrics(base_line_height, flow.font(style), caption_font_size),
+      line_metrics(base_line_height(), flow.font(style), caption_font_size()),
       style,
     ) +
-    caption_margin_inside
+    caption_margin_inside()
   } else {
     0.0
   }
@@ -318,7 +342,7 @@ fn Converter::convert_svg_image(
   let ops = doc.render(
     env,
     origin=(left, top),
-    page_height~,
+    page_height=page_height(),
     stack=flow.svg_stack(),
   )
   report_svg_warnings(doc, path, node, flow.scratch)

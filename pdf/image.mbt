@@ -183,13 +183,13 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   let mut height = width * aspect
   // the image keeps its caption (below it) on the same page
   let caption_height = if node.has_title() {
-    let style = Style::new(size=caption_font_size, doc_italic=true)
+    let style = Style::new(size=caption_font_size(), doc_italic=true)
     flow.height_of(
       parse_formatted(node.captioned_title(), style, normalize=false),
-      line_metrics(base_line_height, flow.font(style), caption_font_size),
+      line_metrics(base_line_height(), flow.font(style), caption_font_size()),
       style,
     ) +
-    caption_margin_inside
+    caption_margin_inside()
   } else {
     0.0
   }
@@ -410,9 +410,9 @@ fn inline_image_size(
     None => @cmp.minimum(available, number(spec))
   }
   let max_height = if image.fit == Some("line") {
-    @cmp.minimum(content_height, font_height)
+    @cmp.minimum(content_height(), font_height)
   } else {
-    content_height
+    content_height()
   }
   match image.svg {
     Some((doc, _, _)) => {
@@ -441,7 +441,10 @@ fn inline_image_size(
 ///|
 /// The height of a page's content area: the bounds an inline image must
 /// fit in.
-let content_height : Double = page_height - margin_top - margin_bottom
+fn content_height() -> Double {
+  let setup = page_setup.val
+  setup.height - setup.margin_top - setup.margin_bottom
+}
 
 ///|
 /// Whether the image is a GIF (its `format` attribute, else its target's

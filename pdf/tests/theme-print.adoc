@@ -1,0 +1,32 @@
+= Printed Document
+Jane Doe <jane@example.org>
+:doctype: book
+:media: print
+:toc:
+
+[abstract]
+The `media=print` attribute selects the default-for-print theme: black text, links in the text colour, and grey rules.
+
+== Links and Code
+
+A paragraph with https://asciidoctor.org[a link], `inline code`, *strong* text and [.subtitle]#a subtitle phrase#.
+
+----
+code in the print theme
+----
+
+NOTE: An admonition in the print theme.
+
+> A blockquote, in the print theme.
+
+== Tables
+
+|===
+|A |B
+
+|1 |2
+|===
+
+'''
+
+The end.

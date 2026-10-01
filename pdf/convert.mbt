@@ -476,115 +476,6 @@ fn report_document_features(doc : @core.Node, catalog : FontCatalog) -> Unit {
 }
 
 ///|
-/// Convert a document loaded with `backend=pdf` (see `register`) to PDF.
-/// Load it with `sourcemap` for `conversion_warnings` to say where the
-/// unsupported content is.
-pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise {
-  diagnostics.clear()
-  trace.clear()
-  trace_depth.val = 0
-  report_document_features(doc, catalog)
-  let flow = Flow::new(catalog)
-  let c = Converter::new(doc, flow)
-  flow.start_new_page()
-  // an article's abstract section becomes an abstract block, out of the
-  // TOC and the outline (the "demote abstract section" hack)
-  match doc.sections().get(0) {
-    Some(first) if doc.doctype() == "article" &&
-      first.sectname == Some("abstract") => {
-      first.set_context(Open)
-      first.style = Some("abstract")
-    }
-    _ => ()
-  }
-  let is_book = doc.doctype() == "book"
-  // a book (or `title-page`) has a title page instead of a title heading
-  let title_as_page = is_book || doc.has_attr("title-page")
-  let has_title_page = title_as_page && doc.has_header() && !doc.notitle()
-  if has_title_page {
-    c.ink_title_page()
-    flow.start_new_page()
-  }
-  if !title_as_page && doc.has_header() && !doc.notitle() {
-    match doc.doctitle() {
-      Some(title) => c.ink_heading(title, 1, align=Center)
-      None => ()
-    }
-  }
-  let levels = resolve_toclevels(doc)
-  c.toc_levels = levels
-  // the TOC at the top, unless the macro or the preamble places it
-  let placement = doc.attr("toc-placement").unwrap_or("auto")
-  if has_toc(doc) && placement != "macro" && placement != "preamble" {
-    flow.add_anchor("toc", 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
-    c.toc_extent = Some(c.allocate_toc(levels, title_as_page))
-  }
-  // pages before the body are front matter: numbered in roman, without
-  // running content (the default theme starts both at the body)
-  let body_start = flow.page
-  let front_matter = if title_as_page { body_start } else { 0 }
-  session.index.start_page_number = front_matter + 1
-  // the top of the document, for `<<_top>>`-style references: the top of
-  // the page the body starts on (`add_dest_for_top`)
-  let top = top_anchor(doc)
-  flow.add_anchor(top, 0.0, 0.0)
-  // a man page starts with its name and purpose, as a section the outline
-  // (built from the document's sections) does not list
-  if doc.doctype() == "manpage" && doc.has_attr("manpurpose") {
-    let listed = c.outline.length()
-    c.convert_section(generate_manname_section(doc))
-    while c.outline.length() > listed {
-      ignore(c.outline.pop())
-    }
-  }
-  c.traverse(doc)
-  c.ink_footnotes(doc)
-  match c.toc_extent {
-    Some(extent) => {
-      let last = flow.page
-      ignore(c.ink_toc(levels, extent.from_page, extent.from_y, front_matter))
-      flow.page = last
-    }
-    None => ()
-  }
-  // a page started but never written to is dropped
-  let pages = flow.model.pages
-  if pages.length() > 1 &&
-    pages[pages.length() - 1].items.iter().all(fn(i) { i is Anchor(_) }) {
-    ignore(pages.pop())
-  }
-  c.ink_footers(front_matter)
-  keep_last_anchors(flow.model)
-  for entry in @pdf.unembeddable_images(flow.model) {
-    diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
-  }
-  @pdf.render_pdf(
-    flow.model,
-    options=@pdf.RenderOptions::new(
-      // the faces the flow measured with, drawn and embedded as they are
-      fonts=catalog.registry,
-      outline=c.document_outline(),
-      info=pdf_info(doc),
-      // the default theme's `page_initial_zoom: FitH` and `page_mode: outline`
-      initial_zoom=FitH,
-      page_mode=UseOutlines,
-      display_doc_title=true,
-      page_boxes=true,
-      truncate_widths=true,
-      // Prawn draws a character the font lacks as its .notdef glyph and
-      // keeps it in the text layer
-      notdef_text=true,
-      // ttfunk reads the descriptor's ascent, descent and cap height from
-      // the OS/2 typographic metrics
-      typo_metrics=true,
-      page_labels=Array::makei(flow.model.pages.length(), i => {
-        page_label(i + 1, front_matter)
-      }),
-    ),
-  )
-}
-
-///|
 /// A name given to several destinations (an index term and a subterm of
 /// the same name, a repeated id) goes to the last one: Prawn's name tree
 /// inserts a new entry before an equal one, so a reader finds the latest
@@ -704,73 +595,6 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
 }
 
 ///|
-/// The title page of a book (asciidoctor-pdf's `ink_title_page` with the
-/// default theme): the title from 55% down the page, in #999999, then the
-/// subtitle, authors and revision, all right-aligned.
-fn Converter::ink_title_page(self : Converter) -> Unit {
-  let doc = self.doc
-  let flow = self.flow
-  flow.y = flow.page_top + (flow.bottom - flow.page_top) * 0.55
-  let (main, subtitle) = match doc.doctitle_partitioned() {
-    Some(t) => (t.main, t.subtitle)
-    None => (doc.doctitle().unwrap_or(""), None)
-  }
-  self.ink_prose(
-    main,
-    style=Style::new(size=heading_font_size(1), color=rgb_hex(0x999999)),
-    align=Right,
-    margin_bottom=0.0,
-    line_height=0.9,
-  )
-  match subtitle {
-    Some(sub) =>
-      self.ink_prose(
-        sub,
-        style=Style::new(
-          size=heading_font_size(3),
-          doc_bold=true,
-          doc_italic=true,
-        ),
-        align=Right,
-        margin_bottom=0.0,
-        line_height=1.0,
-      )
-    None => ()
-  }
-  let authors = doc.authors()
-  if !authors.is_empty() {
-    flow.move_down(base_font_size * 1.25)
-    self.ink_prose(
-      authors.map(a => a.name.unwrap_or("")).join(", "),
-      style=Style::new(
-        size=(base_font_size * 1.25).round(),
-        color=rgb_hex(0x181818),
-      ),
-      align=Right,
-      margin_bottom=0.0,
-    )
-  }
-  let revision = []
-  match doc.attr("revnumber") {
-    Some(n) =>
-      revision.push("\{doc.attr("version-label").unwrap_or("Version")} \{n}")
-    None => ()
-  }
-  match doc.attr("revdate") {
-    Some(d) => revision.push(d)
-    None => ()
-  }
-  if !revision.is_empty() {
-    flow.move_down(base_font_size * 1.25)
-    let text = match doc.attr("revremark") {
-      Some(remark) => "\{revision.join(", ")}: \{remark}"
-      None => revision.join(", ")
-    }
-    self.ink_prose(text, align=Right, margin_bottom=0.0, normalize=false)
-  }
-}
-
-///|
 /// Strip markup and decode references: the plain text of formatted text.
 fn sanitize(text : String) -> String {
   let sb = StringBuilder()
@@ -879,7 +703,7 @@ fn Converter::add_dest(self : Converter, node : @core.Node) -> Unit {
       // the cursor even at the top of a page (only sections jump to the
       // page's top edge)
       let left = (self.flow.left * 10000.0).floor() / 10000.0
-      let x = if left <= margin_side { 0.0 } else { left }
+      let x = if left <= page_setup.val.margin_left { 0.0 } else { left }
       self.flow.add_anchor(id, x, self.flow.y)
     }
     None => ()
@@ -948,13 +772,8 @@ fn next_enclosed_block(
 /// `theme_margin :block, :bottom, next_enclosed_block(node)`.
 fn Converter::block_margin_bottom(self : Converter, node : @core.Node) -> Unit {
   if next_enclosed_block(node) is Some(_) {
-    self.flow.margin(block_margin_bottom)
+    self.flow.margin(block_margin_bottom())
   }
-}
-
-///|
-fn base_style() -> Style {
-  Style::new()
 }
 
 ///|
@@ -964,8 +783,8 @@ fn Converter::ink_prose(
   text : String,
   style? : Style = base_style(),
   align? : Alignment,
-  margin_bottom? : Double = prose_margin_bottom,
-  line_height? : Double = base_line_height,
+  margin_bottom? : Double = prose_margin_bottom(),
+  line_height? : Double = base_line_height(),
   normalize? : Bool = true,
   bottom_gutter? : Double = 0.0,
   normalize_line_height? : Bool = false,
@@ -1018,64 +837,6 @@ fn Converter::gutter(self : Converter, node : @core.Node) -> Double {
 }
 
 ///|
-/// A heading at `level` (1 is the document title), asciidoctor-pdf's
-/// `ink_heading` with the heading theme font.
-fn Converter::ink_heading(
-  self : Converter,
-  title : String,
-  level : Int,
-  align? : Alignment = Left,
-) -> Unit {
-  let style = Style::new(size=heading_font_size(level), bold=true)
-  let flow = self.flow
-  if !flow.at_page_top() {
-    flow.margin(heading_margin_top)
-  }
-  let face = flow.font(style)
-  flow.typeset(
-    parse_formatted(title, style, normalize=false),
-    line_metrics(1.0, face, style.size),
-    style,
-    align~,
-  )
-  flow.margin(heading_margin_bottom)
-}
-
-///|
-/// asciidoctor-pdf's `arrange_heading` with a numeric
-/// `heading_min_height_after`: keep a heading with the content after it,
-/// when there is some, by starting a new page unless the heading, its top
-/// margin and that much room below it fit here.
-fn Converter::arrange_heading(
-  self : Converter,
-  title : String,
-  hlevel : Int,
-  content_after : Bool,
-) -> Unit {
-  let flow = self.flow
-  let size = heading_font_size(hlevel)
-  if size > flow.cursor() {
-    flow.advance_page()
-    return
-  }
-  let style = Style::new(size~, bold=true)
-  let face = flow.font(style)
-  let space_below = if content_after {
-    heading_min_height_after + heading_margin_bottom
-  } else {
-    0.0
-  }
-  let height = flow.height_of(
-    parse_formatted(title, style, normalize=false),
-    line_metrics(1.0, face, size),
-    style,
-  )
-  if flow.cursor() < height + heading_margin_top + space_below {
-    flow.advance_page()
-  }
-}
-
-///|
 /// A discrete heading (asciidoctor-pdf's `convert_floating_title`): kept
 /// with the next block unless it is the last of its parent.
 fn Converter::convert_floating_title(
@@ -1093,7 +854,7 @@ fn Converter::convert_floating_title(
     self.arrange_heading(title, hlevel, true)
   }
   self.add_dest(node)
-  self.ink_heading(title, hlevel)
+  self.ink_heading(title, hlevel, align?=text_align_from_roles(node.roles()))
 }
 
 ///|
@@ -1130,9 +891,29 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   let chapterlike = !part &&
     (section.sectname == Some("chapter") || (is_book && section.level == 1))
   let hidden = section.has_option("notitle")
-  // the default theme breaks before parts and chapters
-  // (`start_new_chapter`)
-  let started_new = part || chapterlike
+  // parts and chapters start a new page (`heading_part_break_before`,
+  // `heading_chapter_break_before`, `heading_part_break_after`)
+  let first_of_part = match section.parent() {
+    Some(parent) if parent.sectname == Some("part") =>
+      parent
+      .sections()
+      .get(0)
+      .map(s => physical_equal(s, section))
+      .unwrap_or(false)
+    _ => false
+  }
+  let started_new = if part {
+    t_str("heading_part_break_before") == Some("always")
+  } else if chapterlike {
+    let part_break_after = t_str("heading_part_break_after")
+    (
+      t_str("heading_chapter_break_before") == Some("always") &&
+      !(part_break_after == Some("avoid") && first_of_part)
+    ) ||
+    (part_break_after == Some("always") && first_of_part)
+  } else {
+    false
+  }
   if started_new && !flow.at_page_top() {
     flow.advance_page()
   }
@@ -1144,7 +925,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   // a section without an id is named after where it starts
   let anchor = match section.id {
     Some(id) => pdf_anchor_name(id)
-    None => "__anchor-\{start_page}-\{(page_height - flow.y).ceil().to_int()}"
+    None => "__anchor-\{start_page}-\{(page_height() - flow.y).ceil().to_int()}"
   }
   section.set_attr("pdf-anchor", value=Str(anchor)) |> ignore
   flow.add_anchor(anchor, 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
@@ -1195,25 +976,16 @@ fn Converter::convert_preamble(self : Converter, node : @core.Node) -> Unit {
 }
 
 ///|
-/// The prose style of a paragraph's roles.
+/// The prose style of a block's roles (`theme_font_cascade` of their
+/// `role_<name>` categories), with their text decoration.
 fn role_style(roles : Array[String], base : Style) -> Style {
   let mut style = base
   for role in roles {
-    match role {
-      "lead" => style = { ..style, size: (base_font_size * 1.25).round(), }
-      "big" => style = { ..style, size: style.size * 1.2, }
-      "small" => style = { ..style, size: style.size * 0.8, }
-      "underline" => style = { ..style, underline: true, }
-      "line-through" => style = { ..style, strike: true, }
-      // `font_style: normal_italic`: the document font upright italic
-      "subtitle" =>
-        style = {
-          ..style,
-          size: style.size * 0.8,
-          color: rgb_hex(0x999999),
-          doc_bold: false,
-          doc_italic: true,
-        }
+    let (s, _) = theme_font(style, base_line_height(), "role_" + role)
+    style = s
+    match t_str("role_\{role}_text_decoration") {
+      Some("underline") => style = { ..style, underline: true, }
+      Some("line-through") => style = { ..style, strike: true, }
       _ => ()
     }
   }
@@ -1221,37 +993,61 @@ fn role_style(roles : Array[String], base : Style) -> Style {
 }
 
 ///|
-fn role_align(roles : Array[String], default : Alignment) -> Alignment {
+/// The line height of a block's roles (`role_<name>_line_height`), else
+/// `default`.
+fn role_line_height(roles : Array[String], default : Double) -> Double {
+  let mut line_height = default
   for role in roles {
-    match role {
-      "text-left" => return Left
-      "text-right" => return Right
-      "text-center" => return Center
-      "text-justify" => return Justify
-      _ => ()
+    match t_num("role_\{role}_line_height") {
+      Some(lh) => line_height = lh
+      None => ()
     }
   }
-  default
+  line_height
 }
 
 ///|
+/// The alignment of a block from its `text-*` roles, else `default`.
+fn role_align(roles : Array[String], default : Alignment) -> Alignment {
+  text_align_from_roles(roles).unwrap_or(default)
+}
+
+///|
+/// asciidoctor-pdf's `convert_paragraph`: aligned by its roles (a
+/// `text-*` role, else a role's `role_<name>_text_align`), in its roles'
+/// fonts; then the prose margin (`prose_margin_inner` between paragraphs,
+/// when the theme sets it).
 fn Converter::convert_paragraph(self : Converter, node : @core.Node) -> Unit {
   self.add_dest(node)
   let roles = node.roles()
   if node.has_title() {
     self.ink_caption(node.title().unwrap_or(""))
   }
+  if t_num_or("prose_text_indent", 0.0) > 0.0 ||
+    t_num_or("prose_text_indent_inner", 0.0) > 0.0 {
+    unsupported("theme", "prose_text_indent", node)
+  }
   self.ink_prose(
     node.content(),
     style=role_style(roles, base_style()),
-    align=role_align(roles, self.text_align),
+    align=text_align_from_roles(roles, query_theme=true).unwrap_or(
+      self.text_align,
+    ),
     margin_bottom=0.0,
+    line_height=role_line_height(roles, base_line_height()),
     bottom_gutter=self.gutter(node),
   )
-  if next_enclosed_block(node) is Some(_) {
-    self.flow.margin(prose_margin_bottom)
+  match next_enclosed_block(node) {
+    Some(next) =>
+      match t_num("prose_margin_inner") {
+        Some(inner) if next.context == Paragraph => self.flow.margin(inner)
+        _ => self.flow.margin(prose_margin_bottom())
+      }
+    None => ()
   }
 }
+
+///|
 
 ///|
 /// A block title (asciidoctor-pdf's `ink_caption`, top end): italic,
@@ -1260,16 +1056,57 @@ fn Converter::ink_caption(
   self : Converter,
   text : String,
   bottom? : Bool = false,
+  category? : String,
+  block_align? : Alignment,
 ) -> Unit {
-  let style = Style::new(size=caption_font_size, doc_italic=true)
-  if bottom {
-    self.flow.margin(caption_margin_inside)
+  // the category's caption keys (`table_caption_*`) before the generic ones
+  let key = match category {
+    Some(c) => c + "_caption"
+    None => "caption"
   }
+  let setting = (name : String) => {
+    match tv("\{key}_\{name}") {
+      Null => tv("caption_\{name}")
+      v => v
+    }
+  }
+  let outside = value_num(setting("margin_outside")).unwrap_or(0.0)
+  let inside = value_num(setting("margin_inside")).unwrap_or(0.0)
+  let align = match value_str(setting("align")) {
+    Some("inherit") => block_align.unwrap_or(self.text_align)
+    Some(a) => alignment_of(a)
+    None => self.text_align
+  }
+  let text_align = match value_str(setting("text_align")) {
+    Some("inherit") => align
+    Some(a) => alignment_of(a)
+    None => align
+  }
+  let (style, line_height) = theme_font(
+    base_style(),
+    base_line_height(),
+    "caption",
+  )
+  let (style, line_height) = if key != "caption" {
+    theme_font(style, line_height, key)
+  } else {
+    (style, line_height)
+  }
+  if value_color(setting("background_color")) is Some(_) {
+    unsupported("theme", "caption background", self.doc)
+  }
+  let (top_margin, bottom_margin) = if bottom {
+    (inside, outside)
+  } else {
+    (outside, inside)
+  }
+  self.flow.margin(top_margin)
   self.ink_prose(
     text,
     style~,
-    align=Left,
-    margin_bottom=if bottom { 0.0 } else { caption_margin_inside },
+    align=text_align,
+    margin_bottom=bottom_margin,
+    line_height~,
     normalize=false,
     normalize_line_height=true,
   )
@@ -1302,1260 +1139,6 @@ fn guard_indentation(text : String) -> String {
     column = if c == '\n' { 0 } else { column + 1 }
   }
   sb.to_string()
-}
-
-///|
-fn Converter::convert_code(
-  self : Converter,
-  node : @core.Node,
-  plain? : Bool = false,
-) -> Unit {
-  let flow = self.flow
-  let style = Style::new(family=mono_font_family, size=code_font_size)
-  let face = flow.font(style)
-  let metrics = line_metrics(code_line_height, face, code_font_size)
-  // a stem block's text is shown as it is, without inline formatting
-  let fragments = if plain {
-    [{ text: guard_indentation(node.content()), style, anchor: None, }]
-  } else {
-    parse_formatted(guard_indentation(node.content()), style, normalize=false)
-  }
-  // arrange_block: the caption and the background are tared, so the block
-  // starts on the next page when not even its first line (with the room
-  // its bottom padding needs, when it is the last) fits here
-  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
-    c,
-  ) {
-    let flow = c.flow
-    c.add_dest(node)
-    if node.has_title() {
-      flow.tared(() => c.ink_caption(node.captioned_title()))
-    }
-    let start = flow.mark()
-    let (left, right) = (flow.left, flow.right)
-    flow.move_down(code_padding)
-    flow.indent(code_padding, code_padding, fn() {
-      flow.typeset(fragments, metrics, style, bottom_gutter=code_padding)
-    })
-    flow.pad_bottom(code_padding)
-    flow.underlay(start, fn(top, bottom, first, last) {
-      let items = [
-        rect_item(
-          left,
-          top,
-          right - left,
-          bottom - top,
-          fill=code_background_color,
-          stroke=code_border_color,
-          stroke_width=code_border_width,
-        ),
-      ]
-      // where the block breaks across pages, a dashed line in the
-      // background colour cuts into the border
-      // (theme_fill_and_stroke_block)
-      let inset = 4.0 + code_border_width
-      let width = code_border_width * 1.2
-      if !first {
-        items.append(
-          dashed_hrule(
-            left + inset,
-            right - inset,
-            top,
-            width,
-            code_background_color,
-          ),
-        )
-      }
-      if !last {
-        items.append(
-          dashed_hrule(
-            left + inset,
-            right - inset,
-            bottom,
-            width,
-            code_background_color,
-          ),
-        )
-      }
-      items
-    })
-  })
-  self.block_margin_bottom(node)
-}
-
-///|
-/// asciidoctor-pdf's bullet for an unordered list (`convert_ulist`): its
-/// style's (`bibliography` is a square, an unknown style a disc), else the
-/// one for its depth; None for `unstyled` and `no-bullet`, which have no
-/// marker and a narrower indent.
-fn ulist_marker(node : @core.Node, depth : Int) -> String? {
-  match node.style {
-    Some("circle") => Some("◦")
-    Some("square") | Some("bibliography") => Some("▪")
-    Some("none") => Some("")
-    Some("unstyled") | Some("no-bullet") => None
-    Some(_) => Some("•")
-    None =>
-      match depth {
-        1 => Some("•")
-        2 => Some("◦")
-        _ => Some("▪")
-      }
-  }
-}
-
-///|
-/// Nesting level among unordered and ordered lists (asciidoctor-pdf's
-/// `list_level`).
-fn list_level(node : @core.Node) -> Int {
-  let mut level = 1
-  let mut ancestor = node.parent()
-  while ancestor is Some(a) {
-    if a.context == Ulist || a.context == Olist {
-      level += 1
-    }
-    ancestor = a.parent()
-  }
-  level
-}
-
-///|
-fn Converter::convert_ulist(self : Converter, node : @core.Node) -> Unit {
-  self.add_dest(node)
-  if node.has_option("checklist") {
-    // a checkbox for an item that has one, nothing for the others
-    self.convert_list(node, fn(_index, item) {
-      if !item.has_attr("checkbox") {
-        ""
-      } else if item.has_attr("checked") {
-        "☑"
-      } else {
-        "☐"
-      }
-    })
-    return
-  }
-  match ulist_marker(node, list_level(node)) {
-    Some(marker) => self.convert_list(node, fn(_index, _item) { marker })
-    None => self.convert_list(node, fn(_index, _item) { "" }, unmarked=true)
-  }
-}
-
-///|
-fn roman(n : Int, upper : Bool) -> String {
-  let values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
-  let symbols = [
-    "m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i",
-  ]
-  let sb = StringBuilder()
-  let mut rest = n
-  for i, value in values {
-    while rest >= value {
-      sb.write_string(symbols[i])
-      rest -= value
-    }
-  }
-  if upper {
-    sb.to_string().to_upper()
-  } else {
-    sb.to_string()
-  }
-}
-
-///|
-fn alpha(n : Int, upper : Bool) -> String {
-  let base = if upper { 'A'.to_int() } else { 'a'.to_int() }
-  let sb = StringBuilder()
-  let mut rest = n
-  let digits = []
-  while rest > 0 {
-    rest -= 1
-    digits.push(base + rest % 26)
-    rest = rest / 26
-  }
-  for i = digits.length() - 1; i >= 0; i = i - 1 {
-    sb.write_char(digits[i].unsafe_to_char())
-  }
-  sb.to_string()
-}
-
-///|
-/// The block before `node` among its parent's blocks.
-fn previous_sibling(node : @core.Node) -> @core.Node? {
-  guard node.parent() is Some(parent) else { return None }
-  let mut previous : @core.Node? = None
-  for block in parent.blocks {
-    if physical_equal(block, node) {
-      return previous
-    }
-    previous = Some(block)
-  }
-  None
-}
-
-///|
-/// asciidoctor-pdf's `convert_colist`: after a code block it moves up
-/// (`callout_list_margin_top_after_code`); each item's number, in the conum
-/// font, is centred in a column as wide as the number and an `x`, and the
-/// item's text is indented by that column (`convert_colist_item`).
-fn Converter::convert_colist(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
-  if !flow.at_page_top() &&
-    previous_sibling(node) is Some(prev) &&
-    (prev.context == Listing || prev.context == Literal) {
-    flow.margin(-block_margin_bottom / 2.0)
-  }
-  self.add_dest(node)
-  let conum = conum_style()
-  let conum_face = flow.font(conum)
-  // allocate_space_for_list_item with the conum font's line metrics (in
-  // `theme_font :conum`, the base line height is `conum_line_height`)
-  let metrics = line_metrics(conum_line_height, conum_face, conum.size)
-  let items = node.items()
-  for index, item in items {
-    if !flow.at_page_top() &&
-      flow.cursor() <
-      conum_line_height * conum.size + metrics.leading + metrics.padding_top {
-      flow.advance_page()
-    }
-    self.traced(item, "list_item", () => {
-      let marker = conum_glyph((index + 1).to_string())
-      let marker_width = typeset_lines(
-          [{ text: marker + "x", style: conum, anchor: None, }],
-          flow.catalog,
-          1.0e6,
-          Left,
-        )[0].fit_width
-      let (page, y) = (flow.page, flow.y)
-      flow.indent(0.0, flow.width() - marker_width, () => {
-        self.ink_prose(
-          marker,
-          style=conum,
-          align=Center,
-          margin_bottom=0.0,
-          normalize=false,
-          line_height=conum_line_height,
-        )
-      })
-      flow.page = page
-      flow.y = y
-      let margin_bottom = if index == items.length() - 1 {
-        0.0
-      } else {
-        list_item_spacing
-      }
-      flow.indent(marker_width, 0.0, () => {
-        match item.text() {
-          Some(text) if !text.is_empty() =>
-            self.ink_prose(text, margin_bottom~, normalize_line_height=true)
-          _ =>
-            if !item.has_blocks() {
-              self.ink_prose("", margin_bottom~, normalize_line_height=true)
-            }
-        }
-        self.traverse(item)
-      })
-    })
-  }
-  self.block_margin_bottom(node)
-}
-
-///|
-/// The conum font (`conum_font_*`): the codespan font and colour at the
-/// base size.
-fn conum_style() -> Style {
-  {
-    ..Style::new(
-      family=mono_font_family,
-      size=base_font_size,
-      color=codespan_font_color,
-    ),
-    font_set: true,
-  }
-}
-
-///|
-fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
-  self.add_dest(node)
-  let start = match node.attr("start") {
-    Some(s) => @string.parse_int(s) catch { _ => 1 }
-    None => 1
-  }
-  // a style the marker implies (`a.`) is a Symbol in Asciidoctor, which
-  // asciidoctor-pdf's `case node.style when 'loweralpha'` never matches:
-  // (the core marks such a style: it has no list marker keyword)
-  let style = match node.style {
-    Some("loweralpha" | "upperalpha" | "lowerroman" | "upperroman") if node.list_marker_keyword()
-      is None => "arabic"
-    Some(style) => style
-    None => "arabic"
-  }
-  // `unstyled`, `unnumbered` and `no-bullet` have no numbers and a narrower
-  // indent; `none` has empty ones
-  let unmarked = style == "unstyled" ||
-    style == "unnumbered" ||
-    style == "no-bullet"
-  self.convert_list(
-    node,
-    fn(index, _item) {
-      let n = start + index
-      match style {
-        "loweralpha" => "\{alpha(n, false)}."
-        "upperalpha" => "\{alpha(n, true)}."
-        "lowerroman" => "\{roman(n, false)}."
-        "upperroman" => "\{roman(n, true)}."
-        // LowercaseGreekA, counted on by `String#next` one code point a step
-        // (a start below 1 does not count back from a letter)
-        "lowergreek" =>
-          "\{Int::unsafe_to_char(0x3B1 + @cmp.maximum(start - 1, 0) + index)}."
-        "none" | "unstyled" | "unnumbered" | "no-bullet" => ""
-        "decimal" => if n < 10 { "0\{n}." } else { "\{n}." }
-        _ => "\{n}."
-      }
-    },
-    unmarked~,
-  )
-}
-
-///|
-fn Converter::convert_list(
-  self : Converter,
-  node : @core.Node,
-  marker_of : (Int, @core.Node) -> String,
-  unmarked? : Bool = false,
-) -> Unit {
-  let flow = self.flow
-  if node.has_title() {
-    self.ink_caption(node.title().unwrap_or(""))
-  }
-  let base = base_style()
-  let face = flow.font(base)
-  let metrics = line_metrics(base_line_height, face, base.size)
-  // a list without markers is indented less: not at all when unstyled,
-  // else by the room a marker and an `x` would take less
-  let indent = if !unmarked {
-    list_indent
-  } else if node.style == Some("unstyled") {
-    0.0
-  } else {
-    let sample = if node.context == Ulist { "•x" } else { "1.x" }
-    @cmp.maximum(list_indent - flow.width_of(sample, base), 0.0)
-  }
-  // the items' text (not their blocks) aligns by the list's role, and a
-  // bibliography's to the left
-  let align = match node.roles().iter().find_first(r => r.has_prefix("text-")) {
-    Some(_) => Some(role_align(node.roles(), self.text_align))
-    None => if node.style == Some("bibliography") { Some(Left) } else { None }
-  }
-  flow.indent(indent, 0.0, fn() {
-    for index, item in node.items() {
-      // allocate_space_for_list_item
-      if !flow.at_page_top() &&
-        flow.cursor() <
-        base_line_height * base.size + metrics.leading + metrics.padding_top {
-        flow.advance_page()
-      }
-      let marker = marker_of(index, item)
-      self.traced(item, "list_item", () => {
-        self.convert_list_item(item, marker, metrics, align?)
-      })
-    }
-  })
-  if !list_nested(node) && next_enclosed_block(node) is Some(_) {
-    self.flow.margin(prose_margin_bottom)
-  }
-}
-
-///|
-/// asciidoctor-pdf's `List#nested?`: the list sits in a list item.
-fn list_nested(node : @core.Node) -> Bool {
-  node.parent() is Some(parent) && parent.context == ListItem
-}
-
-///|
-/// Ruby's `ListItem#compound?`: blocks other than a single nested list.
-fn is_compound_item(item : @core.Node) -> Bool {
-  match item.blocks {
-    [] => false
-    [only] => !(only.context == Ulist || only.context == Olist)
-    _ => true
-  }
-}
-
-///|
-fn Converter::convert_list_item(
-  self : Converter,
-  item : @core.Node,
-  marker : String,
-  metrics : LineMetrics,
-  align? : Alignment,
-) -> Unit {
-  let flow = self.flow
-  let base = base_style()
-  if !marker.is_empty() {
-    // the marker hangs in the indent, right-aligned one `x` before the
-    // text, in a float that does not move the cursor
-    let face = flow.font(base)
-    let gap = face.prawn_width('x'.to_int()) * base.size / 1000.0
-    let lines = typeset_lines(
-      [{ text: marker, style: base, anchor: None, }],
-      flow.catalog,
-      1000.0,
-      Left,
-    )
-    let width = if lines.length() > 0 { lines[0].fit_width } else { 0.0 }
-    let y = flow.y
-    let page = flow.page
-    // the marker's text box stretches to the bottom margin: when its line
-    // does not fit above it, the marker goes to the top of the next page,
-    // where the item's text will follow it (`flow_bounding_box`)
-    let a = face.ascender_pt(base.size)
-    if !flow.at_page_top() &&
-      metrics.padding_top + a + face.descender_pt(base.size) >
-      flow.cursor() + 0.0001 {
-      flow.advance_page()
-    }
-    let baseline = flow.y + metrics.padding_top + a
-    if lines.length() > 0 {
-      // set with `character_spacing: -0.5`, which Prawn does not count
-      // after the last glyph: right-aligned in a box as wide as the marker
-      // without it, the text starts 0.5pt in per glyph after the first,
-      // plus the 0.5pt asciidoctor-pdf adds back
-      // (`character_spacing_correction`)
-      let mut glyphs = 0
-      for run in lines[0].runs {
-        for i in 0..<run.advances.length() {
-          run.advances[i] -= 0.5
-          glyphs += 1
-        }
-      }
-      let shift = 0.5 * glyphs.to_double()
-      flow.ink_line(lines[0], flow.left - width - gap + shift, baseline)
-    }
-    flow.page = page
-    flow.y = y
-  }
-  let margin_bottom = if is_compound_item(item) {
-    prose_margin_bottom
-  } else if next_enclosed_block(item, descend=true) is Some(_) {
-    list_item_spacing
-  } else {
-    0.0
-  }
-  match item.text() {
-    Some(text) if !text.is_empty() =>
-      self.ink_prose(text, align?, margin_bottom~, normalize_line_height=true)
-    // an item without text or blocks still takes a line (`DummyText`)
-    _ =>
-      if !item.has_blocks() {
-        self.ink_prose("", margin_bottom~, normalize_line_height=true)
-      }
-  }
-  self.traverse(item)
-}
-
-///|
-fn Converter::convert_dlist(self : Converter, node : @core.Node) -> Unit {
-  self.add_dest(node)
-  let flow = self.flow
-  if node.has_title() {
-    self.ink_caption(node.title().unwrap_or(""))
-  }
-  if node.style == Some("horizontal") {
-    self.convert_horizontal_dlist(node)
-    return
-  }
-  let term_style = Style::new(bold=true)
-  // `height_of_typeset_text 'A'` in the term font and in the prose font
-  let one_line = fn(style : Style) {
-    flow.height_of(
-      [{ text: "A", style, anchor: None, }],
-      line_metrics(base_line_height, flow.font(style), style.size),
-      style,
-    )
-  }
-  let term_height = one_line(term_style)
-  let prose_height = one_line(base_style())
-  for entry in node.dlist_items {
-    // keep the terms (and the first line of the description) together
-    let desc_text = match entry.desc {
-      Some(desc) => desc.text().map(t => !t.is_empty()).unwrap_or(false)
-      None => false
-    }
-    let nlines = entry.terms.length() + (if desc_text { 1 } else { 0 })
-    let blocks_only = match entry.desc {
-      Some(desc) => !desc_text && desc.has_blocks()
-      None => false
-    }
-    let needed = nlines.to_double() * term_height +
-      (nlines - 1).to_double() * description_list_term_spacing +
-      (if blocks_only {
-        description_list_term_spacing + prose_height
-      } else {
-        0.0
-      })
-    if !flow.at_page_top() && flow.cursor() < needed {
-      flow.advance_page()
-    }
-    for index, term in entry.terms {
-      if index > 0 {
-        flow.margin(description_list_term_spacing)
-      }
-      self.ink_prose(
-        term.text().unwrap_or(""),
-        style=term_style,
-        align=Left,
-        margin_bottom=0.0,
-        normalize_line_height=true,
-      )
-    }
-    match entry.desc {
-      Some(desc) =>
-        flow.indent(description_list_description_indent, 0.0, fn() {
-          flow.margin(description_list_term_spacing)
-          let margin_bottom = if next_enclosed_block(desc, descend=true)
-            is Some(_) {
-            prose_margin_bottom
-          } else {
-            0.0
-          }
-          match desc.text() {
-            Some(text) if !text.is_empty() =>
-              self.ink_prose(text, margin_bottom~, normalize_line_height=true)
-            _ => ()
-          }
-          self.traverse(desc)
-        })
-      None => ()
-    }
-  }
-  if !list_nested(node) && next_enclosed_block(node) is Some(_) {
-    flow.margin(prose_margin_bottom)
-  }
-}
-
-///|
-fn Converter::convert_horizontal_dlist(
-  self : Converter,
-  node : @core.Node,
-) -> Unit {
-  let flow = self.flow
-  let term_style = Style::new(bold=true)
-  let mut term_width = 0.0
-  for entry in node.dlist_items {
-    for term in entry.terms {
-      let lines = typeset_lines(
-        parse_formatted(term.text().unwrap_or(""), term_style),
-        flow.catalog,
-        1.0e6,
-        Left,
-      )
-      for line in lines {
-        if line.fit_width > term_width {
-          term_width = line.fit_width
-        }
-      }
-    }
-  }
-  let column = @cmp.minimum(term_width + 20.0, flow.width() * 0.5 - 20.0)
-  // `height_of_typeset_text 'A'` in the term font and in the prose font
-  let one_line = fn(style : Style) {
-    flow.height_of(
-      [{ text: "A", style, anchor: None, }],
-      line_metrics(base_line_height, flow.font(style), style.size),
-      style,
-    )
-  }
-  let term_height = one_line(term_style)
-  let prose_height = one_line(base_style())
-  for entry in node.dlist_items {
-    // the terms (and a line of the description) must fit, else the entry
-    // starts on the next page
-    let terms = entry.terms.length().to_double()
-    let needed = @cmp.maximum(
-      (description_list_term_spacing + term_height) * terms -
-      description_list_term_spacing,
-      if entry.desc is Some(_) {
-        prose_height
-      } else {
-        0.0
-      },
-    )
-    if !flow.at_page_top() && flow.cursor() < needed {
-      flow.advance_page()
-    }
-    let start_page = flow.page
-    let start_y = flow.y
-    flow.indent(10.0, flow.width() - column, fn() {
-      for index, term in entry.terms {
-        if index > 0 {
-          flow.margin(description_list_term_spacing)
-        }
-        self.ink_prose(
-          term.text().unwrap_or(""),
-          style=term_style,
-          align=Left,
-          margin_bottom=0.0,
-          normalize_line_height=true,
-        )
-      }
-    })
-    let (term_page, term_y) = (flow.page, flow.y)
-    match entry.desc {
-      Some(desc) => {
-        flow.page = start_page
-        flow.y = start_y
-        // traverse_list_item: the description's text takes the prose
-        // margin below when something follows it in the entry
-        let margin_bottom = if next_enclosed_block(desc, descend=true)
-          is Some(_) {
-          prose_margin_bottom
-        } else {
-          0.0
-        }
-        flow.indent(column + 10.0, 10.0, fn() {
-          match desc.text() {
-            Some(text) if !text.is_empty() =>
-              self.ink_prose(text, margin_bottom~, normalize_line_height=true)
-            _ =>
-              if !desc.has_blocks() {
-                self.ink_prose("", margin_bottom~, normalize_line_height=true)
-              }
-          }
-          self.traverse(desc)
-        })
-        // the cursor ends below the last term
-        if flow.page < term_page || (flow.page == term_page && flow.y < term_y) {
-          flow.page = term_page
-          flow.y = term_y
-        }
-      }
-      None => ()
-    }
-  }
-  if !list_nested(node) && next_enclosed_block(node) is Some(_) {
-    flow.margin(prose_margin_bottom)
-  }
-}
-
-///|
-fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
-  let name = node.attr("name").unwrap_or("")
-  // `icons=font`: the admonition's icon, 24pt, in a column one and a half
-  // times as wide (`admonition_icon_data`); other icons (images) are left
-  // out, and the label is text
-  let icon = match self.doc.attr("icons") {
-    Some("font") if !node.has_attr("icon") =>
-      match admonition_icon(name) {
-        Some((set, icon_name, color)) =>
-          match flow.catalog.icon_glyph(set, icon_name) {
-            Some(glyph) => Some((set, glyph, color))
-            None => None
-          }
-        None => None
-      }
-    Some(_) => {
-      unsupported("block", "admonition icon image", node)
-      None
-    }
-    None => None
-  }
-  let label_style = Style::new(bold=true)
-  let label = sanitize(node.caption().unwrap_or(name)).to_upper()
-  let label_lines = if icon is Some(_) {
-    []
-  } else {
-    typeset_lines(
-      [{ text: label, style: label_style, anchor: None, }],
-      flow.catalog,
-      1.0e6,
-      Left,
-    )
-  }
-  let label_width = if icon is Some(_) {
-    admonition_icon_size * 1.5
-  } else if label_lines.length() > 0 {
-    label_lines[0].fit_width
-  } else {
-    0.0
-  }
-  let (pad_top, pad_right, pad_bottom, pad_left) = admonition_padding
-  let label_face = flow.font(label_style)
-  // arrange_block: the label and the rule are drawn once the extent is
-  // known, so they take no part in keeping the block on this page; the
-  // title is content
-  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
-    c,
-  ) {
-    let flow = c.flow
-    c.add_dest(node)
-    let start = flow.mark()
-    let box_left = flow.left + pad_left
-    let rule_x = box_left + label_width + pad_right
-    flow.indent(pad_left, pad_right, fn() {
-      flow.move_down(pad_top)
-      flow.indent(label_width + pad_right + pad_left, 0.0, fn() {
-        if node.has_title() {
-          c.ink_caption(node.title().unwrap_or(""))
-        }
-        c.push_gutter(node, pad_bottom)
-        c.traverse(node)
-        c.pop_gutter()
-      })
-      flow.pad_bottom(pad_bottom)
-    })
-    flow.underlay(start, fn(top, bottom, first, _last) {
-      let items = [
-        vrule(
-          rule_x, top, bottom, admonition_column_rule_width, admonition_column_rule_color,
-        ),
-      ]
-      match icon {
-        Some((set, glyph, color)) if first => {
-          // the icon, no taller than the label box, centred in it: moved
-          // down by half the room it leaves, then set as Prawn's `text`
-          // (the first baseline an ascender below the top), centred
-          // across the column (`fit_icon_to_bounds`, `icon`)
-          let height = bottom - top
-          let size = @cmp.minimum(height, admonition_icon_size)
-          let offset = @cmp.maximum((height - size) * 0.5, 0.0)
-          let style = {
-            ..Style::new(family=set, size~, color~),
-            font_set: true,
-          }
-          let lines = typeset_lines(
-            [{ text: glyph, style, anchor: None, }],
-            flow.catalog,
-            label_width,
-            Center,
-          )
-          let face = flow.font(style)
-          if lines.length() > 0 {
-            items.append(
-              flow.line_items(
-                lines[0],
-                box_left,
-                top + offset + face.ascender_pt(size),
-              ),
-            )
-          }
-        }
-        _ =>
-          if first && label_lines.length() > 0 {
-            // the label is centred vertically on the part of the block on
-            // its first page
-            let a = label_face.ascender_pt(label_style.size)
-            let d = label_face.descender_pt(label_style.size)
-            let offset = @cmp.maximum((bottom - top - (a + d)) / 2.0, 0.0)
-            items.append(
-              flow.line_items(label_lines[0], box_left, top + offset + a),
-            )
-          }
-      }
-      items
-    })
-  })
-  self.block_margin_bottom(node)
-}
-
-///|
-/// The size of an admonition's font icon (`admonition_icon_<type>_size`).
-let admonition_icon_size = 24.0
-
-///|
-/// asciidoctor-pdf's `AdmonitionIcons`: the icon set, icon name and colour
-/// of each admonition type (a type it does not know takes the note's
-/// icon, in the text colour).
-fn admonition_icon(name : String) -> (String, String, Color)? {
-  match name {
-    "caution" => Some(("fas", "fire", rgb_hex(0xBF3400)))
-    "important" => Some(("fas", "exclamation-circle", rgb_hex(0xBF0000)))
-    "note" => Some(("fas", "info-circle", rgb_hex(0x19407C)))
-    "tip" => Some(("far", "lightbulb", rgb_hex(0x111111)))
-    "warning" => Some(("fas", "exclamation-triangle", rgb_hex(0xBF6900)))
-    _ => Some(("fas", "info-circle", base_font_color))
-  }
-}
-
-///|
-fn Converter::convert_example(self : Converter, node : @core.Node) -> Unit {
-  if node.has_option("collapsible") {
-    self.convert_collapsible(node)
-    return
-  }
-  self.bordered_block(
-    node,
-    padding=vertical_rhythm,
-    side_padding=horizontal_rhythm,
-    fill=None,
-    stroke=example_border_color,
-    stroke_width=example_border_width,
-    caption=true,
-  )
-}
-
-///|
-fn Converter::convert_sidebar(self : Converter, node : @core.Node) -> Unit {
-  self.bordered_block(
-    node,
-    padding=vertical_rhythm,
-    side_padding=vertical_rhythm * 1.25,
-    fill=Some(sidebar_background_color),
-    stroke=sidebar_border_color,
-    stroke_width=0.5,
-    caption=false,
-  )
-}
-
-///|
-/// asciidoctor-pdf's `convert_pass`: the content as it is, in the code font
-/// and the base colour, with no box around it.
-fn Converter::convert_pass(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
-  let style = Style::new(family=mono_font_family, size=code_font_size)
-  let face = flow.font(style)
-  flow.typeset(
-    [{ text: guard_indentation(node.content()), style, anchor: None, }],
-    line_metrics(code_line_height, face, code_font_size),
-    style,
-  )
-  self.block_margin_bottom(node)
-}
-
-///|
-/// asciidoctor-pdf's `convert_video` and `convert_audio` without a poster
-/// image: a play symbol (the `fas-play` icon with `icons=font`), the link
-/// to the media and its kind, then the caption below.
-fn Converter::convert_media(
-  self : Converter,
-  node : @core.Node,
-  kind : String,
-) -> Unit {
-  let target = node.attr("target").unwrap_or("")
-  let (path, what) = match node.attr("poster") {
-    Some("youtube") if kind == "video" =>
-      ("https://www.youtube.com/watch?v=\{target}", "YouTube video")
-    Some("vimeo") if kind == "video" =>
-      ("https://vimeo.com/\{target}", "Vimeo video")
-    Some(poster) if kind == "video" && poster != "" => {
-      unsupported("block", "video poster image", node)
-      (node.media_uri(target), kind)
-    }
-    _ => (node.media_uri(target), kind)
-  }
-  self.add_dest(node)
-  let play = match
-    (self.doc.attr("icons"), self.flow.catalog.icon_glyph("fas", "play")) {
-    (Some("font"), Some(glyph)) => "<font name=\"fas\">\{glyph}</font>"
-    _ => "\u{25ba}"
-  }
-  self.ink_prose(
-    "\{play}\u{a0}<a href=\"\{path}\">\{path}</a> <em>(\{what})</em>",
-    normalize=false,
-    margin_bottom=0.0,
-  )
-  if node.has_title() {
-    self.ink_caption(node.title().unwrap_or(""), bottom=true)
-  }
-  self.block_margin_bottom(node)
-}
-
-///|
-/// asciidoctor-pdf's `convert_abstract` with the default theme: its title
-/// centred in the h4 heading font, then its paragraphs in the abstract font
-/// (#5C6266, 13pt, italic, line height 1.4), the first line of the first
-/// one in bold italic (`abstract_first_line_font_style`); other blocks as
-/// usual.
-fn Converter::convert_abstract(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
-  self.add_dest(node)
-  if node.has_title() {
-    flow.margin(heading_margin_top)
-    self.ink_prose(
-      node.title().unwrap_or(""),
-      style=Style::new(size=heading_font_size(4), doc_bold=true),
-      align=Center,
-      margin_bottom=heading_margin_bottom,
-      line_height=1.0,
-    )
-  }
-  let style = Style::new(
-    size=abstract_font_size,
-    color=abstract_font_color,
-    doc_italic=true,
-  )
-  let first = { ..style, doc_bold: true, }
-  let mut first_line = true
-  if node.has_blocks() {
-    for child in node.blocks {
-      if child.context != Paragraph {
-        self.convert_block(child)
-        continue
-      }
-      child.document().playback_attributes(child.attributes)
-      self.add_dest(child)
-      if child.has_title() {
-        self.ink_caption(child.title().unwrap_or(""))
-      }
-      self.ink_prose(
-        child.content(),
-        style~,
-        align=role_align(child.roles(), self.text_align),
-        margin_bottom=0.0,
-        line_height=abstract_line_height,
-        bottom_gutter=self.gutter(child),
-        first_line_style?=if first_line { Some(first) } else { None },
-      )
-      first_line = false
-      if next_enclosed_block(child) is Some(_) {
-        flow.margin(prose_margin_bottom)
-      }
-    }
-  } else {
-    let text = node.content()
-    if !text.is_empty() {
-      self.ink_prose(
-        text,
-        style~,
-        align=role_align(node.roles(), self.text_align),
-        margin_bottom=0.0,
-        line_height=abstract_line_height,
-        first_line_style=first,
-      )
-    }
-  }
-  self.block_margin_bottom(node)
-}
-
-///|
-/// asciidoctor-pdf's `convert_collapsible`: an example block with the
-/// `collapsible` option is its title (default `Details`) after a
-/// down-pointing triangle, as a caption, then its content indented by the
-/// triangle's width; arranged when it has an id.
-fn Converter::convert_collapsible(self : Converter, node : @core.Node) -> Unit {
-  let marker = "\u{25bc} "
-  let title = marker + node.title().unwrap_or("Details")
-  let caption_style = Style::new(size=caption_font_size, doc_italic=true)
-  let indent_by = self.flow.width_of(marker, caption_style)
-  let body = fn(c : Converter) {
-    c.add_dest(node)
-    c.flow.tared(() => c.ink_caption(title))
-    c.flow.indent(indent_by, 0.0, () => c.traverse(node))
-  }
-  if !self.flow.at_page_top() &&
-    (node.id is Some(_) || node.has_option("unbreakable")) {
-    self.arrange_block(
-      keep_together=node.has_option("unbreakable"),
-      node~,
-      body,
-    )
-  } else {
-    body(self)
-  }
-  self.block_margin_bottom(node)
-}
-
-///|
-/// A padded block with a background and border (example, sidebar), in
-/// `arrange_block`: its destination, then its caption (example) or title
-/// (sidebar), both tared, then its content; where it breaks across pages,
-/// a dashed line in the gap colour cuts into the border
-/// (`theme_fill_and_stroke_block`).
-fn Converter::bordered_block(
-  self : Converter,
-  node : @core.Node,
-  padding~ : Double,
-  side_padding~ : Double,
-  fill~ : Color?,
-  stroke~ : Color,
-  stroke_width~ : Double,
-  caption~ : Bool,
-) -> Unit {
-  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
-    c,
-  ) {
-    let flow = c.flow
-    c.add_dest(node)
-    if caption && node.has_title() {
-      flow.tared(() => c.ink_caption(node.captioned_title()))
-    }
-    let start = flow.mark()
-    let (left, right) = (flow.left, flow.right)
-    flow.move_down(padding)
-    flow.indent(side_padding, side_padding, fn() {
-      if !caption && node.has_title() {
-        // sidebar title: centred, bold, heading h4 size
-        flow.tared(() => {
-          c.ink_prose(
-            node.title().unwrap_or(""),
-            style=Style::new(size=heading_font_size(4), doc_bold=true),
-            align=Center,
-            margin_bottom=heading_margin_bottom,
-            // the heading line height, 1
-            line_height=1.0,
-          )
-        })
-      }
-      c.push_gutter(node, padding)
-      c.traverse(node)
-      c.pop_gutter()
-    })
-    flow.pad_bottom(padding)
-    // the page's white when the block has no background of its own
-    let gap = fill.unwrap_or(rgb_hex(0xFFFFFF))
-    flow.underlay(start, fn(top, bottom, first, last) {
-      let items = [
-        rect_item(
-          left,
-          top,
-          right - left,
-          bottom - top,
-          fill?,
-          stroke~,
-          stroke_width~,
-        ),
-      ]
-      let inset = 4.0 + stroke_width
-      let width = stroke_width * 1.2
-      if !first {
-        items.append(dashed_hrule(left + inset, right - inset, top, width, gap))
-      }
-      if !last {
-        items.append(
-          dashed_hrule(left + inset, right - inset, bottom, width, gap),
-        )
-      }
-      items
-    })
-  })
-  self.block_margin_bottom(node)
-}
-
-///|
-fn Converter::convert_quote(self : Converter, node : @core.Node) -> Unit {
-  let border = horizontal_rhythm / 3.0
-  let pad = vertical_rhythm / 4.0
-  let attribution = node.attr("attribution")
-  // arrange_block: the destination, the caption (tared), then the content
-  // in the quote padding, whose bottom the last line keeps clear of
-  // unless an attribution follows
-  self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
-    c,
-  ) {
-    let flow = c.flow
-    c.add_dest(node)
-    if node.has_title() {
-      flow.tared(() => c.ink_caption(node.title().unwrap_or("")))
-    }
-    let start = flow.mark()
-    let left = flow.left
-    let style = Style::new(size=quote_font_size)
-    flow.move_down(pad)
-    flow.indent(horizontal_rhythm + border / 2.0, horizontal_rhythm, fn() {
-      if attribution is None {
-        c.push_gutter(node, pad)
-      } else {
-        c.gutters.push(None)
-      }
-      if node.context == Verse {
-        c.ink_prose(
-          guard_indentation(node.content()),
-          style~,
-          align=role_align(node.roles(), Left),
-          margin_bottom=0.0,
-          normalize=false,
-          bottom_gutter=c.gutter(node),
-        )
-      } else if !node.has_blocks() {
-        // a quoted paragraph (`[quote]` on a paragraph) carries its text
-        // itself (`traverse`)
-        let text = node.content()
-        if !text.is_empty() {
-          c.ink_prose(
-            text,
-            style~,
-            align=role_align(node.roles(), c.text_align),
-            margin_bottom=0.0,
-            bottom_gutter=c.gutter(node),
-          )
-        }
-      } else {
-        // quote paragraphs take the quote font size
-        for block in node.blocks {
-          if block.context == Paragraph {
-            c.ink_prose(
-              block.content(),
-              style~,
-              margin_bottom=if next_enclosed_block(block) is Some(_) {
-                prose_margin_bottom
-              } else {
-                0.0
-              },
-              bottom_gutter=c.gutter(block),
-            )
-          } else {
-            c.convert_block(block)
-          }
-        }
-      }
-      c.pop_gutter()
-      match attribution {
-        Some(attribution) => {
-          flow.margin(block_margin_bottom)
-          let cite = match node.attr("citetitle") {
-            Some(title) => "\{attribution}, \{title}"
-            None => attribution
-          }
-          c.ink_prose(
-            "— \{cite}",
-            style=Style::new(
-              size=(base_font_size * 0.85).round(),
-              color=rgb_hex(0x999999),
-            ),
-            align=Left,
-            margin_bottom=0.0,
-            normalize=false,
-          )
-        }
-        None => ()
-      }
-    })
-    flow.pad_bottom(pad)
-    flow.underlay(start, fn(top, bottom, _first, _last) {
-      [vrule(left + border / 2.0, top, bottom, border, quote_border_color)]
-    })
-  })
-  self.block_margin_bottom(node)
-}
-
-///|
-fn Converter::convert_open(self : Converter, node : @core.Node) -> Unit {
-  if node.style == Some("abstract") {
-    self.convert_abstract(node)
-    return
-  }
-  // a titled open block, or one with an id, is arranged: its caption is
-  // tared, so it moves on with the content after it
-  if !self.flow.at_page_top() &&
-    (node.has_title() || node.id is Some(_) || node.has_option("unbreakable")) {
-    self.arrange_block(keep_together=node.has_option("unbreakable"), node~, fn(
-      c,
-    ) {
-      c.add_dest(node)
-      if node.has_title() {
-        c.flow.tared(() => c.ink_caption(node.title().unwrap_or("")))
-      }
-      c.traverse(node)
-    })
-  } else {
-    self.add_dest(node)
-    if node.has_title() {
-      self.ink_caption(node.title().unwrap_or(""))
-    }
-    self.traverse(node)
-  }
-}
-
-///|
-fn Converter::convert_thematic_break(
-  self : Converter,
-  node : @core.Node,
-) -> Unit {
-  let flow = self.flow
-  flow.move_down(vertical_rhythm * 0.5)
-  flow.push(hrule(flow.left, flow.right, flow.y, 0.5, thematic_break_color))
-  flow.move_down(vertical_rhythm * 0.5)
-  self.block_margin_bottom(node)
-}
-
-///|
-/// Footnotes not yet inked, at the bottom of the page (asciidoctor-pdf's
-/// `ink_footnotes` with `footnotes_margin_top: auto`): after the document,
-/// and in a book after each chapter. Labels count from the first footnote
-/// inked here.
-fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
-  let footnotes = self.doc.footnotes()
-  if footnotes.length() <= session.rendered_footnotes {
-    return
-  }
-  let pending = footnotes[session.rendered_footnotes:].to_owned()
-  let flow = self.flow
-  let is_last = match self.doc.blocks.last() {
-    Some(last) => physical_equal(last, node)
-    None => false
-  }
-  if node.context == Document || is_last {
-    flow.margin(block_margin_bottom)
-  }
-  let style = Style::new(size=(base_font_size * 0.75).round())
-  let face = flow.font(style)
-  let metrics = line_metrics(base_line_height, face, style.size)
-  let offset = session.rendered_footnotes
-  let texts = pending.map(fn(fn_) {
-    "<a id=\"_footnotedef_\{fn_.index}\"></a>[<a anchor=\"_footnoteref_\{fn_.index}\">\{fn_.index - offset}</a>] \{fn_.text}"
-  })
-  let mut height = 0.0
-  for text in texts {
-    height += flow.height_of(parse_formatted(text, style), metrics, style) + 3.0
-  }
-  if height < flow.cursor() {
-    flow.move_down(flow.cursor() - height - 0.0001)
-  }
-  for text in texts {
-    self.ink_prose(text, style~, margin_bottom=3.0)
-  }
-  if !flow.scratch {
-    // a later reference to one of these (an xref footnote) shows its label,
-    // with the chapter it is in
-    if node.context == Section {
-      let xreftext = node
-        .xreftext(xrefstyle?=self.doc.attr("xrefstyle"))
-        .unwrap_or("")
-      for fn_ in pending {
-        session.footnote_labels[fn_.index] = "\{fn_.index - offset} - \{xreftext}"
-      }
-    }
-    session.rendered_footnotes = footnotes.length()
-  }
-}
-
-///|
-/// Running footer: a rule and the page number, right on recto pages and
-/// left on verso ones (the default theme's `footer_*` keys), from the body
-/// on: the first `front_matter` pages have none, and pages are numbered
-/// from the body's first (`ink_running_content`).
-fn Converter::ink_footers(self : Converter, front_matter : Int) -> Unit {
-  let flow = self.flow
-  let style = Style::new(size=footer_font_size)
-  let face = flow.font(style)
-  let top = page_height - footer_height
-  let left = margin_side
-  let right = page_width - margin_side
-  for index, page in flow.model.pages {
-    if index < front_matter {
-      continue
-    }
-    let number = index + 1 - front_matter
-    page.items.push(
-      hrule(left, right, top, footer_border_width, footer_border_color),
-    )
-    let lines = typeset_lines(
-      [{ text: number.to_string(), style, anchor: None, }],
-      flow.catalog,
-      right - left - 2.0,
-      // the side follows the page number (`folio_placement` virtual)
-      if number % 2 == 1 {
-        Right
-      } else {
-        Left
-      },
-    )
-    let baseline = top +
-      base_line_height_length / 2.0 +
-      face.ascender_pt(style.size)
-    page.items.append(flow.line_items(lines[0], left + 1.0, baseline))
-  }
 }
 
 ///|

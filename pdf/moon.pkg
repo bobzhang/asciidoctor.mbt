@@ -1,10 +1,12 @@
 import {
+  "bobzhang/asciidoctor-pdf/theme",
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
   "bobzhang/asciidoctor-pdf/svg",
   "moonbitlang/pagelayout/fonts",
   "moonbitlang/pagelayout/pdf",
   "moonbitlang/pdflite",
+  "moonbitlang/pdflite/font/afm",
   "moonbitlang/core/string",
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",

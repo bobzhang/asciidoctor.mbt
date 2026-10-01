@@ -37,17 +37,19 @@ priv struct Style {
   doc_italic : Bool
   /// the markup names a font family (`<code>`, `<kbd>`, `<font name>`)
   font_set : Bool
+  /// the theme's `text_transform` (`uppercase`, `lowercase`, `capitalize`)
+  text_transform : String?
 } derive(Eq)
 
 ///|
 fn Style::new(
-  family? : String = base_font_family,
-  size? : Double = base_font_size,
+  family? : String = base_font_family(),
+  size? : Double = base_font_size(),
   bold? : Bool = false,
   italic? : Bool = false,
-  doc_bold? : Bool = false,
-  doc_italic? : Bool = false,
-  color? : Color = base_font_color,
+  doc_bold? : Bool = base_font_style().0,
+  doc_italic? : Bool = base_font_style().1,
+  color? : Color = base_font_color(),
 ) -> Style {
   {
     family,
@@ -57,6 +59,7 @@ fn Style::new(
     doc_bold,
     doc_italic,
     font_set: false,
+    text_transform: None,
     color,
     link: None,
     background: None,
@@ -260,119 +263,6 @@ fn open_tag(tag : String, attrs : Map[String, String], style : Style) -> Style {
 }
 
 ///|
-/// The default theme's `role_*` keys for inline text (and `wj`, a word
-/// joiner), applied in order: `lead` 13pt, `big` 1.2em, `small` 0.8em,
-/// `subtitle` 0.8em in #999999 and upright italic, `underline` and
-/// `line-through`.
-fn apply_roles(style : Style, classes : String) -> Style {
-  let mut s = style
-  for role in classes.split(" ") {
-    match role.to_owned() {
-      "wj" => s = { ..s, wj: true, }
-      "lead" => s = { ..s, size: (base_font_size * 1.25).round(), }
-      "underline" => s = { ..s, underline: true, }
-      "line-through" => s = { ..s, strike: true, }
-      "big" => s = { ..s, size: s.size * 1.2, }
-      "small" => s = { ..s, size: s.size * 0.8, }
-      // `font_style: normal_italic` clears bold and italic only the first
-      // time: Transform#update_fragment deletes :normal from the theme's
-      // own set as it applies it, so later uses just add italic
-      "subtitle" =>
-        if session.subtitle_normal_spent {
-          s = {
-            ..s,
-            size: s.size * 0.8,
-            color: rgb_hex(0x999999),
-            italic: true,
-          }
-        } else {
-          session.subtitle_normal_spent = true
-          s = {
-            ..s,
-            size: s.size * 0.8,
-            color: rgb_hex(0x999999),
-            bold: false,
-            italic: true,
-          }
-        }
-      _ => ()
-    }
-  }
-  s
-}
-
-///|
-/// The style a tag gives its content.
-fn tag_style(tag : String, attrs : Map[String, String], style : Style) -> Style {
-  match tag {
-    "strong" | "b" => { ..style, bold: true, }
-    "em" | "i" => { ..style, italic: true, }
-    "code" =>
-      {
-        ..style,
-        family: mono_font_family,
-        color: codespan_font_color,
-        font_set: true,
-      }
-    "kbd" =>
-      {
-        ..style,
-        family: mono_font_family,
-        font_set: true,
-        background: Some(rgb_hex(0xF5F5F5)),
-        border_offset: 2.0,
-      }
-    "button" => { ..style, bold: true, }
-    "sup" => { ..style, size: style.size * 0.583, script: 1, }
-    "sub" => { ..style, size: style.size * 0.583, script: -1, }
-    "mark" =>
-      { ..style, background: Some(rgb_hex(0xFFFF00)), border_offset: 1.0, }
-    "u" => { ..style, underline: true, }
-    "del" | "s" | "strikethrough" => { ..style, strike: true, }
-    "a" =>
-      match attrs.get("href") {
-        Some(href) =>
-          { ..style, link: Some(Uri(href)), color: link_font_color, }
-        None =>
-          match attrs.get("anchor") {
-            Some(anchor) =>
-              {
-                ..style,
-                link: Some(Named(pdf_anchor_name(anchor))),
-                color: link_font_color,
-              }
-            None => style
-          }
-      }
-    "font" | "color" | "span" => {
-      let mut s = style
-      match attrs.get("size") {
-        Some(size) => s = { ..s, size: parse_size(size, s.size), }
-        None => ()
-      }
-      match attrs.get("name") {
-        Some(family) => s = { ..s, family, font_set: true, }
-        None => ()
-      }
-      match
-        (match attrs.get("color") {
-          Some(c) => Some(c)
-          None => attrs.get("rgb")
-        }) {
-        Some(color) =>
-          match parse_color(color) {
-            Some(c) => s = { ..s, color: c, }
-            None => ()
-          }
-        None => ()
-      }
-      s
-    }
-    _ => style
-  }
-}
-
-///|
 /// The tag names asciidoctor-pdf's markup grammar knows (`tag_name`,
 /// `void_tag_name` in formatted_text/parser.treetop), in its order.
 let markup_tag_names : Array[String] = [
@@ -543,6 +433,10 @@ fn parse_formatted(
     if !text.is_empty() {
       let raw = decode_entities(text.to_string())
       let content = if normalize { collapse_whitespace(raw) } else { raw }
+      let content = match style.text_transform {
+        Some(transform) => transform_text(content, transform)
+        None => content
+      }
       if !content.is_empty() {
         fragments.push({ text: content, style, anchor: None, })
       }
