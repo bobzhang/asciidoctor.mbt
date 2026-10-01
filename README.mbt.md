@@ -212,6 +212,7 @@ where Ruby itself crashes (manpage).
 | `cmd/asciidoctor` | CLI |
 | `cmd/golden`, `scripts/` | golden harvesting/replay, regex oracle, corpus comparison |
 | `pdf/` | the PDF backend, a module of its own (`bobzhang/asciidoctor-pdf`) |
+| `tests/pdf_golden/` | conversions harvested from asciidoctor-pdf's RSpec suite (`scripts/pdf_harvest.mbtx`) |
 
 ## Development
 
@@ -238,6 +239,20 @@ built native and wasm commands. Its bundled fonts and themes are generated from 
 ```
 moon run --target native scripts/pdf_bundle_fonts.mbtx   # regenerate pdf/fonts from the gems
 moon run --target native scripts/pdf_bundle_themes.mbtx  # regenerate pdf/theme/bundled.mbt
+```
+
+The PDF backend is compared with Ruby asciidoctor-pdf 2.3.27 by `scripts/pdf_compare.mbtx`. It
+needs Ruby 3.2 or later and poppler (`pdftotext`, `pdftoppm`, `pdfinfo`); the first
+`scripts/pdf_harvest.mbtx` run installs the pinned gems and the asciidoctor-pdf sources into
+`.repos/` (see [pdf/docs/oracle.md](pdf/docs/oracle.md); `--ruby`/`$ASCIIDOCTOR_PDF_RUBY` and
+`--gems`/`$ASCIIDOCTOR_PDF_GEMS` override the defaults):
+
+```
+moon run --target native scripts/pdf_harvest.mbtx                    # harvest the spec suite (and set up .repos/)
+moon run --target native scripts/fetch_corpora.mbtx -- asciidoctor-pdf progit2  # documents of the gate
+moon run --target native scripts/pdf_compare.mbtx -- --gate          # 36 documents, must all pass
+moon run --target native scripts/pdf_compare.mbtx -- --self-test     # the metrics flag corrupted PDFs
+moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens  # replay asciidoctor-pdf's spec suite
 ```
 
 ### Releasing
