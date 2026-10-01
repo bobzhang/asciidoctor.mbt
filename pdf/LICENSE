@@ -41,3 +41,9 @@ the license texts in fonts/LICENSES.
 The SVG renderer in svg/ is a port of prawn-svg
 (https://github.com/mogest/prawn-svg), Copyright 2010-2019 Roger Nesbitt,
 distributed under its MIT license, whose text is in svg/LICENSE.
+
+Parts of table.mbt, svg/lower.mbt and svg/prawn_stack.mbt are adapted from
+Prawn 2.4.0 and prawn-table 0.2.2 (https://github.com/prawnpdf), copyrighted
+free software produced by Gregory Brown along with community contributions,
+and used under Matz's original licensing terms for Ruby, whose text is in
+LICENSES/LICENSE-prawn; see NOTICE.
