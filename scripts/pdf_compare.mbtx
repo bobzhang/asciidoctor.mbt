@@ -2358,10 +2358,15 @@ async fn load_spec_goldens(
       let first = @json.parse(raw.to_owned())
       let name = str(field(first, "name"))
       let case_dir = "\{gallery}/\{name}"
+      // the spec's scratch directories are inside the checkout, under the
+      // safe mode's jail (the base directory) as in the RSpec run: a file a
+      // spec created there is readable at the same depth
+      let spec_tmp = "\{spec_root}/spec/tmp/replay/\{name}"
+      let spec_out = "\{spec_root}/spec/output/replay/\{name}"
       let line = raw
         .to_owned()
-        .replace_all(old="$SPEC_TMP", new="\{case_dir}/spec-tmp")
-        .replace_all(old="$SPEC_OUT", new="\{case_dir}/spec-out")
+        .replace_all(old="$SPEC_TMP", new=spec_tmp)
+        .replace_all(old="$SPEC_OUT", new=spec_out)
         .replace_all(old="$TMPDIR", new="\{case_dir}/tmp")
         .replace_all(old="$SPEC_ROOT", new=spec_root)
         .replace_all(old="$GEMS", new=gems_root)
@@ -2474,7 +2479,9 @@ async fn load_spec_goldens(
         Object(m) =>
           for path, entry in m {
             match field(entry, "content_base64") {
-              String(b) if path.has_prefix(case_dir + "/") => files.push((path, b))
+              String(b) if path.has_prefix(case_dir + "/") ||
+                path.has_prefix(spec_tmp + "/") ||
+                path.has_prefix(spec_out + "/") => files.push((path, b))
               _ => ()
             }
           }
