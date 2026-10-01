@@ -11,10 +11,16 @@
 priv struct FontSources {
   mut fonts_dir : String?
   mut icon_fonts_dir : String?
+  /// the `pdf_theme` API option (see `register`)
+  mut pdf_theme : ((@theme.Files) -> @theme.Theme raise)?
 }
 
 ///|
-let font_sources : FontSources = { fonts_dir: None, icon_fonts_dir: None, }
+let font_sources : FontSources = {
+  fonts_dir: None,
+  icon_fonts_dir: None,
+  pdf_theme: None,
+}
 
 ///|
 /// The theme loader's view of the document's VFS: text files by absolute
@@ -50,8 +56,27 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
   let doc = doc.document()
   let files = theme_files(doc)
   let themesdir = doc.attr("pdf-themesdir").map(d => sub_docdir(d, doc))
-  let theme = match doc.attr("pdf-theme") {
-    Some(name) =>
+  // the `pdf_theme` option wins over `pdf-theme` and `media` (a copy: the
+  // conversion's defaults must not leak into the next one)
+  let option_theme = match font_sources.pdf_theme {
+    Some(build) =>
+      Some(
+        build(files).copy() catch {
+          e => {
+            diagnostics.push(
+              "WARNING could not load the pdf_theme option because of \{e}; reverting to default theme at <document>",
+            )
+            @theme.load_theme(files) catch {
+              _ => @theme.Theme::new()
+            }
+          }
+        },
+      )
+    None => None
+  }
+  let theme = match (option_theme, doc.attr("pdf-theme")) {
+    (Some(theme), _) => theme
+    (None, Some(name)) =>
       @theme.load_theme(files, theme_name=name, theme_dir?=themesdir) catch {
         e => {
           let where_ = match themesdir {
@@ -66,7 +91,7 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
           }
         }
       }
-    None => {
+    (None, None) => {
       let name = if doc.attr("media").unwrap_or("screen") == "screen" {
         None
       } else {

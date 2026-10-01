@@ -2,6 +2,7 @@
 package "bobzhang/asciidoctor-pdf"
 
 import {
+  "bobzhang/asciidoctor-pdf/theme",
   "bobzhang/asciidoctor/core",
 }
 
@@ -18,7 +19,7 @@ pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
 
 pub fn default_icon_font_files() -> Array[(String, String, String)]
 
-pub fn register(catalog? : FontCatalog, fonts_dir? : String, icon_fonts_dir? : String) -> Unit
+pub fn register(catalog? : FontCatalog, fonts_dir? : String, icon_fonts_dir? : String, pdf_theme? : (@theme.Files) -> @theme.Theme raise) -> Unit
 
 // Errors
 

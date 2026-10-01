@@ -3,6 +3,7 @@ import {
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/io",
   "bobzhang/asciidoctor-pdf" @asciidoctor_pdf,
+  "bobzhang/asciidoctor-pdf/theme",
   "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",

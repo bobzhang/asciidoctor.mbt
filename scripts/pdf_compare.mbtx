@@ -27,9 +27,9 @@
 //                 CASE arguments select records by name or spec file
 //                 (`abstract_spec`). The gallery defaults to
 //                 _build/gallery/pdf-spec and --known to
-//                 tests/pdf_golden/known_failures.txt; records that are
-//                 not replayed (theme-dependent, or skipped by the
-//                 harvest) get status `skipped` and never fail the gate.
+//                 tests/pdf_golden/known_failures.txt; records the
+//                 harvest skipped get status `skipped` and never fail the
+//                 gate.
 //                 Writes the categorized summary to spec_summary.txt in
 //                 the gallery (and to --baseline FILE)
 //   --write-known FILE
@@ -46,8 +46,8 @@
 //   timeout             a conversion exceeded conversion_timeout_ms
 //   invalid_pdf         pdfinfo rejects an output
 //   measurement_failed  a poppler tool or pdf-inspect failed on an output
-//   skipped             (--spec-goldens) not replayed: needs themes, or the
-//                       harvest could not express it as input + options
+//   skipped             (--spec-goldens) not replayed: the harvest could not
+//                       express it as input + options
 // with the commands, tool versions, the input's hash, both outputs' hashes
 // and both engines' stdout/stderr (the spike reports what it could not
 // render as `UNSUPPORTED <kind> <what> at <file>:<line>` on stderr).
@@ -2018,6 +2018,9 @@ priv struct Record {
   mut categories : Array[String]
   mut gate_failures : Array[String]
   dir : String
+  /// (--spec-goldens) why the record depends on a theme other than the
+  /// default
+  theme : String?
 }
 
 ///|
@@ -2197,11 +2200,13 @@ async fn run_oracle(
 // _build/pdf-spec-cache/pdfs). Each record is replayed through the spike
 // with the same source, attributes, safe mode, doctype and base directory,
 // and Ruby's harvested PDF is the oracle (Ruby is not run again). Records
-// the harvest could not express as input + options keep its skip reason;
-// records that depend on a theme other than the default (a pdf_theme
-// option, the pdf-theme / pdf-themesdir / pdf-fontsdir attributes, or
-// media=print/prepress, which selects default-for-print) are not replayed:
-// the spike only has the default theme until the pdf-themes branch lands.
+// the harvest could not express as input + options keep its skip reason.
+// Records that depend on a theme other than the default are replayed with
+// it: the pdf-theme / pdf-themesdir / pdf-fontsdir / media attributes pass
+// through as attributes, and the `pdf_theme` option (the spec helpers'
+// `build_pdf_theme overrides, extends`, or a theme object) through the
+// spike's `--pdf-theme-json` (see `pdf_theme_json`); the summary counts
+// them as theme-dependent.
 
 ///|
 let default_spec_goldens : String = "tests/pdf_golden"
@@ -2221,9 +2226,6 @@ let default_spec_gallery : String = "_build/gallery/pdf-spec"
 let spec_repo : String = ".repos/asciidoctor-pdf-2.3.27"
 
 ///|
-let themes_category : String = "needs themes (pdf-themes branch)"
-
-///|
 /// What the spike gets for one harvested conversion.
 priv struct SpecCase {
   id : String
@@ -2232,6 +2234,11 @@ priv struct SpecCase {
   description : String
   /// why the record is not replayed: (category, detail)
   skip : (String, String)?
+  /// why the record depends on a theme other than the default (see
+  /// `theme_dependent`)
+  theme : String?
+  /// the record's `pdf_theme` (null when the option is not given)
+  pdf_theme : Json
   /// the source, written to input.adoc and passed on standard input; None
   /// when the input is a file (`Case::input`)
   text : String?
@@ -2460,12 +2467,7 @@ async fn load_spec_goldens(
           }
         _ => ()
       }
-      if skip is None {
-        match theme_dependent(rec, attributes, text.unwrap_or("")) {
-          Some(why) => skip = Some((themes_category, why))
-          None => ()
-        }
-      }
+      let theme = theme_dependent(rec, attributes, text.unwrap_or(""))
       // the files the spec created, which did not survive the run
       let files = []
       match field(rec, "files") {
@@ -2488,6 +2490,8 @@ async fn load_spec_goldens(
         line: num(field(rec, "line")).unwrap_or(0.0).to_int(),
         description: str(field(rec, "description")),
         skip,
+        theme,
+        pdf_theme: field(rec, "pdf_theme"),
         text,
         base_dir: match (base_dir, text) {
           (Some(d), _) => Some(d)
@@ -2547,6 +2551,33 @@ fn extra_footer(m : Measured) -> Bool {
 }
 
 ///|
+/// The spike's `--pdf-theme-json` for a record's `pdf_theme` (as the
+/// harvest wrote it): the helpers' overrides and `extends`, which the spike
+/// applies as `build_pdf_theme` does, or the table of a theme object.
+fn pdf_theme_json(pdf_theme : Json) -> Json? {
+  match pdf_theme {
+    Object(m) =>
+      match m.get("object") {
+        Some(obj) =>
+          match field(obj, "__theme__") {
+            Object(_) as table => Some(Json::object(Map([("table", table)])))
+            _ => None
+          }
+        None =>
+          Some(
+            Json::object(
+              Map([
+                ("extends", field(pdf_theme, "extends")),
+                ("overrides", field(pdf_theme, "overrides")),
+              ]),
+            ),
+          )
+      }
+    _ => None
+  }
+}
+
+///|
 /// A record for a case that is not replayed.
 fn skipped_record(c : Case, dir : String, category : String, detail : String) -> Record {
   {
@@ -2563,6 +2594,7 @@ fn skipped_record(c : Case, dir : String, category : String, detail : String) ->
     categories: [category],
     gate_failures: [],
     dir,
+    theme: c.spec.bind(s => s.theme),
   }
 }
 
@@ -2607,6 +2639,18 @@ async fn prepare_spec_case(
     timed_out: false,
   }
   let args = ["-S", spec.safe, "--attributes-json", attributes_file]
+  match pdf_theme_json(spec.pdf_theme) {
+    Some(json) => {
+      let theme_file = "\{dir}/pdf_theme.json"
+      @fs.write_file(
+        theme_file,
+        json.stringify(indent=1),
+        create_mode=CreateOrTruncate,
+      )
+      args.append(["--pdf-theme-json", theme_file])
+    }
+    None => ()
+  }
   match spec.base_dir {
     Some(d) => args.append(["-B", d])
     None => ()
@@ -2697,6 +2741,7 @@ async fn compare_case(
     categories: [],
     gate_failures: [],
     dir,
+    theme: c.spec.bind(s => s.theme),
   }
   let ruby_ok = rr.code == 0 && file_exists(ruby_pdf)
   let spike_ok = sr.code == 0 && file_exists(spike_pdf)
@@ -3311,9 +3356,8 @@ fn spec_of(name : String) -> String {
 fn spec_summary(records : Array[Record], source : String) -> String {
   let total = records.length()
   let skipped = records.filter(r => r.status == "skipped")
-  let themed = skipped.filter(r => r.categories.contains(themes_category))
-  let other_skips = skipped.filter(r => !r.categories.contains(themes_category))
   let replayed = records.filter(r => r.status != "skipped")
+  let themed = replayed.filter(r => r.theme is Some(_))
   let passing = replayed.filter(r => r.passes())
   let failing = replayed.filter(r => !r.passes())
   let known = failing.filter(r => r.known is Some(_))
@@ -3321,7 +3365,9 @@ fn spec_summary(records : Array[Record], source : String) -> String {
     "# PDF spec-golden replay: \{source}", "# Generated by `scripts/pdf_compare.mbtx -- --spec-goldens`; counts are records (conversions).",
     "", "records: \{total}", "replayed: \{replayed.length()} / \{total}", "  pass: \{passing.length()} / \{replayed.length()}",
     "  fail: \{failing.length()} / \{replayed.length()} (\{known.length()} listed as known, \{failing.length() - known.length()} new)",
-    "not replayed, \{themes_category}: \{themed.length()} / \{total}", "not replayed, skipped: \{other_skips.length()} / \{total}",
+    "  theme-dependent: \{themed.length()} / \{replayed.length()} (pass \{themed.filter(r => r.passes()).length()})",
+    "  default theme: \{replayed.length() - themed.length()} / \{replayed.length()} (pass \{passing.length() - themed.filter(r => r.passes()).length()})",
+    "not replayed, skipped: \{skipped.length()} / \{total}",
   ]
   let section = fn(title : String, m : Map[String, Int]) {
     lines.push("")
@@ -3331,13 +3377,13 @@ fn spec_summary(records : Array[Record], source : String) -> String {
     }
   }
   let skip_reasons : Map[String, Int] = Map([])
-  for r in other_skips {
+  for r in skipped {
     bump(skip_reasons, r.categories.join(", "))
   }
   section("skipped by reason:", skip_reasons)
   let theme_reasons : Map[String, Int] = Map([])
   for r in themed {
-    bump(theme_reasons, r.reason)
+    bump(theme_reasons, r.theme.unwrap_or(""))
   }
   section("theme-dependent by cause:", theme_reasons)
   let statuses : Map[String, Int] = Map([])
@@ -3414,7 +3460,7 @@ fn spec_summary(records : Array[Record], source : String) -> String {
       n + 1,
       rep + (if r.status != "skipped" { 1 } else { 0 }),
       pass + (if r.passes() { 1 } else { 0 }),
-      themes + (if r.categories.contains(themes_category) { 1 } else { 0 }),
+      themes + (if r.theme is Some(_) { 1 } else { 0 }),
     )
   }
   lines.push("")

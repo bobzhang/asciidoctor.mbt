@@ -63,15 +63,20 @@ let session : Session = {
 /// theme are read through its VFS: the bundled ones (the themes'
 /// `GEM_FONTS_DIR`) from `fonts_dir`, prawn-icon's icon fonts (for
 /// `icons=font`) from `icon_fonts_dir`. With `catalog`, every document is
-/// set in that catalog's fonts instead.
+/// set in that catalog's fonts instead. `pdf_theme` is asciidoctor-pdf's
+/// `pdf_theme` API option: the theme every document is converted with
+/// instead of the one its `pdf-theme` attribute (or `media`) selects, built
+/// from the theme files of the document's VFS (see `load_document_theme`).
 pub fn register(
   catalog? : FontCatalog,
   fonts_dir? : String,
   icon_fonts_dir? : String,
+  pdf_theme? : (@theme.Files) -> @theme.Theme raise,
 ) -> Unit {
   session.fixed_catalog = catalog
   font_sources.fonts_dir = fonts_dir
   font_sources.icon_fonts_dir = icon_fonts_dir
+  font_sources.pdf_theme = pdf_theme
   @core.register_converter(["pdf"], fn(_backend, _htmlsyntax, _doc) {
     // a new document: a new index (nested documents share their parent's
     // converter), theme and fonts

@@ -19,10 +19,79 @@
 // object, with Ruby's value semantics: a string sets, `null` unsets (and
 // locks), `false` soft-unsets, `true` sets to empty, numbers are kept
 // (this is how scripts/pdf_compare.mbtx replays the harvested spec cases).
+//
+// `--pdf-theme-json FILE` is the API's `pdf_theme` option (a theme object,
+// used instead of the `pdf-theme` attribute and `media`), as JSON: either
+// `{"extends": NAME, "overrides": {KEY: VALUE, ...}}`, asciidoctor-pdf's
+// spec helper `build_pdf_theme overrides, extends` (the theme NAME, or the
+// default theme when NAME is null, loaded with `ThemeLoader.load_theme`,
+// then each flattened key set to its value as is, unprocessed by the
+// loader), or `{"table": {KEY: VALUE, ...}}`, a theme's table as is.
 
 ///|
 fn usage() -> String {
-  "Usage: asciidoctor-pdf INPUT|- [-o OUTPUT] [-a NAME[=VALUE]]... [--theme THEME] [--attributes-json FILE] [-B BASE_DIR] [-S SAFE_MODE] [-d DOCTYPE] [--fonts-dir DIR] [--icon-fonts-dir DIR] [--trace FILE]"
+  "Usage: asciidoctor-pdf INPUT|- [-o OUTPUT] [-a NAME[=VALUE]]... [--theme THEME] [--pdf-theme-json FILE] [--attributes-json FILE] [-B BASE_DIR] [-S SAFE_MODE] [-d DOCTYPE] [--fonts-dir DIR] [--icon-fonts-dir DIR] [--trace FILE]"
+}
+
+///|
+/// A Ruby theme value from JSON: objects are hashes, and numbers are
+/// integers when integral (JSON keeps no other distinction).
+fn json_theme_value(value : Json) -> @theme.Value {
+  match value {
+    Null => Null
+    True => Bool(true)
+    False => Bool(false)
+    String(s) => Str(s)
+    Number(n, ..) =>
+      if n == n.floor() && n.abs() < 9.0e15 {
+        Int(n.to_int64())
+      } else {
+        Float(n)
+      }
+    Array(items) => Array(items.map(json_theme_value))
+    Object(entries) => {
+      let map : Map[String, @theme.Value] = Map([])
+      for k, v in entries {
+        map[k] = json_theme_value(v)
+      }
+      Hash(map, symbols=false)
+    }
+  }
+}
+
+///|
+/// The `pdf_theme` option of `--pdf-theme-json` (see the header).
+fn pdf_theme_option(
+  json : Json,
+) -> ((@theme.Files) -> @theme.Theme raise) raise {
+  match json {
+    Object(spec) if spec.get("table") is Some(Object(table)) =>
+      _files => {
+        let theme = @theme.Theme::new()
+        for k, v in table {
+          theme[k] = json_theme_value(v)
+        }
+        theme
+      }
+    Object(spec) => {
+      let extends = match spec.get("extends") {
+        Some(String(name)) => Some(name)
+        _ => None
+      }
+      let overrides = match spec.get("overrides") {
+        Some(Object(m)) => m
+        _ => Map([])
+      }
+      files => {
+        let theme = @theme.load_theme(files, theme_name?=extends)
+        for k, v in overrides {
+          theme[k] = json_theme_value(v)
+        }
+        theme
+      }
+    }
+    _ => fail("--pdf-theme-json: not a JSON object")
+  }
 }
 
 ///|
@@ -33,7 +102,8 @@ fn json_attr(value : Json) -> @core.AttrVal? {
     Null => Some(Nil)
     False => Some(Bool(false))
     True => Some(Str(""))
-    Number(n, ..) => Some(if n == n.floor() { Int(n.to_int()) } else { Float(n) })
+    Number(n, ..) =>
+      Some(if n == n.floor() { Int(n.to_int()) } else { Float(n) })
     _ => None
   }
 }
@@ -49,6 +119,7 @@ async fn main {
   let mut base_dir : String? = None
   let mut safe = 0
   let mut doctype : String? = None
+  let mut pdf_theme : ((@theme.Files) -> @theme.Theme raise)? = None
   let attributes : Array[(String, @core.AttrVal)] = []
   let mut i = 1
   while i < args.length() {
@@ -73,6 +144,13 @@ async fn main {
       arg if arg.has_prefix("--theme=") => {
         attributes.push(("pdf-theme", Str(arg[8:].to_owned())))
         i += 1
+        continue
+      }
+      "--pdf-theme-json" if i + 1 < args.length() => {
+        pdf_theme = Some(
+          pdf_theme_option(@json.parse(@fs.read_file(args[i + 1]).text())),
+        )
+        i += 2
         continue
       }
       "--attributes-json" if i + 1 < args.length() => {
@@ -148,6 +226,7 @@ async fn main {
   @asciidoctor_pdf.register(
     fonts_dir=@core.expand_path_from(cwd, fonts_dir),
     icon_fonts_dir?=icon_fonts_dir.map(d => @core.expand_path_from(cwd, d)),
+    pdf_theme?,
   )
   let stdin = input == "-"
   let path = if stdin { "" } else { @core.expand_path_from(cwd, input) }
