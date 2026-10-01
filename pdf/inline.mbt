@@ -266,11 +266,7 @@ fn InlineConverter::convert_inline_anchor(
         (node.text().unwrap_or(""), target)
       }
       let show_uri = doc.has_attr("show-link-uri") ||
-        (
-          !screen &&
-          !doc.has_attr("show-link-uri") &&
-          !doc.attribute_locked("show-link-uri")
-        )
+        (!screen && attr_unspecified(doc, "show-link-uri"))
       if node.has_role("bare") {
         "\{anchor}<a href=\"\{target}\"\{class}>\{breakable_uri(text)}</a>"
       } else if show_uri {

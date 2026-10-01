@@ -515,7 +515,13 @@ fn consolidate_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
 fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
   let flow = self.flow
   let base = Style::new()
+  // for print (`media` other than screen) nothing is linked, and the pages
+  // are consolidated into ranges
+  let screen = self.doc.attr("media").unwrap_or("screen") == "screen"
   let linked = fn(anchor : String) -> Style {
+    if !screen {
+      return base
+    }
     apply_text_category(
       { ..base, link: Some(Named(pdf_anchor_name(anchor))), },
       "link",
@@ -525,7 +531,13 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
   let fragments = parse_formatted(term.markup, base)
   let see_also : Array[Array[Fragment]] = []
   if !term.is_container() {
-    fragments.insert(0, { text: "", style: base, anchor: Some(term.anchor()), })
+    if screen {
+      fragments.insert(0, {
+        text: "",
+        style: base,
+        anchor: Some(term.anchor()),
+      })
+    }
     match term.see {
       Some(see) => {
         fragments.push({ text: " (see ", style: base, anchor: None, })
@@ -537,7 +549,11 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
         for
           pagenum in index_pagenums(
             term,
-            self.doc.attr("index-pagenum-sequence-style"),
+            if screen {
+              self.doc.attr("index-pagenum-sequence-style")
+            } else {
+              Some("range")
+            },
           ) {
           let (label, anchor) = pagenum
           fragments.push({ text: ", ", style: base, anchor: None, })
