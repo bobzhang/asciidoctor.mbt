@@ -1,0 +1,249 @@
+= A Long Table of Contents
+:toc:
+:toclevels: 2
+:sectids!:
+:title-page:
+:reproducible:
+
+A document whose table of contents runs onto a second page, with a title page, sections without ids and titles long enough to wrap.
+
+== Section 1 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 1.
+
+=== Subsection 1.1
+
+More text.
+
+== Section 2 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 2.
+
+=== Subsection 2.1
+
+More text.
+
+== Section 3 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 3.
+
+=== Subsection 3.1
+
+More text.
+
+== Section 4 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 4.
+
+=== Subsection 4.1
+
+More text.
+
+== Section 5 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 5.
+
+=== Subsection 5.1
+
+More text.
+
+== Section 6 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 6.
+
+=== Subsection 6.1
+
+More text.
+
+== Section 7 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 7.
+
+=== Subsection 7.1
+
+More text.
+
+== Section 8 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 8.
+
+=== Subsection 8.1
+
+More text.
+
+== Section 9 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 9.
+
+=== Subsection 9.1
+
+More text.
+
+== Section 10 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 10.
+
+=== Subsection 10.1
+
+More text.
+
+== Section 11 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 11.
+
+=== Subsection 11.1
+
+More text.
+
+== Section 12 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 12.
+
+=== Subsection 12.1
+
+More text.
+
+== Section 13 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 13.
+
+=== Subsection 13.1
+
+More text.
+
+== Section 14 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 14.
+
+=== Subsection 14.1
+
+More text.
+
+== Section 15 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 15.
+
+=== Subsection 15.1
+
+More text.
+
+== Section 16 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 16.
+
+=== Subsection 16.1
+
+More text.
+
+== Section 17 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 17.
+
+=== Subsection 17.1
+
+More text.
+
+== Section 18 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 18.
+
+=== Subsection 18.1
+
+More text.
+
+== Section 19 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 19.
+
+=== Subsection 19.1
+
+More text.
+
+== Section 20 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 20.
+
+=== Subsection 20.1
+
+More text.
+
+== Section 21 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 21.
+
+=== Subsection 21.1
+
+More text.
+
+== Section 22 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 22.
+
+=== Subsection 22.1
+
+More text.
+
+== Section 23 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 23.
+
+=== Subsection 23.1
+
+More text.
+
+== Section 24 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 24.
+
+=== Subsection 24.1
+
+More text.
+
+== Section 25 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 25.
+
+=== Subsection 25.1
+
+More text.
+
+== Section 26 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 26.
+
+=== Subsection 26.1
+
+More text.
+
+== Section 27 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 27.
+
+=== Subsection 27.1
+
+More text.
+
+== Section 28 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 28.
+
+=== Subsection 28.1
+
+More text.
+
+== Section 29 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 29.
+
+=== Subsection 29.1
+
+More text.
+
+== Section 30 with a title long enough to need two lines in the table of contents when it is listed there with its page number
+
+Text of section 30.
+
+=== Subsection 30.1
+
+More text.
+

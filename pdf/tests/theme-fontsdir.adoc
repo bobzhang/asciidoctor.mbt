@@ -1,0 +1,16 @@
+= Fonts Directory
+:pdf-themesdir: {docdir}/themes
+:pdf-theme: fontsdir
+:pdf-fontsdir: {docdir}/../../.repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts;GEM_FONTS_DIR
+
+The theme of this document names its fonts by file name only, and the `pdf-fontsdir` attribute says where to find them; the monospace family is one file for all styles.
+
+== Code
+
+[source,ruby]
+----
+puts "hello" # <1>
+----
+<1> Prints *bold* `code` text.
+
+Some `inline code` and *bold* and _italic_ text.

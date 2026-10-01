@@ -1,0 +1,28 @@
+= Index Page Ranges
+:index-pagenum-sequence-style: range
+:reproducible:
+
+== The ((first)) section
+
+A ((river)) runs through the ((valley)), and the ((river)) floods in spring.
+
+<<<
+
+== Second
+
+The ((river)) again, and a ((mountain)).
+
+<<<
+
+== Third
+
+The ((river)) a third time.
+
+<<<
+
+== Fourth
+
+The ((valley)) once more, and a ((lake)).
+
+[index]
+== Index

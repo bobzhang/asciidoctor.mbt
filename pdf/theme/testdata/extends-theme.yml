@@ -1,0 +1,23 @@
+# extends: bundled themes, relative paths, base, !important, duplicates
+extends:
+- default-sans
+- ./parent-theme.yml
+- parent-theme.yml
+- base
+- default !important
+base:
+  font_color: $heading_font_color
+  font_size: $base_font_size + 1
+footer:
+  recto:
+    left:
+      content: '{page-number} of {page-count}'
+font:
+  catalog:
+    merge: true
+    Custom:
+      '*': GEM_FONTS_DIR/custom.ttf
+      bold: $parent_font_dir/custom-bold.ttf
+  fallbacks:
+  - Custom
+  - $parent_fallback

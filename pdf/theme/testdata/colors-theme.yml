@@ -1,0 +1,59 @@
+# colors, and the hex color protection applied to a theme outside the
+# bundled themes before YAML reads it
+color:
+  hash_six: #FF0000
+  hash_three: #f00
+  hash_quoted: '#00ff00'
+  hash_dquoted: "#0000ff"
+  hash_comment: #abcdef # a comment
+  plain_six: 336699
+  plain_zeros: 000000
+  plain_digits: 123456
+  plain_three: 123
+  plain_mixed: 5C6266
+  quoted_three: 'abc'
+  four: 1234
+  two: ff
+  eight: 11223344
+  transparent_color: transparent
+  null_color: null
+  tilde_color: ~
+  rgb_color: [255, 128, 0]
+  rgb_float_color: [255.0, 1.5, 0]
+  cmyk_color: [0, 0.5, 1, 1]
+  cmyk_pct_color: ['50%', '0%', 100, 25]
+  cmyk_zero_color: [0, 0, 0, 0]
+  cmyk_full_color: [1, 1, 1, 1]
+  nonsense_color: [1, 2]
+  bool_color: true
+  float_color: 1.5
+  var_color: $color_plain_six
+  interp_color: 'ab$color_two'
+not_color:
+  size: 123
+  quoted_size: '123'
+  hash_size: #123
+  word: abcdef
+table:
+  border_color: [DDDDDD, 'EEEEEE', 333]
+  grid_color: [DDDDDD, 'CCCCCC']
+  grid_single_color: DDDDDD
+role:
+  red:
+    font_color: #ff0000
+    align: center
+  blue:
+    font-color: 0000ff
+    text-align: right
+  my-role:
+    font-color: 123456
+    background_color: FFFFFF
+admonition:
+  icon:
+    tip:
+      name: far-lightbulb
+      stroke-color: ffff00
+      size: 24 * 2
+    note:
+      name: $admonition_icon_tip
+    caution: ~

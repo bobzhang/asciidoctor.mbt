@@ -1,0 +1,36 @@
+= A Book in Parts
+Jane Doe
+:doctype: book
+:toc:
+:toclevels: 3
+:sectnums:
+:partnums:
+:reproducible:
+
+= The First Part
+
+== Chapter one
+
+Text of the first chapter, which mentions ((apples)) and ((oranges)).
+
+=== A *bold* section with `code`
+
+More text about ((apples)).(((fruit, apples)))
+
+== Chapter two
+
+Text of the second chapter.
+
+= The Second Part
+
+== Chapter three
+
+Text of the third chapter about ((oranges)) and ((pears)).(((fruit, pears)))
+
+[appendix]
+== Extra material
+
+Some appendix text about ((apples)).
+
+[index]
+== Index

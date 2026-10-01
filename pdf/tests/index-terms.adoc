@@ -1,0 +1,22 @@
+= Index Terms
+:reproducible:
+
+== Animals
+
+The ((tiger)) is the largest cat species.(((cats, big cats, tigers)))
+Lions (((cats, big cats, lions))) live in prides, and a ((Lion)) is a big cat too.
+indexterm:[Felis catus,see=domestic cat] The domestic cat is small.
+indexterm2:[domestic cat] is also known as the house cat.(((cats, small cats)))
+
+<<<
+
+== Plants
+
+A ((tree)) has a trunk, and an oak is a tree.(((tree, oak)))
+indexterm:[shrub,see-also="tree, bush"]Shrubs are smaller than trees.
+The ((tiger)) lily is a plant, not a tiger.
+Numbers such as ((42)) and symbols like ((_underscore_)) sort before letters.
+An ((émigré)) is listed under E.
+
+[index]
+== Index

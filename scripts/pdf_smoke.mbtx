@@ -1,0 +1,258 @@
+// Smoke test of the asciidoctor-pdf command (CI): converts sample documents
+// with the native release build and the wasm release build (run with
+// moonrun, as moonx does), with no font directory, and checks that each
+// output is a well-formed PDF (header, trailer, cross-reference offset,
+// page count) — and, when poppler's pdfinfo is installed, that pdfinfo
+// accepts it. Also checks `--version` against pdf/moon.mod, `-o -`, standard
+// input, and the exit code of a bad option.
+//
+// Usage (after `moon -C pdf build --release --target native` and
+// `--target wasm`):
+//   moon run --target native scripts/pdf_smoke.mbtx [-- --native-only]
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/encoding/utf8",
+}
+
+///|
+let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.exe"
+
+///|
+let wasm_file : String = "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.wasm"
+
+///|
+let out_dir : String = "_build/pdf-smoke"
+
+///|
+let failures : Array[String] = []
+
+///|
+fn check(what : String, ok : Bool, detail? : String = "") -> Unit {
+  if ok {
+    println("ok    \{what}")
+  } else {
+    println("FAIL  \{what} \{detail}")
+    failures.push(what)
+  }
+}
+
+///|
+fn find(data : Bytes, needle : String) -> Int? {
+  let n = needle.length()
+  for i in 0..<(data.length() - n + 1) {
+    let mut j = 0
+    while j < n && data[i + j].to_int() == needle[j].to_int() {
+      j += 1
+    }
+    if j == n {
+      return Some(i)
+    }
+  }
+  None
+}
+
+///|
+fn rfind(data : Bytes, needle : String) -> Int? {
+  let n = needle.length()
+  for i = data.length() - n; i >= 0; i = i - 1 {
+    let mut j = 0
+    while j < n && data[i + j].to_int() == needle[j].to_int() {
+      j += 1
+    }
+    if j == n {
+      return Some(i)
+    }
+  }
+  None
+}
+
+///|
+/// Whether the bytes are a well-formed PDF: `%PDF-` header, `%%EOF`
+/// trailer, a `startxref` offset that points at the cross-reference table
+/// or stream, and at least one page. Returns the problem, if any.
+fn pdf_problem(data : Bytes) -> String? {
+  if data.length() < 64 || find(data[:8].to_owned(), "%PDF-") is None {
+    return Some("no %PDF- header")
+  }
+  guard rfind(data, "%%EOF") is Some(_) else { return Some("no %%EOF") }
+  guard rfind(data, "startxref") is Some(s) else {
+    return Some("no startxref")
+  }
+  let mut i = s + 9
+  while i < data.length() && (data[i] == b'\n' || data[i] == b'\r') {
+    i += 1
+  }
+  let mut offset = 0
+  while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
+    offset = offset * 10 + (data[i].to_int() - '0'.to_int())
+    i += 1
+  }
+  guard offset > 0 && offset < data.length() else {
+    return Some("startxref offset \{offset} out of range")
+  }
+  let at = data[offset:@cmp.minimum(offset + 32, data.length())].to_owned()
+  // a classic table (`xref`) or a stream object (`N 0 obj`)
+  if find(at, "xref") is None && find(at, " obj") is None {
+    return Some("startxref does not point at a cross-reference section")
+  }
+  if find(data, "/Type /Page") is None && find(data, "/Type/Page") is None {
+    return Some("no page")
+  }
+  None
+}
+
+///|
+async fn pdfinfo_available() -> Bool {
+  let (code, _, _) = @process.collect_output("pdfinfo", ["-v"]) catch {
+    _ => return false
+  }
+  code == 0
+}
+
+///|
+/// Runs the command (`wasm`: through moonrun) and returns its exit code,
+/// stdout and stderr.
+async fn run_cli(
+  args : Array[String],
+  wasm~ : Bool,
+  stdin? : String,
+) -> (Int, Bytes, String) {
+  let (cmd, argv) = if wasm {
+    ("moonrun", [wasm_file, "--", ..args])
+  } else {
+    (bin, args)
+  }
+  let (code, out, err) = match stdin {
+    Some(file) => @process.collect_output(cmd, argv, stdin=@process.redirect_from_file(file))
+    None => @process.collect_output(cmd, argv)
+  }
+  (code, out.binary(), err.text())
+}
+
+///|
+async fn convert(
+  label : String,
+  args : Array[String],
+  output : String,
+  wasm~ : Bool,
+  check_pdfinfo~ : Bool,
+) -> Unit {
+  let (code, _, err) = run_cli(["-o", output, ..args], wasm~)
+  check("\{label}: exit 0", code == 0, detail=err)
+  let data = @fs.read_file(output).binary() catch {
+    _ => {
+      check("\{label}: output written", false)
+      return
+    }
+  }
+  let problem = pdf_problem(data)
+  check("\{label}: valid PDF (\{data.length()} bytes)", problem is None, detail=problem.unwrap_or(""))
+  if check_pdfinfo {
+    let (code, out, err) = @process.collect_output("pdfinfo", [output])
+    check("\{label}: pdfinfo accepts it", code == 0, detail=err.text() + out.text())
+  }
+}
+
+///|
+/// The `version` of pdf/moon.mod.
+async fn module_version() -> String {
+  for line in @fs.read_file("pdf/moon.mod").text().split("\n") {
+    let line = line.trim()
+    if line.has_prefix("version") {
+      match line.find("\"") {
+        Some(i) => {
+          let rest = line[i + 1:]
+          match rest.find("\"") {
+            Some(j) => return rest[:j].to_owned()
+            None => ()
+          }
+        }
+        None => ()
+      }
+    }
+  }
+  ""
+}
+
+///|
+async fn main {
+  let native_only = @env.args().contains("--native-only")
+  @fs.mkdir(out_dir, recursive=true) catch {
+    _ => ()
+  }
+  let check_pdfinfo = pdfinfo_available()
+  println("pdfinfo: \{if check_pdfinfo { "available" } else { "not installed" }}")
+  let small = "\{out_dir}/small.adoc"
+  @fs.write_file(
+    small,
+    "= Smoke Test\n:icons: font\n\nHello, *PDF*. icon:heart[]\n\nNOTE: Fonts are bundled.\n",
+    create_mode=CreateOrTruncate,
+  )
+  let version = module_version()
+  for wasm in [false, true] {
+    if wasm && native_only {
+      continue
+    }
+    let tag = if wasm { "wasm" } else { "native" }
+    let (code, out, _) = run_cli(["--version"], wasm~)
+    let text = @utf8.decode_lossy(out)
+    check(
+      "\{tag}: --version names \{version}",
+      code == 0 && text.has_prefix("Asciidoctor PDF \{version} "),
+      detail=text,
+    )
+    let (code, _, err) = run_cli(["--no-such-option"], wasm~)
+    check(
+      "\{tag}: a bad option exits 1",
+      code == 1 && err.contains("invalid option"),
+      detail=err,
+    )
+    convert(
+      "\{tag} sampler",
+      ["pdf/tests/sampler.adoc"],
+      "\{out_dir}/\{tag}-sampler.pdf",
+      wasm~,
+      check_pdfinfo~,
+    )
+    convert(
+      "\{tag} icons=font",
+      [small],
+      "\{out_dir}/\{tag}-small.pdf",
+      wasm~,
+      check_pdfinfo~,
+    )
+    convert(
+      "\{tag} default-sans",
+      ["--theme", "default-sans", small],
+      "\{out_dir}/\{tag}-sans.pdf",
+      wasm~,
+      check_pdfinfo~,
+    )
+    convert(
+      "\{tag} default-with-font-fallbacks",
+      ["--theme", "default-with-font-fallbacks", "pdf/tests/theme-fallbacks.adoc"],
+      "\{out_dir}/\{tag}-fallbacks.pdf",
+      wasm~,
+      check_pdfinfo~,
+    )
+    // standard input to standard output
+    let (code, out, err) = run_cli(["-"], wasm~, stdin=small)
+    check("\{tag} stdin to stdout: exit 0", code == 0, detail=err)
+    let problem = pdf_problem(out)
+    check(
+      "\{tag} stdin to stdout: valid PDF (\{out.length()} bytes)",
+      problem is None,
+      detail=problem.unwrap_or(""),
+    )
+  }
+  if failures.is_empty() {
+    println("smoke test passed")
+  } else {
+    println("smoke test failed: \{failures.length()} checks")
+    fail("smoke test failed")
+  }
+}

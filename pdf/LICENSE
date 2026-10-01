@@ -2,8 +2,15 @@ MIT License
 
 Copyright (C) 2026 Hongbo Zhang and the contributors to asciidoctor.mbt.
 
-This project is a port of Asciidoctor (https://github.com/asciidoctor/asciidoctor),
-including its default stylesheet and test fixtures derived from its test suite:
+This module is a port of Asciidoctor PDF
+(https://github.com/asciidoctor/asciidoctor-pdf), version 2.3.27, including
+its bundled themes, its mapping of Font Awesome 4 icon names and test
+fixtures copied from or derived from its test suite:
+
+Copyright (C) 2014-present OpenDevise Inc. and the Asciidoctor Project
+
+It builds on asciidoctor.mbt, a port of Asciidoctor
+(https://github.com/asciidoctor/asciidoctor):
 
 Copyright (C) 2012-present Dan Allen, Sarah White, Ryan Waldron, and the
 individual contributors to Asciidoctor.
@@ -26,7 +33,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-The PDF backend in pdf/ (the module bobzhang/asciidoctor-pdf) is a port of
-Asciidoctor PDF, Copyright (C) 2014-present OpenDevise Inc. and the
-Asciidoctor Project, and bundles fonts under their own licenses; see
-pdf/LICENSE and pdf/NOTICE.
+The fonts bundled in fonts/ (the packages bobzhang/asciidoctor-pdf/fonts,
+/fonts/sans, /fonts/fallback and /fonts/icons) are not covered by this
+license: each is distributed under its own license, as listed in NOTICE, with
+the license texts in fonts/LICENSES.
