@@ -18,6 +18,23 @@
 //                 (see `oracle_cache`)
 //   --self-test   check that every metric flags a deliberately corrupted
 //                 copy of a good spike PDF (see `self_test`)
+//   --spec-goldens [DIR]
+//                 replay the conversions harvested from asciidoctor-pdf's
+//                 RSpec suite (DIR, default tests/pdf_golden; written by
+//                 scripts/pdf_harvest.mbtx) against Ruby's harvested PDFs
+//                 (--spec-pdfs DIR, default _build/pdf-spec-cache/pdfs)
+//                 instead of the built-in cases; see "Spec goldens" below.
+//                 CASE arguments select records by name or spec file
+//                 (`abstract_spec`). The gallery defaults to
+//                 _build/gallery/pdf-spec and --known to
+//                 tests/pdf_golden/known_failures.txt; records that are
+//                 not replayed (theme-dependent, or skipped by the
+//                 harvest) get status `skipped` and never fail the gate.
+//                 Writes the categorized summary to spec_summary.txt in
+//                 the gallery (and to --baseline FILE)
+//   --write-known FILE
+//                 write every replayed document that does not pass to
+//                 FILE in the --known format
 //   --no-build    do not rebuild the spike first
 //   -v            print the worst-placed words
 //
@@ -29,6 +46,8 @@
 //   timeout             a conversion exceeded conversion_timeout_ms
 //   invalid_pdf         pdfinfo rejects an output
 //   measurement_failed  a poppler tool or pdf-inspect failed on an output
+//   skipped             (--spec-goldens) not replayed: needs themes, or the
+//                       harvest could not express it as input + options
 // with the commands, tool versions, the input's hash, both outputs' hashes
 // and both engines' stdout/stderr (the spike reports what it could not
 // render as `UNSUPPORTED <kind> <what> at <file>:<line>` on stderr).
@@ -265,12 +284,27 @@ async fn run(
   args : Array[String],
   env? : Map[String, String] = Map([]),
   timeout? : Int = tool_timeout_ms,
+  stdin_file? : String,
 ) -> Run {
   let prefix = env.iter().map(kv => "\{kv.0}=\{shell_quote(kv.1)} ").collect().join("")
-  let command = prefix + ([cmd, ..args].map(shell_quote).join(" "))
+  let command = prefix +
+    [cmd, ..args].map(shell_quote).join(" ") +
+    (match stdin_file {
+      Some(f) => " < " + shell_quote(f)
+      None => ""
+    })
   let t0 = now_seconds()
   let result = @async.with_timeout_opt(timeout, async fn() {
-    let (code, out, err) = @process.collect_output(cmd, args, extra_env=env)
+    let (code, out, err) = match stdin_file {
+      Some(f) =>
+        @process.collect_output(
+          cmd,
+          args,
+          extra_env=env,
+          stdin=@process.redirect_from_file(f),
+        )
+      None => @process.collect_output(cmd, args, extra_env=env)
+    }
     let out_text = out.text() catch { _ => latin1(out.binary()) }
     let err_text = err.text() catch { _ => latin1(err.binary()) }
     (code, out_text, err_text)
@@ -1971,6 +2005,9 @@ fn Record::passes(self : Record) -> Bool {
 ///|
 /// Badness, for sorting the summary worst first.
 fn Record::severity(self : Record) -> Double {
+  if self.status == "skipped" {
+    return -1.0
+  }
   if self.status != "ok" {
     return 1.0e9
   }
@@ -2129,17 +2166,460 @@ async fn run_oracle(
   }
   r
 }
+// ---------------------------------------------------------------------------
+// Spec goldens (--spec-goldens)
+//
+// The conversions harvested from asciidoctor-pdf's RSpec suite by
+// scripts/pdf_harvest.mbtx (tests/pdf_golden/*.jsonl, Ruby's PDFs in
+// _build/pdf-spec-cache/pdfs). Each record is replayed through the spike
+// with the same source, attributes, safe mode, doctype and base directory,
+// and Ruby's harvested PDF is the oracle (Ruby is not run again). Records
+// the harvest could not express as input + options keep its skip reason;
+// records that depend on a theme other than the default (a pdf_theme
+// option, the pdf-theme / pdf-themesdir / pdf-fontsdir attributes, or
+// media=print/prepress, which selects default-for-print) are not replayed:
+// the spike only has the default theme until the pdf-themes branch lands.
+
+///|
+let default_spec_goldens : String = "tests/pdf_golden"
+
+///|
+let default_spec_pdfs : String = "_build/pdf-spec-cache/pdfs"
+
+///|
+let default_spec_known : String = "tests/pdf_golden/known_failures.txt"
+
+///|
+let default_spec_gallery : String = "_build/gallery/pdf-spec"
+
+///|
+/// The asciidoctor-pdf checkout whose spec suite was harvested
+/// (scripts/pdf_harvest.mbtx); `$SPEC_ROOT` in the records.
+let spec_repo : String = ".repos/asciidoctor-pdf-2.3.27"
+
+///|
+let themes_category : String = "needs themes (pdf-themes branch)"
+
+///|
+/// What the spike gets for one harvested conversion.
+priv struct SpecCase {
+  id : String
+  spec_file : String
+  line : Int
+  description : String
+  /// why the record is not replayed: (category, detail)
+  skip : (String, String)?
+  /// the source, written to input.adoc and passed on standard input; None
+  /// when the input is a file (`Case::input`)
+  text : String?
+  base_dir : String?
+  safe : String
+  doctype : String?
+  attributes : Map[String, Json]
+  /// files the spec created (placeholder-substituted path, base64 content)
+  files : Array[(String, String)]
+  ruby_pdf : String
+  ruby_messages : Array[String]
+}
+
+///|
+priv struct Case {
+  name : String
+  input : String
+  /// text written to `input` for the run and removed afterwards, or ""
+  wrapper : String
+  spec : SpecCase?
+}
+
+///|
+fn base64_decode(text : String) -> Bytes {
+  let value = fn(c : Char) -> Int {
+    match c {
+      'A'..='Z' => c.to_int() - 'A'.to_int()
+      'a'..='z' => c.to_int() - 'a'.to_int() + 26
+      '0'..='9' => c.to_int() - '0'.to_int() + 52
+      '+' | '-' => 62
+      '/' | '_' => 63
+      _ => -1
+    }
+  }
+  let out = Buffer()
+  let mut acc = 0
+  let mut bits = 0
+  for c in text {
+    let v = value(c)
+    if v < 0 {
+      continue
+    }
+    acc = ((acc << 6) | v) & 0xFFFFFF
+    bits += 6
+    if bits >= 8 {
+      bits -= 8
+      out.write_byte(((acc >> bits) & 0xFF).to_byte())
+    }
+  }
+  out.to_bytes()
+}
+
+///|
+fn safe_name_for(level : Double) -> String {
+  if level >= 20.0 {
+    "secure"
+  } else if level >= 10.0 {
+    "server"
+  } else if level >= 1.0 {
+    "safe"
+  } else {
+    "unsafe"
+  }
+}
+
+///|
+/// Whether the conversion depends on a theme other than the default.
+fn theme_dependent(rec : Json, attributes : Map[String, Json], text : String) -> String? {
+  if field(rec, "pdf_theme") != Json::null() {
+    return Some("pdf_theme option")
+  }
+  for key in ["pdf-theme", "pdf-themesdir", "pdf-fontsdir"] {
+    if attributes.contains(key) && attributes.get(key) != Some(Json::null()) {
+      return Some("\{key} attribute")
+    }
+  }
+  match attributes.get("media") {
+    Some(String(m)) if m == "print" || m == "prepress" => return Some("media=\{m}")
+    _ => ()
+  }
+  // attributes the document sets itself
+  for raw in text.split("\n") {
+    let line = raw.trim_end().to_owned()
+    for key in ["pdf-theme", "pdf-themesdir", "pdf-fontsdir"] {
+      if line.has_prefix(":\{key}:") {
+        return Some(":\{key}: in the document")
+      }
+    }
+    if line.has_prefix(":media:") &&
+      (line.contains("print") || line.contains("prepress")) {
+      return Some(":media: print/prepress in the document")
+    }
+  }
+  None
+}
+
+///|
+/// Reads the harvested records into cases. `gallery` must be absolute: the
+/// files a spec created are recreated in each case's directory there.
+async fn load_spec_goldens(
+  dir : String,
+  pdfs : String,
+  gallery : String,
+) -> Array[Case] {
+  let root = @fs.realpath(".")
+  let spec_root = @fs.realpath(spec_repo) catch {
+    _ => fail("\{spec_repo} is missing: run scripts/pdf_harvest.mbtx first")
+  }
+  let gems_root = @fs.realpath(gems) catch { _ => "\{root}/\{gems}" }
+  let home = @env.get_env_var("HOME").unwrap_or("/tmp")
+  let out = []
+  for file in @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl")) {
+    for raw in @fs.read_file("\{dir}/\{file}").text().split("\n") {
+      if raw.trim() == "" {
+        continue
+      }
+      let first = @json.parse(raw.to_owned())
+      let name = str(field(first, "name"))
+      let case_dir = "\{gallery}/\{name}"
+      let line = raw
+        .to_owned()
+        .replace_all(old="$SPEC_TMP", new="\{case_dir}/spec-tmp")
+        .replace_all(old="$SPEC_OUT", new="\{case_dir}/spec-out")
+        .replace_all(old="$TMPDIR", new="\{case_dir}/tmp")
+        .replace_all(old="$SPEC_ROOT", new=spec_root)
+        .replace_all(old="$GEMS", new=gems_root)
+        .replace_all(old="$HOME", new=home)
+      let rec = @json.parse(line)
+      let input = field(rec, "input")
+      let text = match field(input, "text") {
+        String(s) => Some(s)
+        _ =>
+          match field(input, "lines") {
+            Array(a) => Some(a.map(str).join("\n"))
+            _ => None
+          }
+      }
+      let input_file = str(field(input, "file"))
+      let mut skip : (String, String)? = match field(rec, "skip") {
+        String(reason) =>
+          Some(
+            (
+              if reason.has_prefix("conversion raised") {
+                "skipped: conversion raised an error"
+              } else {
+                "skipped: \{reason}"
+              },
+              reason,
+            ),
+          )
+        _ => None
+      }
+      if skip is None && text is None && input_file == "" {
+        skip = Some(("skipped: input is not a document text or file", input.stringify()))
+      }
+      // options
+      let attributes : Map[String, Json] = Map([])
+      let mut safe = "secure" // the API's default
+      let mut doctype : String? = None
+      let mut base_dir : String? = None
+      match field(rec, "options") {
+        Object(opts) =>
+          for key, value in opts {
+            match (key, value) {
+              ("attributes", Object(m)) =>
+                for k, v in m {
+                  match v {
+                    String(_) | Null | True | False | Number(_, ..) => attributes[k] = v
+                    _ =>
+                      if skip is None {
+                        skip = Some(("skipped: attribute value is a Ruby object", "attribute \{k}"))
+                      }
+                  }
+                }
+              ("attributes", Array(a)) =>
+                for e in a {
+                  let s = str(e)
+                  match s.find("=") {
+                    Some(i) => attributes[s[:i].to_owned()] = Json::string(s[i + 1:].to_owned())
+                    None => attributes[s] = Json::string("")
+                  }
+                }
+              ("attributes", String(s)) =>
+                for entry in s.split(" ") {
+                  let e = entry.to_owned()
+                  if e == "" {
+                    continue
+                  }
+                  match e.find("=") {
+                    Some(i) => attributes[e[:i].to_owned()] = Json::string(e[i + 1:].to_owned())
+                    None => attributes[e] = Json::string("")
+                  }
+                }
+              ("attributes", Null) => ()
+              ("safe", String(s)) => safe = s
+              ("safe", Number(n, ..)) => safe = safe_name_for(n)
+              ("doctype", String(s)) => doctype = Some(s)
+              ("base_dir", String(s)) => base_dir = Some(s)
+              ("backend", String(b)) =>
+                if b != "pdf" && skip is None {
+                  skip = Some(("skipped: backend other than pdf", b))
+                }
+              // output placement, logging and the standalone flag (the PDF
+              // converter treats embedded as standalone); sourcemap only
+              // adds source locations (the spike always keeps them); and
+              // keys Asciidoctor does not read, which some specs pass by
+              // mistake (`analyze` to to_pdf_file, `attributes_overrides`)
+              (
+                "to_file"
+                | "to_dir"
+                | "mkdirs"
+                | "standalone"
+                | "header_footer"
+                | "logger"
+                | "timings"
+                | "sourcemap"
+                | "analyze"
+                | "attributes_overrides",
+                _,
+              ) => ()
+              _ =>
+                if skip is None {
+                  skip = Some(("skipped: option not replayed", "option \{key}"))
+                }
+            }
+          }
+        _ => ()
+      }
+      if skip is None {
+        match theme_dependent(rec, attributes, text.unwrap_or("")) {
+          Some(why) => skip = Some((themes_category, why))
+          None => ()
+        }
+      }
+      // the files the spec created, which did not survive the run
+      let files = []
+      match field(rec, "files") {
+        Object(m) =>
+          for path, entry in m {
+            match field(entry, "content_base64") {
+              String(b) if path.has_prefix(case_dir + "/") => files.push((path, b))
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      let messages = items(field(rec, "messages")).map(m => {
+        let loc = str(field(m, "source_location"))
+        "severity \{num(field(m, "severity")).unwrap_or(0.0).to_int()}: \{str(field(m, "message"))}\{if loc == "" { "" } else { " (" + loc + ")" }}"
+      })
+      let spec : SpecCase = {
+        id: str(field(rec, "id")),
+        spec_file: str(field(rec, "spec")),
+        line: num(field(rec, "line")).unwrap_or(0.0).to_int(),
+        description: str(field(rec, "description")),
+        skip,
+        text,
+        base_dir: match (base_dir, text) {
+          (Some(d), _) => Some(d)
+          // a string is converted from the directory rspec ran in
+          (None, Some(_)) => Some(spec_root)
+          (None, None) => None
+        },
+        safe,
+        doctype,
+        attributes,
+        files,
+        ruby_pdf: "\{pdfs}/\{str(field(field(rec, "pdf"), "file"))}",
+        ruby_messages: messages,
+      }
+      out.push({
+        name,
+        input: if text is Some(_) { "\{case_dir}/input.adoc" } else { input_file },
+        wrapper: "",
+        spec: Some(spec),
+      })
+    }
+  }
+  out
+}
+
+///|
+/// The spec helpers set `nofooter` unless a spec enables the footer; a
+/// spike that inks the running footer anyway adds one page-number line per
+/// page and nothing else.
+let footer_category : String = "extra running footer (nofooter ignored)"
+
+///|
+/// Whether every Ruby line is matched in order and the spike's extra lines
+/// (as far as the line examples show) are page numbers, at most one a page.
+fn extra_footer(m : Measured) -> Bool {
+  let t = m.text
+  if t.ordered_lines != t.ruby_lines ||
+    t.spike_lines <= t.ruby_lines ||
+    t.spike_lines - t.ruby_lines > m.spike.pages {
+    return false
+  }
+  let mut extra = 0
+  for e in t.line_examples {
+    match e.find(" + spike: ") {
+      Some(i) => {
+        let text = e[i + " + spike: ".length():].trim().to_owned()
+        if text == "" ||
+          !text.iter().all(ch => ch.is_ascii_digit() || "ivxlcdm".contains_char(ch)) {
+          return false
+        }
+        extra += 1
+      }
+      None => if e.contains(" − ruby: ") { return false }
+    }
+  }
+  extra > 0
+}
+
+///|
+/// A record for a case that is not replayed.
+fn skipped_record(c : Case, dir : String, category : String, detail : String) -> Record {
+  {
+    name: c.name,
+    input: c.input,
+    input_sha: "",
+    status: "skipped",
+    reason: detail,
+    ruby_run: None,
+    spike_run: None,
+    unsupported: [],
+    known: None,
+    measured: None,
+    categories: [category],
+    gate_failures: [],
+    dir,
+  }
+}
+
+///|
+/// Prepares a spec case's directory and returns Ruby's (cached) run and the
+/// spike's arguments.
+async fn prepare_spec_case(
+  c : Case,
+  spec : SpecCase,
+  dir : String,
+  ruby_pdf : String,
+) -> (Run, Array[String], String?) {
+  for f in spec.files {
+    let (path, content) = f
+    ignore(run("mkdir", ["-p", path[:path.rev_find("/").unwrap_or(0)].to_owned()]))
+    @fs.write_file(path, base64_decode(content), create_mode=CreateOrTruncate)
+  }
+  match spec.text {
+    Some(t) => @fs.write_file(c.input, t, create_mode=CreateOrTruncate)
+    None => ()
+  }
+  let attributes_file = "\{dir}/attributes.json"
+  @fs.write_file(
+    attributes_file,
+    Json::object(spec.attributes).stringify(indent=1),
+    create_mode=CreateOrTruncate,
+  )
+  let have = file_exists(spec.ruby_pdf)
+  if have {
+    ignore(run("cp", [spec.ruby_pdf, ruby_pdf]))
+  }
+  let ruby_run : Run = {
+    command: "harvested reference PDF \{spec.ruby_pdf} (spec/\{spec.spec_file}:\{spec.line} \{spec.id})",
+    code: if have { 0 } else { 1 },
+    out: spec.description,
+    err: if have {
+      spec.ruby_messages.join("\n")
+    } else {
+      "reference PDF missing: run scripts/pdf_harvest.mbtx"
+    },
+    seconds: 0.0,
+    timed_out: false,
+  }
+  let args = ["-S", spec.safe, "--attributes-json", attributes_file]
+  match spec.base_dir {
+    Some(d) => args.append(["-B", d])
+    None => ()
+  }
+  match spec.doctype {
+    Some(d) => args.append(["-d", d])
+    None => ()
+  }
+  let stdin = match spec.text {
+    Some(_) => {
+      args.push("-")
+      Some(c.input)
+    }
+    None => {
+      args.push(c.input)
+      None
+    }
+  }
+  (ruby_run, args, stdin)
+}
+
 
 ///|
 async fn compare_case(
-  name : String,
-  input : String,
-  wrapper : String,
+  c : Case,
   gallery : String,
   known : Map[String, String],
   verbose : Bool,
 ) -> Record {
+  let { name, input, wrapper, .. } = c
   let dir = "\{gallery}/\{name}"
+  match c.spec {
+    Some({ skip: Some((category, detail)), .. }) =>
+      return skipped_record(c, dir, category, detail)
+    _ => ()
+  }
   ignore(run("rm", ["-rf", dir]))
   ignore(run("mkdir", ["-p", dir]))
   if wrapper != "" {
@@ -2147,12 +2627,18 @@ async fn compare_case(
       _ => ()
     }
   }
-  let input_sha = sha256(input)
-  let root = @fs.realpath(".") catch { _ => "." }
-  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
   let ruby_pdf = "\{dir}/ruby.pdf"
   let spike_pdf = "\{dir}/spike.pdf"
-  let rr = run_oracle(name, input, input_sha, ruby_pdf, env)
+  let (rr, spike_args, stdin_file) = match c.spec {
+    Some(spec) => prepare_spec_case(c, spec, dir, ruby_pdf)
+    None => {
+      let input_sha = sha256(input)
+      let root = @fs.realpath(".") catch { _ => "." }
+      let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+      (run_oracle(name, input, input_sha, ruby_pdf, env), [input], None)
+    }
+  }
+  let input_sha = sha256(input)
   let sr = run(
     spike_exe.val,
     [
@@ -2164,9 +2650,10 @@ async fn compare_case(
       "\{dir}/trace.tsv",
       "-o",
       spike_pdf,
-      input,
+      ..spike_args,
     ],
     timeout=conversion_timeout_ms,
+    stdin_file?,
   )
   if wrapper != "" {
     @fs.remove(input) catch {
@@ -2239,6 +2726,14 @@ async fn compare_case(
     Some(m) => {
       record.categories = m.categories(record.unsupported.length())
       record.gate_failures = m.gate_failures()
+      match c.spec {
+        Some(spec) if !record.gate_failures.is_empty() &&
+          spec.attributes.get("nofooter") is Some(v) &&
+          v != Json::null() &&
+          v != Json::boolean(false) &&
+          extra_footer(m) => record.categories.push(footer_category)
+        _ => ()
+      }
     }
     None => {
       record.categories = ["failure"]
@@ -2419,18 +2914,22 @@ async fn write_outputs(
   let by_category : Map[String, Int] = Map([])
   let mut pass = 0
   let mut known = 0
+  let mut skipped = 0
   for r in records {
     by_status[r.status] = by_status.get(r.status).unwrap_or(0) + 1
     for c in r.categories {
       by_category[c] = by_category.get(c).unwrap_or(0) + 1
     }
-    if r.passes() {
+    if r.status == "skipped" {
+      // not replayed (spec goldens): neither pass nor fail
+      skipped += 1
+    } else if r.passes() {
       pass += 1
     } else if r.known is Some(_) {
       known += 1
     }
   }
-  let failing = records.length() - pass - known
+  let failing = records.length() - pass - known - skipped
   let summary : Json = {
     "title": js(title),
     "generated_at_unix": jd(now_seconds()),
@@ -2449,6 +2948,7 @@ async fn write_outputs(
       "pass": jn(pass),
       "known": jn(known),
       "fail": jn(failing),
+      "not_replayed": jn(skipped),
       "status": Json::object(by_status.map((_, v) => jn(v))),
       "categories": Json::object(by_category.map((_, v) => jn(v))),
     },
@@ -2460,9 +2960,29 @@ async fn write_outputs(
     .filter(c => by_category.contains(c))
     .map(c => "<tr><td>\{c}</td><td>\{by_category.get(c).unwrap_or(0)}</td></tr>")
     .join("")
+  // the categories of records not replayed (spec goldens)
+  let other_categories = by_category.keys().filter(c => !category_order.contains(c)).collect()
+  other_categories.sort_by(lexical)
+  let category_rows = category_rows +
+    other_categories
+    .map(c => "<tr><td>\{html_escape(c)}</td><td>\{by_category.get(c).unwrap_or(0)}</td></tr>")
+    .join("")
+  let skipped_note = if skipped > 0 { ", \{skipped} not replayed" } else { "" }
+  let replayed = sorted.filter(r => r.status != "skipped")
+  let not_replayed = sorted.filter(r => r.status == "skipped")
+  not_replayed.sort_by((a, b) => lexical(a.name, b.name))
   let sections = []
-  for r in sorted {
+  for r in replayed {
     sections.push(section(r))
+  }
+  if !not_replayed.is_empty() {
+    sections.push(
+      "<h2>Not replayed (\{not_replayed.length()})</h2><div class=\"scroll\"><table class=\"counts\"><tr><th>case</th><th>category</th><th>reason</th></tr>" +
+      not_replayed
+      .map(r => "<tr><td>\{html_escape(r.name)}</td><td>\{html_escape(r.categories.join(", "))}</td><td>\{html_escape(r.reason)}</td></tr>")
+      .join("") +
+      "</table></div>",
+    )
   }
   let html =
     $|<!DOCTYPE html>
@@ -2488,7 +3008,7 @@ async fn write_outputs(
   let head =
     $|<h1>\{html_escape(title)}</h1>
     $|<p>Generated by <code>scripts/pdf_compare.mbtx</code>: Ruby asciidoctor-pdf (oracle) against the asciidoctor.mbt spike (<code>pdf/</code>), default theme. The script header defines every metric and the acceptance thresholds: same page count; every page's ordered lines identical (indentation included); ≥\{share_pct(gate_min_within)} of measured words within \{fixed(tolerance_pt, digits=0)}pt with ≥\{share_pct(gate_min_coverage)} of Ruby's words measured; all structure checks; at most \{share_pct(gate_max_raster)} of any page's content region differing by more than 64 levels at 150 dpi, and at most \{share_pct(gate_max_flat)} with flat (fill) differences. Counts are exact; percentages are truncated, never rounded up. Machine-readable results: <a href="summary.json">summary.json</a>.</p>
-    $|<p><b>\{records.length()} documents: \{pass} pass, \{known} known differences, \{failing} fail.</b></p>
+    $|<p><b>\{records.length()} documents: \{pass} pass, \{known} known differences, \{failing} fail\{skipped_note}.</b></p>
     $|<div class="scroll"><table class="counts"><tr><th>status</th><th>documents</th></tr>\{status_rows}</table></div>
     $|<div class="scroll"><table class="counts"><tr><th>category</th><th>documents</th></tr>\{category_rows}</table></div>
     $|<h2>Documents, worst first</h2>
@@ -2496,7 +3016,7 @@ async fn write_outputs(
   let out =
     $|\{html}
     $|\{head}
-    $|\{sorted.map(summary_row).join("\n")}
+    $|\{replayed.map(summary_row).join("\n")}
     $|</table></div>
     $|\{sections.join("\n")}
     $|<h2>Tools</h2><pre>\{html_escape(tools.stringify(indent=1))}</pre>
@@ -2707,6 +3227,185 @@ async fn self_test(gallery : String) -> Bool {
 // ---------------------------------------------------------------------------
 
 ///|
+/// The kind of a gate failure, for clustering ("pages 2 vs 3" → "pages").
+fn failure_kind(g : String) -> String {
+  if g.has_prefix("structure: ") {
+    g
+  } else if g.has_prefix("raster p") {
+    if g.contains("flat") {
+      "raster (flat fills)"
+    } else {
+      "raster"
+    }
+  } else if g.contains("lines indented differently") {
+    "indentation"
+  } else if g.has_prefix("within 1pt") {
+    "geometry (within 1pt)"
+  } else {
+    let end = match g.find(" ") {
+      Some(i) => i
+      None => g.length()
+    }
+    g[:end].trim_end(chars=":").to_owned()
+  }
+}
+
+///|
+fn bump(m : Map[String, Int], key : String) -> Unit {
+  m[key] = m.get(key).unwrap_or(0) + 1
+}
+
+///|
+/// Code point order (`String::compare` orders by length first).
+fn lexical(a : String, b : String) -> Int {
+  let n = @cmp.minimum(a.length(), b.length())
+  for i in 0..<n {
+    if a[i] != b[i] {
+      return a[i].compare(b[i])
+    }
+  }
+  a.length().compare(b.length())
+}
+
+///|
+fn ranked(m : Map[String, Int]) -> Array[(String, Int)] {
+  let a = m.iter().collect()
+  a.sort_by((x, y) => if x.1 != y.1 { y.1.compare(x.1) } else { lexical(x.0, y.0) })
+  a
+}
+
+///|
+/// The spec file a harvested case comes from (`abstract_spec-1.2-1`).
+fn spec_of(name : String) -> String {
+  match name.find("-") {
+    Some(i) => name[:i].to_owned()
+    None => name
+  }
+}
+
+///|
+/// The categorized summary of a spec-golden replay.
+fn spec_summary(records : Array[Record], source : String) -> String {
+  let total = records.length()
+  let skipped = records.filter(r => r.status == "skipped")
+  let themed = skipped.filter(r => r.categories.contains(themes_category))
+  let other_skips = skipped.filter(r => !r.categories.contains(themes_category))
+  let replayed = records.filter(r => r.status != "skipped")
+  let passing = replayed.filter(r => r.passes())
+  let failing = replayed.filter(r => !r.passes())
+  let known = failing.filter(r => r.known is Some(_))
+  let lines = [
+    "# PDF spec-golden replay: \{source}", "# Generated by `scripts/pdf_compare.mbtx -- --spec-goldens`; counts are records (conversions).",
+    "", "records: \{total}", "replayed: \{replayed.length()} / \{total}", "  pass: \{passing.length()} / \{replayed.length()}",
+    "  fail: \{failing.length()} / \{replayed.length()} (\{known.length()} listed as known, \{failing.length() - known.length()} new)",
+    "not replayed, \{themes_category}: \{themed.length()} / \{total}", "not replayed, skipped: \{other_skips.length()} / \{total}",
+  ]
+  let section = fn(title : String, m : Map[String, Int]) {
+    lines.push("")
+    lines.push(title)
+    for e in ranked(m) {
+      lines.push("  \{e.1}\t\{e.0}")
+    }
+  }
+  let skip_reasons : Map[String, Int] = Map([])
+  for r in other_skips {
+    bump(skip_reasons, r.categories.join(", "))
+  }
+  section("skipped by reason:", skip_reasons)
+  let theme_reasons : Map[String, Int] = Map([])
+  for r in themed {
+    bump(theme_reasons, r.reason)
+  }
+  section("theme-dependent by cause:", theme_reasons)
+  let statuses : Map[String, Int] = Map([])
+  for r in replayed {
+    bump(statuses, r.status)
+  }
+  section("replayed by status:", statuses)
+  let categories : Map[String, Int] = Map([])
+  let first_kinds : Map[String, Int] = Map([])
+  let all_kinds : Map[String, Int] = Map([])
+  let unsupported : Map[String, Int] = Map([])
+  let spike_errors : Map[String, Int] = Map([])
+  for r in failing {
+    for c in r.categories {
+      bump(categories, c)
+    }
+    if !r.gate_failures.is_empty() {
+      bump(first_kinds, failure_kind(r.gate_failures[0]))
+    }
+    let kinds : Map[String, Bool] = Map([])
+    for g in r.gate_failures {
+      kinds[failure_kind(g)] = true
+    }
+    for k, _ in kinds {
+      bump(all_kinds, k)
+    }
+    let seen : Map[String, Bool] = Map([])
+    for u in r.unsupported {
+      let key = match u.rev_find(" at ") {
+        Some(i) => u[:i].to_owned().replace(old="UNSUPPORTED ", new="")
+        None => u
+      }
+      seen[key] = true
+    }
+    for k, _ in seen {
+      bump(unsupported, k)
+    }
+    if r.status == "spike_failed" {
+      match r.spike_run {
+        Some(sr) => {
+          let err = sr.err.split("\n").filter(l => l.trim() != "").map(l => l.to_owned()).collect()
+          let last = if err.is_empty() { "(no output)" } else { err[err.length() - 1] }
+          bump(spike_errors, clip(last, limit=160))
+        }
+        None => ()
+      }
+    }
+  }
+  // failing only through the extra footer: its lines, words and ink
+  let footer_only = failing
+    .filter(r => r.categories.contains(footer_category) &&
+      r.gate_failures.iter().all(g => {
+        let k = failure_kind(g)
+        k == "lines" || k == "words" || k == "raster" || k == "raster (flat fills)"
+      }))
+    .length()
+  lines.push("")
+  lines.push(
+    "failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): \{footer_only} / \{replayed.length()}",
+  )
+  section("failing records by category (a record can be in several):", categories)
+  section("failing records by first gate failure:", first_kinds)
+  section("failing records by gate failure (any):", all_kinds)
+  section("failing records reporting unsupported content (kind, what):", unsupported)
+  if !spike_errors.is_empty() {
+    section("spike failures by message:", spike_errors)
+  }
+  // per spec file
+  let per_spec : Map[String, (Int, Int, Int, Int)] = Map([])
+  for r in records {
+    let key = spec_of(r.name)
+    let (n, rep, pass, themes) = per_spec.get(key).unwrap_or((0, 0, 0, 0))
+    per_spec[key] = (
+      n + 1,
+      rep + (if r.status != "skipped" { 1 } else { 0 }),
+      pass + (if r.passes() { 1 } else { 0 }),
+      themes + (if r.categories.contains(themes_category) { 1 } else { 0 }),
+    )
+  }
+  lines.push("")
+  lines.push("by spec file: pass / replayed (records, theme-dependent)")
+  let keys = per_spec.keys().collect()
+  keys.sort_by(lexical)
+  for k in keys {
+    let (n, rep, pass, themes) = per_spec.get(k).unwrap_or((0, 0, 0, 0))
+    lines.push("  \{k}: \{pass} / \{rep} (\{n}, themes \{themes})")
+  }
+  lines.join("\n") + "\n"
+}
+
+///|
 async fn main {
   let args = @env.args()
   let mut build = true
@@ -2715,9 +3414,13 @@ async fn main {
   let mut testing = false
   let mut jobs = 4
   let selected = []
-  let mut gallery = default_gallery
+  let mut gallery : String? = None
   let mut list : String? = None
-  let mut known_path = default_known
+  let mut known_path : String? = None
+  let mut spec_goldens : String? = None
+  let mut spec_pdfs = default_spec_pdfs
+  let mut write_known : String? = None
+  let mut baseline : String? = None
   let mut i = 1
   while i < args.length() {
     match args[i] {
@@ -2726,7 +3429,7 @@ async fn main {
       "--gate" => gate = true
       "--self-test" => testing = true
       "--out" if i + 1 < args.length() => {
-        gallery = args[i + 1]
+        gallery = Some(args[i + 1])
         i += 1
       }
       "--list" if i + 1 < args.length() => {
@@ -2734,7 +3437,7 @@ async fn main {
         i += 1
       }
       "--known" if i + 1 < args.length() => {
-        known_path = args[i + 1]
+        known_path = Some(args[i + 1])
         i += 1
       }
       "--spike" if i + 1 < args.length() => {
@@ -2749,11 +3452,44 @@ async fn main {
         jobs = @string.parse_int(args[i + 1]) catch { _ => 4 }
         i += 1
       }
+      "--spec-goldens" =>
+        if i + 1 < args.length() && !args[i + 1].has_prefix("-") {
+          spec_goldens = Some(args[i + 1])
+          i += 1
+        } else {
+          spec_goldens = Some(default_spec_goldens)
+        }
+      "--spec-pdfs" if i + 1 < args.length() => {
+        spec_pdfs = args[i + 1]
+        i += 1
+      }
+      "--write-known" if i + 1 < args.length() => {
+        write_known = Some(args[i + 1])
+        i += 1
+      }
+      "--baseline" if i + 1 < args.length() => {
+        baseline = Some(args[i + 1])
+        i += 1
+      }
       "--" => ()
       name => selected.push(name)
     }
     i += 1
   }
+  let gallery = gallery.unwrap_or(
+    if spec_goldens is Some(_) {
+      default_spec_gallery
+    } else {
+      default_gallery
+    },
+  )
+  let known_path = known_path.unwrap_or(
+    if spec_goldens is Some(_) {
+      default_spec_known
+    } else {
+      default_known
+    },
+  )
   if build {
     let r = run("moon", ["-C", "pdf", "build", "--target", "native", "--release"], timeout=1_800_000)
     if r.code != 0 {
@@ -2775,16 +3511,20 @@ async fn main {
     return
   }
   let known = read_known(known_path)
-  let all_cases = match list {
-    None => cases
-    Some(file) =>
+  let all_cases : Array[Case] = match (spec_goldens, list) {
+    (Some(dir), _) => load_spec_goldens(dir, spec_pdfs, @fs.realpath(gallery))
+    (None, None) =>
+      cases.map(c => ({ name: c.0, input: c.1, wrapper: c.2, spec: None } : Case))
+    (None, Some(file)) =>
       @fs.read_file(file).text().split("\n").map(l => l.trim().to_owned()).filter(l => l != "" && !l.has_prefix("#")).map(p => {
         // a readable, unique name from the path
         let name = p.replace_all(old=".repos/", new="").replace_all(old="/", new="__")
-        (name, p, "")
+        ({ name, input: p, wrapper: "", spec: None } : Case)
       }).collect()
   }
-  let todo = all_cases.filter(c => selected.is_empty() || selected.contains(c.0))
+  // a spec run also selects by spec file (`abstract_spec`)
+  let todo = all_cases.filter(c => selected.is_empty() ||
+    selected.iter().any(s => c.name == s || c.name.has_prefix(s + "-")))
   let tools = tool_versions()
   let results : Array[Record?] = Array::make(todo.length(), None)
   let next : Ref[Int] = { val: 0 }
@@ -2794,9 +3534,10 @@ async fn main {
         while next.val < todo.length() {
           let index = next.val
           next.val += 1
-          let (name, input, wrapper) = todo[index]
-          let record = compare_case(name, input, wrapper, gallery, known, verbose)
-          println(record.summary_line())
+          let record = compare_case(todo[index], gallery, known, verbose)
+          if record.status != "skipped" || verbose {
+            println(record.summary_line())
+          }
           if verbose {
             match record.measured {
               Some(m) => for o in m.text.off_examples { println("  \{o}") }
@@ -2809,16 +3550,54 @@ async fn main {
     }
   })
   let records = results.filter_map(r => r)
-  let title = match list {
-    Some(file) => "PDF backend comparison: \{file}"
-    None => "PDF backend comparison: built-in cases"
+  let title = match (spec_goldens, list) {
+    (Some(dir), _) => "PDF backend comparison: asciidoctor-pdf spec goldens (\{dir})"
+    (None, Some(file)) => "PDF backend comparison: \{file}"
+    (None, None) => "PDF backend comparison: built-in cases"
   }
   write_outputs(gallery, records, tools, title)
-  let failing = records.filter(r => !r.passes() && r.known is None)
+  let skipped = records.filter(r => r.status == "skipped").length()
+  let failing = records.filter(r => r.status != "skipped" && !r.passes() && r.known is None)
   let passing = records.filter(r => r.passes()).length()
+  let known_count = records.length() - skipped - passing - failing.length()
   println(
-    "\{records.length()} documents: \{passing} pass, \{records.length() - passing - failing.length()} known, \{failing.length()} fail",
+    "\{records.length()} documents: \{passing} pass, \{known_count} known, \{failing.length()} fail" +
+    (if skipped > 0 { ", \{skipped} not replayed" } else { "" }),
   )
+  match spec_goldens {
+    Some(dir) => {
+      let text = spec_summary(records, dir)
+      @fs.write_file("\{gallery}/spec_summary.txt", text, create_mode=CreateOrTruncate)
+      match baseline {
+        Some(file) => @fs.write_file(file, text, create_mode=CreateOrTruncate)
+        None => ()
+      }
+      println(text)
+      // known entries that pass now
+      let fixed = records.filter(r => r.passes() && known.contains(r.name))
+      if !fixed.is_empty() {
+        println("\{fixed.length()} known failures pass now; refresh the list with --write-known")
+      }
+    }
+    None => ()
+  }
+  match write_known {
+    Some(file) => {
+      let lines = [
+        "# Known failures for scripts/pdf_compare.mbtx --spec-goldens --gate:", "# replayed spec goldens that do not pass yet, `name: categories; first gate failure`.",
+        "# Regenerate with `-- --spec-goldens --write-known \{file}` after fixing.",
+      ]
+      let names = records.filter(r => r.status != "skipped" && !r.passes())
+      names.sort_by((a, b) => lexical(a.name, b.name))
+      for r in names {
+        let first = if r.gate_failures.is_empty() { r.status } else { r.gate_failures[0] }
+        lines.push("\{r.name}: \{r.categories.join(", ")}; \{first.replace_all(old="\n", new=" ")}")
+      }
+      @fs.write_file(file, lines.join("\n") + "\n", create_mode=CreateOrTruncate)
+      println("wrote \{file} (\{names.length()} entries)")
+    }
+    None => ()
+  }
   println("wrote \{gallery}/index.html and \{gallery}/summary.json")
   if gate && !failing.is_empty() {
     fail("gate: \{failing.length()} documents fail: \{failing.map(r => r.name).join(", ")}")
