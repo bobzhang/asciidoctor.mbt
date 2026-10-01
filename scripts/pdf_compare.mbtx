@@ -1,0 +1,3966 @@
+// Compare the PDF backend spike (pdf/) with Ruby asciidoctor-pdf, and gate
+// on the result.
+//
+// Usage: moon run --target native scripts/pdf_compare.mbtx -- [options] [CASE...]
+//   --out DIR     write the gallery and summary.json to DIR
+//                 (default _build/gallery/pdf-spike)
+//   --list FILE   compare the documents listed in FILE (one path per line)
+//                 instead of the built-in cases
+//   --known FILE  known differences, `name: reason` per line (default
+//                 pdf/tests/known_differences.txt); reported, but they do
+//                 not fail the gate when both conversions succeeded and
+//                 were measured (status ok): a known entry never excuses
+//                 a crash, a timeout, a missing or invalid PDF
+//   --gate        exit non-zero when a document (not a known difference)
+//                 violates the acceptance thresholds below or failed.
+//                 CASE arguments that select nothing, or a selection of
+//                 no documents, are an error; a full --spec-goldens replay
+//                 fails when it replays fewer records than the harvest
+//                 counted (tests/pdf_golden/record_counts.txt)
+//   --ruby RUBY   the Ruby that runs the oracle (default
+//                 $ASCIIDOCTOR_PDF_RUBY, else Homebrew's Ruby on macOS when
+//                 installed, else `ruby` on PATH)
+//   --gems DIR    the gem home with asciidoctor-pdf 2.3.27 and its
+//                 dependencies (default $ASCIIDOCTOR_PDF_GEMS, else
+//                 .repos/gems-pdf, which scripts/pdf_harvest.mbtx sets up;
+//                 see pdf/docs/oracle.md)
+//   --jobs N      documents compared in parallel (default 4)
+//   --spike EXE   the spike executable to run (default: the release build)
+//   --oracle-cache DIR
+//                 reuse Ruby's PDFs from DIR while the input is unchanged
+//                 (see `oracle_cache`)
+//   --self-test   check that every metric flags a deliberately corrupted
+//                 copy of a good spike PDF (see `self_test`)
+//   --spec-goldens [DIR]
+//                 replay the conversions harvested from asciidoctor-pdf's
+//                 RSpec suite (DIR, default tests/pdf_golden; written by
+//                 scripts/pdf_harvest.mbtx) against Ruby's harvested PDFs
+//                 (--spec-pdfs DIR, default _build/pdf-spec-cache/pdfs)
+//                 instead of the built-in cases; see "Spec goldens" below.
+//                 CASE arguments select records by name or spec file
+//                 (`abstract_spec`). The gallery defaults to
+//                 _build/gallery/pdf-spec and --known to
+//                 tests/pdf_golden/known_failures.txt; records the
+//                 harvest skipped get status `skipped` and never fail the
+//                 gate.
+//                 Writes the categorized summary to spec_summary.txt in
+//                 the gallery (and to --baseline FILE)
+//   --write-known FILE
+//                 write every replayed document that does not pass to
+//                 FILE in the --known format
+//   --no-build    do not rebuild the spike first
+//   -v            print the worst-placed words
+//
+// Every input yields exactly one record, whose status is one of
+//   ok                  both engines produced a valid PDF and it was measured
+//   oracle_failed       Ruby asciidoctor-pdf exited non-zero or wrote nothing
+//   spike_failed        the spike exited non-zero or wrote nothing
+//   both_failed         both did
+//   timeout             a conversion exceeded conversion_timeout_ms
+//   invalid_pdf         pdfinfo rejects an output
+//   measurement_failed  a poppler tool or pdf-inspect failed on an output
+//   skipped             (--spec-goldens) not replayed: the harvest could not
+//                       express it as input + options
+// with the commands, tool versions, the input's hash, both outputs' hashes
+// and both engines' stdout/stderr (the spike reports what it could not
+// render as `UNSUPPORTED <kind> <what> at <file>:<line>` on stderr).
+//
+// Measurements, for documents with status ok (counts are exact, and a
+// percentage never rounds a shortfall up to 100%):
+//   pages      Ruby vs spike page count; pages are compared over the union
+//              of page numbers, a page missing on one side counting as
+//              entirely different
+//   words      `pdftotext -bbox-layout` words: multiset recall and
+//              precision, the longest common subsequence in reading order
+//              (ordered), and the aligned words on the same page
+//   lines      per page, `pdftotext -layout` lines with runs of spaces
+//              collapsed, compared in order (longest common subsequence):
+//              missing, extra and reordered lines all count; the leading
+//              indentation of matched lines must agree within one column
+//              (code indentation is significant)
+//   geometry   for aligned same-page words: |dx| of the left edge and |dy|
+//              of the baseline. Baselines come from the text-showing
+//              operators themselves (pdf-inspect: origin, size and font of
+//              every Tj/TJ), matched to each word's box; a word whose
+//              baseline cannot be found is unmeasured and lowers coverage
+//              (measured / Ruby words)
+//   raster     150 dpi RGB renderings (pdftoppm), pixels whose largest
+//              channel difference exceeds 16, 64 and 128, over the full
+//              page and over the content region (the bounding box of ink
+//              in either rendering), plus flat differences (see
+//              gate_max_flat); per-page difference images (red: ink only
+//              in Ruby's, blue: only in the spike's, orange: flat)
+//   triage     the first measured word off by more than 1pt
+//              (`geometry.first_off`: its positions, the last good word
+//              before it, and the spike block each is in, from the spike's
+//              `--layout-trace`) and the first differing line (`lines.first_diff`);
+//              scripts/pdf_triage.mbtx groups failing documents by them
+//   structure  fonts (embedded, ToUnicode, same families), page boxes,
+//              link annotations (count, target, rectangle within 1pt),
+//              outline (titles, depth, open state, targets), named
+//              destinations (names, resolution, lexical name-tree order),
+//              page labels, document information, viewer settings
+//
+// Acceptance thresholds (--gate):
+//   - status ok
+//   - the same number of pages
+//   - every page's ordered lines identical, indentation included
+//   - at least gate_min_within (99.5%) of measured words within 1pt, with
+//     at least gate_min_coverage (99%) of Ruby's words measured
+//   - every structure check passes
+//   - on every page, at most gate_max_raster of the content region differs
+//     by more than 64 levels. Repeated oracle renders are identical (0
+//     differing pixels, see --self-test), so the noise floor is zero; the
+//     threshold (1.25%) allows the anti-aliasing and sub-point glyph
+//     placement differences of two engines that agree to 1pt, calibrated
+//     on the built-in cases and the baseline (see gate_max_raster)
+//   - on every page, at most gate_max_flat (0.5%) of the content region has
+//     flat differences: more than 6 levels apart where both renderings are
+//     uniform, i.e. a missing or recoloured fill that the 64-level
+//     threshold cannot see (anti-aliasing never produces these)
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+  "moonbitlang/core/json",
+  "moonbitlang/core/cmp",
+}
+
+///|
+/// The Ruby that runs the oracle (see `configure_oracle`).
+let ruby_exe : Ref[String] = { val: "ruby" }
+
+///|
+/// The gem home with asciidoctor-pdf and its dependencies, absolute (see
+/// `configure_oracle`).
+let gem_home : Ref[String] = { val: ".repos/gems-pdf" }
+
+///|
+/// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
+/// Apple silicon and Intel).
+let ruby_candidates : Array[String] = [
+  "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+]
+
+///|
+/// Set the oracle's Ruby and gem home: `--ruby` / `--gems`, else the
+/// environment (ASCIIDOCTOR_PDF_RUBY, ASCIIDOCTOR_PDF_GEMS), else Homebrew's
+/// Ruby when installed (the system Ruby of macOS is too old) or `ruby` on
+/// PATH, and .repos/gems-pdf.
+async fn configure_oracle(ruby_flag : String?, gems_flag : String?) -> Unit {
+  let setting = (flag : String?, name : String) => match flag {
+    Some(v) => Some(v)
+    None =>
+      match @env.get_env_var(name) {
+        Some(v) if v != "" => Some(v)
+        _ => None
+      }
+  }
+  let mut ruby = "ruby"
+  match setting(ruby_flag, "ASCIIDOCTOR_PDF_RUBY") {
+    Some(r) => ruby = r
+    None =>
+      for candidate in ruby_candidates {
+        if file_exists(candidate) {
+          ruby = candidate
+          break
+        }
+      }
+  }
+  ruby_exe.val = ruby
+  let dir = setting(gems_flag, "ASCIIDOCTOR_PDF_GEMS").unwrap_or(".repos/gems-pdf")
+  gem_home.val = @fs.realpath(dir) catch { _ => dir }
+}
+
+///|
+fn ruby() -> String {
+  ruby_exe.val
+}
+
+///|
+fn gems() -> String {
+  gem_home.val
+}
+
+///|
+/// The environment the oracle runs in: its gems only.
+fn gem_env() -> Map[String, String] {
+  { "GEM_HOME": gem_home.val, "GEM_PATH": gem_home.val }
+}
+
+///|
+let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"
+
+///|
+let default_spike : String = "\{bin}/asciidoctor-pdf/asciidoctor-pdf.exe"
+
+///|
+/// The spike executable: `default_spike`, or `--spike EXE` (e.g. a copy, so
+/// that a long run is not disturbed by rebuilds)
+let spike_exe : Ref[String] = { val: default_spike }
+
+///|
+let inspector : String = "\{bin}/pdf-inspect/pdf-inspect.exe"
+
+///|
+let default_gallery : String = "_build/gallery/pdf-spike"
+
+///|
+let default_known : String = "pdf/tests/known_differences.txt"
+
+///|
+let conversion_timeout_ms : Int = 300_000
+
+///|
+let tool_timeout_ms : Int = 300_000
+
+///|
+/// Positions agree when within this many points.
+let tolerance_pt : Double = 1.0
+
+///|
+let gate_min_within : Double = 0.995
+
+///|
+let gate_min_coverage : Double = 0.99
+
+///|
+/// Largest share of a page's content region that may differ by more than
+/// 64 levels at 150 dpi. Calibration (2026-09-29): two renders of the
+/// oracle are pixel-identical (the self-test checks this), so the floor
+/// is zero; documents whose text, lines and word positions all agree to
+/// 1pt measure at most 1.048% on their worst page (sampler 0.254%,
+/// features 0.713%, Pro Git ch02 0.811%, 25 passing baseline documents
+/// ≤ 1.048%): anti-aliasing of glyphs a fraction of a point apart. A 5pt
+/// shift of half a page measures 1.757% (self-test), hence 1.25%.
+let gate_max_raster : Double = 0.0125
+
+///|
+/// Largest share of a page's content region with flat differences: more
+/// than 6 levels apart where both renderings are uniform over 3×3 pixels
+/// (no glyph or rule edge nearby). Anti-aliasing cannot produce these; a
+/// missing, extra or recoloured fill (a code block's #F5F5F5 background is
+/// only 10 levels from white, invisible to the thresholds above) does.
+let gate_max_flat : Double = 0.005
+
+///|
+let thresholds : Array[Int] = [16, 64, 128]
+
+///|
+/// The threshold the gate and the summary use (index into `thresholds`).
+let gate_threshold_index : Int = 1
+
+///|
+/// (name, input, wrapper text written to `input` for the run and removed
+/// afterwards, or "" when the input is a checked-in file)
+let cases : Array[(String, String, String)] = [
+  ("sampler", "pdf/tests/sampler.adoc", ""),
+  ("table-cells", "pdf/tests/table-cells.adoc", ""),
+  ("table-pages", "pdf/tests/table-pages.adoc", ""),
+  ("toc-article", "pdf/tests/toc-article.adoc", ""),
+  ("toc-macro", "pdf/tests/toc-macro.adoc", ""),
+  ("index-terms", "pdf/tests/index-terms.adoc", ""),
+  ("index-ranges", "pdf/tests/index-ranges.adoc", ""),
+  ("table-tall", "pdf/tests/table-tall.adoc", ""),
+  ("toc-long", "pdf/tests/toc-long.adoc", ""),
+  ("book", "pdf/tests/book.adoc", ""),
+  ("book-parts", "pdf/tests/book-parts.adoc", ""),
+  ("line-metrics", "pdf/tests/line-metrics.adoc", ""),
+  ("callouts", "pdf/tests/callouts.adoc", ""),
+  ("icons", "pdf/tests/icons.adoc", ""),
+  ("table-autowidth", "pdf/tests/table-autowidth.adoc", ""),
+  ("arrange-block", "pdf/tests/arrange-block.adoc", ""),
+  ("markup", "pdf/tests/markup.adoc", ""),
+  ("wrap", "pdf/tests/wrap.adoc", ""),
+  ("lists", "pdf/tests/lists.adoc", ""),
+  ("images", "pdf/tests/images.adoc", ""),
+  ("inline-images", "pdf/tests/inline-images.adoc", ""),
+  ("manpage", "pdf/tests/manpage.adoc", ""),
+  ("abstract", "pdf/tests/abstract.adoc", ""),
+  ("media", "pdf/tests/media.adoc", ""),
+  ("svg", "pdf/tests/svg.adoc", ""),
+  ("svg-features", "pdf/tests/svg-features.adoc", ""),
+  // bundled and custom themes
+  ("theme-sans", "pdf/tests/theme-sans.adoc", ""),
+  ("theme-base", "pdf/tests/theme-base.adoc", ""),
+  ("theme-custom", "pdf/tests/theme-custom.adoc", ""),
+  ("theme-fallbacks", "pdf/tests/theme-fallbacks.adoc", ""),
+  ("theme-book", "pdf/tests/theme-book.adoc", ""),
+  ("theme-print", "pdf/tests/theme-print.adoc", ""),
+  ("theme-fontsdir", "pdf/tests/theme-fontsdir.adoc", ""),
+  (
+    "progit-ch02",
+    ".repos/progit2/pdf-spike-ch02.adoc",
+    "= Pro Git: Git Basics\nScott Chacon; Ben Straub\n\ninclude::ch02-git-basics-chapter.asc[]\n",
+  ),
+  (
+    "progit-ch03",
+    ".repos/progit2/pdf-spike-ch03.adoc",
+    "= Pro Git: Git Branching\nScott Chacon; Ben Straub\n\ninclude::ch03-git-branching.asc[]\n",
+  ),
+  (
+    "asciidoctor-pdf-features",
+    ".repos/asciidoctor-pdf/docs/modules/ROOT/pages/features.adoc",
+    "",
+  ),
+]
+
+// ---------------------------------------------------------------------------
+// Processes
+
+///|
+priv struct Run {
+  command : String
+  code : Int
+  out : String
+  err : String
+  seconds : Double
+  timed_out : Bool
+}
+
+///|
+fn latin1(bytes : Bytes) -> String {
+  let sb = StringBuilder()
+  for b in bytes {
+    sb.write_char(b.to_int().unsafe_to_char())
+  }
+  sb.to_string()
+}
+
+///|
+fn now_seconds() -> Double {
+  @env.now().to_double() / 1000.0
+}
+
+///|
+fn shell_quote(arg : String) -> String {
+  if arg != "" &&
+    arg
+    .iter()
+    .all(c => c.is_ascii_alphabetic() ||
+      c.is_ascii_digit() ||
+      "-_./=+:,@%".contains_char(c)) {
+    arg
+  } else {
+    "'" + arg.replace_all(old="'", new="'\\''") + "'"
+  }
+}
+
+///|
+async fn run(
+  cmd : String,
+  args : Array[String],
+  env? : Map[String, String] = Map([]),
+  timeout? : Int = tool_timeout_ms,
+  stdin_file? : String,
+) -> Run {
+  let prefix = env.iter().map(kv => "\{kv.0}=\{shell_quote(kv.1)} ").collect().join("")
+  let command = prefix +
+    [cmd, ..args].map(shell_quote).join(" ") +
+    (match stdin_file {
+      Some(f) => " < " + shell_quote(f)
+      None => ""
+    })
+  let t0 = now_seconds()
+  let result = @async.with_timeout_opt(timeout, async fn() {
+    let (code, out, err) = match stdin_file {
+      Some(f) =>
+        @process.collect_output(
+          cmd,
+          args,
+          extra_env=env,
+          stdin=@process.redirect_from_file(f),
+        )
+      None => @process.collect_output(cmd, args, extra_env=env)
+    }
+    let out_text = out.text() catch { _ => latin1(out.binary()) }
+    let err_text = err.text() catch { _ => latin1(err.binary()) }
+    (code, out_text, err_text)
+  }) catch {
+    e => Some((-1, "", "could not run: \{e}"))
+  }
+  let seconds = now_seconds() - t0
+  match result {
+    Some((code, out, err)) =>
+      { command, code, out, err, seconds, timed_out: false }
+    None =>
+      {
+        command,
+        code: -1,
+        out: "",
+        err: "timed out after \{timeout / 1000}s",
+        seconds,
+        timed_out: true,
+      }
+  }
+}
+
+///|
+async fn sha256(path : String) -> String {
+  let r = run("shasum", ["-a", "256", path])
+  if r.code != 0 {
+    return ""
+  }
+  first_word(r.out)
+}
+
+///|
+fn first_word(text : String) -> String {
+  match text.find(" ") {
+    Some(i) => text[:i].to_owned()
+    None => text.trim().to_owned()
+  }
+}
+
+///|
+fn first_line(text : String) -> String {
+  match text.find("\n") {
+    Some(i) => text[:i].to_owned()
+    None => text
+  }
+}
+
+///|
+async fn file_exists(path : String) -> Bool {
+  (@fs.exists(path)) catch {
+    _ => false
+  }
+}
+
+///|
+/// At most `limit` characters of `text`, noting how much was cut.
+fn clip(text : String, limit? : Int = 20000) -> String {
+  if text.length() <= limit {
+    text
+  } else {
+    text[:limit].to_owned() + "\n... (\{text.length() - limit} more characters)"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Number formatting
+
+///|
+/// `value` with exactly `digits` decimals, rounded half away from zero.
+fn fixed(value : Double, digits? : Int = 3) -> String {
+  if value.is_nan() {
+    return "NaN"
+  }
+  let negative = value < 0.0
+  let scale = 10.0.pow(digits.to_double())
+  let scaled = ((if negative { -value } else { value }) * scale).round().to_int64()
+  let div = scale.to_int64()
+  let int_part = scaled / div
+  let sign = if negative && scaled != 0L { "-" } else { "" }
+  if digits <= 0 {
+    return "\{sign}\{int_part}"
+  }
+  let frac = (scaled % div).to_string()
+  let frac = "0".repeat(digits - frac.length()) + frac
+  "\{sign}\{int_part}.\{frac}"
+}
+
+///|
+/// `n / d` as a percentage with three decimals, truncated rather than
+/// rounded, so that only n == d shows as 100% and only n == 0 as 0%.
+fn pct(n : Int, d : Int) -> String {
+  if d == 0 {
+    return "n/a"
+  }
+  if n == d {
+    return "100%"
+  }
+  if n == 0 {
+    return "0%"
+  }
+  let v = n.to_double() * 100.0 / d.to_double()
+  let truncated = (v * 1000.0).floor() / 1000.0
+  if truncated <= 0.0 {
+    "<0.001%"
+  } else {
+    "\{fixed(truncated)}%"
+  }
+}
+
+///|
+fn ratio(n : Int, d : Int) -> String {
+  "\{n}/\{d} (\{pct(n, d)})"
+}
+
+///|
+/// A share (0..1) as a percentage, truncated like `pct`.
+fn share_pct(value : Double) -> String {
+  if value <= 0.0 {
+    "0%"
+  } else if value >= 1.0 {
+    "100%"
+  } else {
+    let truncated = (value * 100000.0).floor() / 1000.0
+    if truncated <= 0.0 {
+      "<0.001%"
+    } else {
+      "\{fixed(truncated)}%"
+    }
+  }
+}
+
+///|
+/// The nearest-rank percentile of sorted values.
+fn percentile(sorted : Array[Double], p : Double) -> Double {
+  if sorted.is_empty() {
+    return 0.0
+  }
+  let rank = (p * sorted.length().to_double()).ceil().to_int() - 1
+  sorted[if rank < 0 { 0 } else if rank >= sorted.length() { sorted.length() - 1 } else { rank }]
+}
+
+// ---------------------------------------------------------------------------
+// JSON helpers
+
+///|
+fn field(j : Json, key : String) -> Json {
+  match j {
+    Object(m) => m.get(key).unwrap_or(Json::null())
+    _ => Json::null()
+  }
+}
+
+///|
+fn items(j : Json) -> Array[Json] {
+  match j {
+    Array(a) => a
+    _ => []
+  }
+}
+
+///|
+fn num(j : Json) -> Double? {
+  match j {
+    Number(n, ..) => Some(n)
+    _ => None
+  }
+}
+
+///|
+fn str(j : Json) -> String {
+  match j {
+    String(s) => s
+    Null => ""
+    other => other.stringify()
+  }
+}
+
+///|
+fn jn(n : Int) -> Json {
+  Json::number(n.to_double())
+}
+
+///|
+fn jd(v : Double) -> Json {
+  if v.is_nan() || v.is_inf() {
+    Json::null()
+  } else {
+    Json::number(v)
+  }
+}
+
+///|
+fn js(s : String) -> Json {
+  Json::string(s)
+}
+
+///|
+fn jstrings(a : Array[String]) -> Json {
+  Json::array(a.map(js))
+}
+
+// ---------------------------------------------------------------------------
+// Extraction
+
+///|
+priv struct Word {
+  text : String
+  page : Int
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+}
+
+///|
+priv struct Line {
+  text : String
+  indent : Int
+}
+
+///|
+priv struct TextRun {
+  x : Double
+  y : Double
+}
+
+///|
+/// What the comparison reads from one PDF.
+priv struct Extract {
+  pdf : String
+  sha : String
+  pages : Int
+  /// per page, `pdftotext -layout` lines
+  lines : Array[Array[Line]]
+  words : Array[Word]
+  /// per page, text-showing operator origins
+  runs : Array[Array[TextRun]]
+  info : Json
+}
+
+///|
+suberror InvalidPdf {
+  InvalidPdf(String)
+}
+
+///|
+suberror MeasurementFailed {
+  MeasurementFailed(String)
+}
+
+///|
+fn attr_value(tag : String, name : String) -> Double {
+  match tag.find(" \{name}=\"") {
+    Some(i) => {
+      let rest = tag[i + name.length() + 3:]
+      let end = rest.find("\"").unwrap_or(rest.length())
+      @string.parse_double(rest[:end]) catch {
+        _ => 0.0
+      }
+    }
+    None => 0.0
+  }
+}
+
+///|
+fn unescape(text : String) -> String {
+  text
+  .replace_all(old="&lt;", new="<")
+  .replace_all(old="&gt;", new=">")
+  .replace_all(old="&quot;", new="\"")
+  .replace_all(old="&apos;", new="'")
+  .replace_all(old="&amp;", new="&")
+}
+
+///|
+/// Words with their boxes from `pdftotext -bbox-layout`, and the page count.
+fn parse_bbox(html : String) -> (Array[Word], Int) {
+  let words = []
+  let mut page = 0
+  for raw in html.split("\n") {
+    let line = raw.trim()
+    if line.has_prefix("<page ") {
+      page += 1
+    } else if line.has_prefix("<word ") {
+      let line = line.to_owned()
+      let close = line.find(">").unwrap_or(0)
+      let tag = line[:close].to_owned()
+      let end = line.rev_find("</word>").unwrap_or(line.length())
+      words.push({
+        text: unescape(line[close + 1:end].to_owned()),
+        page: page - 1,
+        x0: attr_value(tag, "xMin"),
+        y0: attr_value(tag, "yMin"),
+        x1: attr_value(tag, "xMax"),
+        y1: attr_value(tag, "yMax"),
+      })
+    }
+  }
+  (words, page)
+}
+
+///|
+/// The non-empty lines of each page of `pdftotext -layout` output, runs of
+/// spaces collapsed, with their leading indentation in columns.
+fn layout_pages(text : String) -> Array[Array[Line]] {
+  let pages = []
+  for page in text.split("\u000c") {
+    let lines = []
+    for raw in page.split("\n") {
+      let raw = raw.to_owned()
+      let mut indent = 0
+      while indent < raw.length() && raw[indent] == ' ' {
+        indent += 1
+      }
+      let parts = []
+      for part in raw.split(" ") {
+        if part.length() > 0 {
+          parts.push(part.to_owned())
+        }
+      }
+      if parts.length() > 0 {
+        lines.push({ text: parts.join(" "), indent })
+      }
+    }
+    pages.push(lines)
+  }
+  // pdftotext ends every page with a form feed
+  if pages.length() > 0 && pages[pages.length() - 1].is_empty() {
+    ignore(pages.pop())
+  }
+  pages
+}
+
+///|
+async fn page_count(pdf : String) -> Int {
+  let r = run("pdfinfo", [pdf])
+  if r.code != 0 {
+    raise InvalidPdf("pdfinfo \{pdf}: exit \{r.code}: \{r.err.trim()}")
+  }
+  for line in r.out.split("\n") {
+    if line.has_prefix("Pages:") {
+      return @string.parse_int(line["Pages:".length():].trim()) catch {
+        _ => raise InvalidPdf("pdfinfo \{pdf}: unreadable page count")
+      }
+    }
+  }
+  raise InvalidPdf("pdfinfo \{pdf}: no page count")
+}
+
+///|
+async fn tool(cmd : String, args : Array[String]) -> String {
+  let r = run(cmd, args)
+  if r.code != 0 {
+    raise MeasurementFailed("\{r.command}: exit \{r.code}: \{clip(r.err.trim().to_owned(), limit=400)}")
+  }
+  r.out
+}
+
+///|
+async fn extract(pdf : String) -> Extract {
+  let pages = page_count(pdf)
+  if pages <= 0 {
+    raise InvalidPdf("\{pdf} has no pages")
+  }
+  let layout = tool("pdftotext", ["-layout", pdf, "-"])
+  let bbox = tool("pdftotext", ["-bbox-layout", pdf, "-"])
+  let info_text = tool(inspector, ["info", pdf])
+  let info = @json.parse(info_text) catch {
+    e => raise MeasurementFailed("pdf-inspect info \{pdf}: \{e}")
+  }
+  let (words, bbox_pages) = parse_bbox(bbox)
+  if bbox_pages != pages {
+    raise MeasurementFailed(
+      "pdftotext -bbox-layout found \{bbox_pages} pages, pdfinfo \{pages}",
+    )
+  }
+  let lines = layout_pages(layout)
+  while lines.length() < pages {
+    lines.push([])
+  }
+  let runs = items(field(info, "pages")).map(page => {
+    items(field(page, "runs")).map(r => {
+      ({ x: num(field(r, "x")).unwrap_or(0.0), y: num(field(r, "y")).unwrap_or(0.0) } : TextRun)
+    })
+  })
+  if runs.length() != pages {
+    raise MeasurementFailed("pdf-inspect found \{runs.length()} pages, pdfinfo \{pages}")
+  }
+  { pdf, sha: sha256(pdf), pages, lines, words, runs, info }
+}
+
+// ---------------------------------------------------------------------------
+// Sequence alignment
+
+///|
+fn intern(values : Array[String], table : Map[String, Int]) -> Array[Int] {
+  values.map(v => {
+    match table.get(v) {
+      Some(id) => id
+      None => {
+        let id = table.length()
+        table[v] = id
+        id
+      }
+    }
+  })
+}
+
+///|
+/// Index pairs of a longest common subsequence of `a[a0:a1]` and
+/// `b[b0:b1]` (Myers' O(ND) diff), or None when the edit distance
+/// exceeds `max_d`.
+fn myers(
+  a : Array[Int],
+  a0 : Int,
+  a1 : Int,
+  b : Array[Int],
+  b0 : Int,
+  b1 : Int,
+  max_d : Int,
+) -> Array[(Int, Int)]? {
+  let n = a1 - a0
+  let m = b1 - b0
+  let max = @cmp.minimum(n + m, max_d)
+  let offset = max + 1
+  let v = Array::make(2 * max + 3, 0)
+  let trace : Array[Array[Int]] = []
+  let mut last = -1
+  for d in 0..=max {
+    let snap = Array::make(2 * d + 3, 0)
+    for k in (-d - 1)..=(d + 1) {
+      snap[k + d + 1] = v[offset + k]
+    }
+    trace.push(snap)
+    let mut done = false
+    let mut k = -d
+    while k <= d {
+      let mut x = if k == -d || (k != d && v[offset + k - 1] < v[offset + k + 1]) {
+        v[offset + k + 1]
+      } else {
+        v[offset + k - 1] + 1
+      }
+      let mut y = x - k
+      while x < n && y < m && a[a0 + x] == b[b0 + y] {
+        x += 1
+        y += 1
+      }
+      v[offset + k] = x
+      if x >= n && y >= m {
+        done = true
+        break
+      }
+      k += 2
+    }
+    if done {
+      last = d
+      break
+    }
+  }
+  if last < 0 {
+    return None
+  }
+  let pairs = []
+  let mut x = n
+  let mut y = m
+  for d = last; d > 0; d = d - 1 {
+    let snap = trace[d]
+    let k = x - y
+    let prev_k = if k == -d || (k != d && snap[k - 1 + d + 1] < snap[k + 1 + d + 1]) {
+      k + 1
+    } else {
+      k - 1
+    }
+    let prev_x = snap[prev_k + d + 1]
+    let prev_y = prev_x - prev_k
+    while x > prev_x && y > prev_y {
+      x -= 1
+      y -= 1
+      pairs.push((a0 + x, b0 + y))
+    }
+    x = prev_x
+    y = prev_y
+  }
+  while x > 0 && y > 0 {
+    x -= 1
+    y -= 1
+    pairs.push((a0 + x, b0 + y))
+  }
+  pairs.rev_in_place()
+  Some(pairs)
+}
+
+///|
+/// A longest common subsequence of `a` and `b` as index pairs, and whether
+/// it is exact: beyond an edit distance of `max_d` a greedy alignment
+/// stands in (it can only under-count).
+fn align(a : Array[Int], b : Array[Int], max_d? : Int = 3000) -> (Array[(Int, Int)], Bool) {
+  let mut start = 0
+  while start < a.length() && start < b.length() && a[start] == b[start] {
+    start += 1
+  }
+  let mut end_a = a.length()
+  let mut end_b = b.length()
+  while end_a > start && end_b > start && a[end_a - 1] == b[end_b - 1] {
+    end_a -= 1
+    end_b -= 1
+  }
+  let pairs = []
+  for i in 0..<start {
+    pairs.push((i, i))
+  }
+  let mut exact = true
+  match myers(a, start, end_a, b, start, end_b, max_d) {
+    Some(middle) => pairs.append(middle)
+    None => {
+      exact = false
+      // greedy: match when equal, else skip to the nearer next occurrence
+      let mut i = start
+      let mut j = start
+      while i < end_a && j < end_b {
+        if a[i] == b[j] {
+          pairs.push((i, j))
+          i += 1
+          j += 1
+          continue
+        }
+        let mut found_b = -1
+        for k in (j + 1)..<@cmp.minimum(end_b, j + 64) {
+          if b[k] == a[i] {
+            found_b = k
+            break
+          }
+        }
+        let mut found_a = -1
+        for k in (i + 1)..<@cmp.minimum(end_a, i + 64) {
+          if a[k] == b[j] {
+            found_a = k
+            break
+          }
+        }
+        if found_b >= 0 && (found_a < 0 || found_b - j <= found_a - i) {
+          j = found_b
+        } else if found_a >= 0 {
+          i = found_a
+        } else {
+          i += 1
+          j += 1
+        }
+      }
+    }
+  }
+  for k in 0..<(a.length() - end_a) {
+    pairs.push((end_a + k, end_b + k))
+  }
+  (pairs, exact)
+}
+
+///|
+fn multiset_common(a : Array[Int], b : Array[Int]) -> Int {
+  let counts : Map[Int, Int] = Map([])
+  for v in b {
+    counts[v] = counts.get(v).unwrap_or(0) + 1
+  }
+  let mut hit = 0
+  for v in a {
+    match counts.get(v) {
+      Some(n) if n > 0 => {
+        counts[v] = n - 1
+        hit += 1
+      }
+      _ => ()
+    }
+  }
+  hit
+}
+
+// ---------------------------------------------------------------------------
+// Text and geometry
+
+///|
+priv struct PageLines {
+  ruby : Int
+  spike : Int
+  ordered : Int
+  common : Int
+  indent_mismatches : Int
+}
+
+///|
+priv struct TextMetrics {
+  ruby_words : Int
+  spike_words : Int
+  common_words : Int
+  ordered_words : Int
+  ordered_exact : Bool
+  same_page_words : Int
+  ruby_lines : Int
+  spike_lines : Int
+  ordered_lines : Int
+  common_lines : Int
+  /// the lines in order ignoring page boundaries
+  document_ordered_lines : Int
+  identical_pages : Int
+  indent_mismatches : Int
+  pages : Array[PageLines]
+  line_examples : Array[String]
+  // geometry
+  aligned_same_page : Int
+  measured : Int
+  within : Int
+  dx : Array[Double]
+  dy : Array[Double]
+  dx_right : Array[Double]
+  page_off : Array[Int]
+  off_examples : Array[String]
+  /// the first aligned same-page word off by more than the tolerance, with
+  /// the last one within it before (triage: see scripts/pdf_triage.mbtx)
+  first_off : Json
+  /// the first page whose lines differ, with its first differing lines
+  first_line : Json
+}
+
+///|
+/// The baseline of a word: the origin of the rightmost text-showing
+/// operator that starts at or before the word's left edge and whose
+/// baseline lies within the word's box.
+fn baseline(word : Word, runs : Array[TextRun]) -> Double? {
+  let mut best : TextRun? = None
+  for r in runs {
+    if r.y >= word.y0 - 0.5 && r.y <= word.y1 + 0.5 && r.x <= word.x0 + 0.5 {
+      match best {
+        Some(b) if b.x >= r.x => ()
+        _ => best = Some(r)
+      }
+    }
+  }
+  best.map(r => r.y)
+}
+
+///|
+fn compare_text(r : Extract, s : Extract, verbose : Bool) -> TextMetrics {
+  let table : Map[String, Int] = Map([])
+  let rw = intern(r.words.map(w => w.text), table)
+  let sw = intern(s.words.map(w => w.text), table)
+  let common_words = multiset_common(rw, sw)
+  let (pairs, ordered_exact) = align(rw, sw)
+  let union = @cmp.maximum(r.pages, s.pages)
+  let page_off = Array::make(union, 0)
+  let mut same_page = 0
+  let mut measured = 0
+  let mut within = 0
+  let dx = []
+  let dy = []
+  let dx_right = []
+  let off = []
+  let mut first_off = Json::null()
+  let mut last_in = Json::null()
+  for pair in pairs {
+    let w = r.words[pair.0]
+    let v = s.words[pair.1]
+    if w.page != v.page {
+      continue
+    }
+    same_page += 1
+    let bw = baseline(w, r.runs[w.page])
+    let bv = baseline(v, s.runs[v.page])
+    guard bw is Some(yr) && bv is Some(ys) else { continue }
+    measured += 1
+    let ddx = (v.x0 - w.x0).abs()
+    let ddy = (ys - yr).abs()
+    dx.push(ddx)
+    dy.push(ddy)
+    dx_right.push((v.x1 - w.x1).abs())
+    if ddx <= tolerance_pt && ddy <= tolerance_pt {
+      within += 1
+      last_in = {
+        "text": js(w.text),
+        "page": jn(v.page + 1),
+        "ruby_y": jd(yr),
+        "spike_y": jd(ys),
+      }
+    } else {
+      // a word without letters or digits (`}`) is too often aligned with
+      // another occurrence of itself to say where things went wrong
+      if first_off == Json::null() &&
+        w.text.iter().any(c => c.is_ascii_alphabetic() || c.is_ascii_digit() || c.to_int() > 0x7F) {
+        first_off = {
+          "text": js(w.text),
+          "page": jn(w.page + 1),
+          "ruby_x": jd(w.x0),
+          "ruby_y": jd(yr),
+          "spike_x": jd(v.x0),
+          "spike_y": jd(ys),
+          "dx": jd(v.x0 - w.x0),
+          "dy": jd(ys - yr),
+          "word": jn(pair.0),
+          "prev": last_in,
+        }
+      }
+      page_off[w.page] += 1
+      if off.length() < (if verbose { 40 } else { 12 }) {
+        off.push(
+          "p\{w.page + 1} \{w.text}: dx \{fixed(v.x0 - w.x0, digits=2)} dy \{fixed(ys - yr, digits=2)}",
+        )
+      }
+    }
+  }
+  dx.sort()
+  dy.sort()
+  dx_right.sort()
+  // lines, page by page over the union of pages
+  let line_table : Map[String, Int] = Map([])
+  let pages = []
+  let examples = []
+  let mut ruby_lines = 0
+  let mut spike_lines = 0
+  let mut ordered_lines = 0
+  let mut common_lines = 0
+  let mut identical = 0
+  let mut indent_mismatches = 0
+  let all_r = []
+  let all_s = []
+  let mut first_line = Json::null()
+  for p in 0..<union {
+    let rl = if p < r.lines.length() { r.lines[p] } else { [] }
+    let sl = if p < s.lines.length() { s.lines[p] } else { [] }
+    let a = intern(rl.map(l => l.text), line_table)
+    let b = intern(sl.map(l => l.text), line_table)
+    all_r.append(a)
+    all_s.append(b)
+    let (lp, _) = align(a, b)
+    let common = multiset_common(a, b)
+    let mut indents = 0
+    for pair in lp {
+      if (rl[pair.0].indent - sl[pair.1].indent).abs() >= 2 {
+        indents += 1
+        if examples.length() < 40 {
+          examples.push(
+            "p\{p + 1} indent \{rl[pair.0].indent} → \{sl[pair.1].indent}: \{rl[pair.0].text}",
+          )
+        }
+      }
+    }
+    // the first differences of the page, as a diff
+    if lp.length() < a.length() || lp.length() < b.length() {
+      if first_line == Json::null() {
+        let mut i = 0
+        while i < lp.length() && lp[i].0 == i && lp[i].1 == i {
+          i += 1
+        }
+        first_line = {
+          "page": jn(p + 1),
+          "line": jn(i + 1),
+          "ruby": if i < rl.length() { js(rl[i].text) } else { Json::null() },
+          "spike": if i < sl.length() { js(sl[i].text) } else { Json::null() },
+        }
+      }
+      let mut i = 0
+      let mut j = 0
+      let mut shown = 0
+      for pair in [..lp, (a.length(), b.length())] {
+        while i < pair.0 && shown < 6 && examples.length() < 40 {
+          examples.push("p\{p + 1} − ruby:  \{rl[i].text}")
+          i += 1
+          shown += 1
+        }
+        while j < pair.1 && shown < 6 && examples.length() < 40 {
+          examples.push("p\{p + 1} + spike: \{sl[j].text}")
+          j += 1
+          shown += 1
+        }
+        i = pair.0 + 1
+        j = pair.1 + 1
+      }
+    }
+    if lp.length() == a.length() && lp.length() == b.length() && indents == 0 {
+      identical += 1
+    }
+    pages.push({
+      ruby: a.length(),
+      spike: b.length(),
+      ordered: lp.length(),
+      common,
+      indent_mismatches: indents,
+    })
+    ruby_lines += a.length()
+    spike_lines += b.length()
+    ordered_lines += lp.length()
+    common_lines += common
+    indent_mismatches += indents
+  }
+  let (doc_pairs, _) = align(all_r, all_s)
+  {
+    ruby_words: rw.length(),
+    spike_words: sw.length(),
+    common_words,
+    ordered_words: pairs.length(),
+    ordered_exact,
+    same_page_words: same_page,
+    ruby_lines,
+    spike_lines,
+    ordered_lines,
+    common_lines,
+    document_ordered_lines: doc_pairs.length(),
+    identical_pages: identical,
+    indent_mismatches,
+    pages,
+    line_examples: examples,
+    aligned_same_page: same_page,
+    measured,
+    within,
+    dx,
+    dy,
+    dx_right,
+    page_off,
+    off_examples: off,
+    first_off,
+    first_line,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structure
+
+///|
+priv struct Check {
+  name : String
+  ok : Bool
+  detail : String
+}
+
+///|
+fn close(a : Json, b : Json) -> Bool {
+  match (num(a), num(b)) {
+    (Some(x), Some(y)) => (x - y).abs() <= tolerance_pt
+    (None, None) => true
+    _ => false
+  }
+}
+
+///|
+/// Two resolved destinations agree: same page, positions within 1pt.
+fn same_dest(a : Json, b : Json) -> Bool {
+  // a reference to a name neither document defines (a cross-document
+  // xref) is the same dangling reference in both
+  if field(a, "missing") is True && field(b, "missing") is True {
+    return field(a, "name") == field(b, "name")
+  }
+  field(a, "page") == field(b, "page") &&
+  str(field(a, "kind")) == str(field(b, "kind")) &&
+  close(field(a, "x"), field(b, "x")) &&
+  close(field(a, "y"), field(b, "y")) &&
+  !(field(a, "missing") is True) &&
+  !(field(b, "missing") is True)
+}
+
+///|
+fn same_target(a : Json, b : Json) -> Bool {
+  match (field(a, "uri"), field(b, "uri")) {
+    (String(x), String(y)) => x == y
+    (Null, Null) =>
+      match (field(a, "dest"), field(b, "dest")) {
+        (Null, Null) => str(field(a, "action")) == str(field(b, "action"))
+        (x, y) => same_dest(x, y)
+      }
+    _ => false
+  }
+}
+
+///|
+fn describe_target(t : Json) -> String {
+  match field(t, "uri") {
+    String(u) => u
+    _ =>
+      match field(t, "dest") {
+        Null => t.stringify()
+        d => {
+          let name = match field(d, "name") {
+            String(n) => "#\{n} "
+            _ => ""
+          }
+          "\{name}p\{fixed(num(field(d, "page")).unwrap_or(-1.0) + 1.0, digits=0)} y=\{fixed(num(field(d, "y")).unwrap_or(0.0), digits=1)}"
+        }
+      }
+  }
+}
+
+///|
+fn rect_delta(a : Json, b : Json) -> Double {
+  let ra = items(a)
+  let rb = items(b)
+  if ra.length() != 4 || rb.length() != 4 {
+    return 1.0e9
+  }
+  let mut worst = 0.0
+  for i in 0..<4 {
+    let d = (num(ra[i]).unwrap_or(0.0) - num(rb[i]).unwrap_or(0.0)).abs()
+    if d > worst {
+      worst = d
+    }
+  }
+  worst
+}
+
+///|
+fn family_set(info : Json) -> Array[String] {
+  let set = []
+  for f in items(field(info, "fonts")) {
+    let family = str(field(f, "family"))
+    if !set.contains(family) {
+      set.push(family)
+    }
+  }
+  set.sort()
+  set
+}
+
+///|
+fn compare_structure(r : Json, s : Json) -> Array[Check] {
+  let checks = []
+  // fonts
+  {
+    let problems = []
+    // a font Ruby leaves unembedded, or without ToUnicode (a PDF standard
+    // font), may be so in the spike's too
+    let ruby_font = (family : String) => {
+      for f in items(field(r, "fonts")) {
+        if str(field(f, "family")) == family {
+          return Some(f)
+        }
+      }
+      None
+    }
+    for f in items(field(s, "fonts")) {
+      let rf = ruby_font(str(field(f, "family")))
+      let ruby_has = (key : String) => match rf {
+        Some(rf) => field(rf, key) is True
+        None => true
+      }
+      if !(field(f, "embedded") is True) && ruby_has("embedded") {
+        problems.push("\{str(field(f, "name"))} not embedded")
+      }
+      if !(field(f, "tounicode") is True) && ruby_has("tounicode") {
+        problems.push("\{str(field(f, "name"))} has no ToUnicode")
+      }
+    }
+    let rf = family_set(r)
+    let sf = family_set(s)
+    let only_r = rf.filter(f => !sf.contains(f))
+    let only_s = sf.filter(f => !rf.contains(f))
+    if !only_r.is_empty() {
+      problems.push("only Ruby uses \{only_r.join(", ")}")
+    }
+    if !only_s.is_empty() {
+      problems.push("only the spike uses \{only_s.join(", ")}")
+    }
+    checks.push({
+      name: "fonts",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{sf.length()} families (\{sf.join(", ")}), all embedded with ToUnicode"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  let rp = items(field(r, "pages"))
+  let sp = items(field(s, "pages"))
+  let common_pages = @cmp.minimum(rp.length(), sp.length())
+  // page boxes
+  {
+    let problems = []
+    for i in 0..<common_pages {
+      for key in ["MediaBox", "CropBox", "BleedBox", "TrimBox", "ArtBox"] {
+        let a = field(field(rp[i], "boxes"), key)
+        let b = field(field(sp[i], "boxes"), key)
+        if rect_delta(a, b) > 0.01 && problems.length() < 8 {
+          problems.push("p\{i + 1} \{key} \{a.stringify()} vs \{b.stringify()}")
+        }
+      }
+      let ek = fn(p : Json) {
+        match field(p, "explicit_boxes") {
+          Object(m) => {
+            let keys = m.keys().collect()
+            keys.sort()
+            keys.join(",")
+          }
+          _ => ""
+        }
+      }
+      if ek(rp[i]) != ek(sp[i]) && problems.length() < 8 {
+        problems.push("p\{i + 1} explicit boxes \{ek(rp[i])} vs \{ek(sp[i])}")
+      }
+      if field(rp[i], "rotate") != field(sp[i], "rotate") && problems.length() < 8 {
+        problems.push("p\{i + 1} rotation differs")
+      }
+    }
+    checks.push({
+      name: "page boxes",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{common_pages} pages: all five boxes and rotation agree"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  // link annotations: each Ruby link matched to an unused spike link on
+  // the same page with the same target, nearest rectangle first
+  {
+    let mut total_r = 0
+    let mut total_s = 0
+    let mut matched = 0
+    let mut worst = 0.0
+    let problems = []
+    for i in 0..<@cmp.maximum(rp.length(), sp.length()) {
+      let ra = if i < rp.length() { items(field(rp[i], "annots")) } else { [] }
+      let sa = if i < sp.length() { items(field(sp[i], "annots")) } else { [] }
+      total_r += ra.length()
+      total_s += sa.length()
+      let used = Array::make(sa.length(), false)
+      for a in ra {
+        let mut best = -1
+        let mut best_d = 1.0e18
+        for j, b in sa {
+          if !used[j] &&
+            str(field(a, "subtype")) == str(field(b, "subtype")) &&
+            same_target(field(a, "target"), field(b, "target")) {
+            let d = rect_delta(field(a, "rect"), field(b, "rect"))
+            if d < best_d {
+              best = j
+              best_d = d
+            }
+          }
+        }
+        if best < 0 {
+          if problems.length() < 8 {
+            problems.push("p\{i + 1} spike lacks \{describe_target(field(a, "target"))}")
+          }
+          continue
+        }
+        used[best] = true
+        matched += 1
+        if best_d > worst {
+          worst = best_d
+        }
+        if best_d > tolerance_pt && problems.length() < 8 {
+          problems.push(
+            "p\{i + 1} \{describe_target(field(a, "target"))} rectangle off by \{fixed(best_d, digits=2)}pt",
+          )
+        }
+      }
+      for j, b in sa {
+        if !used[j] && problems.length() < 8 {
+          problems.push("p\{i + 1} spike adds \{describe_target(field(b, "target"))}")
+        }
+      }
+    }
+    let ok = matched == total_r && matched == total_s && worst <= tolerance_pt
+    checks.push({
+      name: "links",
+      ok,
+      detail: "Ruby \{total_r}, spike \{total_s}, matched \{matched}, worst rectangle difference \{fixed(worst, digits=3)}pt" +
+      (if problems.is_empty() { "" } else { "; " + problems.join("; ") }),
+    })
+  }
+  // outline
+  {
+    let ro = items(field(r, "outline"))
+    let so = items(field(s, "outline"))
+    let problems = []
+    if ro.length() != so.length() {
+      problems.push("Ruby \{ro.length()} entries, spike \{so.length()}")
+    }
+    for i in 0..<@cmp.minimum(ro.length(), so.length()) {
+      let a = ro[i]
+      let b = so[i]
+      let label = str(field(a, "title"))
+      if str(field(a, "title")) != str(field(b, "title")) {
+        problems.push("#\{i + 1} title \"\{label}\" vs \"\{str(field(b, "title"))}\"")
+      } else if field(a, "depth") != field(b, "depth") {
+        problems.push("\"\{label}\" depth differs")
+      } else if (field(a, "has_children") is True) &&
+        field(a, "open") != field(b, "open") {
+        problems.push(
+          "\"\{label}\" is \{if field(a, "open") is True { "open" } else { "closed" }} in Ruby, \{if field(b, "open") is True { "open" } else { "closed" }} in the spike",
+        )
+      } else if !same_dest(field(field(a, "target"), "dest"), field(field(b, "target"), "dest")) {
+        problems.push(
+          "\"\{label}\" goes to \{describe_target(field(a, "target"))} vs \{describe_target(field(b, "target"))}",
+        )
+      }
+    }
+    if !close(field(r, "outline_count"), field(s, "outline_count")) {
+      problems.push(
+        "outline /Count \{field(r, "outline_count").stringify()} vs \{field(s, "outline_count").stringify()}",
+      )
+    }
+    checks.push({
+      name: "outline",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{ro.length()} entries agree (titles, depth, open state, targets)"
+      } else {
+        problems[:@cmp.minimum(problems.length(), 8)].to_owned().join("; ")
+      },
+    })
+  }
+  // named destinations
+  {
+    let resolved = fn(info : Json) {
+      let map : Map[String, Json] = Map([])
+      for d in items(field(info, "dests")) {
+        match field(d, "name") {
+          String(n) => if !map.contains(n) { map[n] = d }
+          _ => ()
+        }
+      }
+      map
+    }
+    let rd = resolved(r)
+    let sd = resolved(s)
+    let problems = []
+    for entry in rd {
+      match sd.get(entry.0) {
+        None => problems.push("spike lacks \{entry.0}")
+        Some(b) =>
+          if !same_dest(entry.1, b) {
+            problems.push(
+              "\{entry.0}: \{describe_target({ "dest": entry.1 })} vs \{describe_target({ "dest": b })}",
+            )
+          }
+      }
+    }
+    for entry in sd {
+      if !rd.contains(entry.0) {
+        problems.push("spike adds \{entry.0}")
+      }
+    }
+    checks.push({
+      name: "destinations",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "\{rd.length()} names resolve alike"
+      } else {
+        "Ruby \{rd.length()}, spike \{sd.length()}: " +
+        problems[:@cmp.minimum(problems.length(), 8)].to_owned().join("; ")
+      },
+    })
+    let sorted = field(s, "dests_sorted") is True
+    checks.push({
+      name: "name-tree order",
+      ok: sorted,
+      detail: if sorted {
+        "spike keys in lexical byte order (Ruby: \{if field(r, "dests_sorted") is True { "sorted" } else { "unsorted" }})"
+      } else {
+        "spike keys out of lexical order: \{items(field(s, "dest_names")).map(str)[:@cmp.minimum(6, items(field(s, "dest_names")).length())].to_owned().join(", ")}..."
+      },
+    })
+  }
+  // page labels
+  {
+    let rl = field(r, "page_labels")
+    let sl = field(s, "page_labels")
+    checks.push({
+      name: "page labels",
+      ok: rl == sl,
+      detail: if rl == sl {
+        "\{items(rl).length()} labels agree"
+      } else {
+        "\{rl.stringify()} vs \{sl.stringify()}"
+      },
+    })
+  }
+  // document information
+  {
+    let problems = []
+    for key in ["Title", "Author", "Subject", "Keywords", "Creator"] {
+      let a = field(field(r, "info"), key)
+      let b = field(field(s, "info"), key)
+      if a != b {
+        problems.push("\{key} \{a.stringify()} vs \{b.stringify()}")
+      }
+    }
+    for key in ["CreationDate", "ModDate"] {
+      let a = field(field(r, "info"), key) is String(_)
+      let b = field(field(s, "info"), key) is String(_)
+      if a != b {
+        problems.push("\{key} \{if a { "only in Ruby" } else { "only in the spike" }}")
+      }
+    }
+    checks.push({
+      name: "document info",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "Title, Author, Subject, Keywords, Creator and dates agree (PDF \{str(field(r, "version"))} vs \{str(field(s, "version"))})"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  // viewer settings
+  {
+    let problems = []
+    if field(r, "page_mode") != field(s, "page_mode") {
+      problems.push(
+        "PageMode \{field(r, "page_mode").stringify()} vs \{field(s, "page_mode").stringify()}",
+      )
+    }
+    let ra = field(r, "open_action")
+    let sa = field(s, "open_action")
+    if !(ra is Null && sa is Null) && !same_dest(ra, sa) {
+      problems.push("OpenAction \{ra.stringify()} vs \{sa.stringify()}")
+    }
+    if field(r, "display_doc_title") != field(s, "display_doc_title") {
+      problems.push("DisplayDocTitle differs")
+    }
+    checks.push({
+      name: "viewer settings",
+      ok: problems.is_empty(),
+      detail: if problems.is_empty() {
+        "PageMode, OpenAction and DisplayDocTitle agree"
+      } else {
+        problems.join("; ")
+      },
+    })
+  }
+  checks
+}
+
+// ---------------------------------------------------------------------------
+// Raster
+
+///|
+priv struct PageRaster {
+  page : Int
+  /// "ruby" or "spike" when that side has no such page
+  missing : String
+  area : Int
+  content_area : Int
+  counts : Array[Int]
+  /// faint differences (more than 6 levels) where both renderings are
+  /// flat: fills, backgrounds, colours
+  flat : Int
+  diff : String
+}
+
+///|
+fn PageRaster::flat_share(self : PageRaster) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.content_area == 0 {
+    0.0
+  } else {
+    self.flat.to_double() / self.content_area.to_double()
+  }
+}
+
+///|
+fn PageRaster::full_share(self : PageRaster, t : Int) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.area == 0 {
+    0.0
+  } else {
+    self.counts[t].to_double() / self.area.to_double()
+  }
+}
+
+///|
+fn PageRaster::content_share(self : PageRaster, t : Int) -> Double {
+  if self.missing != "" {
+    1.0
+  } else if self.content_area == 0 {
+    0.0
+  } else {
+    self.counts[t].to_double() / self.content_area.to_double()
+  }
+}
+
+///|
+/// Page files a pdftoppm run wrote, by page number (the digits after the
+/// last `-`, however they are padded).
+async fn rendered_pages(dir : String, prefix : String, suffix : String) -> Map[Int, String] {
+  let pages : Map[Int, String] = Map([])
+  for name in @fs.readdir(dir, sort=true) {
+    if name.has_prefix(prefix + "-") && name.has_suffix(suffix) {
+      let digits = name[prefix.length() + 1:name.length() - suffix.length()]
+      let n = @string.parse_int(digits) catch { _ => -1 }
+      if n >= 0 {
+        pages[n] = "\{dir}/\{name}"
+      }
+    }
+  }
+  pages
+}
+
+///|
+async fn compare_raster(
+  ruby_pdf : String,
+  spike_pdf : String,
+  dir : String,
+  union : Int,
+) -> Array[PageRaster] {
+  ignore(tool("pdftoppm", ["-r", "150", ruby_pdf, "\{dir}/r150-ruby"]))
+  ignore(tool("pdftoppm", ["-r", "150", spike_pdf, "\{dir}/r150-spike"]))
+  let rp = rendered_pages(dir, "r150-ruby", ".ppm")
+  let sp = rendered_pages(dir, "r150-spike", ".ppm")
+  let out = []
+  for p in 1..=union {
+    match (rp.get(p), sp.get(p)) {
+      (Some(a), Some(b)) => {
+        let diff = "diff-\{p}.png"
+        let text = tool(inspector, ["rastercmp", a, b, "\{dir}/\{diff}"])
+        let j = @json.parse(text) catch {
+          e => raise MeasurementFailed("rastercmp: \{e}")
+        }
+        if field(j, "size_mismatch") is True {
+          out.push({
+            page: p,
+            missing: "size",
+            area: 1,
+            content_area: 1,
+            counts: thresholds.map(_ => 1),
+            flat: 1,
+            diff: "",
+          })
+        } else {
+          let counts = items(field(j, "counts")).map(c => {
+            num(field(c, "pixels")).unwrap_or(0.0).to_int()
+          })
+          out.push({
+            page: p,
+            missing: "",
+            area: num(field(j, "area")).unwrap_or(0.0).to_int(),
+            content_area: num(field(j, "content_area")).unwrap_or(0.0).to_int(),
+            counts,
+            flat: num(field(j, "flat_pixels")).unwrap_or(0.0).to_int(),
+            diff,
+          })
+        }
+      }
+      (a, _) =>
+        out.push({
+          page: p,
+          missing: if a is None { "ruby" } else { "spike" },
+          area: 0,
+          content_area: 0,
+          counts: thresholds.map(_ => 0),
+          flat: 0,
+          diff: "",
+        })
+    }
+  }
+  for entry in rp {
+    @fs.remove(entry.1) catch {
+      _ => ()
+    }
+  }
+  for entry in sp {
+    @fs.remove(entry.1) catch {
+      _ => ()
+    }
+  }
+  out
+}
+
+// ---------------------------------------------------------------------------
+// One comparison
+
+///|
+priv struct Measured {
+  ruby : Extract
+  spike : Extract
+  text : TextMetrics
+  structure : Array[Check]
+  raster : Array[PageRaster]
+  /// where the spike put each block (its `--layout-trace`)
+  trace : Array[Traced]
+}
+
+///|
+/// One block of the spike's `--layout-trace`: nesting depth, what it is, its
+/// source line, and where its conversion started and ended (page from 1,
+/// y in points from the page top).
+priv struct Traced {
+  depth : Int
+  what : String
+  line : Int
+  start : (Int, Double)
+  end : (Int, Double)
+}
+
+///|
+async fn read_trace(path : String) -> Array[Traced] {
+  let text = @fs.read_file(path).text() catch { _ => return [] }
+  let out = []
+  for line in text.split("\n") {
+    let f = line.split("\t").map(s => s.to_owned()).collect()
+    if f.length() != 7 {
+      continue
+    }
+    let int = fn(s : String) { @string.parse_int(s) catch { _ => 0 } }
+    let dbl = fn(s : String) { @string.parse_double(s) catch { _ => 0.0 } }
+    out.push({
+      depth: int(f[0]),
+      what: f[1],
+      line: int(f[2]),
+      start: (int(f[3]), dbl(f[4])),
+      end: (int(f[5]), dbl(f[6])),
+    })
+  }
+  out
+}
+
+///|
+fn before_or_at(a : (Int, Double), b : (Int, Double)) -> Bool {
+  a.0 < b.0 || (a.0 == b.0 && a.1 <= b.1 + 0.01)
+}
+
+///|
+/// The innermost traced block whose extent holds `(page, y)`, as
+/// `what@line`, or "" when none does.
+fn block_at(trace : Array[Traced], page : Int, y : Double) -> String {
+  let mut best : Traced? = None
+  for t in trace {
+    if before_or_at(t.start, (page, y)) && before_or_at((page, y), t.end) {
+      match best {
+        Some(b) if b.depth > t.depth => ()
+        _ => best = Some(t)
+      }
+    }
+  }
+  match best {
+    Some(t) => "\{t.what}@\{t.line}"
+    None => ""
+  }
+}
+
+///|
+/// A position record of the triage (`first_off`, its `prev`) with the
+/// spike block it is in.
+fn with_block(trace : Array[Traced], j : Json) -> Json {
+  match j {
+    Object(m) => {
+      let copy = m.copy()
+      let page = num(field(j, "page")).unwrap_or(0.0).to_int()
+      let y = num(field(j, "spike_y")).unwrap_or(0.0)
+      copy["block"] = js(block_at(trace, page, y))
+      match m.get("prev") {
+        Some(prev) => copy["prev"] = with_block(trace, prev)
+        None => ()
+      }
+      Json::object(copy)
+    }
+    other => other
+  }
+}
+
+///|
+async fn measure(
+  ruby_pdf : String,
+  spike_pdf : String,
+  dir : String,
+  verbose : Bool,
+) -> Measured {
+  let r = extract(ruby_pdf)
+  let s = extract(spike_pdf)
+  let text = compare_text(r, s, verbose)
+  let structure = compare_structure(r.info, s.info)
+  let raster = compare_raster(ruby_pdf, spike_pdf, dir, @cmp.maximum(r.pages, s.pages))
+  let trace = read_trace("\{dir}/trace.tsv")
+  { ruby: r, spike: s, text, structure, raster, trace }
+}
+
+///|
+fn Measured::worst_flat(self : Measured) -> (Double, Int) {
+  let mut worst = 0.0
+  let mut page = 0
+  for p in self.raster {
+    let v = p.flat_share()
+    if v > worst {
+      worst = v
+      page = p.page
+    }
+  }
+  (worst, page)
+}
+
+///|
+fn Measured::worst_raster(self : Measured) -> (Double, Int) {
+  let mut worst = 0.0
+  let mut page = 0
+  for p in self.raster {
+    let v = p.content_share(gate_threshold_index)
+    if v > worst {
+      worst = v
+      page = p.page
+    }
+  }
+  (worst, page)
+}
+
+///|
+fn Measured::within_share(self : Measured) -> Double {
+  if self.text.measured == 0 {
+    if self.text.ruby_words == 0 { 1.0 } else { 0.0 }
+  } else {
+    self.text.within.to_double() / self.text.measured.to_double()
+  }
+}
+
+///|
+fn Measured::coverage(self : Measured) -> Double {
+  if self.text.ruby_words == 0 {
+    1.0
+  } else {
+    self.text.measured.to_double() / self.text.ruby_words.to_double()
+  }
+}
+
+///|
+/// Why this comparison fails the acceptance thresholds (none: it passes).
+fn Measured::gate_failures(self : Measured) -> Array[String] {
+  let t = self.text
+  let out = []
+  if self.ruby.pages != self.spike.pages {
+    out.push("pages \{self.ruby.pages} vs \{self.spike.pages}")
+  }
+  if t.ordered_lines != t.ruby_lines || t.ordered_lines != t.spike_lines {
+    out.push(
+      "lines: \{t.ordered_lines} in order of \{t.ruby_lines} Ruby / \{t.spike_lines} spike",
+    )
+  }
+  if t.indent_mismatches > 0 {
+    out.push("\{t.indent_mismatches} lines indented differently")
+  }
+  if t.common_words != t.ruby_words || t.common_words != t.spike_words {
+    out.push("words: \{t.common_words} shared of \{t.ruby_words} Ruby / \{t.spike_words} spike")
+  }
+  if self.within_share() < gate_min_within {
+    out.push("within 1pt \{ratio(t.within, t.measured)} < \{share_pct(gate_min_within)}")
+  }
+  if self.coverage() < gate_min_coverage {
+    out.push("coverage \{ratio(t.measured, t.ruby_words)} < \{share_pct(gate_min_coverage)}")
+  }
+  for c in self.structure {
+    if !c.ok {
+      out.push("structure: \{c.name}")
+    }
+  }
+  let (worst, page) = self.worst_raster()
+  if worst > gate_max_raster {
+    out.push("raster p\{page} \{share_pct(worst)} of content differs > \{share_pct(gate_max_raster)}")
+  }
+  let (flat, flat_page) = self.worst_flat()
+  if flat > gate_max_flat {
+    out.push("raster p\{flat_page} \{share_pct(flat)} of content has flat (fill) differences > \{share_pct(gate_max_flat)}")
+  }
+  out
+}
+
+///|
+let category_order : Array[String] = [
+  "failure", "unsupported feature", "missing/extra text", "reading order", "line-wrap change",
+  "page break/extra pages", "geometry", "navigation/metadata", "styling/assets",
+]
+
+///|
+fn Measured::categories(self : Measured, unsupported : Int) -> Array[String] {
+  let t = self.text
+  let out = []
+  if unsupported > 0 {
+    out.push("unsupported feature")
+  }
+  let text_differs = t.common_words != t.ruby_words || t.common_words != t.spike_words
+  if text_differs {
+    out.push("missing/extra text")
+  } else if t.ordered_words != t.common_words {
+    out.push("reading order")
+  }
+  let doc_lines_equal = t.document_ordered_lines == t.ruby_lines &&
+    t.document_ordered_lines == t.spike_lines
+  if !text_differs && t.ordered_words == t.common_words && !doc_lines_equal {
+    out.push("line-wrap change")
+  }
+  if self.ruby.pages != self.spike.pages ||
+    (doc_lines_equal && t.ordered_lines != t.ruby_lines) ||
+    t.same_page_words < t.ordered_words {
+    out.push("page break/extra pages")
+  }
+  if self.within_share() < gate_min_within ||
+    self.coverage() < gate_min_coverage ||
+    t.indent_mismatches > 0 {
+    out.push("geometry")
+  }
+  // fonts are styling; every other structure check is navigation/metadata
+  if self.structure.iter().any(c => !c.ok && c.name != "fonts") {
+    out.push("navigation/metadata")
+  }
+  if self.worst_raster().0 > gate_max_raster ||
+    self.worst_flat().0 > gate_max_flat ||
+    self.structure.iter().any(c => !c.ok && c.name == "fonts") {
+    out.push("styling/assets")
+  }
+  out
+}
+
+///|
+fn Measured::to_json(self : Measured) -> Json {
+  let t = self.text
+  let (worst, worst_page) = self.worst_raster()
+  let worst_pages = []
+  for p, n in t.page_off {
+    if n > 0 {
+      worst_pages.push((p + 1, n))
+    }
+  }
+  worst_pages.sort_by((a, b) => b.1.compare(a.1))
+  {
+    "pages": { "ruby": jn(self.ruby.pages), "spike": jn(self.spike.pages) },
+    "pdf_sha256": { "ruby": js(self.ruby.sha), "spike": js(self.spike.sha) },
+    "pdf_version": { "ruby": field(self.ruby.info, "version"), "spike": field(self.spike.info, "version") },
+    "empty": { "ruby": Json::boolean(t.ruby_words == 0), "spike": Json::boolean(t.spike_words == 0) },
+    "words": {
+      "ruby": jn(t.ruby_words),
+      "spike": jn(t.spike_words),
+      "common": jn(t.common_words),
+      "ordered": jn(t.ordered_words),
+      "ordered_exact": Json::boolean(t.ordered_exact),
+      "same_page": jn(t.same_page_words),
+    },
+    "lines": {
+      "ruby": jn(t.ruby_lines),
+      "spike": jn(t.spike_lines),
+      "ordered": jn(t.ordered_lines),
+      "common": jn(t.common_lines),
+      "missing": jn(t.ruby_lines - t.ordered_lines),
+      "extra": jn(t.spike_lines - t.ordered_lines),
+      "reordered": jn(t.common_lines - t.ordered_lines),
+      "document_ordered": jn(t.document_ordered_lines),
+      "identical_pages": jn(t.identical_pages),
+      "indent_mismatches": jn(t.indent_mismatches),
+      "examples": jstrings(t.line_examples),
+      "first_diff": t.first_line,
+    },
+    "geometry": {
+      "aligned_same_page": jn(t.aligned_same_page),
+      "measured": jn(t.measured),
+      "within_1pt": jn(t.within),
+      "coverage": jd(self.coverage()),
+      "dx": { "p50": jd(percentile(t.dx, 0.5)), "p95": jd(percentile(t.dx, 0.95)), "max": jd(percentile(t.dx, 1.0)) },
+      "dy": { "p50": jd(percentile(t.dy, 0.5)), "p95": jd(percentile(t.dy, 0.95)), "max": jd(percentile(t.dy, 1.0)) },
+      "dx_right": { "p50": jd(percentile(t.dx_right, 0.5)), "p95": jd(percentile(t.dx_right, 0.95)), "max": jd(percentile(t.dx_right, 1.0)) },
+      "worst_pages": Json::array(
+        worst_pages[:@cmp.minimum(5, worst_pages.length())].iter().map(e => ({ "page": jn(e.0), "off": jn(e.1) } : Json)).collect(),
+      ),
+      "examples": jstrings(t.off_examples),
+      "first_off": with_block(self.trace, t.first_off),
+    },
+    "raster": {
+      "dpi": 150,
+      "thresholds": Json::array(thresholds.map(jn)),
+      "worst_content_share": jd(worst),
+      "worst_flat_share": jd(self.worst_flat().0),
+      "worst_flat_page": jn(self.worst_flat().1),
+      "worst_page": jn(worst_page),
+      "pages": Json::array(
+        self.raster.map(p => ({
+          "page": jn(p.page),
+          "missing": js(p.missing),
+          "area": jn(p.area),
+          "content_area": jn(p.content_area),
+          "pixels": Json::array(p.counts.map(jn)),
+          "full_share": Json::array(Array::makei(thresholds.length(), i => jd(p.full_share(i)))),
+          "content_share": Json::array(Array::makei(thresholds.length(), i => jd(p.content_share(i)))),
+          "flat_pixels": jn(p.flat),
+          "flat_share": jd(p.flat_share()),
+        } : Json)),
+      ),
+    },
+    "structure": Json::array(
+      self.structure.map(c => ({ "name": js(c.name), "ok": Json::boolean(c.ok), "detail": js(c.detail) } : Json)),
+    ),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+
+///|
+priv struct Record {
+  name : String
+  input : String
+  input_sha : String
+  mut status : String
+  mut reason : String
+  ruby_run : Run?
+  spike_run : Run?
+  unsupported : Array[String]
+  known : String?
+  mut measured : Measured?
+  mut categories : Array[String]
+  mut gate_failures : Array[String]
+  dir : String
+  /// (--spec-goldens) why the record depends on a theme other than the
+  /// default
+  theme : String?
+}
+
+///|
+fn Record::passes(self : Record) -> Bool {
+  self.status == "ok" && self.gate_failures.is_empty()
+}
+
+///|
+/// A known difference excuses the record: an entry names it and the
+/// comparison completed (status ok) but measured differences. A known
+/// entry never excuses a crash, a timeout, a missing or invalid PDF or a
+/// failed measurement: those are not expected differences but a broken
+/// comparison.
+fn Record::excused(self : Record) -> Bool {
+  self.status == "ok" && !self.passes() && self.known is Some(_)
+}
+
+///|
+/// The record fails the gate.
+fn Record::fails(self : Record) -> Bool {
+  self.status != "skipped" && !self.passes() && !self.excused()
+}
+
+///|
+/// The cases `selected` names (a case's name, or for spec goldens a spec
+/// file's prefix such as `abstract_spec`), every case when none is named;
+/// an error when a name selects nothing or nothing is selected at all (a
+/// gate over no documents would pass vacuously).
+fn select_cases(
+  all_cases : Array[Case],
+  selected : Array[String],
+) -> Result[Array[Case], String] {
+  let matches = (c : Case, s : String) => c.name == s ||
+    c.name.has_prefix(s + "-")
+  let unknown = selected.filter(s => !all_cases.iter().any(c => matches(c, s)))
+  if !unknown.is_empty() {
+    return Err("no document is named \{unknown.join(", ")}")
+  }
+  let todo = all_cases.filter(c => selected.is_empty() ||
+    selected.iter().any(s => matches(c, s)))
+  if todo.is_empty() {
+    return Err("no documents to compare")
+  }
+  Ok(todo)
+}
+
+///|
+/// What a full spec-golden replay lacks: each spec file must yield the
+/// records the harvest counted (`record_counts.txt`: `count<TAB>path`,
+/// keyed here by file name), and every record loaded must have been
+/// replayed; one line per shortfall.
+fn coverage_problems(
+  expected : Map[String, Int],
+  loaded : Map[String, Int],
+  replayed : Int,
+) -> Array[String] {
+  let problems = []
+  if expected.is_empty() {
+    problems.push("no harvested record counts to check the replay against")
+  }
+  for file, n in expected {
+    let got = loaded.get(file).unwrap_or(0)
+    if got < n {
+      problems.push("\{file}: \{got} records replayed, \{n} harvested")
+    }
+  }
+  let total = loaded.values().fold(init=0, (a, b) => a + b)
+  if replayed != total {
+    problems.push("\{replayed} records compared, \{total} loaded")
+  }
+  problems
+}
+
+///|
+/// The harvested record counts of a spec-golden directory, by file name.
+async fn read_record_counts(dir : String) -> Map[String, Int] {
+  let counts : Map[String, Int] = Map([])
+  let text = @fs.read_file("\{dir}/record_counts.txt").text() catch {
+    _ => return counts
+  }
+  for line in text.split("\n") {
+    if line.has_prefix("#") || line.trim() == "" {
+      continue
+    }
+    let parts = line.split("\t").map(s => s.to_owned()).collect()
+    if parts.length() == 2 {
+      let path = parts[1]
+      let file = match path.rev_find("/") {
+        Some(i) => path[i + 1:].to_owned()
+        None => path
+      }
+      counts[file] = @string.parse_int(parts[0]) catch { _ => 0 }
+    }
+  }
+  counts
+}
+
+///|
+/// Badness, for sorting the summary worst first.
+fn Record::severity(self : Record) -> Double {
+  if self.status == "skipped" {
+    return -1.0
+  }
+  if self.status != "ok" {
+    return 1.0e9
+  }
+  guard self.measured is Some(m) else { return 1.0e9 }
+  let t = m.text
+  let line_dice = if t.ruby_lines + t.spike_lines == 0 {
+    1.0
+  } else {
+    2.0 * t.ordered_lines.to_double() / (t.ruby_lines + t.spike_lines).to_double()
+  }
+  let word_dice = if t.ruby_words + t.spike_words == 0 {
+    1.0
+  } else {
+    2.0 * t.ordered_words.to_double() / (t.ruby_words + t.spike_words).to_double()
+  }
+  (1.0 - line_dice) * 1.0e4 +
+  (1.0 - word_dice) * 1.0e4 +
+  (m.ruby.pages - m.spike.pages).abs().to_double() * 1.0e3 +
+  (1.0 - m.within_share()) * 1.0e2 +
+  m.worst_raster().0 * 10.0 +
+  m.structure.iter().filter(c => !c.ok).count().to_double() +
+  self.gate_failures.length().to_double() * 0.01
+}
+
+///|
+fn run_json(r : Run?) -> Json {
+  match r {
+    None => Json::null()
+    Some(r) =>
+      {
+        "command": js(r.command),
+        "exit": jn(r.code),
+        "timed_out": Json::boolean(r.timed_out),
+        "seconds": jd(r.seconds),
+        "stdout": js(clip(r.out, limit=65536)),
+        "stderr": js(clip(r.err, limit=65536)),
+      }
+  }
+}
+
+///|
+fn Record::to_json(self : Record) -> Json {
+  let unsupported_counts : Map[String, Int] = Map([])
+  for u in self.unsupported {
+    // "UNSUPPORTED kind what at loc" → "kind what"
+    let key = match u.rev_find(" at ") {
+      Some(i) => u[:i].to_owned().replace(old="UNSUPPORTED ", new="")
+      None => u
+    }
+    unsupported_counts[key] = unsupported_counts.get(key).unwrap_or(0) + 1
+  }
+  {
+    "name": js(self.name),
+    "input": js(self.input),
+    "input_sha256": js(self.input_sha),
+    "status": js(self.status),
+    "reason": js(self.reason),
+    "gate": js(
+      if self.passes() {
+        "pass"
+      } else if self.excused() {
+        "known"
+      } else {
+        "fail"
+      },
+    ),
+    "gate_failures": jstrings(self.gate_failures),
+    "known_difference": match self.known {
+      Some(k) => js(k)
+      None => Json::null()
+    },
+    "categories": jstrings(self.categories),
+    "unsupported": jstrings(self.unsupported),
+    "unsupported_summary": Json::object(unsupported_counts.map((_, v) => jn(v))),
+    "ruby": run_json(self.ruby_run),
+    "spike": run_json(self.spike_run),
+    "measurements": match self.measured {
+      Some(m) => m.to_json()
+      None => Json::null()
+    },
+  }
+}
+
+///|
+fn unsupported_lines(stderr : String) -> Array[String] {
+  let out = []
+  for line in stderr.split("\n") {
+    match line.find("UNSUPPORTED ") {
+      Some(i) => out.push(line[i:].to_owned())
+      None => ()
+    }
+  }
+  out
+}
+
+///|
+/// `--oracle-cache DIR`: Ruby's PDFs (and its exit status and output) are
+/// kept in DIR by document name and input hash, and reused while the input
+/// is unchanged. Ruby is the slow side of a comparison and its output only
+/// changes with the input (or with an included file, or the asciidoctor-pdf
+/// version: clear the cache then). Dates differ between a cached and a
+/// fresh render, but the comparison only checks that both PDFs have them.
+let oracle_cache : Ref[String?] = { val: None }
+
+///|
+/// Run Ruby asciidoctor-pdf on `input`, or reuse its cached result.
+async fn run_oracle(
+  name : String,
+  input : String,
+  input_sha : String,
+  ruby_pdf : String,
+  env : Map[String, String],
+) -> Run {
+  let args = ["\{gems()}/bin/asciidoctor-pdf", "-o", ruby_pdf, input]
+  // a document that shows the time of its conversion (`{localtime}` and
+  // the like) is always converted afresh
+  let shows_time = (@fs.read_file(input).text() catch { _ => "" }).contains(
+    "{local",
+  )
+  guard oracle_cache.val is Some(cache) && !shows_time else {
+    return run(ruby(), args, env~, timeout=conversion_timeout_ms)
+  }
+  let key = "\{cache}/\{name}-\{input_sha[:16]}"
+  if file_exists("\{key}.json") {
+    let saved = @json.parse(@fs.read_file("\{key}.json").text()) catch {
+      _ => Json::null()
+    }
+    let code = num(field(saved, "code")).unwrap_or(-1.0).to_int()
+    let restored = code != 0 || run("cp", ["\{key}.pdf", ruby_pdf]).code == 0
+    if saved != Json::null() && restored {
+      return {
+        command: str(field(saved, "command")),
+        code,
+        out: str(field(saved, "out")),
+        err: str(field(saved, "err")),
+        seconds: num(field(saved, "seconds")).unwrap_or(0.0),
+        timed_out: false,
+      }
+    }
+  }
+  let r = run(ruby(), args, env~, timeout=conversion_timeout_ms)
+  if !r.timed_out {
+    if r.code == 0 {
+      ignore(run("cp", [ruby_pdf, "\{key}.pdf"]))
+    }
+    let saved : Json = {
+      "command": js(r.command),
+      "code": jn(r.code),
+      "out": js(r.out),
+      "err": js(r.err),
+      "seconds": jd(r.seconds),
+    }
+    @fs.write_file("\{key}.json", saved.stringify(), create_mode=CreateOrTruncate) catch {
+      _ => ()
+    }
+  }
+  r
+}
+// ---------------------------------------------------------------------------
+// Spec goldens (--spec-goldens)
+//
+// The conversions harvested from asciidoctor-pdf's RSpec suite by
+// scripts/pdf_harvest.mbtx (tests/pdf_golden/*.jsonl, Ruby's PDFs in
+// _build/pdf-spec-cache/pdfs). Each record is replayed through the spike
+// with the same source, attributes, safe mode, doctype and base directory,
+// and Ruby's harvested PDF is the oracle (Ruby is not run again). Records
+// the harvest could not express as input + options keep its skip reason.
+// Records that depend on a theme other than the default are replayed with
+// it: the pdf-theme / pdf-themesdir / pdf-fontsdir / media attributes pass
+// through as attributes, and the `pdf_theme` option (the spec helpers'
+// `build_pdf_theme overrides, extends`, or a theme object) through the
+// spike's `--pdf-theme-json` (see `pdf_theme_json`); the summary counts
+// them as theme-dependent.
+
+///|
+let default_spec_goldens : String = "tests/pdf_golden"
+
+///|
+let default_spec_pdfs : String = "_build/pdf-spec-cache/pdfs"
+
+///|
+let default_spec_known : String = "tests/pdf_golden/known_failures.txt"
+
+///|
+let default_spec_gallery : String = "_build/gallery/pdf-spec"
+
+///|
+/// The asciidoctor-pdf checkout whose spec suite was harvested
+/// (scripts/pdf_harvest.mbtx); `$SPEC_ROOT` in the records.
+let spec_repo : String = ".repos/asciidoctor-pdf-2.3.27"
+
+///|
+/// What the spike gets for one harvested conversion.
+priv struct SpecCase {
+  id : String
+  spec_file : String
+  line : Int
+  description : String
+  /// why the record is not replayed: (category, detail)
+  skip : (String, String)?
+  /// why the record depends on a theme other than the default (see
+  /// `theme_dependent`)
+  theme : String?
+  /// the record's `pdf_theme` (null when the option is not given)
+  pdf_theme : Json
+  /// the source, written to input.adoc and passed on standard input; None
+  /// when the input is a file (`Case::input`)
+  text : String?
+  base_dir : String?
+  safe : String
+  doctype : String?
+  attributes : Map[String, Json]
+  /// files the spec created (placeholder-substituted path, base64 content)
+  files : Array[(String, String)]
+  ruby_pdf : String
+  ruby_messages : Array[String]
+}
+
+///|
+priv struct Case {
+  name : String
+  input : String
+  /// text written to `input` for the run and removed afterwards, or ""
+  wrapper : String
+  spec : SpecCase?
+}
+
+///|
+fn base64_decode(text : String) -> Bytes {
+  let value = fn(c : Char) -> Int {
+    match c {
+      'A'..='Z' => c.to_int() - 'A'.to_int()
+      'a'..='z' => c.to_int() - 'a'.to_int() + 26
+      '0'..='9' => c.to_int() - '0'.to_int() + 52
+      '+' | '-' => 62
+      '/' | '_' => 63
+      _ => -1
+    }
+  }
+  let out = Buffer()
+  let mut acc = 0
+  let mut bits = 0
+  for c in text {
+    let v = value(c)
+    if v < 0 {
+      continue
+    }
+    acc = ((acc << 6) | v) & 0xFFFFFF
+    bits += 6
+    if bits >= 8 {
+      bits -= 8
+      out.write_byte(((acc >> bits) & 0xFF).to_byte())
+    }
+  }
+  out.to_bytes()
+}
+
+///|
+fn safe_name_for(level : Double) -> String {
+  if level >= 20.0 {
+    "secure"
+  } else if level >= 10.0 {
+    "server"
+  } else if level >= 1.0 {
+    "safe"
+  } else {
+    "unsafe"
+  }
+}
+
+///|
+/// Whether the conversion depends on a theme other than the default.
+fn theme_dependent(rec : Json, attributes : Map[String, Json], text : String) -> String? {
+  if field(rec, "pdf_theme") != Json::null() {
+    return Some("pdf_theme option")
+  }
+  for key in ["pdf-theme", "pdf-themesdir", "pdf-fontsdir"] {
+    if attributes.contains(key) && attributes.get(key) != Some(Json::null()) {
+      return Some("\{key} attribute")
+    }
+  }
+  match attributes.get("media") {
+    Some(String(m)) if m == "print" || m == "prepress" => return Some("media=\{m}")
+    _ => ()
+  }
+  // attributes the document sets itself
+  for raw in text.split("\n") {
+    let line = raw.trim_end().to_owned()
+    for key in ["pdf-theme", "pdf-themesdir", "pdf-fontsdir"] {
+      if line.has_prefix(":\{key}:") {
+        return Some(":\{key}: in the document")
+      }
+    }
+    if line.has_prefix(":media:") &&
+      (line.contains("print") || line.contains("prepress")) {
+      return Some(":media: print/prepress in the document")
+    }
+  }
+  None
+}
+
+///|
+/// Reads the harvested records into cases. `gallery` must be absolute: the
+/// files a spec created are recreated in each case's directory there.
+async fn load_spec_goldens(
+  dir : String,
+  pdfs : String,
+  gallery : String,
+) -> Array[Case] {
+  let spec_root = @fs.realpath(spec_repo) catch {
+    _ => fail("\{spec_repo} is missing: run scripts/pdf_harvest.mbtx first")
+  }
+  let gems_root = gems()
+  let home = @env.get_env_var("HOME").unwrap_or("/tmp")
+  let out = []
+  for file in @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl")) {
+    for raw in @fs.read_file("\{dir}/\{file}").text().split("\n") {
+      if raw.trim() == "" {
+        continue
+      }
+      let first = @json.parse(raw.to_owned())
+      let name = str(field(first, "name"))
+      let case_dir = "\{gallery}/\{name}"
+      // the spec's scratch directories are inside the checkout, under the
+      // safe mode's jail (the base directory) as in the RSpec run: a file a
+      // spec created there is readable at the same depth
+      let spec_tmp = "\{spec_root}/spec/tmp/replay/\{name}"
+      let spec_out = "\{spec_root}/spec/output/replay/\{name}"
+      let line = raw
+        .to_owned()
+        .replace_all(old="$SPEC_TMP", new=spec_tmp)
+        .replace_all(old="$SPEC_OUT", new=spec_out)
+        .replace_all(old="$TMPDIR", new="\{case_dir}/tmp")
+        .replace_all(old="$SPEC_ROOT", new=spec_root)
+        .replace_all(old="$GEMS", new=gems_root)
+        .replace_all(old="$HOME", new=home)
+      let rec = @json.parse(line)
+      let input = field(rec, "input")
+      let text = match field(input, "text") {
+        String(s) => Some(s)
+        _ =>
+          match field(input, "lines") {
+            Array(a) => Some(a.map(str).join("\n"))
+            _ => None
+          }
+      }
+      let input_file = str(field(input, "file"))
+      let mut skip : (String, String)? = match field(rec, "skip") {
+        String(reason) =>
+          Some(
+            (
+              if reason.has_prefix("conversion raised") {
+                "skipped: conversion raised an error"
+              } else {
+                "skipped: \{reason}"
+              },
+              reason,
+            ),
+          )
+        _ => None
+      }
+      if skip is None && text is None && input_file == "" {
+        skip = Some(("skipped: input is not a document text or file", input.stringify()))
+      }
+      // options
+      let attributes : Map[String, Json] = Map([])
+      let mut safe = "secure" // the API's default
+      let mut doctype : String? = None
+      let mut base_dir : String? = None
+      match field(rec, "options") {
+        Object(opts) =>
+          for key, value in opts {
+            match (key, value) {
+              ("attributes", Object(m)) =>
+                for k, v in m {
+                  match v {
+                    String(_) | Null | True | False | Number(_, ..) => attributes[k] = v
+                    _ =>
+                      if skip is None {
+                        skip = Some(("skipped: attribute value is a Ruby object", "attribute \{k}"))
+                      }
+                  }
+                }
+              ("attributes", Array(a)) =>
+                for e in a {
+                  let s = str(e)
+                  match s.find("=") {
+                    Some(i) => attributes[s[:i].to_owned()] = Json::string(s[i + 1:].to_owned())
+                    None => attributes[s] = Json::string("")
+                  }
+                }
+              ("attributes", String(s)) =>
+                for entry in s.split(" ") {
+                  let e = entry.to_owned()
+                  if e == "" {
+                    continue
+                  }
+                  match e.find("=") {
+                    Some(i) => attributes[e[:i].to_owned()] = Json::string(e[i + 1:].to_owned())
+                    None => attributes[e] = Json::string("")
+                  }
+                }
+              ("attributes", Null) => ()
+              ("safe", String(s)) => safe = s
+              ("safe", Number(n, ..)) => safe = safe_name_for(n)
+              ("doctype", String(s)) => doctype = Some(s)
+              ("base_dir", String(s)) => base_dir = Some(s)
+              ("backend", String(b)) =>
+                if b != "pdf" && skip is None {
+                  skip = Some(("skipped: backend other than pdf", b))
+                }
+              // output placement, logging and the standalone flag (the PDF
+              // converter treats embedded as standalone); sourcemap only
+              // adds source locations (the spike always keeps them); and
+              // keys Asciidoctor does not read, which some specs pass by
+              // mistake (`analyze` to to_pdf_file, `attributes_overrides`)
+              (
+                "to_file"
+                | "to_dir"
+                | "mkdirs"
+                | "standalone"
+                | "header_footer"
+                | "logger"
+                | "timings"
+                | "sourcemap"
+                | "analyze"
+                | "attributes_overrides",
+                _,
+              ) => ()
+              _ =>
+                if skip is None {
+                  skip = Some(("skipped: option not replayed", "option \{key}"))
+                }
+            }
+          }
+        _ => ()
+      }
+      let theme = theme_dependent(rec, attributes, text.unwrap_or(""))
+      // the files the spec created, which did not survive the run
+      let files = []
+      match field(rec, "files") {
+        Object(m) =>
+          for path, entry in m {
+            match field(entry, "content_base64") {
+              String(b) if path.has_prefix(case_dir + "/") ||
+                path.has_prefix(spec_tmp + "/") ||
+                path.has_prefix(spec_out + "/") => files.push((path, b))
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+      let messages = items(field(rec, "messages")).map(m => {
+        let loc = str(field(m, "source_location"))
+        "severity \{num(field(m, "severity")).unwrap_or(0.0).to_int()}: \{str(field(m, "message"))}\{if loc == "" { "" } else { " (" + loc + ")" }}"
+      })
+      let spec : SpecCase = {
+        id: str(field(rec, "id")),
+        spec_file: str(field(rec, "spec")),
+        line: num(field(rec, "line")).unwrap_or(0.0).to_int(),
+        description: str(field(rec, "description")),
+        skip,
+        theme,
+        pdf_theme: field(rec, "pdf_theme"),
+        text,
+        base_dir: match (base_dir, text) {
+          (Some(d), _) => Some(d)
+          // a string is converted from the directory rspec ran in, unless
+          // a docdir attribute gives the base directory
+          (None, Some(_)) if attributes.get("docdir") is Some(String(_)) =>
+            None
+          (None, Some(_)) => Some(spec_root)
+          (None, None) => None
+        },
+        safe,
+        doctype,
+        attributes,
+        files,
+        ruby_pdf: "\{pdfs}/\{str(field(field(rec, "pdf"), "file"))}",
+        ruby_messages: messages,
+      }
+      out.push({
+        name,
+        input: if text is Some(_) { "\{case_dir}/input.adoc" } else { input_file },
+        wrapper: "",
+        spec: Some(spec),
+      })
+    }
+  }
+  out
+}
+
+///|
+/// The spec helpers set `nofooter` unless a spec enables the footer; a
+/// spike that inks the running footer anyway adds one page-number line per
+/// page and nothing else.
+let footer_category : String = "extra running footer (nofooter ignored)"
+
+///|
+/// Whether every Ruby line is matched in order and the spike's extra lines
+/// (as far as the line examples show) are page numbers, at most one a page.
+fn extra_footer(m : Measured) -> Bool {
+  let t = m.text
+  if t.ordered_lines != t.ruby_lines ||
+    t.spike_lines <= t.ruby_lines ||
+    t.spike_lines - t.ruby_lines > m.spike.pages {
+    return false
+  }
+  let mut extra = 0
+  for e in t.line_examples {
+    match e.find(" + spike: ") {
+      Some(i) => {
+        let text = e[i + " + spike: ".length():].trim().to_owned()
+        if text == "" ||
+          !text.iter().all(ch => ch.is_ascii_digit() || "ivxlcdm".contains_char(ch)) {
+          return false
+        }
+        extra += 1
+      }
+      None => if e.contains(" − ruby: ") { return false }
+    }
+  }
+  extra > 0
+}
+
+///|
+/// The spike's `--pdf-theme-json` for a record's `pdf_theme` (as the
+/// harvest wrote it): the helpers' overrides and `extends`, which the spike
+/// applies as `build_pdf_theme` does, or the table of a theme object.
+fn pdf_theme_json(pdf_theme : Json) -> Json? {
+  match pdf_theme {
+    Object(m) =>
+      match m.get("object") {
+        Some(obj) =>
+          match field(obj, "__theme__") {
+            Object(_) as table => Some(Json::object(Map([("table", table)])))
+            _ => None
+          }
+        None =>
+          Some(
+            Json::object(
+              Map([
+                ("extends", field(pdf_theme, "extends")),
+                ("overrides", field(pdf_theme, "overrides")),
+              ]),
+            ),
+          )
+      }
+    _ => None
+  }
+}
+
+///|
+/// A record for a case that is not replayed.
+fn skipped_record(c : Case, dir : String, category : String, detail : String) -> Record {
+  {
+    name: c.name,
+    input: c.input,
+    input_sha: "",
+    status: "skipped",
+    reason: detail,
+    ruby_run: None,
+    spike_run: None,
+    unsupported: [],
+    known: None,
+    measured: None,
+    categories: [category],
+    gate_failures: [],
+    dir,
+    theme: c.spec.bind(s => s.theme),
+  }
+}
+
+///|
+/// Prepares a spec case's directory and returns Ruby's (cached) run and the
+/// spike's arguments.
+async fn prepare_spec_case(
+  c : Case,
+  spec : SpecCase,
+  dir : String,
+  ruby_pdf : String,
+) -> (Run, Array[String], String?) {
+  for f in spec.files {
+    let (path, content) = f
+    ignore(run("mkdir", ["-p", path[:path.rev_find("/").unwrap_or(0)].to_owned()]))
+    @fs.write_file(path, base64_decode(content), create_mode=CreateOrTruncate)
+  }
+  match spec.text {
+    Some(t) => @fs.write_file(c.input, t, create_mode=CreateOrTruncate)
+    None => ()
+  }
+  let attributes_file = "\{dir}/attributes.json"
+  @fs.write_file(
+    attributes_file,
+    Json::object(spec.attributes).stringify(indent=1),
+    create_mode=CreateOrTruncate,
+  )
+  let have = file_exists(spec.ruby_pdf)
+  if have {
+    ignore(run("cp", [spec.ruby_pdf, ruby_pdf]))
+  }
+  let ruby_run : Run = {
+    command: "harvested reference PDF \{spec.ruby_pdf} (spec/\{spec.spec_file}:\{spec.line} \{spec.id})",
+    code: if have { 0 } else { 1 },
+    out: spec.description,
+    err: if have {
+      spec.ruby_messages.join("\n")
+    } else {
+      "reference PDF missing: run scripts/pdf_harvest.mbtx"
+    },
+    seconds: 0.0,
+    timed_out: false,
+  }
+  let args = ["-S", spec.safe, "--attributes-json", attributes_file]
+  match pdf_theme_json(spec.pdf_theme) {
+    Some(json) => {
+      let theme_file = "\{dir}/pdf_theme.json"
+      @fs.write_file(
+        theme_file,
+        json.stringify(indent=1),
+        create_mode=CreateOrTruncate,
+      )
+      args.append(["--pdf-theme-json", theme_file])
+    }
+    None => ()
+  }
+  match spec.base_dir {
+    Some(d) => args.append(["-B", d])
+    None => ()
+  }
+  match spec.doctype {
+    Some(d) => args.append(["-d", d])
+    None => ()
+  }
+  let stdin = match spec.text {
+    Some(_) => {
+      args.push("-")
+      Some(c.input)
+    }
+    None => {
+      args.push(c.input)
+      None
+    }
+  }
+  (ruby_run, args, stdin)
+}
+
+
+///|
+async fn compare_case(
+  c : Case,
+  gallery : String,
+  known : Map[String, String],
+  verbose : Bool,
+) -> Record {
+  let { name, input, wrapper, .. } = c
+  let dir = "\{gallery}/\{name}"
+  match c.spec {
+    Some({ skip: Some((category, detail)), .. }) =>
+      return skipped_record(c, dir, category, detail)
+    _ => ()
+  }
+  ignore(run("rm", ["-rf", dir]))
+  ignore(run("mkdir", ["-p", dir]))
+  if wrapper != "" {
+    @fs.write_file(input, wrapper, create_mode=CreateOrTruncate) catch {
+      _ => ()
+    }
+  }
+  let ruby_pdf = "\{dir}/ruby.pdf"
+  let spike_pdf = "\{dir}/spike.pdf"
+  let (rr, spike_args, stdin_file) = match c.spec {
+    Some(spec) => prepare_spec_case(c, spec, dir, ruby_pdf)
+    None => {
+      let input_sha = sha256(input)
+      let env = gem_env()
+      (run_oracle(name, input, input_sha, ruby_pdf, env), [input], None)
+    }
+  }
+  let input_sha = sha256(input)
+  let sr = run(
+    spike_exe.val,
+    [
+      "--layout-trace",
+      "\{dir}/trace.tsv",
+      // absolute: a relative -o resolves from -B, as in Ruby
+      "-o",
+      (@fs.realpath(dir) catch { _ => dir }) + "/spike.pdf",
+      ..spike_args,
+    ],
+    timeout=conversion_timeout_ms,
+    stdin_file?,
+  )
+  if wrapper != "" {
+    @fs.remove(input) catch {
+      _ => ()
+    }
+  }
+  let record : Record = {
+    name,
+    input,
+    input_sha,
+    status: "ok",
+    reason: "",
+    ruby_run: Some(rr),
+    spike_run: Some(sr),
+    unsupported: unsupported_lines(sr.err),
+    known: known.get(name),
+    measured: None,
+    categories: [],
+    gate_failures: [],
+    dir,
+    theme: c.spec.bind(s => s.theme),
+  }
+  let ruby_ok = rr.code == 0 && file_exists(ruby_pdf)
+  let spike_ok = sr.code == 0 && file_exists(spike_pdf)
+  if rr.timed_out || sr.timed_out {
+    record.status = "timeout"
+    let who = if rr.timed_out { "Ruby" } else { "spike" }
+    record.reason = "\{who} exceeded \{conversion_timeout_ms / 1000}s"
+  } else if !ruby_ok && !spike_ok {
+    record.status = "both_failed"
+    record.reason = "Ruby exit \{rr.code}, spike exit \{sr.code}"
+  } else if !ruby_ok {
+    record.status = "oracle_failed"
+    record.reason = "Ruby exit \{rr.code}: \{clip(rr.err.trim().to_owned(), limit=300)}"
+  } else if !spike_ok {
+    record.status = "spike_failed"
+    record.reason = "spike exit \{sr.code}: \{clip(sr.err.trim().to_owned(), limit=300)}"
+  } else {
+    try {
+      let m = measure(ruby_pdf, spike_pdf, dir, verbose)
+      record.measured = Some(m)
+      // the gallery's page images
+      ignore(run("pdftoppm", ["-r", "60", "-png", ruby_pdf, "\{dir}/ruby"]))
+      ignore(run("pdftoppm", ["-r", "60", "-png", spike_pdf, "\{dir}/spike"]))
+      @fs.write_file(
+        "\{dir}/ruby.txt",
+        tool("pdftotext", ["-layout", ruby_pdf, "-"]),
+        create_mode=CreateOrTruncate,
+      )
+      @fs.write_file(
+        "\{dir}/spike.txt",
+        tool("pdftotext", ["-layout", spike_pdf, "-"]),
+        create_mode=CreateOrTruncate,
+      )
+    } catch {
+      InvalidPdf(why) => {
+        record.status = "invalid_pdf"
+        record.reason = why
+      }
+      MeasurementFailed(why) => {
+        record.status = "measurement_failed"
+        record.reason = why
+      }
+      e => {
+        record.status = "measurement_failed"
+        record.reason = e.to_string()
+      }
+    }
+  }
+  match record.measured {
+    Some(m) => {
+      record.categories = m.categories(record.unsupported.length())
+      record.gate_failures = m.gate_failures()
+      match c.spec {
+        Some(spec) if !record.gate_failures.is_empty() &&
+          spec.attributes.get("nofooter") is Some(v) &&
+          v != Json::null() &&
+          v != Json::boolean(false) &&
+          extra_footer(m) => record.categories.push(footer_category)
+        _ => ()
+      }
+    }
+    None => {
+      record.categories = ["failure"]
+      record.gate_failures = [record.status]
+    }
+  }
+  record
+}
+
+// ---------------------------------------------------------------------------
+// Output
+
+///|
+fn html_escape(text : String) -> String {
+  text
+  .replace_all(old="&", new="&amp;")
+  .replace_all(old="<", new="&lt;")
+  .replace_all(old=">", new="&gt;")
+  .replace_all(old="\"", new="&quot;")
+}
+
+///|
+fn Record::summary_line(self : Record) -> String {
+  match self.measured {
+    None => "\{self.name}: \{self.status} (\{self.reason})"
+    Some(m) => {
+      let t = m.text
+      let (worst, page) = m.worst_raster()
+      "\{self.name}: \{if self.passes() { "PASS" } else if self.excused() { "KNOWN" } else { "FAIL" }} pages \{m.ruby.pages}/\{m.spike.pages}, lines \{ratio(t.ordered_lines, t.ruby_lines)} (spike \{t.spike_lines}), words \{ratio(t.common_words, t.ruby_words)} (spike \{t.spike_words}), ±1pt \{ratio(t.within, t.measured)} coverage \{pct(t.measured, t.ruby_words)}, raster worst p\{page} \{share_pct(worst)} flat \{share_pct(m.worst_flat().0)}, structure \{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}" +
+      (if self.categories.is_empty() { "" } else { " [\{self.categories.join(", ")}]" })
+    }
+  }
+}
+
+///|
+fn gate_cell(r : Record) -> String {
+  if r.passes() {
+    "<span class=\"pass\">pass</span>"
+  } else if r.excused() && r.known is Some(k) {
+    "<span class=\"known\" title=\"\{html_escape(k)}\">known</span>"
+  } else {
+    "<span class=\"fail\">FAIL</span>"
+  }
+}
+
+///|
+fn summary_row(r : Record) -> String {
+  let name = "<a href=\"#\{html_escape(r.name)}\">\{html_escape(r.name)}</a>"
+  let cats = html_escape(r.categories.join(", "))
+  match r.measured {
+    None =>
+      "<tr><td>\{name}</td><td>\{html_escape(r.status)}</td><td>\{gate_cell(r)}</td><td>\{cats}</td><td colspan=\"8\">\{html_escape(r.reason)}</td><td>\{r.unsupported.length()}</td></tr>"
+    Some(m) => {
+      let t = m.text
+      let (worst, page) = m.worst_raster()
+      let pages = if m.ruby.pages == m.spike.pages {
+        "\{m.ruby.pages}"
+      } else {
+        "<b>\{m.ruby.pages} / \{m.spike.pages}</b>"
+      }
+      "<tr><td>\{name}</td><td>ok</td><td>\{gate_cell(r)}</td><td>\{cats}</td><td>\{pages}</td>" +
+      "<td>\{ratio(t.ordered_lines, t.ruby_lines)}<br><span class=\"stat\">−\{t.ruby_lines - t.ordered_lines} +\{t.spike_lines - t.ordered_lines} ↕\{t.common_lines - t.ordered_lines} indent \{t.indent_mismatches}</span></td>" +
+      "<td>\{ratio(t.common_words, t.ruby_words)}<br><span class=\"stat\">spike \{t.spike_words}, ordered \{t.ordered_words}\{if t.ordered_exact { "" } else { " (approx.)" }}</span></td>" +
+      "<td>\{ratio(t.within, t.measured)}</td><td>\{ratio(t.measured, t.ruby_words)}</td>" +
+      "<td>\{fixed(percentile(t.dy, 0.95), digits=2)} / \{fixed(percentile(t.dy, 1.0), digits=2)}</td>" +
+      "<td>\{share_pct(worst)}\{if page > 0 { " (p\{page})" } else { "" }}<br><span class=\"stat\">flat \{share_pct(m.worst_flat().0)}</span></td>" +
+      "<td>\{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}</td><td>\{r.unsupported.length()}</td></tr>"
+    }
+  }
+}
+
+///|
+fn run_block(label : String, r : Run?) -> String {
+  match r {
+    None => ""
+    Some(r) =>
+      "<details><summary>\{label}: exit \{r.code}, \{fixed(r.seconds, digits=2)}s\{if r.timed_out { ", timed out" } else { "" }}</summary><pre>$ \{html_escape(r.command)}\n\{html_escape(clip(r.out, limit=8000))}\n\{html_escape(clip(r.err, limit=8000))}</pre></details>"
+  }
+}
+
+///|
+async fn section(r : Record) -> String {
+  let parts = []
+  parts.push("<section id=\"\{html_escape(r.name)}\"><h2>\{html_escape(r.name)} \{gate_cell(r)}</h2>")
+  parts.push(
+    "<p class=\"stat\">\{html_escape(r.input)} · sha256 \{r.input_sha} · status \{r.status}\{if r.reason == "" { "" } else { ": " + html_escape(r.reason) }}</p>",
+  )
+  match r.known {
+    Some(k) => parts.push("<p>Known difference: \{html_escape(k)}</p>")
+    None => ()
+  }
+  if !r.gate_failures.is_empty() {
+    parts.push("<p>Gate: \{html_escape(r.gate_failures.join("; "))}</p>")
+  }
+  if !r.unsupported.is_empty() {
+    parts.push(
+      "<details><summary>\{r.unsupported.length()} unsupported</summary><pre>\{html_escape(r.unsupported[:@cmp.minimum(200, r.unsupported.length())].to_owned().join("\n"))}</pre></details>",
+    )
+  }
+  parts.push(run_block("Ruby asciidoctor-pdf", r.ruby_run))
+  parts.push(run_block("spike", r.spike_run))
+  match r.measured {
+    None => ()
+    Some(m) => {
+      let t = m.text
+      parts.push(
+        "<p><a href=\"\{r.name}/ruby.pdf\">ruby.pdf</a> · <a href=\"\{r.name}/spike.pdf\">spike.pdf</a> · <a href=\"\{r.name}/ruby.txt\">ruby.txt</a> · <a href=\"\{r.name}/spike.txt\">spike.txt</a></p>",
+      )
+      parts.push(
+        "<p class=\"stat\">words: \{ratio(t.common_words, t.ruby_words)} shared (spike \{t.spike_words}), \{t.ordered_words} in order, \{t.same_page_words} of those on the same page. Lines: \{t.ordered_lines} in order of \{t.ruby_lines} Ruby / \{t.spike_lines} spike (\{t.document_ordered_lines} ignoring page breaks), \{t.identical_pages}/\{t.pages.length()} pages identical, \{t.indent_mismatches} indentation differences. Geometry: \{ratio(t.within, t.measured)} of measured words within 1pt; coverage \{ratio(t.measured, t.ruby_words)}; |dx| p50/p95/max \{fixed(percentile(t.dx, 0.5), digits=2)}/\{fixed(percentile(t.dx, 0.95), digits=2)}/\{fixed(percentile(t.dx, 1.0), digits=2)}pt, |dy| \{fixed(percentile(t.dy, 0.5), digits=2)}/\{fixed(percentile(t.dy, 0.95), digits=2)}/\{fixed(percentile(t.dy, 1.0), digits=2)}pt, right edge |dx| max \{fixed(percentile(t.dx_right, 1.0), digits=2)}pt.</p>",
+      )
+      let checks = m.structure.map(c => "<li class=\"\{if c.ok { "ok" } else { "bad" }}\">\{html_escape(c.name)}: \{html_escape(c.detail)}</li>")
+      parts.push("<ul class=\"checks\">\{checks.join("")}</ul>")
+      if !t.line_examples.is_empty() {
+        parts.push(
+          "<details><summary>line differences</summary><pre>\{html_escape(t.line_examples.join("\n"))}</pre></details>",
+        )
+      }
+      if !t.off_examples.is_empty() {
+        parts.push(
+          "<details><summary>words off by more than 1pt</summary><pre>\{html_escape(t.off_examples.join("\n"))}</pre></details>",
+        )
+      }
+      let rp = rendered_pages(r.dir, "ruby", ".png")
+      let sp = rendered_pages(r.dir, "spike", ".png")
+      let rows = []
+      for p in m.raster {
+        let n = p.page
+        let cell = fn(map : Map[Int, String]) {
+          match map.get(n) {
+            Some(path) => {
+              let file = path[path.rev_find("/").unwrap_or(-1) + 1:].to_owned()
+              "<img src=\"\{r.name}/\{file}\" loading=\"lazy\">"
+            }
+            None => "<div class=\"missing\">no page</div>"
+          }
+        }
+        let diff = if p.diff == "" {
+          "<div class=\"missing\">\{if p.missing == "" { "" } else { "missing in " + p.missing }}</div>"
+        } else {
+          "<img src=\"\{r.name}/\{p.diff}\" loading=\"lazy\">"
+        }
+        let pl = if n - 1 < t.pages.length() {
+          let x = t.pages[n - 1]
+          "lines \{x.ordered}/\{x.ruby} in order (spike \{x.spike}), indent \{x.indent_mismatches}; words off \{if n - 1 < t.page_off.length() { t.page_off[n - 1] } else { 0 }}; "
+        } else {
+          ""
+        }
+        let raster = if p.missing != "" {
+          "page missing in \{p.missing}"
+        } else {
+          "pixels >64: \{share_pct(p.content_share(1))} of content, flat \{share_pct(p.flat_share())}, \{share_pct(p.full_share(1))} of page (>16 \{share_pct(p.content_share(0))}, >128 \{share_pct(p.content_share(2))})"
+        }
+        rows.push(
+          "<tr><th colspan=\"3\">page \{n} <span class=\"stat\">\{pl}\{raster}</span></th></tr><tr><td>\{cell(rp)}</td><td>\{cell(sp)}</td><td>\{diff}</td></tr>",
+        )
+      }
+      parts.push(
+        "<table class=\"pages\"><tr><th>Ruby asciidoctor-pdf 2.3.27</th><th>asciidoctor.mbt spike</th><th>difference (150 dpi, >64; red Ruby only, blue spike only)</th></tr>\{rows.join("\n")}</table>",
+      )
+    }
+  }
+  parts.push("</section>")
+  parts.join("\n")
+}
+
+///|
+async fn write_outputs(
+  gallery : String,
+  records : Array[Record],
+  tools : Json,
+  title : String,
+) -> Unit {
+  let sorted = records.copy()
+  sorted.sort_by((a, b) => b.severity().compare(a.severity()))
+  // counts
+  let by_status : Map[String, Int] = Map([])
+  let by_category : Map[String, Int] = Map([])
+  let mut pass = 0
+  let mut known = 0
+  let mut skipped = 0
+  for r in records {
+    by_status[r.status] = by_status.get(r.status).unwrap_or(0) + 1
+    for c in r.categories {
+      by_category[c] = by_category.get(c).unwrap_or(0) + 1
+    }
+    if r.status == "skipped" {
+      // not replayed (spec goldens): neither pass nor fail
+      skipped += 1
+    } else if r.passes() {
+      pass += 1
+    } else if r.excused() {
+      known += 1
+    }
+  }
+  let failing = records.length() - pass - known - skipped
+  let summary : Json = {
+    "title": js(title),
+    "generated_at_unix": jd(now_seconds()),
+    "tools": tools,
+    "thresholds": {
+      "tolerance_pt": jd(tolerance_pt),
+      "min_within_1pt": jd(gate_min_within),
+      "min_coverage": jd(gate_min_coverage),
+      "max_raster_content_share": jd(gate_max_raster),
+      "max_flat_content_share": jd(gate_max_flat),
+      "raster_dpi": 150,
+      "raster_channel_threshold": jn(thresholds[gate_threshold_index]),
+    },
+    "counts": {
+      "documents": jn(records.length()),
+      "pass": jn(pass),
+      "known": jn(known),
+      "fail": jn(failing),
+      "not_replayed": jn(skipped),
+      "status": Json::object(by_status.map((_, v) => jn(v))),
+      "categories": Json::object(by_category.map((_, v) => jn(v))),
+    },
+    "documents": Json::array(sorted.map(r => r.to_json())),
+  }
+  @fs.write_file("\{gallery}/summary.json", summary.stringify(indent=1), create_mode=CreateOrTruncate)
+  let status_rows = by_status.iter().map(kv => "<tr><td>\{kv.0}</td><td>\{kv.1}</td></tr>").collect().join("")
+  let category_rows = category_order
+    .filter(c => by_category.contains(c))
+    .map(c => "<tr><td>\{c}</td><td>\{by_category.get(c).unwrap_or(0)}</td></tr>")
+    .join("")
+  // the categories of records not replayed (spec goldens)
+  let other_categories = by_category.keys().filter(c => !category_order.contains(c)).collect()
+  other_categories.sort_by(lexical)
+  let category_rows = category_rows +
+    other_categories
+    .map(c => "<tr><td>\{html_escape(c)}</td><td>\{by_category.get(c).unwrap_or(0)}</td></tr>")
+    .join("")
+  let skipped_note = if skipped > 0 { ", \{skipped} not replayed" } else { "" }
+  let replayed = sorted.filter(r => r.status != "skipped")
+  let not_replayed = sorted.filter(r => r.status == "skipped")
+  not_replayed.sort_by((a, b) => lexical(a.name, b.name))
+  let sections = []
+  for r in replayed {
+    sections.push(section(r))
+  }
+  if !not_replayed.is_empty() {
+    sections.push(
+      "<h2>Not replayed (\{not_replayed.length()})</h2><div class=\"scroll\"><table class=\"counts\"><tr><th>case</th><th>category</th><th>reason</th></tr>" +
+      not_replayed
+      .map(r => "<tr><td>\{html_escape(r.name)}</td><td>\{html_escape(r.categories.join(", "))}</td><td>\{html_escape(r.reason)}</td></tr>")
+      .join("") +
+      "</table></div>",
+    )
+  }
+  let html =
+    $|<!DOCTYPE html>
+    $|<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    $|<title>PDF backend comparison</title>
+    $|<style>
+    $|:root { color-scheme: light dark; --bg: #fff; --fg: #222; --muted: #666; --line: #ddd; --ok: #1a7f37; --bad: #c62828; --known: #9a6700; }
+    $|@media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #eee; --muted: #aaa; --line: #444; --ok: #5fd068; --bad: #ff7b72; --known: #e3b341; } }
+    $|body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; margin: 16px; }
+    $|table { border-collapse: collapse; }
+    $|.summary td, .summary th, .counts td, .counts th { border: 1px solid var(--line); padding: 4px 8px; text-align: right; vertical-align: top; }
+    $|.summary td:first-child, .summary td:nth-child(4), .counts td:first-child { text-align: left; }
+    $|.summary td:first-child { max-width: 22em; overflow-wrap: anywhere; } .summary td:nth-child(4) { min-width: 12em; }
+    $|.pages td { vertical-align: top; padding: 4px; }
+    $|.pages img { width: 100%; max-width: 420px; border: 1px solid var(--line); background: #fff; }
+    $|.pages th { text-align: left; font-weight: 600; padding-top: 12px; }
+    $|.stat { color: var(--muted); font-weight: normal; font-size: 12px; }
+    $|.missing { width: 420px; max-width: 100%; height: 60px; border: 1px dashed var(--line); color: var(--muted); }
+    $|.pass, .ok { color: var(--ok); } .fail, .bad { color: var(--bad); } .known { color: var(--known); }
+    $|pre { white-space: pre-wrap; font-size: 12px; }
+    $|.scroll { overflow-x: auto; }
+    $|</style></head><body>
+  let head =
+    $|<h1>\{html_escape(title)}</h1>
+    $|<p>Generated by <code>scripts/pdf_compare.mbtx</code>: Ruby asciidoctor-pdf (oracle) against the asciidoctor.mbt spike (<code>pdf/</code>), default theme. The script header defines every metric and the acceptance thresholds: same page count; every page's ordered lines identical (indentation included); ≥\{share_pct(gate_min_within)} of measured words within \{fixed(tolerance_pt, digits=0)}pt with ≥\{share_pct(gate_min_coverage)} of Ruby's words measured; all structure checks; at most \{share_pct(gate_max_raster)} of any page's content region differing by more than 64 levels at 150 dpi, and at most \{share_pct(gate_max_flat)} with flat (fill) differences. Counts are exact; percentages are truncated, never rounded up. Machine-readable results: <a href="summary.json">summary.json</a>.</p>
+    $|<p><b>\{records.length()} documents: \{pass} pass, \{known} known differences, \{failing} fail\{skipped_note}.</b></p>
+    $|<div class="scroll"><table class="counts"><tr><th>status</th><th>documents</th></tr>\{status_rows}</table></div>
+    $|<div class="scroll"><table class="counts"><tr><th>category</th><th>documents</th></tr>\{category_rows}</table></div>
+    $|<h2>Documents, worst first</h2>
+    $|<div class="scroll"><table class="summary"><tr><th>document</th><th>status</th><th>gate</th><th>categories</th><th>pages (Ruby / spike)</th><th>lines in order / Ruby (−missing +extra ↕reordered)</th><th>words shared / Ruby</th><th>±1pt / measured</th><th>measured / Ruby words</th><th>|dy| p95 / max (pt)</th><th>raster worst page (>64, content; flat)</th><th>structure</th><th>unsupported</th></tr>
+  let out =
+    $|\{html}
+    $|\{head}
+    $|\{replayed.map(summary_row).join("\n")}
+    $|</table></div>
+    $|\{sections.join("\n")}
+    $|<h2>Tools</h2><pre>\{html_escape(tools.stringify(indent=1))}</pre>
+    $|</body></html>
+  @fs.write_file("\{gallery}/index.html", out, create_mode=CreateOrTruncate)
+}
+
+///|
+async fn tool_versions() -> Json {
+  let env = gem_env()
+  let version = fn(r : Run) {
+    first_line(if r.out.trim() == "" { r.err } else { r.out })
+  }
+  // pdf/moon.work names the pagelayout checkout by absolute path
+  let work = @fs.read_file("pdf/moon.work").text() catch { _ => "" }
+  let mut office = ""
+  for line in work.split("\n") {
+    let l = line.trim(chars=" \t\",").to_owned()
+    if l.has_suffix("/pagelayout") {
+      office = l[:l.length() - "/pagelayout".length()].to_owned()
+    }
+  }
+  let office_rev = if office == "" {
+    ""
+  } else {
+    run("git", ["-C", office, "rev-parse", "HEAD"]).out.trim().to_owned()
+  }
+  let dirty = run("git", ["status", "--porcelain", "--", "pdf", "scripts"]).out.trim() != ""
+  {
+    "ruby": js(version(run(ruby(), ["-v"]))),
+    "asciidoctor_pdf": js(version(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-v"], env~))),
+    "poppler": js(version(run("pdftotext", ["-v"]))),
+    "moon": js(version(run("moon", ["version"]))),
+    "asciidoctor_mbt_commit": js(run("git", ["rev-parse", "HEAD"]).out.trim().to_owned() + (if dirty { " (modified)" } else { "" })),
+    "office_mbt": js(office),
+    "office_mbt_commit": js(office_rev),
+    "spike": js(spike_exe.val),
+    "inspector": js(inspector),
+  }
+}
+
+///|
+async fn read_known(path : String) -> Map[String, String] {
+  let known : Map[String, String] = Map([])
+  let text = @fs.read_file(path).text() catch { _ => return known }
+  for raw in text.split("\n") {
+    let line = raw.trim()
+    if line == "" || line.has_prefix("#") {
+      continue
+    }
+    match line.find(":") {
+      Some(i) => known[line[:i].trim().to_owned()] = line[i + 1:].trim().to_owned()
+      None => known[line.to_owned()] = "(no reason given)"
+    }
+  }
+  known
+}
+
+// ---------------------------------------------------------------------------
+// Self-test
+
+///|
+/// Corrupt a good spike PDF in six ways and check that each corruption is
+/// flagged by the metric meant to catch it — and that the uncorrupted PDF,
+/// compared with itself, passes everything. Also renders the oracle twice
+/// and checks the renderings are identical (the raster noise floor).
+/// The gate's own decisions, on made-up records: what a known difference
+/// excuses, what a selection may name, what a full replay must cover.
+fn gate_logic_checks(check : (String, Bool, String) -> Unit) -> Unit {
+  let record = (status : String, known : String?, failures : Array[String]) => {
+    Record::{
+      name: "doc",
+      input: "doc.adoc",
+      input_sha: "",
+      status,
+      reason: "",
+      ruby_run: None,
+      spike_run: None,
+      unsupported: [],
+      known,
+      measured: None,
+      categories: [],
+      gate_failures: failures,
+      dir: "",
+      theme: None,
+    }
+  }
+  let known = Some("an accepted difference")
+  check("gate: a passing record passes", !record("ok", None, []).fails(), "")
+  check(
+    "gate: a differing record fails",
+    record("ok", None, ["pages 2 vs 3"]).fails(),
+    "",
+  )
+  check(
+    "gate: a known difference excuses a differing record",
+    !record("ok", known, ["pages 2 vs 3"]).fails(),
+    "",
+  )
+  for status in [
+    "oracle_failed", "spike_failed", "both_failed", "timeout", "invalid_pdf", "measurement_failed",
+  ] {
+    let r = record(status, known, [])
+    check(
+      "gate: a known difference does not excuse \{status}",
+      r.fails() && !r.excused(),
+      "",
+    )
+  }
+  check(
+    "gate: a skipped record neither passes nor fails",
+    !record("skipped", None, []).fails() && !record("skipped", None, []).passes(),
+    "",
+  )
+  let cases : Array[Case] = [
+    { name: "sampler", input: "", wrapper: "", spec: None },
+    { name: "abstract_spec-1.2-1", input: "", wrapper: "", spec: None },
+  ]
+  check("selection: none selects all", select_cases(cases, []) is Ok([_, _]), "")
+  check(
+    "selection: a spec file selects its records",
+    select_cases(cases, ["abstract_spec"]) is Ok([_]),
+    "",
+  )
+  check(
+    "selection: an unknown name is an error",
+    select_cases(cases, ["sampler", "__nonexistent__"]) is Err(_),
+    "",
+  )
+  check("selection: nothing to select is an error", select_cases([], []) is Err(_), "")
+  let expected = { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }
+  check(
+    "coverage: every harvested record replayed",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }, 5).is_empty(),
+    "",
+  )
+  check(
+    "coverage: a record gone from a spec file",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 1 }, 4).length() == 1,
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 1 }, 4).join("; "),
+  )
+  check(
+    "coverage: a spec file gone",
+    coverage_problems(expected, { "a_spec.jsonl": 3 }, 3).length() == 1,
+    "",
+  )
+  check(
+    "coverage: a record not compared",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }, 4).length() == 1,
+    "",
+  )
+  check(
+    "coverage: no harvested counts",
+    !coverage_problems({}, { "a_spec.jsonl": 3 }, 3).is_empty(),
+    "",
+  )
+}
+
+///|
+async fn self_test(gallery : String) -> Bool {
+  let dir = "\{gallery}/self-test"
+  ignore(run("rm", ["-rf", dir]))
+  ignore(run("mkdir", ["-p", dir]))
+  let results = []
+  let check = fn(label : String, ok : Bool, detail : String) {
+    results.push((label, ok, detail))
+  }
+  gate_logic_checks(check)
+  let good = "\{dir}/good.pdf"
+  let r = run(spike_exe.val, ["-o", good, "pdf/tests/sampler.adoc"])
+  if r.code != 0 {
+    println("self-test: the spike failed on the sampler: \{r.err}")
+    return false
+  }
+  let measure_to = async fn(other : String, sub : String) -> Measured? {
+    let d = "\{dir}/\{sub}"
+    ignore(run("mkdir", ["-p", d]))
+    try {
+      Some(measure(good, other, d, false))
+    } catch {
+      e => {
+        check("\{sub}: measurable", false, e.to_string())
+        None
+      }
+    }
+  }
+  // identity
+  match measure_to(good, "identity") {
+    Some(m) => {
+      let failures = m.gate_failures()
+      check("identity passes the gate", failures.is_empty(), failures.join("; "))
+      let t = m.text
+      check(
+        "identity measures every word",
+        t.measured == t.ruby_words && t.ruby_words > 0,
+        ratio(t.measured, t.ruby_words),
+      )
+    }
+    None => ()
+  }
+  // repeated oracle renders
+  {
+    let env = gem_env()
+    let a = "\{dir}/oracle-a.pdf"
+    let b = "\{dir}/oracle-b.pdf"
+    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"], env~))
+    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"], env~))
+    let d = "\{dir}/oracle"
+    ignore(run("mkdir", ["-p", d]))
+    try {
+      let pages = compare_raster(a, b, d, 4)
+      let mut differing = 0
+      let mut missing = 0
+      for p in pages {
+        differing += p.counts[0]
+        if p.missing != "" {
+          missing += 1
+        }
+      }
+      check(
+        "repeated oracle renders are identical",
+        differing == 0 && missing == 0,
+        "\{differing} pixels differ by >16, \{missing} pages missing",
+      )
+    } catch {
+      e => check("repeated oracle renders are identical", false, e.to_string())
+    }
+  }
+  let mutations = [
+    "delete-text", "reorder-lines", "shift-block", "drop-graphics", "extra-page",
+    "remove-link", "name-order",
+  ]
+  for kind in mutations {
+    let mutant = "\{dir}/\{kind}.pdf"
+    let mr = run(inspector, ["mutate", kind, good, mutant])
+    if mr.code != 0 {
+      check("\{kind}: mutation written", false, mr.err)
+      continue
+    }
+    guard measure_to(mutant, kind) is Some(m) else { continue }
+    let t = m.text
+    let failures = m.gate_failures()
+    check("\{kind}: gate fails", !failures.is_empty(), failures.join("; "))
+    let lines_ok = t.ordered_lines == t.ruby_lines && t.ordered_lines == t.spike_lines
+    let structure = fn(name : String) {
+      m.structure.iter().any(c => c.name == name && !c.ok)
+    }
+    match kind {
+      "delete-text" => {
+        check("delete-text: words flag it", t.common_words < t.ruby_words, ratio(t.common_words, t.ruby_words))
+        check("delete-text: lines flag it", t.ruby_lines > t.ordered_lines, "\{t.ruby_lines - t.ordered_lines} missing")
+        // one line is too little ink to cross the raster threshold, but it
+        // must register
+        check("delete-text: raster registers it", m.worst_raster().0 > 0.0, share_pct(m.worst_raster().0))
+      }
+      "reorder-lines" => {
+        check(
+          "reorder-lines: word multiset unchanged",
+          t.common_words == t.ruby_words && t.common_words == t.spike_words,
+          ratio(t.common_words, t.ruby_words),
+        )
+        check("reorder-lines: ordered lines flag it", !lines_ok && t.common_lines > t.ordered_lines, "\{t.common_lines - t.ordered_lines} reordered")
+      }
+      "shift-block" => {
+        check("shift-block: text unchanged", t.common_words == t.ruby_words, ratio(t.common_words, t.ruby_words))
+        check("shift-block: geometry flags it", m.within_share() < gate_min_within, ratio(t.within, t.measured))
+        check("shift-block: raster flags it", m.worst_raster().0 > gate_max_raster, share_pct(m.worst_raster().0))
+      }
+      "drop-graphics" => {
+        check("drop-graphics: text and geometry unchanged", lines_ok && m.within_share() == 1.0, ratio(t.within, t.measured))
+        check("drop-graphics: flat raster differences flag it", m.worst_flat().0 > gate_max_flat, share_pct(m.worst_flat().0))
+      }
+      "extra-page" => {
+        check("extra-page: page count flags it", m.ruby.pages != m.spike.pages, "\{m.ruby.pages} vs \{m.spike.pages}")
+        check(
+          "extra-page: raster reports the missing page",
+          m.raster.iter().any(p => p.missing == "ruby"),
+          m.raster.map(p => p.missing).join(","),
+        )
+      }
+      "remove-link" => check("remove-link: links check flags it", structure("links"), "")
+      "name-order" => {
+        check("name-order: name-tree order check flags it", structure("name-tree order"), "")
+        check("name-order: destinations still resolve", !structure("destinations"), "")
+      }
+      _ => ()
+    }
+  }
+  let mut all = true
+  for entry in results {
+    let (label, ok, detail) = entry
+    if !ok {
+      all = false
+    }
+    println("\{if ok { "PASS" } else { "FAIL" }}  \{label}\{if detail == "" { "" } else { "  (" + detail + ")" }}")
+  }
+  all
+}
+
+// ---------------------------------------------------------------------------
+
+///|
+/// The kind of a gate failure, for clustering ("pages 2 vs 3" → "pages").
+fn failure_kind(g : String) -> String {
+  if g.has_prefix("structure: ") {
+    g
+  } else if g.has_prefix("raster p") {
+    if g.contains("flat") {
+      "raster (flat fills)"
+    } else {
+      "raster"
+    }
+  } else if g.contains("lines indented differently") {
+    "indentation"
+  } else if g.has_prefix("within 1pt") {
+    "geometry (within 1pt)"
+  } else {
+    let end = match g.find(" ") {
+      Some(i) => i
+      None => g.length()
+    }
+    g[:end].trim_end(chars=":").to_owned()
+  }
+}
+
+///|
+fn bump(m : Map[String, Int], key : String) -> Unit {
+  m[key] = m.get(key).unwrap_or(0) + 1
+}
+
+///|
+/// Code point order (`String::compare` orders by length first).
+fn lexical(a : String, b : String) -> Int {
+  let n = @cmp.minimum(a.length(), b.length())
+  for i in 0..<n {
+    if a[i] != b[i] {
+      return a[i].compare(b[i])
+    }
+  }
+  a.length().compare(b.length())
+}
+
+///|
+fn ranked(m : Map[String, Int]) -> Array[(String, Int)] {
+  let a = m.iter().collect()
+  a.sort_by((x, y) => if x.1 != y.1 { y.1.compare(x.1) } else { lexical(x.0, y.0) })
+  a
+}
+
+///|
+/// The spec file a harvested case comes from (`abstract_spec-1.2-1`).
+fn spec_of(name : String) -> String {
+  match name.find("-") {
+    Some(i) => name[:i].to_owned()
+    None => name
+  }
+}
+
+///|
+/// The categorized summary of a spec-golden replay.
+fn spec_summary(records : Array[Record], source : String) -> String {
+  let total = records.length()
+  let skipped = records.filter(r => r.status == "skipped")
+  let replayed = records.filter(r => r.status != "skipped")
+  let themed = replayed.filter(r => r.theme is Some(_))
+  let passing = replayed.filter(r => r.passes())
+  let failing = replayed.filter(r => !r.passes())
+  let known = failing.filter(r => r.excused())
+  let lines = [
+    "# PDF spec-golden replay: \{source}", "# Generated by `scripts/pdf_compare.mbtx -- --spec-goldens`; counts are records (conversions).",
+    "", "records: \{total}", "replayed: \{replayed.length()} / \{total}", "  pass: \{passing.length()} / \{replayed.length()}",
+    "  fail: \{failing.length()} / \{replayed.length()} (\{known.length()} listed as known, \{failing.length() - known.length()} new)",
+    "  theme-dependent: \{themed.length()} / \{replayed.length()} (pass \{themed.filter(r => r.passes()).length()})",
+    "  default theme: \{replayed.length() - themed.length()} / \{replayed.length()} (pass \{passing.length() - themed.filter(r => r.passes()).length()})",
+    "not replayed, skipped: \{skipped.length()} / \{total}",
+  ]
+  let section = fn(title : String, m : Map[String, Int]) {
+    lines.push("")
+    lines.push(title)
+    for e in ranked(m) {
+      lines.push("  \{e.1}\t\{e.0}")
+    }
+  }
+  let skip_reasons : Map[String, Int] = Map([])
+  for r in skipped {
+    bump(skip_reasons, r.categories.join(", "))
+  }
+  section("skipped by reason:", skip_reasons)
+  let theme_reasons : Map[String, Int] = Map([])
+  for r in themed {
+    bump(theme_reasons, r.theme.unwrap_or(""))
+  }
+  section("theme-dependent by cause:", theme_reasons)
+  let statuses : Map[String, Int] = Map([])
+  for r in replayed {
+    bump(statuses, r.status)
+  }
+  section("replayed by status:", statuses)
+  let categories : Map[String, Int] = Map([])
+  let first_kinds : Map[String, Int] = Map([])
+  let all_kinds : Map[String, Int] = Map([])
+  let unsupported : Map[String, Int] = Map([])
+  let spike_errors : Map[String, Int] = Map([])
+  for r in failing {
+    for c in r.categories {
+      bump(categories, c)
+    }
+    if !r.gate_failures.is_empty() {
+      bump(first_kinds, failure_kind(r.gate_failures[0]))
+    }
+    let kinds : Map[String, Bool] = Map([])
+    for g in r.gate_failures {
+      kinds[failure_kind(g)] = true
+    }
+    for k, _ in kinds {
+      bump(all_kinds, k)
+    }
+    let seen : Map[String, Bool] = Map([])
+    for u in r.unsupported {
+      let key = match u.rev_find(" at ") {
+        Some(i) => u[:i].to_owned().replace(old="UNSUPPORTED ", new="")
+        None => u
+      }
+      seen[key] = true
+    }
+    for k, _ in seen {
+      bump(unsupported, k)
+    }
+    if r.status == "spike_failed" {
+      match r.spike_run {
+        Some(sr) => {
+          let err = sr.err.split("\n").filter(l => l.trim() != "").map(l => l.to_owned()).collect()
+          let last = if err.is_empty() { "(no output)" } else { err[err.length() - 1] }
+          bump(spike_errors, clip(last, limit=160))
+        }
+        None => ()
+      }
+    }
+  }
+  // failing only through the extra footer: its lines, words and ink
+  let footer_only = failing
+    .filter(r => r.categories.contains(footer_category) &&
+      r.gate_failures.iter().all(g => {
+        let k = failure_kind(g)
+        k == "lines" || k == "words" || k == "raster" || k == "raster (flat fills)"
+      }))
+    .length()
+  lines.push("")
+  lines.push(
+    "failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): \{footer_only} / \{replayed.length()}",
+  )
+  section("failing records by category (a record can be in several):", categories)
+  section("failing records by first gate failure:", first_kinds)
+  section("failing records by gate failure (any):", all_kinds)
+  section("failing records reporting unsupported content (kind, what):", unsupported)
+  if !spike_errors.is_empty() {
+    section("spike failures by message:", spike_errors)
+  }
+  // per spec file
+  let per_spec : Map[String, (Int, Int, Int, Int)] = Map([])
+  for r in records {
+    let key = spec_of(r.name)
+    let (n, rep, pass, themes) = per_spec.get(key).unwrap_or((0, 0, 0, 0))
+    per_spec[key] = (
+      n + 1,
+      rep + (if r.status != "skipped" { 1 } else { 0 }),
+      pass + (if r.passes() { 1 } else { 0 }),
+      themes + (if r.theme is Some(_) { 1 } else { 0 }),
+    )
+  }
+  lines.push("")
+  lines.push("by spec file: pass / replayed (records, theme-dependent)")
+  let keys = per_spec.keys().collect()
+  keys.sort_by(lexical)
+  for k in keys {
+    let (n, rep, pass, themes) = per_spec.get(k).unwrap_or((0, 0, 0, 0))
+    lines.push("  \{k}: \{pass} / \{rep} (\{n}, themes \{themes})")
+  }
+  lines.join("\n") + "\n"
+}
+
+///|
+async fn main {
+  let args = @env.args()
+  let mut build = true
+  let mut verbose = false
+  let mut gate = false
+  let mut testing = false
+  let mut jobs = 4
+  let selected = []
+  let mut gallery : String? = None
+  let mut list : String? = None
+  let mut known_path : String? = None
+  let mut spec_goldens : String? = None
+  let mut spec_pdfs = default_spec_pdfs
+  let mut write_known : String? = None
+  let mut baseline : String? = None
+  let mut ruby_flag : String? = None
+  let mut gems_flag : String? = None
+  let mut i = 1
+  while i < args.length() {
+    match args[i] {
+      "--no-build" => build = false
+      "-v" => verbose = true
+      "--gate" => gate = true
+      "--self-test" => testing = true
+      "--out" if i + 1 < args.length() => {
+        gallery = Some(args[i + 1])
+        i += 1
+      }
+      "--list" if i + 1 < args.length() => {
+        list = Some(args[i + 1])
+        i += 1
+      }
+      "--known" if i + 1 < args.length() => {
+        known_path = Some(args[i + 1])
+        i += 1
+      }
+      "--spike" if i + 1 < args.length() => {
+        spike_exe.val = args[i + 1]
+        i += 1
+      }
+      "--oracle-cache" if i + 1 < args.length() => {
+        oracle_cache.val = Some(args[i + 1])
+        i += 1
+      }
+      "--jobs" if i + 1 < args.length() => {
+        jobs = @string.parse_int(args[i + 1]) catch { _ => 4 }
+        i += 1
+      }
+      "--spec-goldens" =>
+        if i + 1 < args.length() && !args[i + 1].has_prefix("-") {
+          spec_goldens = Some(args[i + 1])
+          i += 1
+        } else {
+          spec_goldens = Some(default_spec_goldens)
+        }
+      "--spec-pdfs" if i + 1 < args.length() => {
+        spec_pdfs = args[i + 1]
+        i += 1
+      }
+      "--write-known" if i + 1 < args.length() => {
+        write_known = Some(args[i + 1])
+        i += 1
+      }
+      "--ruby" if i + 1 < args.length() => {
+        ruby_flag = Some(args[i + 1])
+        i += 1
+      }
+      "--gems" if i + 1 < args.length() => {
+        gems_flag = Some(args[i + 1])
+        i += 1
+      }
+      "--baseline" if i + 1 < args.length() => {
+        baseline = Some(args[i + 1])
+        i += 1
+      }
+      "--" => ()
+      name => selected.push(name)
+    }
+    i += 1
+  }
+  let gallery = gallery.unwrap_or(
+    if spec_goldens is Some(_) {
+      default_spec_gallery
+    } else {
+      default_gallery
+    },
+  )
+  let known_path = known_path.unwrap_or(
+    if spec_goldens is Some(_) {
+      default_spec_known
+    } else {
+      default_known
+    },
+  )
+  configure_oracle(ruby_flag, gems_flag)
+  if !file_exists("\{gems()}/bin/asciidoctor-pdf") {
+    fail(
+      "no asciidoctor-pdf in \{gems()}: run scripts/pdf_harvest.mbtx (it installs the oracle's gems), or pass --gems DIR (see pdf/docs/oracle.md)",
+    )
+  }
+  if build {
+    let r = run("moon", ["-C", "pdf", "build", "--target", "native", "--release"], timeout=1_800_000)
+    if r.code != 0 {
+      println(r.err)
+      fail("building the spike failed")
+    }
+  }
+  ignore(run("mkdir", ["-p", gallery]))
+  match oracle_cache.val {
+    Some(dir) => ignore(run("mkdir", ["-p", dir]))
+    None => ()
+  }
+  if testing {
+    let ok = self_test(gallery)
+    if !ok {
+      fail("self-test failed")
+    }
+    println("self-test passed")
+    return
+  }
+  let known = read_known(known_path)
+  let all_cases : Array[Case] = match (spec_goldens, list) {
+    (Some(dir), _) => load_spec_goldens(dir, spec_pdfs, @fs.realpath(gallery))
+    (None, None) =>
+      cases.map(c => ({ name: c.0, input: c.1, wrapper: c.2, spec: None } : Case))
+    (None, Some(file)) =>
+      @fs.read_file(file).text().split("\n").map(l => l.trim().to_owned()).filter(l => l != "" && !l.has_prefix("#")).map(p => {
+        // a readable, unique name from the path
+        let name = p.replace_all(old=".repos/", new="").replace_all(old="/", new="__")
+        ({ name, input: p, wrapper: "", spec: None } : Case)
+      }).collect()
+  }
+  // a spec run also selects by spec file (`abstract_spec`)
+  let todo = match select_cases(all_cases, selected) {
+    Ok(todo) => todo
+    Err(message) => fail(message)
+  }
+  let tools = tool_versions()
+  let results : Array[Record?] = Array::make(todo.length(), None)
+  let next : Ref[Int] = { val: 0 }
+  @async.with_task_group(group => {
+    for _ in 0..<@cmp.maximum(1, jobs) {
+      group.spawn_bg(() => {
+        while next.val < todo.length() {
+          let index = next.val
+          next.val += 1
+          let record = compare_case(todo[index], gallery, known, verbose)
+          if record.status != "skipped" || verbose {
+            println(record.summary_line())
+          }
+          if verbose {
+            match record.measured {
+              Some(m) => for o in m.text.off_examples { println("  \{o}") }
+              None => ()
+            }
+          }
+          results[index] = Some(record)
+        }
+      })
+    }
+  })
+  let records = results.filter_map(r => r)
+  let title = match (spec_goldens, list) {
+    (Some(dir), _) => "PDF backend comparison: asciidoctor-pdf spec goldens (\{dir})"
+    (None, Some(file)) => "PDF backend comparison: \{file}"
+    (None, None) => "PDF backend comparison: built-in cases"
+  }
+  write_outputs(gallery, records, tools, title)
+  let skipped = records.filter(r => r.status == "skipped").length()
+  let failing = records.filter(r => r.fails())
+  let passing = records.filter(r => r.passes()).length()
+  let known_count = records.length() - skipped - passing - failing.length()
+  println(
+    "\{records.length()} documents: \{passing} pass, \{known_count} known, \{failing.length()} fail" +
+    (if skipped > 0 { ", \{skipped} not replayed" } else { "" }),
+  )
+  // a full replay must cover every harvested record: one that silently
+  // went missing would otherwise look like a smaller suite that passes
+  let coverage = match spec_goldens {
+    Some(dir) if selected.is_empty() => {
+      let loaded : Map[String, Int] = Map([])
+      for c in all_cases {
+        match c.spec {
+          Some(s) =>
+            bump(loaded, s.spec_file.replace(old=".rb", new=".jsonl"))
+          None => ()
+        }
+      }
+      coverage_problems(read_record_counts(dir), loaded, records.length())
+    }
+    _ => []
+  }
+  match spec_goldens {
+    Some(dir) => {
+      // machine-independent: the checkouts' absolute paths (in the spike's
+      // diagnostics) as the placeholders the harvest writes
+      let root = @fs.realpath(".") catch { _ => "." }
+      let text = spec_summary(records, dir)
+        .replace_all(old=@fs.realpath(spec_repo) catch { _ => spec_repo }, new="$SPEC_ROOT")
+        .replace_all(old=gems(), new="$GEMS")
+        .replace_all(old=root, new="$ROOT")
+      @fs.write_file("\{gallery}/spec_summary.txt", text, create_mode=CreateOrTruncate)
+      match baseline {
+        Some(file) => @fs.write_file(file, text, create_mode=CreateOrTruncate)
+        None => ()
+      }
+      println(text)
+      // known entries that pass now
+      let fixed = records.filter(r => r.passes() && known.contains(r.name))
+      if !fixed.is_empty() {
+        println("\{fixed.length()} known failures pass now; refresh the list with --write-known")
+      }
+    }
+    None => ()
+  }
+  match write_known {
+    Some(file) => {
+      let lines = [
+        "# Known failures for scripts/pdf_compare.mbtx --spec-goldens --gate:", "# replayed spec goldens that do not pass yet, `name: categories; first gate failure`.",
+        "# Regenerate with `-- --spec-goldens --write-known \{file}` after fixing.",
+      ]
+      let names = records.filter(r => r.status != "skipped" && !r.passes())
+      names.sort_by((a, b) => lexical(a.name, b.name))
+      for r in names {
+        let first = if r.gate_failures.is_empty() { r.status } else { r.gate_failures[0] }
+        lines.push("\{r.name}: \{r.categories.join(", ")}; \{first.replace_all(old="\n", new=" ")}")
+      }
+      @fs.write_file(file, lines.join("\n") + "\n", create_mode=CreateOrTruncate)
+      println("wrote \{file} (\{names.length()} entries)")
+    }
+    None => ()
+  }
+  println("wrote \{gallery}/index.html and \{gallery}/summary.json")
+  if !coverage.is_empty() {
+    fail("the replay does not cover the harvest: \{coverage.join("; ")}")
+  }
+  if gate && !failing.is_empty() {
+    fail("gate: \{failing.length()} documents fail: \{failing.map(r => r.name).join(", ")}")
+  }
+}

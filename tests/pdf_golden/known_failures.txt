@@ -1,0 +1,354 @@
+# Known failures for scripts/pdf_compare.mbtx --spec-goldens --gate:
+# replayed spec goldens that do not pass yet, `name: categories; first gate failure`.
+# Regenerate with `-- --spec-goldens --write-known tests/pdf_golden/known_failures.txt` after fixing.
+abstract_spec-1.10-1: missing/extra text, geometry, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+abstract_spec-1.10-2: missing/extra text, geometry, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+abstract_spec-1.11-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+abstract_spec-1.12-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+abstract_spec-1.32-1: unsupported feature, geometry, styling/assets; 1 lines indented differently
+abstract_spec-1.33-1: unsupported feature, line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+abstract_spec-1.34-1: unsupported feature, line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+abstract_spec-1.6-1: geometry, navigation/metadata, styling/assets; within 1pt 2/11 (18.181%) < 99.500%
+abstract_spec-1.6-2: geometry, navigation/metadata, styling/assets; within 1pt 2/11 (18.181%) < 99.500%
+abstract_spec-1.7-1: geometry, styling/assets; within 1pt 18/21 (85.714%) < 99.500%
+admonition_spec-1.13-1: geometry, styling/assets; within 1pt 10/11 (90.909%) < 99.500%
+admonition_spec-1.19.2-1: geometry, styling/assets; 3 lines indented differently
+admonition_spec-1.20.11-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.14-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.15-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.18-1: geometry, styling/assets; within 1pt 12/13 (92.307%) < 99.500%
+admonition_spec-1.20.3-1: geometry, styling/assets; within 1pt 0/30 (0%) < 99.500%
+admonition_spec-1.20.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.20.6-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.20.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.3-1: navigation/metadata; structure: destinations
+admonition_spec-1.3-2: navigation/metadata; structure: destinations
+arrange_block_spec-1.11.3-1: missing/extra text, styling/assets; lines: 26 in order of 27 Ruby / 27 spike
+arrange_block_spec-1.11.3-2: missing/extra text, styling/assets; lines: 26 in order of 27 Ruby / 27 spike
+arrange_block_spec-1.7.1.9-1: page break/extra pages, geometry, styling/assets; lines: 19 in order of 21 Ruby / 21 spike
+arrange_block_spec-1.7.1.9-2: page break/extra pages, geometry, styling/assets; lines: 19 in order of 21 Ruby / 21 spike
+arrange_block_spec-1.9.1.6-1: geometry, styling/assets; 10 lines indented differently
+arrange_block_spec-1.9.1.6-2: geometry, styling/assets; 10 lines indented differently
+break_spec-1.2.3-1: styling/assets; raster p1 1.585% of content differs > 1.250%
+break_spec-1.2.3-2: styling/assets; raster p1 1.585% of content differs > 1.250%
+break_spec-1.3.16-1: navigation/metadata, styling/assets; structure: page boxes
+break_spec-1.3.18-1: line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+converter_spec-1.2.14.17-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 327 in order of 332 Ruby / 331 spike
+converter_spec-1.2.14.18-1: missing/extra text, geometry, navigation/metadata; lines: 351 in order of 357 Ruby / 356 spike
+converter_spec-1.2.14.4-1: geometry, navigation/metadata, styling/assets; within 1pt 0/1 (0%) < 99.500%
+cover_page_spec-1.16-1: navigation/metadata; structure: outline
+cover_page_spec-1.16-2: navigation/metadata; structure: outline
+cover_page_spec-1.27-1: page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.28-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.29-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.30-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.30-2: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.31-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.32-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.33-1: unsupported feature, geometry, navigation/metadata, styling/assets; within 1pt 0/2 (0%) < 99.500%
+cover_page_spec-1.34-1: unsupported feature, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.36-1: unsupported feature, geometry, navigation/metadata, styling/assets; within 1pt 0/2 (0%) < 99.500%
+cover_page_spec-1.5-1: navigation/metadata; structure: outline
+cover_page_spec-1.7-1: geometry, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+cover_page_spec-1.8-1: geometry, styling/assets; within 1pt 1/3 (33.333%) < 99.500%
+example_spec-1.13-1: styling/assets; raster p1 7.467% of content differs > 1.250%
+floating_title_spec-1.5-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+floating_title_spec-1.6-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+font_spec-1.1.13-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
+font_spec-1.1.14-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 3 Ruby / 3 spike
+font_spec-1.1.3-1: missing/extra text, geometry; words: 57 shared of 59 Ruby / 58 spike
+font_spec-1.1.4-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike
+font_spec-1.1.5-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike
+font_spec-1.3.1-1: styling/assets; structure: fonts
+font_spec-1.4.4-1: styling/assets; structure: fonts
+font_spec-1.5.3-1: styling/assets; raster p1 10.005% of content differs > 1.250%
+font_spec-1.5.4-10: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-12: geometry, styling/assets; within 1pt 4/8 (50.000%) < 99.500%
+font_spec-1.5.4-2: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-4: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-6: geometry, styling/assets; within 1pt 1/5 (20.000%) < 99.500%
+font_spec-1.5.4-8: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.6.1-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 8 Ruby / 8 spike
+font_spec-1.6.2-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
+footnote_spec-1.10-1: geometry, navigation/metadata; within 1pt 7/12 (58.333%) < 99.500%
+footnote_spec-1.11-1: reading order, geometry; within 1pt 407/428 (95.093%) < 99.500%
+footnote_spec-1.14-1: line-wrap change, geometry, navigation/metadata; lines: 2 in order of 3 Ruby / 4 spike
+footnote_spec-1.17-1: reading order, geometry; coverage 17/18 (94.444%) < 99.000%
+footnote_spec-1.18-1: reading order, geometry; coverage 25/27 (92.592%) < 99.000%
+footnote_spec-1.2-1: reading order, geometry; coverage 25/26 (96.153%) < 99.000%
+footnote_spec-1.25-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 3 spike
+footnote_spec-1.26-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 3 spike
+footnote_spec-1.29-1: reading order, geometry; coverage 31/32 (96.875%) < 99.000%
+footnote_spec-1.3-1: reading order, geometry; 1 lines indented differently
+footnote_spec-1.30-1: reading order, geometry; coverage 14/16 (87.500%) < 99.000%
+footnote_spec-1.32-1: reading order, geometry; coverage 27/28 (96.428%) < 99.000%
+footnote_spec-1.4-1: reading order, geometry; 1 lines indented differently
+footnote_spec-1.6-1: geometry, navigation/metadata; within 1pt 11/21 (52.380%) < 99.500%
+formatted_text_formatter_spec-1.3.20-1: styling/assets; raster p1 2.548% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.21-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.22-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.23-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.39-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.3.39-2: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.3.39-3: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.4.1-1: styling/assets; raster p1 8.361% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.1-2: styling/assets; raster p1 8.361% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.11-1: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+formatted_text_formatter_spec-1.4.13-1: styling/assets; raster p1 8.279% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.13-2: styling/assets; raster p1 8.279% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.14-1: styling/assets; raster p1 2.417% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.14-2: styling/assets; raster p1 2.417% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.15-1: styling/assets; raster p1 4.431% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.16-1: styling/assets; raster p1 1.890% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.16-2: styling/assets; raster p1 1.890% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.2-1: styling/assets; raster p1 2.941% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.2-2: styling/assets; raster p1 2.941% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.22-1: styling/assets; raster p1 12.057% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.27-1: styling/assets; structure: fonts
+formatted_text_formatter_spec-1.4.31-1: styling/assets; structure: fonts
+formatted_text_formatter_spec-1.4.32-1: styling/assets; raster p1 4.134% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.33-1: styling/assets; raster p1 3.235% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.34-1: styling/assets; raster p1 3.235% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.35-1: styling/assets; raster p1 1.599% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.4-1: styling/assets; raster p1 5.861% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.5-1: styling/assets; raster p1 4.715% of content differs > 1.250%
+icon_spec-1.12-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+icon_spec-1.13-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+icon_spec-1.18-1: navigation/metadata, styling/assets; structure: links
+icon_spec-1.18-2: navigation/metadata, styling/assets; structure: links
+icon_spec-1.19-1: navigation/metadata, styling/assets; structure: links
+icon_spec-1.19-2: navigation/metadata, styling/assets; structure: links
+icon_spec-1.2-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.10.10-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
+image_spec-1.10.11-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
+image_spec-1.10.7-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.10.8-4: geometry, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.11.4-1: styling/assets; raster p1 25.978% of content differs > 1.250%
+image_spec-1.12.19-1: styling/assets; raster p1 99.975% of content differs > 1.250%
+image_spec-1.12.20-1: geometry, styling/assets; within 1pt 2/3 (66.666%) < 99.500%
+image_spec-1.12.22-1: geometry, styling/assets; within 1pt 0/3 (0%) < 99.500%
+image_spec-1.12.25-1: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-2: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-3: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-4: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.26-1: styling/assets; raster p1 45.157% of content differs > 1.250%
+image_spec-1.12.28-1: styling/assets; raster p1 99.975% of content differs > 1.250%
+image_spec-1.13.25-1: styling/assets; raster p1 46.798% of content differs > 1.250%
+image_spec-1.13.25-2: styling/assets; raster p1 46.637% of content differs > 1.250%
+image_spec-1.13.8-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
+image_spec-1.14.7-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.14.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
+image_spec-1.14.8-2: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
+image_spec-1.17.10-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
+image_spec-1.17.11-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+image_spec-1.17.12-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 2
+image_spec-1.17.13-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
+image_spec-1.17.14-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 4 vs 1
+image_spec-1.17.15-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 1 in order of 1 Ruby / 2 spike
+image_spec-1.17.16-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
+image_spec-1.17.3-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
+image_spec-1.17.4-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 4 in order of 4 Ruby / 6 spike
+image_spec-1.17.5-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 3
+image_spec-1.17.6-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
+image_spec-1.17.7-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
+image_spec-1.17.8-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
+image_spec-1.17.9-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
+image_spec-1.17.9-2: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
+image_spec-1.20.11-1: styling/assets; raster p2 2.583% of content differs > 1.250%
+image_spec-1.20.11-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
+image_spec-1.20.15-1: styling/assets; raster p1 2.583% of content differs > 1.250%
+image_spec-1.20.21-1: reading order, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+image_spec-1.20.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.21.1-1: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.2-1: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.2-2: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.6-1: geometry, navigation/metadata, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.21.8-1: geometry, navigation/metadata, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.22.3-1: reading order, geometry; 1 lines indented differently
+image_spec-1.22.3-2: reading order, geometry; 1 lines indented differently
+image_spec-1.23.10-1: styling/assets; raster p1 35.978% of content differs > 1.250%
+image_spec-1.23.11-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.11-2: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.12-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.12-2: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.3-1: styling/assets; raster p1 1.532% of content differs > 1.250%
+image_spec-1.23.6-1: styling/assets; raster p1 1.763% of content differs > 1.250%
+image_spec-1.23.9-1: styling/assets; raster p1 34.782% of content differs > 1.250%
+image_spec-1.3-1: geometry, styling/assets; within 1pt 0/3 (0%) < 99.500%
+image_spec-1.8-1: navigation/metadata; structure: destinations
+image_spec-1.8-2: navigation/metadata; structure: destinations
+index_spec-1.14-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 3
+link_spec-1.1.17-1: navigation/metadata; structure: outline
+link_spec-1.1.17-2: navigation/metadata; structure: outline
+link_spec-1.1.18-1: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+link_spec-1.1.18-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+link_spec-1.4.1-1: styling/assets; raster p1 2.773% of content differs > 1.250%
+link_spec-1.4.1-2: styling/assets; raster p1 2.773% of content differs > 1.250%
+link_spec-1.4.2-1: styling/assets; raster p1 1.436% of content differs > 1.250%
+link_spec-1.4.2-2: styling/assets; raster p1 1.436% of content differs > 1.250%
+list_spec-1.1.18-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+list_spec-1.1.18-2: styling/assets; raster p1 4.257% of content differs > 1.250%
+list_spec-1.1.27-1: styling/assets; raster p2 3.013% of content has flat (fill) differences > 0.500%
+list_spec-1.2.3-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+list_spec-1.2.4-1: geometry, styling/assets; within 1pt 2/4 (50.000%) < 99.500%
+list_spec-1.3.12-1: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-2: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-3: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-4: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-5: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.18-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 3 spike
+list_spec-1.3.19-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 5 Ruby / 5 spike
+list_spec-1.3.20-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 3 Ruby / 3 spike
+list_spec-1.3.8-1: styling/assets; raster p1 2.028% of content differs > 1.250%
+list_spec-1.3.9-1: styling/assets; raster p1 2.047% of content differs > 1.250%
+list_spec-1.7.11-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.12-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.13-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.14-1: missing/extra text, geometry; lines: 8 in order of 18 Ruby / 18 spike
+list_spec-1.7.15-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 4 Ruby / 4 spike
+listing_spec-1.1-1: styling/assets; raster p1 69.972% of content has flat (fill) differences > 0.500%
+listing_spec-1.28-1: unsupported feature, styling/assets; raster p1 25.201% of content differs > 1.250%
+listing_spec-1.29-1: unsupported feature, styling/assets; raster p1 15.600% of content differs > 1.250%
+listing_spec-1.30-1: unsupported feature, styling/assets; raster p1 38.938% of content differs > 1.250%
+listing_spec-1.31-1: unsupported feature, styling/assets; raster p1 24.263% of content differs > 1.250%
+listing_spec-1.39-1: styling/assets; raster p1 1.898% of content differs > 1.250%
+listing_spec-1.6-1: navigation/metadata; structure: destinations
+listing_spec-1.6-2: navigation/metadata; structure: destinations
+manpage_spec-1.5-1: navigation/metadata; structure: outline
+media_spec-1.2.3-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 3
+open_spec-1.2-1: reading order, geometry; coverage 120/122 (98.360%) < 99.000%
+outline_spec-1.1.10-1: navigation/metadata; structure: outline
+outline_spec-1.1.8-1: navigation/metadata; structure: outline
+outline_spec-1.2.10-1: navigation/metadata; structure: outline
+outline_spec-1.3.13-1: navigation/metadata; structure: outline
+outline_spec-1.4.4-1: geometry, navigation/metadata, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+outline_spec-1.6.2-1: navigation/metadata; structure: outline
+outline_spec-1.6.3-1: navigation/metadata; structure: outline
+page_spec-1.5.10-1: geometry, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+page_spec-1.5.11-1: geometry; within 1pt 6/9 (66.666%) < 99.500%
+page_spec-1.5.13-1: geometry, styling/assets; within 1pt 12/14 (85.714%) < 99.500%
+page_spec-1.5.14-1: geometry, styling/assets; within 1pt 12/14 (85.714%) < 99.500%
+page_spec-1.5.18-1: geometry; 5 lines indented differently
+page_spec-1.6.10-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
+page_spec-1.6.11-1: unsupported feature, missing/extra text, page break/extra pages, geometry, styling/assets; lines: 2 in order of 3 Ruby / 5 spike
+page_spec-1.6.12-1: navigation/metadata, styling/assets; structure: page boxes
+page_spec-1.6.6-1: navigation/metadata; structure: links
+page_spec-1.6.9-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
+page_spec-1.7.14-1: styling/assets; raster p1 6.241% of content differs > 1.250%
+page_spec-1.7.15-1: styling/assets; raster p1 6.241% of content differs > 1.250%
+page_spec-1.7.45-1: styling/assets; raster p2 17.767% of content has flat (fill) differences > 0.500%
+page_spec-1.7.52-1: styling/assets; raster p1 88.193% of content differs > 1.250%
+page_spec-1.7.54-1: reading order, geometry; coverage 2/3 (66.666%) < 99.000%
+page_spec-1.7.55-1: reading order, geometry; coverage 2/3 (66.666%) < 99.000%
+page_spec-1.7.56-1: reading order, geometry; coverage 7/8 (87.500%) < 99.000%
+page_spec-1.7.57-1: reading order, geometry; coverage 7/8 (87.500%) < 99.000%
+page_spec-1.7.58-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
+page_spec-1.8.1-1: styling/assets; raster p1 9.210% of content has flat (fill) differences > 0.500%
+page_spec-1.8.2-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+page_spec-1.8.3-1: styling/assets; raster p1 3.432% of content has flat (fill) differences > 0.500%
+paragraph_spec-1.17-2: styling/assets; raster p1 5.222% of content differs > 1.250%
+paragraph_spec-1.2-1: styling/assets; raster p3 1.340% of content differs > 1.250%
+paragraph_spec-1.2-2: styling/assets; raster p3 1.340% of content differs > 1.250%
+pdf_info_spec-1.2.16-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.17-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.18-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.19-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.20-1: navigation/metadata; structure: document info
+pdf_info_spec-1.3.2-1: navigation/metadata; structure: outline
+pdf_info_spec-1.4.3-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
+preamble_spec-1.2.6-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+quote_spec-1.13-1: styling/assets; raster p1 93.817% of content has flat (fill) differences > 0.500%
+quote_spec-1.5-1: missing/extra text, geometry; lines: 2 in order of 3 Ruby / 3 spike
+running_content_spec-1.1.4-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+running_content_spec-1.1.5-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
+running_content_spec-1.10.17-1: missing/extra text; lines: 1 in order of 1 Ruby / 2 spike
+running_content_spec-1.10.20-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.10.23-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.10.29-1: navigation/metadata, styling/assets; structure: links
+running_content_spec-1.10.29-2: navigation/metadata, styling/assets; structure: links
+running_content_spec-1.10.3-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 2 spike
+running_content_spec-1.10.6-2: missing/extra text; lines: 23 in order of 23 Ruby / 24 spike
+running_content_spec-1.4.27-1: missing/extra text, geometry, navigation/metadata; lines: 3 in order of 5 Ruby / 4 spike
+running_content_spec-1.6.21-1: styling/assets; raster p1 4.264% of content differs > 1.250%
+running_content_spec-1.6.22-1: styling/assets; raster p1 5.030% of content differs > 1.250%
+running_content_spec-1.6.24-1: styling/assets; raster p1 2.618% of content differs > 1.250%
+running_content_spec-1.6.32-1: unsupported feature, geometry; within 1pt 5/9 (55.555%) < 99.500%
+running_content_spec-1.6.33-1: unsupported feature, geometry; within 1pt 4/6 (66.666%) < 99.500%
+running_content_spec-1.6.36-1: unsupported feature, geometry; within 1pt 4/5 (80.000%) < 99.500%
+running_content_spec-1.6.7-4: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.7-5: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.7-6: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.9-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.7.5-1: geometry; 1 lines indented differently
+running_content_spec-1.9.1-1: missing/extra text, geometry; lines: 3 in order of 4 Ruby / 4 spike
+running_content_spec-1.9.12-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 8 Ruby / 7 spike
+running_content_spec-1.9.3-1: missing/extra text, geometry; lines: 2 in order of 4 Ruby / 4 spike
+section_spec-1.30-1: styling/assets; raster p1 4.861% of content differs > 1.250%
+section_spec-1.30-2: styling/assets; raster p1 4.861% of content differs > 1.250%
+section_spec-1.43-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 3 in order of 5 Ruby / 5 spike
+section_spec-1.47-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 1 in order of 3 Ruby / 3 spike
+section_spec-1.58-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+section_spec-1.58-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+section_spec-1.59-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 6 spike
+section_spec-1.59-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 6 spike
+section_spec-1.7-2: styling/assets; raster p1 11.679% of content differs > 1.250%
+section_spec-1.70-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+section_spec-1.71-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 8 spike
+section_spec-1.73-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+section_spec-1.8-1: styling/assets; raster p1 8.034% of content differs > 1.250%
+source_spec-1.1.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.1.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.1.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
+source_spec-1.1.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+table_spec-1.10.1-1: geometry, styling/assets; within 1pt 11/13 (84.615%) < 99.500%
+table_spec-1.11.5-1: geometry; within 1pt 9/13 (69.230%) < 99.500%
+table_spec-1.13.10-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 9 Ruby / 7 spike
+table_spec-1.13.16-1: geometry, styling/assets; within 1pt 2/3 (66.666%) < 99.500%
+table_spec-1.13.19-1: geometry, styling/assets; within 1pt 3/6 (50.000%) < 99.500%
+table_spec-1.13.20-1: geometry, styling/assets; within 1pt 4/13 (30.769%) < 99.500%
+table_spec-1.13.21-1: geometry, styling/assets; within 1pt 0/1 (0%) < 99.500%
+table_spec-1.13.22-1: geometry, styling/assets; within 1pt 0/8 (0%) < 99.500%
+table_spec-1.13.23-1: geometry, navigation/metadata, styling/assets; 3 lines indented differently
+table_spec-1.13.5-1: geometry, styling/assets; within 1pt 1/5 (20.000%) < 99.500%
+table_spec-1.13.9-1: missing/extra text, geometry, navigation/metadata; lines: 8 in order of 9 Ruby / 8 spike
+table_spec-1.14.12-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 41 in order of 42 Ruby / 42 spike
+table_spec-1.15.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 8 Ruby / 8 spike
+table_spec-1.17.4-1: missing/extra text, geometry, styling/assets; lines: 7 in order of 7 Ruby / 8 spike
+table_spec-1.4.16-1: styling/assets; raster p1 3.734% of content differs > 1.250%
+table_spec-1.4.17-1: styling/assets; raster p1 2.295% of content differs > 1.250%
+table_spec-1.4.22-1: styling/assets; raster p1 6.480% of content differs > 1.250%
+table_spec-1.4.24-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.25-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.26-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.27-1: styling/assets; raster p1 23.883% of content differs > 1.250%
+table_spec-1.4.31-1: styling/assets; raster p1 4.532% of content differs > 1.250%
+table_spec-1.5.1-1: missing/extra text, geometry; lines: 2 in order of 2 Ruby / 9 spike
+table_spec-1.5.10-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+table_spec-1.5.2-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 2 Ruby / 11 spike
+table_spec-1.5.7-1: styling/assets; raster p1 28.520% of content differs > 1.250%
+table_spec-1.5.8-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+table_spec-1.5.8-2: line-wrap change, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+table_spec-1.5.9-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+table_spec-1.6.10-1: missing/extra text; lines: 26 in order of 26 Ruby / 28 spike
+table_spec-1.6.8-1: missing/extra text; lines: 26 in order of 26 Ruby / 27 spike
+table_spec-1.6.9-1: missing/extra text; lines: 27 in order of 27 Ruby / 28 spike
+thematic_break_spec-1.10-1: styling/assets; raster p1 1.585% of content differs > 1.250%
+thematic_break_spec-1.3-1: geometry, styling/assets; within 1pt 0/1 (0%) < 99.500%
+title_page_spec-1.3.6-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 1 Ruby / 3 spike
+title_page_spec-1.4.3-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+title_page_spec-1.4.4-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+title_page_spec-1.4.5-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
+title_page_spec-1.4.6-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+title_page_spec-1.5.16-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 2 spike
+title_page_spec-1.5.18-1: unsupported feature, styling/assets; raster p1 11.936% of content differs > 1.250%
+title_page_spec-1.5.31-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+title_page_spec-1.5.39-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 3
+toc_spec-1.1.38-1: missing/extra text, geometry, navigation/metadata; lines: 5 in order of 6 Ruby / 7 spike
+toc_spec-1.1.39-1: missing/extra text, geometry, navigation/metadata; lines: 8 in order of 9 Ruby / 10 spike
+toc_spec-1.1.4-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 6 spike
+toc_spec-1.11-1: navigation/metadata; structure: outline
+toc_spec-1.12-1: geometry; within 1pt 3/4 (75.000%) < 99.500%
+toc_spec-1.13-1: geometry, navigation/metadata, styling/assets; within 1pt 90/93 (96.774%) < 99.500%
+toc_spec-1.15-1: missing/extra text, geometry; lines: 3 in order of 4 Ruby / 4 spike
+verse_spec-1.10-1: styling/assets; raster p1 93.817% of content has flat (fill) differences > 0.500%
+video_spec-1.1.1-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
