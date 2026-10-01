@@ -191,7 +191,7 @@ fn Flow::inline_svg_item(
   let ops = doc.render(
     env,
     origin=(x, y),
-    page_height=page_height(),
+    page_height=self.page_h(),
     stack=self.svg_stack(),
   )
   report_svg_warnings(doc, path, node, self.scratch)
@@ -323,7 +323,7 @@ fn Converter::convert_svg_image(
   let ops = doc.render(
     env,
     origin=(left, top),
-    page_height=page_height(),
+    page_height=flow.page_h(),
     stack=flow.svg_stack(),
   )
   report_svg_warnings(doc, path, node, flow.scratch)

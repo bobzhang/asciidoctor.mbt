@@ -713,18 +713,53 @@ fn Converter::convert_block_body(self : Converter, node : @core.Node) -> Unit {
     Quote | Verse => self.convert_quote(node)
     Open => self.convert_open(node)
     ThematicBreak => self.convert_thematic_break(node)
-    PageBreak =>
-      if !self.flow.at_page_top() || node.has_option("always") {
-        // in a column box, a page break (unless the `column` role) leaves
-        // from the last column (`bounds.current_column = bounds.last_column`)
-        if !node.has_role("column") {
-          self.flow.to_last_column()
-        }
-        self.flow.advance_page()
-      }
+    PageBreak => self.convert_page_break(node)
     Toc => self.convert_toc(node, "macro")
     FloatingTitle => self.convert_floating_title(node)
     other => unsupported("block", other.name(), node)
+  }
+}
+
+///|
+/// asciidoctor-pdf's `convert_page_break`: the next page, in the layout
+/// the `page-layout` attribute (else the last layout role) names; at the
+/// top of a page, nothing unless `always`, or the empty page turned to
+/// that layout. In a column box, a page break (unless the `column` role)
+/// leaves from the last column.
+fn Converter::convert_page_break(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
+  let valid = (l : String) => l == "portrait" || l == "landscape"
+  let layout = match node.attr("page-layout") {
+    Some(l) if l != "" => if valid(l) { Some(l) } else { None }
+    _ => node.roles().rev_iter().find_first(valid)
+  }
+  let current = match flow.model.pages.get(flow.page) {
+    Some(p) => if p.width_pt > p.height_pt { "landscape" } else { "portrait" }
+    None => "portrait"
+  }
+  if flow.at_page_top() && !node.has_option("always") {
+    match layout {
+      Some(l) if l != current &&
+        flow.model.pages[flow.page].items.iter().all(i => i is Anchor(_)) => {
+        // delete_current_page, then a page in that layout
+        let anchors = flow.model.pages[flow.page].items
+        ignore(flow.model.pages.pop())
+        flow.page -= 1
+        flow.start_new_page(layout=l)
+        flow.model.pages[flow.page].items.append(anchors)
+      }
+      _ => ()
+    }
+    return
+  }
+  if !node.has_role("column") {
+    flow.to_last_column()
+  }
+  match layout {
+    // `advance_page layout:` starts a new page when on the last one
+    Some(l) if flow.page + 1 >= flow.model.pages.length() &&
+      flow.columns is None => flow.start_new_page(layout=l)
+    _ => flow.advance_page()
   }
 }
 
@@ -983,7 +1018,7 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   // a section without an id is named after where it starts
   let anchor = match section.id {
     Some(id) => pdf_anchor_name(id)
-    None => "__anchor-\{start_page}-\{(page_height() - flow.y).ceil().to_int()}"
+    None => "__anchor-\{start_page}-\{(flow.page_h() - flow.y).ceil().to_int()}"
   }
   section.set_attr("pdf-anchor", value=Str(anchor)) |> ignore
   flow.add_anchor(

@@ -79,6 +79,8 @@ priv struct Flow {
   /// the current page's left and right margins
   mut margin_left : Double
   mut margin_right : Double
+  /// the width of the page the bounds were set for
+  mut page_width_now : Double
 }
 
 ///|
@@ -104,6 +106,7 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
     page_margins: None,
     margin_left: setup.margin_left,
     margin_right: setup.margin_right,
+    page_width_now: setup.width,
   }
 }
 
@@ -115,7 +118,7 @@ fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
   match self.page_margins {
     Some(margins_of) => {
       let (l, r) = margins_of(index)
-      let width = page_width()
+      let width = self.model.pages[index].width_pt
       self.left = l + (self.left - self.margin_left)
       self.right = width - r - (width - self.margin_right - self.right)
       self.margin_left = l
@@ -126,16 +129,47 @@ fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
 }
 
 ///|
-fn Flow::start_new_page(self : Flow) -> Unit {
-  self.model.pages.push({
-    width_pt: page_width(),
-    height_pt: page_height(),
-    items: [],
-  })
+fn Flow::start_new_page(self : Flow, layout? : String) -> Unit {
+  // a new page takes the current page's size and layout (Prawn's
+  // `start_new_page`), or the layout asked for: landscape swaps the sides
+  let (w, h) = match self.model.pages.last() {
+    Some(p) => (p.width_pt, p.height_pt)
+    None => (page_width(), page_height())
+  }
+  let (w, h) = match layout {
+    Some("landscape") if w < h => (h, w)
+    Some("portrait") if w > h => (h, w)
+    _ => (w, h)
+  }
+  self.model.pages.push({ width_pt: w, height_pt: h, items: [], })
   self.page = self.model.pages.length() - 1
+  self.fit_page_size()
   self.apply_page_margins(self.page)
   self.top = self.page_top
   self.y = self.top
+}
+
+///|
+/// The current page's height (the PDF's y axis is measured up from its
+/// bottom).
+fn Flow::page_h(self : Flow) -> Double {
+  match self.model.pages.get(self.page) {
+    Some(p) => p.height_pt
+    None => page_height()
+  }
+}
+
+///|
+/// Fit the bounds to the current page's size: its bottom margin and right
+/// margin stay where the page setup puts them.
+fn Flow::fit_page_size(self : Flow) -> Unit {
+  guard self.model.pages.get(self.page) is Some(p) else { return }
+  let setup = page_setup.val
+  self.bottom = p.height_pt - setup.margin_bottom
+  let right_edge = p.width_pt - self.margin_right
+  let old_edge = self.page_width_now - self.margin_right
+  self.right += right_edge - old_edge
+  self.page_width_now = p.width_pt
 }
 
 ///|
@@ -182,6 +216,7 @@ fn Flow::on_verso(self : Flow) -> Bool {
 /// margins; the cursor is left where it is.
 fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
   self.page = index
+  self.fit_page_size()
   self.apply_page_margins(index)
 }
 

@@ -41,8 +41,13 @@ let side_margins : Ref[((Double, Double), (Double, Double))?] = { val: None, }
 
 ///|
 /// A periphery's box on a page side (`allocate_running_content_layout`).
-fn periphery_trim(periphery : String, side : String) -> Trim {
+fn periphery_trim(
+  periphery : String,
+  side : String,
+  page_size? : (Double, Double),
+) -> Trim {
   let setup = page_setup.val
+  let (page_w, page_h) = page_size.unwrap_or((setup.width, setup.height))
   let (margin_left, margin_right) = match side_margins.val {
     Some((recto, verso)) => if side == "verso" { verso } else { recto }
     None => (setup.margin_left, setup.margin_right)
@@ -84,12 +89,12 @@ fn periphery_trim(periphery : String, side : String) -> Trim {
   let top = if periphery == "header" {
     margin[0]
   } else {
-    setup.height - height - margin[2]
+    page_h - height - margin[2]
   }
   {
     left: margin[3],
     top,
-    width: setup.width - margin[3] - margin[1],
+    width: page_w - margin[3] - margin[1],
     height,
     padding: (padding[0], padding[1], padding[2], padding[3]),
   }
@@ -514,7 +519,7 @@ fn Converter::ink_running_content(
       doc.set_attr(
         "page-layout",
         value=Str(
-          if page_width() > page_height() {
+          if pages[index].width_pt > pages[index].height_pt {
             "landscape"
           } else {
             "portrait"
@@ -522,9 +527,13 @@ fn Converter::ink_running_content(
         ),
       ),
     )
-    let trim = periphery_trim(periphery, side)
-    let (pad_top, pad_right, pad_bottom, pad_left) = trim.padding
     let page = pages[index]
+    let trim = periphery_trim(
+      periphery,
+      side,
+      page_size=(page.width_pt, page.height_pt),
+    )
+    let (pad_top, pad_right, pad_bottom, pad_left) = trim.padding
     match bg {
       Some(color) =>
         page.items.push(

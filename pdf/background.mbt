@@ -398,6 +398,7 @@ fn Converter::box_image_items(
   top : Double,
   w : Double,
   h : Double,
+  page_h? : Double,
 ) -> (Array[@pagelayout.PageItem], Double, Double)? {
   let flow = self.flow
   let place = (iw : Double, ih : Double) => {
@@ -446,7 +447,7 @@ fn Converter::box_image_items(
     let ops = doc.render(
       env,
       origin=(x, y),
-      page_height=page_height(),
+      page_height=page_h.unwrap_or(flow.page_h()),
       stack=flow.svg_stack(),
     )
     report_svg_warnings(doc, img.path, self.doc, flow.scratch)
@@ -572,7 +573,7 @@ fn Converter::ink_page_backgrounds(
     }
     match image {
       Some(img) =>
-        match self.box_image_items(img, 0.0, 0.0, w, h) {
+        match self.box_image_items(img, 0.0, 0.0, w, h, page_h=h) {
           Some((drawn, _, _)) => items.append(drawn)
           None => ()
         }
