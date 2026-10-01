@@ -112,23 +112,107 @@ fn Converter::ink_heading_text(
   } else {
     flow.margin(value_num(heading_key(level, "margin_top")).unwrap_or(0.0))
   }
-  if t_set("heading_h\{level}_padding") ||
-    t_set("heading_h\{level}_border_width") {
-    unsupported("theme", "heading_h\{level} padding or border", self.doc)
-  }
   let title = match style.text_transform {
     Some(transform) => transform_text(title, transform)
     None => title
   }
   let style = { ..style, text_transform: None, }
   let face = flow.font(style)
-  flow.typeset(
-    parse_formatted(title, style, normalize=false),
-    line_metrics(line_height, face, style.size),
-    style,
-    align=align.unwrap_or(self.heading_align(level)),
-  )
+  let category = "heading_h\{level}"
+  let start_y = flow.y
+  let start_page = flow.page
+  // `pad_box <category>_padding`
+  let (pad_top, pad_right, pad_bottom, pad_left) = match
+    tv(category + "_padding") {
+    Null => (0.0, 0.0, 0.0, 0.0)
+    v => expand_rect(v)
+  }
+  flow.move_down(pad_top)
+  flow.indent(pad_left, pad_right, () => {
+    flow.typeset(
+      parse_formatted(title, style, normalize=false),
+      line_metrics(line_height, face, style.size),
+      style,
+      align=align.unwrap_or(self.heading_align(level)),
+    )
+  })
+  if tv(category + "_padding") != Null {
+    flow.pad_bottom(pad_bottom)
+  }
+  // the border around the heading and its padding
+  // (`theme_fill_and_stroke_bounds`), from where it started on this page
+  match tv(category + "_border_width") {
+    Null => ()
+    width => {
+      let top = if flow.page == start_page { start_y } else { flow.top }
+      let color = match tv(category + "_border_color") {
+        Null => base_border_color()
+        v => value_color(v)
+      }
+      match color {
+        Some(color) =>
+          flow
+          .items()
+          .append(
+            border_items(width, color, flow.left, flow.right, top, flow.y),
+          )
+        None => ()
+      }
+    }
+  }
   flow.margin(value_num(heading_key(level, "margin_bottom")).unwrap_or(0.0))
+}
+
+///|
+/// asciidoctor-pdf's `fill_and_stroke_bounds` without a fill: a border of
+/// `width` (one width, or per side: [top, right, bottom, left], [vertical,
+/// horizontal]) around the box; per-side borders are rules, projected by
+/// half the adjacent sides' widths.
+fn border_items(
+  width : @theme.Value,
+  color : Color,
+  left : Double,
+  right : Double,
+  top : Double,
+  bottom : Double,
+) -> Array[@pagelayout.PageItem] {
+  match width {
+    Array(items) => {
+      let w = items.map(v => value_num(v).unwrap_or(0.0))
+      let w = if w.length() == 2 { [w[0], w[1], w[0], w[1]] } else { w }
+      let at = (i : Int) => w.get(i).unwrap_or(0.0)
+      let (wt, wr, wb, wl) = (at(0), at(1), at(2), at(3))
+      let items = []
+      if wt > 0.0 {
+        items.push(hrule(left - wl * 0.5, right - wr * 0.5, top, wt, color))
+      }
+      if wr > 0.0 {
+        items.push(vrule(right, top - wt * 0.5, bottom + wb * 0.5, wr, color))
+      }
+      if wb > 0.0 {
+        items.push(hrule(left - wl * 0.5, right - wr * 0.5, bottom, wb, color))
+      }
+      if wl > 0.0 {
+        items.push(vrule(left, top - wt * 0.5, bottom + wb * 0.5, wl, color))
+      }
+      items
+    }
+    v =>
+      match value_num(v) {
+        Some(w) if w > 0.0 =>
+          [
+            rect_item(
+              left,
+              top,
+              right - left,
+              bottom - top,
+              stroke=color,
+              stroke_width=w,
+            ),
+          ]
+        _ => []
+      }
+  }
 }
 
 ///|
