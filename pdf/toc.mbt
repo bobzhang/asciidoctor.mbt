@@ -471,6 +471,15 @@ fn Converter::convert_toc(
   let title_as_page = is_book || doc.has_attr("title-page")
   let extent = self.allocate_toc(resolve_toclevels(doc), title_as_page)
   self.toc_extent = Some(extent)
+  // the index numbers pages from the TOC (or after it) when the page
+  // numbering starts there
+  if title_as_page {
+    match tv("page_numbering_start_at") {
+      Str("toc") => session.index.start_page_number = extent.from_page + 1
+      Str("after-toc") => session.index.start_page_number = extent.to_page + 2
+      _ => ()
+    }
+  }
   if is_macro {
     for periphery in ["header", "footer"] {
       if node.has_option("no" + periphery) {

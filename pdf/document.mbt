@@ -211,6 +211,24 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   }
   c.traverse(doc)
   c.outdent_section(() => c.ink_footnotes(doc))
+  // a TOC the macro placed in the body of a book starts the running content
+  // or the page numbering when they start at `toc` or `after-toc`
+  let (skip_running, skip_numbering) = match c.toc_extent {
+    Some(extent) if title_as_page && !toc_at_top => {
+      let at = (key : String) => {
+        match tv(key) {
+          Str("toc") => Some(extent.from_page)
+          Str("after-toc") => Some(extent.to_page + 1)
+          _ => None
+        }
+      }
+      (
+        at("running_content_start_at").unwrap_or(skip_running),
+        at("page_numbering_start_at").unwrap_or(skip_numbering),
+      )
+    }
+    _ => (skip_running, skip_numbering)
+  }
   match c.toc_extent {
     Some(extent) => {
       let last = flow.page
