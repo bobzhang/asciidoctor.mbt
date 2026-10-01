@@ -1,5 +1,6 @@
 import {
   "bobzhang/asciidoctor-pdf/theme",
+  "bobzhang/asciidoctor-pdf/fonts" @bundled,
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
   "bobzhang/asciidoctor-pdf/svg",

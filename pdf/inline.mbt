@@ -59,21 +59,36 @@ let session : Session = {
 
 ///|
 /// Registers the `pdf` backend with the core so that `backend=pdf` loads
-/// resolve inline content to formatted text. The fonts of a document's
-/// theme are read through its VFS: the bundled ones (the themes'
-/// `GEM_FONTS_DIR`) from `fonts_dir`, prawn-icon's icon fonts (for
-/// `icons=font`) from `icon_fonts_dir`. With `catalog`, every document is
-/// set in that catalog's fonts instead. `pdf_theme` is asciidoctor-pdf's
-/// `pdf_theme` API option: the theme every document is converted with
-/// instead of the one its `pdf-theme` attribute (or `media`) selects, built
-/// from the theme files of the document's VFS (see `load_document_theme`).
+/// resolve inline content to formatted text.
+///
+/// The fonts a theme names in asciidoctor-pdf's own font directory (its
+/// `GEM_FONTS_DIR`) come from the bundles in `fonts` (by default the
+/// default theme's: `@fonts.default_fonts()`; add `@sans.fonts()` and
+/// `@fallback.fonts()` from `bobzhang/asciidoctor-pdf/fonts/sans` and
+/// `/fonts/fallback` for the `default-sans` and
+/// `default-with-font-fallbacks` themes), or, given `fonts_dir`, from that
+/// directory (a copy of the gem's `data/fonts`). prawn-icon's icon fonts
+/// (`icons=font`) come from `icon_fonts` (`@icons.fonts()` of
+/// `bobzhang/asciidoctor-pdf/fonts/icons`), or, given `icon_fonts_dir`,
+/// from that directory (prawn-icon's `data/fonts`). Any other font is read
+/// through the document's VFS. With `catalog`, every document is set in
+/// that catalog's fonts instead.
+///
+/// `pdf_theme` is asciidoctor-pdf's `pdf_theme` API option: the theme
+/// every document is converted with instead of the one its `pdf-theme`
+/// attribute (or `media`) selects, built from the theme files of the
+/// document's VFS (see `load_document_theme`).
 pub fn register(
   catalog? : FontCatalog,
+  fonts? : Array[@bundled.Bundle] = [@bundled.default_fonts()],
+  icon_fonts? : @bundled.Bundle,
   fonts_dir? : String,
   icon_fonts_dir? : String,
   pdf_theme? : (@theme.Files) -> @theme.Theme raise,
 ) -> Unit {
   session.fixed_catalog = catalog
+  font_sources.bundles = fonts
+  font_sources.icon_bundle = icon_fonts
   font_sources.fonts_dir = fonts_dir
   font_sources.icon_fonts_dir = icon_fonts_dir
   font_sources.pdf_theme = pdf_theme
@@ -364,12 +379,14 @@ fn convert_inline_icon(node : @core.Node) -> String {
   let doc = node.document()
   let alt = "[\{node.attr("alt").unwrap_or("")}&#93;"
   let icons = doc.attr("icons")
-  let catalog = if icons == Some("font") {
-    try? document_catalog(doc)
+  let catalog : FontCatalog? = if icons == Some("font") {
+    Some(document_catalog(doc)) catch {
+      _ => None
+    }
   } else {
-    Err(Failure("no icons"))
+    None
   }
-  guard catalog is Ok(catalog) && catalog.has_icons() else {
+  guard catalog is Some(catalog) && catalog.has_icons() else {
     if icons is Some(_) && icons != Some("font") {
       unsupported("inline", "image icon", node)
       return "[\{node.target.unwrap_or("")}&#93;"
