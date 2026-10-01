@@ -6,6 +6,6 @@ moon.work
 tests/
 docs/
 cmd/pdf-inspect/
-theme/harvest_test.mbt
-theme/harvest_helpers_test.mbt
-theme/testdata/
+harvest_test.mbt
+harvest_helpers_test.mbt
+testdata/

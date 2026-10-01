@@ -1,5 +1,9 @@
 # Not packaged with bobzhang/asciidoctor: the PDF backend is a module of its
-# own (bobzhang/asciidoctor-pdf, published from pdf/), and the development
-# notes.
+# own (bobzhang/asciidoctor-pdf), and the development notes.
+#
+# moon applies this file to every module in the repository, the one in pdf/
+# too (`moon package --list` in pdf/ lists nothing): publish
+# bobzhang/asciidoctor-pdf from a copy of pdf/ outside the repository (see
+# "Releasing" in README.mbt.md).
 pdf/
 docs/

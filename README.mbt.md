@@ -246,5 +246,21 @@ moon run --target native scripts/pdf_harvest.mbtx                    # re-harves
 moon run --target native scripts/pdf_bundle_fonts.mbtx               # regenerate pdf/fonts from the gems
 ```
 
+### Releasing
+
+`bobzhang/asciidoctor` is published from the repository root (`moon publish`; `.moonignore` leaves
+`pdf/`, `docs/`, `scripts/` and the goldens out). `bobzhang/asciidoctor-pdf` depends on the core
+release named in `pdf/moon.mod`, so publish the core first. moon applies the root `.moonignore` to
+`pdf/` as well, so publish the PDF module from a copy outside the repository, without the workspace
+file (`pdf/.moonignore` keeps its tests and tools out):
+
+```
+rsync -a --exclude _build --exclude .mooncakes --exclude moon.work pdf/ /tmp/asciidoctor-pdf/
+cd /tmp/asciidoctor-pdf && moon publish
+```
+
+Bump `version` in `pdf/moon.mod` and in `pdf/version.mbt` together (`scripts/pdf_smoke.mbtx` checks
+that `--version` agrees).
+
 The upstream sources are expected in `.repos/asciidoctor` (`git clone --depth 1
 https://github.com/asciidoctor/asciidoctor .repos/asciidoctor`); extra corpora are cloned next to it.
