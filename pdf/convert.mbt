@@ -20,6 +20,10 @@ priv struct Converter {
   /// `toclevels` as the conversion starts (`toc_num_levels`), before the
   /// body's attribute entries: the TOC's depth and the outline's default
   mut toc_levels : Int
+  /// asciidoctor-pdf's `@disable_running_content`: the (1-based) pages
+  /// whose header or footer is left out (the TOC's, when the `toc::[]`
+  /// macro has the `noheader` or `nofooter` option)
+  disable_running_content : Map[String, Array[Int]]
 }
 
 ///|
@@ -33,6 +37,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     toc_extent: None,
     toc_node: None,
     toc_levels: resolve_toclevels(doc),
+    disable_running_content: Map([("header", []), ("footer", [])]),
   }
 }
 

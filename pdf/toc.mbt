@@ -469,7 +469,16 @@ fn Converter::convert_toc(
     self.toc_node = Some((node, pdf_anchor_name(id)))
   }
   let title_as_page = is_book || doc.has_attr("title-page")
-  self.toc_extent = Some(
-    self.allocate_toc(resolve_toclevels(doc), title_as_page),
-  )
+  let extent = self.allocate_toc(resolve_toclevels(doc), title_as_page)
+  self.toc_extent = Some(extent)
+  if is_macro {
+    for periphery in ["header", "footer"] {
+      if node.has_option("no" + periphery) {
+        let pages = self.disable_running_content[periphery]
+        for pgnum in (extent.from_page + 1)..<=(extent.to_page + 1) {
+          pages.push(pgnum)
+        }
+      }
+    }
+  }
 }

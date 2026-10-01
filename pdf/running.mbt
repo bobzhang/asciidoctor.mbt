@@ -430,8 +430,14 @@ fn Converter::ink_running_content(
   } else {
     0.0
   }
+  let disable_on_pages = self.disable_running_content
+    .get(periphery)
+    .unwrap_or([])
   for index in skip_pages..<num_pages {
     let pgnum = index + 1
+    if disable_on_pages.contains(pgnum) {
+      continue
+    }
     let virtual_pgnum = pgnum - skip_pagenums
     let label = if virtual_pgnum < 1 {
       roman(pgnum, false)
