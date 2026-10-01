@@ -1,0 +1,19 @@
+= Fallback Fonts
+:pdf-theme: default-with-font-fallbacks
+
+The default theme with font fallbacks sets characters its fonts lack in M+ 1p (and Noto Emoji): Japanese such as 日本語の文章 and ひらがな, and arrows such as → and ⇒ and ← in running text.
+
+== Mixed text
+
+A paragraph that mixes Latin text with カタカナ and 漢字, *bold 太字 text*, _italic 斜体 text_ and `code コード`, long enough to wrap onto a second line so that the fallback glyphs are measured as the line is broken.
+
+* An item with 日本語
+* An item with ✓ check marks and ★ stars
+
+[cols="1,2"]
+|===
+|日本 |Japan
+|東京 |Tokyo
+|===
+
+NOTE: An admonition with fallback text: 注意してください。

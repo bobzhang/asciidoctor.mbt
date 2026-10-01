@@ -1,12 +1,6 @@
-MIT License
+The MIT License
 
-Copyright (C) 2026 Hongbo Zhang and the contributors to asciidoctor.mbt.
-
-This project is a port of Asciidoctor (https://github.com/asciidoctor/asciidoctor),
-including its default stylesheet and test fixtures derived from its test suite:
-
-Copyright (C) 2012-present Dan Allen, Sarah White, Ryan Waldron, and the
-individual contributors to Asciidoctor.
+Copyright 2010-2019 Roger Nesbitt
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-The PDF backend in pdf/ (the module bobzhang/asciidoctor-pdf) is a port of
-Asciidoctor PDF, Copyright (C) 2014-present OpenDevise Inc. and the
-Asciidoctor Project, and bundles fonts under their own licenses; see
-pdf/LICENSE and pdf/NOTICE.

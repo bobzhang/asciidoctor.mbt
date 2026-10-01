@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor-pdf/fonts"
+
+// Values
+pub fn default_fonts() -> Bundle
+
+pub fn inflate_armoured(Array[Bytes]) -> Bytes
+
+// Errors
+
+// Types and methods
+pub struct Bundle {
+  // private fields
+}
+pub fn Bundle::contains(Self, String) -> Bool
+pub fn Bundle::from_armoured(Array[(String, () -> Array[Bytes])]) -> Self
+pub fn Bundle::get(Self, String) -> Bytes?
+pub fn Bundle::names(Self) -> Array[String]
+pub fn Bundle::new(Array[(String, () -> Bytes)]) -> Self
+
+// Type aliases
+
+// Traits

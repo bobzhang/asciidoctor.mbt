@@ -1,0 +1,21 @@
+= Font icons
+:icons: font
+
+NOTE: A note with an icon.
+
+TIP: A tip, whose text is long enough to wrap onto a second line so that the label column is taller than the icon itself, which then sits in the middle.
+
+IMPORTANT: Important.
+
+WARNING: Warning.
+
+CAUTION: Caution.
+
+[NOTE]
+====
+A compound note.
+
+With two paragraphs.
+====
+
+Inline icons: icon:heart[] icon:fas-heart[] icon:save[2x] icon:github[] icon:heart@far[] icon:no-such-icon[] and icon:tags[lg,role=blue].

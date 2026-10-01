@@ -1,0 +1,69 @@
+= Autowidth tables
+
+Columns sized to their content, as prawn-table does without column widths.
+
+.A narrow table whose caption wraps within the table's width
+[%autowidth]
+|===
+|Attribute |Values |Backends
+
+.2+|`toc`
+|`auto`, `left`, `right`
+|html
+
+|`macro` +
+`preamble`
+|html (embeddable)
+
+|`toclevels` 2+|Any number from 1 to 5
+|===
+
+[%autowidth,cols="~,^~"]
+|===
+|Blocks and elements |Substitution step applied by default
+
+|Attribute entry values |yes
+|Comments |no
+|Macros |yes +
+(except triple plus and inline pass macros)
+|===
+
+A table wider than the page shrinks towards its columns' minimum widths:
+
+[%autowidth]
+|===
+|Name |Description
+
+|short
+|A long description that would not fit on one line of the page, so the table is narrowed to the page's width and the text wraps within its column, as prawn-table shrinks the columns towards their minimum widths in proportion.
+|===
+
+[%autowidth.stretch]
+|===
+|Stretched |to the page's width
+|===
+
+[%autowidth,width=60%,align=center]
+.Centred at 60%
+|===
+|A |B |C
+|===
+
+.Code cells
+|===
+| Key | Manifest entry | Environment variable
+
+| `loader.path`
+| `Loader-Path`
+| `LOADER_PATH`
+
+| `loader.home`
+| `Loader-Home`
+| `LOADER_HOME`
+
+m| loader.args
+| `Loader-Args`
+| `LOADER_ARGS`
+|===
+
+After.

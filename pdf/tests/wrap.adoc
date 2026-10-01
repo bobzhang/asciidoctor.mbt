@@ -1,0 +1,51 @@
+= Line wrapping
+
+Prawn tokenizes each fragment on its own: a fragment starting with a hyphen is a place to break before it, and a word too long for its line is wrapped by character, each measured without kerning.
+
+[cols="1,1,3"]
+|===
+|Old |New |Notes
+
+|quarkus-*resteasy-reactive*-kotlin-serialization-common
+|quarkus-*rest*-kotlin-serialization-common
+|renamed
+
+|ZONED_DATE_TIME_WITH_TIMEZONE
+|TIMESTAMP_WITH_TIMEZONE
+|java.time.ZonedDateTime, ZonedDateTimeWithTimezone
+|===
+
+A paragraph with an extremely long token that cannot fit on one line: AVeryLongIdentifierWithoutAnyBreakOpportunityThatKeepsGoingAndGoingPastTheEndOfTheLine and then some words.
+
+Mixed fragments: quarkus-*resteasy-reactive*-kotlin-serialization-common, quarkus-*rest*-kotlin-serialization-common, quarkus-*resteasy-reactive*-kotlin-serialization-common, quarkus-*rest*-kotlin-serialization-common.
+
+A space that does not fit ends the line before it, so a line of code alone keeps the code font's height:
+
+[cols="1,1,1,1,1"]
+|===
+|Attribute |Description |Type |Config file |Default
+
+|*sendTimeoutMs*
+|Message send timeout in ms. +
+If a message is not acknowledged by a server before the `sendTimeout` expires, an error occurs.
+|long
+|true
+|30000
+
+|*maxPendingMessages*
+|The `MaxPendingMessages` parameter determines the size of the outgoing message queue.
+|int
+|true
+|1000
+|===
+
+After the table.
+
+A footnote after code, in a table cell: its anchor is in the text's own font, which counts towards the line's height.
+
+[cols="1,1,2"]
+|===
+| Category | Package | Types
+
+| Serializable types | | Any type that implements ``java.io.Serializable``footnote:[Jakarta Persistence's support for Serializable types is to directly serialize their state to the database]
+|===

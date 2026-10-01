@@ -1,0 +1,35 @@
+= Inline images
+:imagesdir: images
+
+An inline image image:logo.png[Logo,16] sits on the baseline of the line, and a small one does not change the line height.
+
+A tall inline image image:logo.png[Logo] grows its line to hold it, and the text after it wraps as usual around the width it takes in the line.
+
+An image as wide as the line image:rect.png[Rectangle,width=100%] is narrowed to the line.
+
+With `fit=line`, image:rect.png[Rectangle,fit=line] the image is no taller than the line.
+
+A linked image:logo.png[Logo,20,link=https://asciidoctor.org] image, and one linked to a section image:logo.png[Logo,20,link=#_after_the_images].
+
+An image that cannot be read image:missing.png[Missing] is its alt text.
+
+[cols="1,2"]
+|===
+|Cell
+|A half-width image:logo.png[Logo,width=50%] in a cell
+
+|Scaled
+|image:rect.png[Rectangle,scale=10] and image:rect.png[Rectangle,pdfwidth=0.5in]
+|===
+
+.A linked block image
+image::logo.png[Logo,link=https://asciidoctor.org,align=center]
+
+[.right.text-center]
+image::missing.png[Missing]
+
+image::missing.png[Missing,float=right,align=center]
+
+== After the images
+
+Text after the images.

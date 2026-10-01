@@ -1,0 +1,25 @@
+extends: base
+parent:
+  font_dir: /opt/fonts
+  fallback: Noto Emoji
+heading:
+  font_color: #222222
+  h2:
+    align: center
+blockquote:
+  font_color: 555555
+key:
+  border-color: CCCCCC
+literal:
+  font-family: $key_border_color
+table:
+  caption:
+    side: top
+outline-list:
+  item-spacing: 6
+example:
+  padding: [12, 12, 0]
+sidebar:
+  padding: [12]
+verse:
+  padding: 5

@@ -1,0 +1,77 @@
+%YAML 1.1
+---
+# YAML syntax a theme may use
+quoting:
+  dq_escapes: "tab\there\nnew \"q\" \\ \x41 é \U0001F600 \_ \N \e"
+  dq_fold: "one
+    two
+
+    three"
+  dq_escaped_break: "one \
+    two"
+  sq_fold: 'one
+    two'
+  sq_quote: 'a''b'
+  empty_dq: ""
+  empty_sq: ''
+  hash_not_comment: a#b # but this is
+  colon_space_quoted: "a: b"
+  braces: "{page-number}"
+  unquoted_braces_later: page {page-number}
+block:
+  literal_strip: |-
+    keep
+    no final newline
+  literal_keep: |+
+    keep
+
+  literal_indent: |2
+      two extra spaces
+    base
+  folded_lines: >
+    one
+    two
+
+    para
+      more indented
+    back
+  folded_strip: >-
+    x
+    y
+  after: 1
+flow:
+  nested: {a: [1, {b: c}], 'q k': "v", d: }
+  empty_seq: []
+  empty_map: {}
+  trailing_comma: [1, 2, ]
+  multiline: [
+    one,
+    two
+  ]
+  seq_of_maps:
+  - name: a
+    size: 1
+  - {name: b, size: 2}
+  - - nested
+    - seq
+"quoted key": 1
+'single key': 2
+key with spaces: 3
+? explicit
+: value
+tagged:
+  str: !!str 123
+  float: !!float 3
+  str_bool: !!str yes
+anchored:
+  scalar: &s shared value
+  ref: *s
+  seq: &q
+  - x
+  - y
+  ref_seq: *q
+comments: # a comment
+  # a comment line
+  a: 1 # trailing
+  b: 'x' # trailing
+...

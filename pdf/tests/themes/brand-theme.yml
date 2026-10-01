@@ -1,0 +1,10 @@
+# The shared settings of the custom theme (extended by custom-theme.yml)
+brand:
+  primary: #1F4E79
+  accent: [192, 80, 77]
+  muted: 7F7F7F
+  rule: D9D9D9
+  gutter: 0.25in
+base:
+  font-color: 262626
+  border-color: $brand-rule

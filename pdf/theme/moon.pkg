@@ -1,0 +1,8 @@
+import {
+  "moonbit-community/yaml",
+  "moonbitlang/core/string",
+  "moonbitlang/core/double",
+  "moonbitlang/core/math",
+}
+
+supported_targets = "native+wasm"

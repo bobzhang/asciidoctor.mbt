@@ -1,0 +1,22 @@
+= Callouts
+
+Intro paragraph.
+
+[source,ruby]
+----
+require 'sinatra' # <1>
+
+get '/hi' do # <2>
+  "Hello World!" # <3>
+end
+----
+<1> Library import with a long explanation that wraps onto a second line because it keeps going and going and going.
+<2> URL mapping
+<3> Response block
+
+A paragraph between.
+
+<1> A callout list not after code.
+<2> Second.
+
+The end.

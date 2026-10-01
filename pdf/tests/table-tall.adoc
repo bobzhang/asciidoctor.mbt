@@ -1,0 +1,107 @@
+= Tall Cells
+:reproducible:
+
+A table cell cannot run past a page: its content is cut off.
+
+[cols="1,3a"]
+|===
+|Short |A cell with a footnote.footnote:[The footnote of a table cell.]
+
+|Tall
+|
+Paragraph one of the tall cell.
+
+Paragraph two of the tall cell.
+
+Paragraph three of the tall cell.
+
+Paragraph four of the tall cell.
+
+Paragraph five of the tall cell.
+
+Paragraph six of the tall cell.
+
+Paragraph seven of the tall cell.
+
+Paragraph eight of the tall cell.
+
+Paragraph nine of the tall cell.
+
+Paragraph ten of the tall cell.
+
+Paragraph eleven of the tall cell.
+
+Paragraph twelve of the tall cell.
+
+Paragraph thirteen of the tall cell.
+
+Paragraph fourteen of the tall cell.
+
+Paragraph fifteen of the tall cell.
+
+Paragraph sixteen of the tall cell.
+
+Paragraph seventeen of the tall cell.
+
+Paragraph eighteen of the tall cell.
+
+Paragraph nineteen of the tall cell.
+
+Paragraph twenty of the tall cell.
+
+Paragraph twenty-one of the tall cell.
+
+Paragraph twenty-two of the tall cell.
+
+Paragraph twenty-three of the tall cell.
+
+Paragraph twenty-four of the tall cell.
+
+Paragraph twenty-five of the tall cell.
+
+Paragraph twenty-six of the tall cell.
+
+Paragraph twenty-seven of the tall cell.
+
+Paragraph twenty-eight of the tall cell.
+
+Paragraph twenty-nine of the tall cell.
+
+Paragraph thirty of the tall cell.
+
+Paragraph thirty-one of the tall cell.
+
+Paragraph thirty-two of the tall cell.
+
+Paragraph thirty-three of the tall cell.
+
+Paragraph thirty-four of the tall cell.
+
+Paragraph thirty-five of the tall cell.
+
+Paragraph thirty-six of the tall cell.
+
+Paragraph thirty-seven of the tall cell.
+
+Paragraph thirty-eight of the tall cell.
+
+Paragraph thirty-nine of the tall cell.
+
+Paragraph forty of the tall cell.
+
+
+|After |The row after the tall one.
+|===
+
+.A titled code block in a cell
+[cols="1a"]
+|===
+|
+.Example
+[source,ruby]
+----
+puts "hello"
+----
+|===
+
+The end.

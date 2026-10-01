@@ -1,0 +1,18 @@
+import {
+  "moonbitlang/pdflite",
+  "moonbitlang/pdflite/syntax",
+  "moonbitlang/pdflite/core",
+  "moonbitlang/pdflite/page",
+  "moonbitlang/pdflite/content",
+  "moonbitlang/pdflite/geometry",
+  "moonbitlang/pdflite/flate",
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/stdio",
+  "moonbitlang/core/env",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "native+wasm"
+
+pkgtype(kind: "executable")

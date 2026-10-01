@@ -1,0 +1,32 @@
+= SVG features
+:imagesdir: images
+
+.Shapes, strokes, CSS and transforms
+image::shapes.svg[Shapes]
+
+.Gradients, clip paths, symbols, markers and nested viewports
+image::structure.svg[Structure,align=center]
+
+.Text: anchors, spans, spacing, fallback fonts, rotation
+image::text.svg[Text]
+
+Embedded images, from a data URL and from a file:
+image:svg-with-data-uri-image.svg[Data URI,width=60] and image:svg-with-local-image.svg[Local,width=60].
+
+A nested SVG from a data URL:
+
+image::svg-with-data-uri-svg-image.svg[Nested,width=80]
+
+An unknown element is skipped with a warning:
+
+image::faulty.svg[Faulty,width=50]
+
+Inline SVG images take the line's height rules: image:red-blue-squares.svg[Squares,16] a small one, a scaled one image:gradient.svg[Gradient,scale=50], and one sized to the line image:tall.svg[Tall,fit=line].
+
+A tall inline image image:red-blue-squares.svg[Squares,80] grows its line.
+
+[cols="1,2"]
+|===
+|Cell
+|A half-width image:gradient.svg[Gradient,width=50%] in a cell
+|===

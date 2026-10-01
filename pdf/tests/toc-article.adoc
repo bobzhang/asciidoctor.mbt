@@ -1,0 +1,47 @@
+= A Document with a Table of Contents
+Jane Doe
+:toc:
+:toclevels: 3
+:sectnums:
+:reproducible:
+
+This preamble comes after the table of contents, which lists the sections below with dot leaders and their page numbers.
+
+== Getting started
+
+Some text in the first section.
+
+=== Installing the tools
+
+Installation steps are described here, in a paragraph long enough to fill a couple of lines of the page so that the layout has some substance.
+
+=== Configuring `the` environment
+
+Configuration details.
+
+==== A fourth-level section
+
+Too deep to be listed with toclevels 3? No: level 3 sections are listed, level 4 are not.
+
+== A section with a considerably longer title that needs to wrap onto a second line in the table of contents
+
+<<<
+
+Text on a new page.
+
+=== Subsection on the second page
+
+More text.
+
+[appendix]
+== An appendix
+
+Appendix text.
+
+=== `(ApplicationScoped.class)`
+
+A title that is all code.
+
+== Last words
+
+The end.

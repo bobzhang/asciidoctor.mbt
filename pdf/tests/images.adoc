@@ -1,0 +1,26 @@
+= Image sizes
+:imagesdir: images
+
+The width of a block image, as asciidoctor-pdf's `resolve_explicit_width` takes it.
+
+.The intrinsic width, 0.75pt per pixel
+image::rect.png[Rectangle]
+
+A width in pixels wider than the page is narrowed to the page:
+
+image::rect.png[Rectangle,width=800,align=center]
+
+A width with units is not a width attribute asciidoctor-pdf reads:
+
+image::rect.png[Rectangle,width=100px]
+
+[.right]
+image::logo.png[Logo,width=50%]
+
+image::logo.png[Logo,scale=50]
+
+image::logo.png[Logo,pdfwidth=2in]
+
+image::logo.png[Logo,pdfwidth=150iw,role=center]
+
+After the images.

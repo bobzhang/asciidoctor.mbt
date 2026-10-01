@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="160" viewBox="0 0 360 160" font-family="Noto Serif" font-size="14">
+  <rect x="0.5" y="0.5" width="359" height="159" fill="none" stroke="#ccc"/>
+  <text x="10" y="25">Plain text at the start</text>
+  <text x="180" y="50" text-anchor="middle" fill="#036" font-weight="bold">Centred, bold</text>
+  <text x="350" y="75" text-anchor="end" font-style="italic">Right-aligned italic</text>
+  <text x="10" y="100" font-family="M+ 1mn" font-size="12">mono <tspan fill="#c00" dy="-4">raised</tspan> <tspan dy="4">and back</tspan></text>
+  <text x="10" y="125" letter-spacing="2">Spaced out letters</text>
+  <text x="200" y="125" font-family="'Some Font', Arial" font-size="10">Fallback family</text>
+  <text x="10 30 50 70" y="150" fill="#060">ABCDE</text>
+  <text x="200" y="150" transform="rotate(-10 200 150)" font-size="12">Rotated</text>
+</svg>

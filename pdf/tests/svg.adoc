@@ -1,0 +1,31 @@
+= SVG images
+:imagesdir: images
+
+An SVG with only a viewBox takes the width of the page.
+
+.Rounded squares, one translucent
+image::red-blue-squares.svg[Squares]
+
+A width in pixels, and a gradient fill:
+
+image::gradient.svg[Gradient,width=120]
+
+image::gradient.svg[Gradient,pdfwidth=2in,align=center]
+
+A path drawn in a rotated group:
+
+image::watermark.svg[Watermark,scale=50,align=right]
+
+Path data with relative curves and smooth curves:
+
+image::example-stamp.svg[Stamp,width=300]
+
+Text in a document font, and in an unknown font that falls back to the base font:
+
+image::svg-with-text.svg[Text,width=100%]
+
+image::svg-with-unknown-font.svg[Unknown font,width=100%]
+
+A tall image shrinks to fit the page:
+
+image::tall.svg[Tall,pdfwidth=50%]

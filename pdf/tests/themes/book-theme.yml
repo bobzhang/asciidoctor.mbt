@@ -1,0 +1,60 @@
+# A book theme for the PDF backend's theme comparison case: the custom
+# theme with a styled title page, TOC and chapter-aware running content.
+extends: custom
+title-page:
+  text-align: center
+  title:
+    top: 40%
+    font-size: 30
+    font-color: $brand-primary
+    line-height: 1.1
+    margin-bottom: 12
+  subtitle:
+    font-size: 16
+    font-color: $brand-accent
+    font-style: italic
+  authors:
+    margin-top: 24
+    font-color: $brand-muted
+    delimiter: ' / '
+  revision:
+    margin-top: 6
+    font-size: $base-font-size-small
+heading:
+  h2-font-size: 22
+  chapter:
+    break-before: always
+toc:
+  title:
+    text-align: center
+    font-color: $brand-accent
+  h3-font-color: $brand-muted
+  dot-leader:
+    levels: 2
+running-content:
+  start-at: toc
+page:
+  numbering:
+    start-at: toc
+header:
+  recto:
+    left:
+      content: '{chapter-title}'
+    right:
+      content: '{document-title}'
+  verso:
+    left:
+      content: '{document-title}'
+    right:
+      content: '*{chapter-title}*'
+footer:
+  recto:
+    center:
+      content: ~
+    right:
+      content: '{page-number}'
+  verso:
+    center:
+      content: ~
+    left:
+      content: '{page-number}'

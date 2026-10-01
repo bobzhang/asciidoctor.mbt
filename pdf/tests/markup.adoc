@@ -1,0 +1,69 @@
+= Formatted text markup
+
+asciidoctor-pdf parses formatted text with a grammar in which an end tag closes whatever element is open, and shows text it cannot parse as it is.
+
+Apply the `sideband.*` option selectively to specific URLs. The
+same URL matching logic applies as for `http.<url>.*` settings.
+
+Plain *strong with `code` inside* and more text after it to fill the line up to the end so it wraps somewhere.
+
+Unknown markup is shown as it is: +++<u>underlined</u>+++ and the rest of the paragraph.
+
+A reference to the top of the document <<_top>>, one without a target <<>>, and to the bibliography <<pp>> and <<gof,the book>>.
+
+[bibliography]
+== References
+
+* [[[pp]]] Andy Hunt & Dave Thomas. The Pragmatic Programmer.
+* [[[gof,GoF]]] Erich Gamma et al. Design Patterns.
+
+== Links at the end of a line
+
+A link whose fragment has nothing on a line but the space ending it is still annotated there, with no width:
+
+`org.hibernate.service.spi.Startable`::
+ 	allows the `Service` impl to be notified that it is being started and about to be put into use.
+`org.hibernate.service.spi.Stoppable`::
+	allows the `Service` impl to be notified that it is being stopped and will be removed from use.
+`org.hibernate.service.spi.ServiceRegistryAwareService`::
+	allows the `Service` to be injected with a reference to the registry that is managing it. See <<services-dependencies>> for more details.
+`Other`::
+	The different registry implementations also understand additional optional contracts specific to that registry. For details, see the details for each registry in <<services-registry>>.
+
+[[services-dependencies]]
+==== `Service` dependencies
+
+Services are allowed to declare dependencies on other services using either of two approaches.
+
+[[services-registry]]
+=== Registries
+
+The registries.
+
+An element with nothing in it takes the space before it away: the `+pass:[]+` macro, and *strong* text.
+
+:title-separator: {sp}|
+== A section title | with a subtitle
+
+A title separator splits a subtitle off onto its own line, in the subtitle role.
+
+=== OpenShift [[s2i]]
+
+An anchor after the last word of a line [[line-end]]
+sits where the text ends, not after the space before it: see <<s2i>> and <<line-end>>.
+
+[.text-center]
+A centered line that ends with an anchor [[centered-end]]
+
+A link whose text ends with a space that wraps to the next line still links there:
+
+[cols="35%,65%",options="header"]
+|===
+|Property |Description
+
+|[[batch-enabled]]<<batch-enabled, `debezium.sink.http.batch.enabled` >>
+|Aggregates all change events.
+
+|[[batch-max-size]]<<batch-max-size, `debezium.sink.http.batch.max-size` >>
+|The batch size.
+|===

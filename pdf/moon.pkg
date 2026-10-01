@@ -1,0 +1,31 @@
+import {
+  "bobzhang/asciidoctor-pdf/theme",
+  "bobzhang/asciidoctor-pdf/fonts" @bundled,
+  "bobzhang/asciidoctor/core",
+  "moonbitlang/pagelayout",
+  "bobzhang/asciidoctor-pdf/svg",
+  "moonbitlang/pagelayout/fonts",
+  "moonbitlang/pagelayout/pdf",
+  "moonbitlang/pdflite",
+  "moonbitlang/pdflite/font/afm",
+  "moonbitlang/core/string",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/math",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native+wasm"
+
+import {
+  "bobzhang/asciidoctor",
+  "moonbitlang/pagelayout/fontoutlines",
+  "bobzhang/asciidoctor-pdf/fonts/icons",
+} for "wbtest"
+
+import {
+  "bobzhang/asciidoctor-pdf" @asciidoctor_pdf,
+  "bobzhang/asciidoctor",
+  "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor-pdf/fonts" @bundled,
+  "bobzhang/asciidoctor-pdf/fonts/sans",
+} for "test"

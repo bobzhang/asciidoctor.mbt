@@ -1,0 +1,24 @@
+= Placing the Table of Contents
+:toc: macro
+:toc-title: Contents
+:reproducible:
+
+An introduction before the table of contents.
+
+== Overview
+
+The table of contents follows, placed by the macro.
+
+toc::[]
+
+== Details
+
+Details of the matter.
+
+=== More details
+
+Even more details.
+
+== Summary
+
+A summary.
