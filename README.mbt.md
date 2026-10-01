@@ -158,6 +158,19 @@ fn main {
 }
 ```
 
+## PDF
+
+The PDF backend is a separate module in `pdf/`,
+[`bobzhang/asciidoctor-pdf`](pdf/README.mbt.md): a port of Asciidoctor PDF 2.3.27 with its themes
+and fonts bundled.
+
+```
+moonx bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf doc.adoc
+```
+
+It is licensed under the MIT license with Asciidoctor PDF's copyright notice, and bundles fonts
+under their own licenses: see `pdf/LICENSE` and `pdf/NOTICE`.
+
 ## Status
 
 Parity is measured against goldens harvested from the upstream Ruby test suite (2,961 documents with
@@ -198,6 +211,8 @@ where Ruby itself crashes (manpage).
 | `io/` | async file-system integration (`load_file`, `convert_file`, `convert_source`) |
 | `cmd/asciidoctor` | CLI |
 | `cmd/golden`, `scripts/` | golden harvesting/replay, regex oracle, corpus comparison |
+| `pdf/` | the PDF backend, a module of its own (`bobzhang/asciidoctor-pdf`) |
+| `tests/pdf_golden/` | conversions harvested from asciidoctor-pdf's RSpec suite (`scripts/pdf_harvest.mbtx`) |
 
 ## Development
 
@@ -213,6 +228,22 @@ moon run --target native scripts/cli_parity.mbtx -- -v    # CLI vs Ruby: exit co
 moon run --target native scripts/harvest.mbtx             # regenerate goldens (needs Ruby + nokogiri, python3)
 moon run --target native cmd/golden -- -v -n 20           # golden replay with failure details
 moon run --target native cmd/golden -- --prune-known      # drop fixed entries from known_failures.txt
+```
+
+The PDF backend (`pdf/`) is checked with `moon -C pdf check --target all` and
+`moon -C pdf test --target native`, and compared with Ruby asciidoctor-pdf by
+`scripts/pdf_compare.mbtx`. The comparison needs Ruby (the `ruby` path at the top of the script)
+with the asciidoctor-pdf 2.3.27 gems installed in `.repos/gems-pdf`
+(`gem install --install-dir .repos/gems-pdf asciidoctor-pdf -v 2.3.27`), the
+asciidoctor-pdf sources in `.repos/asciidoctor-pdf` and poppler (`pdftotext`, `pdftoppm`,
+`pdfinfo`):
+
+```
+moon run --target native scripts/pdf_compare.mbtx -- --gate          # 36 documents, must all pass
+moon run --target native scripts/pdf_compare.mbtx -- --self-test     # the metrics flag corrupted PDFs
+moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens  # asciidoctor-pdf's spec suite
+moon run --target native scripts/pdf_harvest.mbtx                    # re-harvest the spec suite
+moon run --target native scripts/pdf_bundle_fonts.mbtx               # regenerate pdf/fonts from the gems
 ```
 
 The upstream sources are expected in `.repos/asciidoctor` (`git clone --depth 1

@@ -20,3 +20,11 @@ import {
   "bobzhang/asciidoctor",
   "moonbitlang/pagelayout/fontoutlines",
 } for "wbtest"
+
+import {
+  "bobzhang/asciidoctor-pdf" @asciidoctor_pdf,
+  "bobzhang/asciidoctor",
+  "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor-pdf/fonts" @bundled,
+  "bobzhang/asciidoctor-pdf/fonts/sans",
+} for "test"

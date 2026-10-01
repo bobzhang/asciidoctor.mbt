@@ -1,0 +1,5 @@
+# Not packaged with bobzhang/asciidoctor: the PDF backend is a module of its
+# own (bobzhang/asciidoctor-pdf, published from pdf/), and the development
+# notes.
+pdf/
+docs/
