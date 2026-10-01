@@ -198,28 +198,145 @@ fn apply_role_settings(style : Style, role : String) -> Style {
 }
 
 ///|
-/// asciidoctor-pdf's `transform_text`: `uppercase`, `lowercase`, or
-/// `capitalize` (each word's first letter upper case); anything else
+/// asciidoctor-pdf's `TextTransformer#transform_text`: `uppercase`,
+/// `lowercase`, `capitalize` (each run of non-blank characters
+/// capitalized, as Ruby's `capitalize` does) or `smallcaps`, applied to
+/// the text between tags and character references only; anything else
 /// leaves the text as it is.
 fn transform_text(text : String, transform : String) -> String {
   match transform {
-    "uppercase" => text.to_upper()
-    "lowercase" => text.to_lower()
-    "capitalize" => {
-      let sb = StringBuilder()
-      let mut start = true
-      for c in text {
-        if start && c.is_ascii_lowercase() {
-          sb.write_char(c.to_ascii_uppercase())
-        } else {
-          sb.write_char(c)
-        }
-        start = c == ' ' || c == '\t' || c == '\n' || c == '-'
+    "uppercase" => pcdata_map(text, @core.ruby_upcase)
+    "lowercase" =>
+      if text.contains("<") {
+        // TagFilterRx: character references are lowercased too
+        pcdata_map(text, @core.ruby_downcase, entities=false)
+      } else {
+        @core.ruby_downcase(text)
       }
-      sb.to_string()
-    }
+    "capitalize" => pcdata_map(text, capitalize_words)
+    "smallcaps" => pcdata_map(text, smallcaps)
     _ => text
   }
+}
+
+///|
+/// The length of the markup at `i` that `PCDATAFilterRx` leaves alone: a
+/// tag (`<[^>]+>`), or with `entities` a character reference
+/// (`&#?[a-z\d]+;`); 0 when there is none.
+fn pcdata_markup_at(text : String, i : Int, entities : Bool) -> Int {
+  let n = text.length()
+  if text[i] == '<' {
+    let mut j = i + 1
+    while j < n && text[j] != '>' {
+      j += 1
+    }
+    if j < n && j > i + 1 {
+      j + 1 - i
+    } else {
+      0
+    }
+  } else if entities && text[i] == '&' {
+    let mut j = i + 1
+    if j < n && text[j] == '#' {
+      j += 1
+    }
+    let start = j
+    while j < n &&
+          ((text[j] >= 'a' && text[j] <= 'z') ||
+          (text[j] >= '0' && text[j] <= '9')) {
+      j += 1
+    }
+    if j > start && j < n && text[j] == ';' {
+      j + 1 - i
+    } else {
+      0
+    }
+  } else {
+    0
+  }
+}
+
+///|
+/// `string.gsub(PCDATAFilterRx) { $2 ? f($2) : $1 }` (`TagFilterRx`
+/// without `entities`), when the text has markup (`XMLMarkupRx`); `f` of
+/// the whole text otherwise. A `&` or `<` that starts no markup matches
+/// neither group and is kept as is.
+fn pcdata_map(
+  text : String,
+  f : (String) -> String,
+  entities? : Bool = true,
+) -> String {
+  let n = text.length()
+  let mut has_markup = false
+  for i in 0..<n {
+    if text[i] == '<' || (entities && pcdata_markup_at(text, i, true) > 0) {
+      has_markup = true
+      break
+    }
+  }
+  if !has_markup {
+    return f(text)
+  }
+  let sb = StringBuilder()
+  let mut i = 0
+  while i < n {
+    let markup = pcdata_markup_at(text, i, entities)
+    if markup > 0 {
+      sb.write_string(text.unsafe_substring(start=i, end=i + markup))
+      i += markup
+      continue
+    }
+    if text[i] == '<' || (entities && text[i] == '&') {
+      sb.write_char(text[i].unsafe_to_char())
+      i += 1
+      continue
+    }
+    let start = i
+    while i < n && text[i] != '<' && !(entities && text[i] == '&') {
+      i += 1
+    }
+    sb.write_string(f(text.unsafe_substring(start~, end=i)))
+  }
+  sb.to_string()
+}
+
+///|
+/// `capitalize_words`: `string.gsub(/\p{Graph}+/) { $&.capitalize }`.
+fn capitalize_words(text : String) -> String {
+  let sb = StringBuilder()
+  let word = StringBuilder()
+  let flush = () => {
+    let w = word.to_string()
+    if w != "" {
+      sb.write_string(@core.ruby_capitalize(w))
+      word.reset()
+    }
+  }
+  for c in text {
+    if c.is_whitespace() || c.to_int() < 0x20 || c.to_int() == 0x7f {
+      flush()
+      sb.write_char(c)
+    } else {
+      word.write_char(c)
+    }
+  }
+  flush()
+  sb.to_string()
+}
+
+///|
+/// `smallcaps`: `string.tr 'a-z', 'ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴoᴘǫʀsᴛᴜᴠᴡxʏᴢ'`.
+fn smallcaps(text : String) -> String {
+  let chars = "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴoᴘǫʀsᴛᴜᴠᴡxʏᴢ".to_array()
+  let sb = StringBuilder()
+  for c in text {
+    if c >= 'a' && c <= 'z' {
+      sb.write_char(chars[c.to_int() - 'a'.to_int()])
+    } else {
+      sb.write_char(c)
+    }
+  }
+  sb.to_string()
 }
 
 ///|

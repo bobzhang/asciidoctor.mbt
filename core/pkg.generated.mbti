@@ -134,6 +134,12 @@ pub fn roman_to_int(String) -> Int
 
 pub fn rootname(String) -> String
 
+pub fn ruby_capitalize(String) -> String
+
+pub fn ruby_downcase(String) -> String
+
+pub fn ruby_upcase(String) -> String
+
 pub fn safe_mode_name_for_value(Int) -> String?
 
 pub fn safe_mode_value_for_name(String) -> Int?
