@@ -122,10 +122,59 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       alignment_of(align)
     _ => t_align("base_text_align", Left)
   }
+  let is_book = doc.doctype() == "book"
+  // a book (or `title-page`) has a title page instead of a title heading
+  let title_as_page = is_book || doc.has_attr("title-page")
+  let has_title_page = title_as_page &&
+    doc.has_header() &&
+    !doc.notitle() &&
+    !(tv("title_page") is Bool(false))
+  // `media=prepress` (`init_pdf`): recto pages take the inner margin on
+  // the left and the outer on the right, verso pages the reverse; the first
+  // page keeps the theme's margins (an article without a title page takes
+  // the recto margins); a book's chapters start on recto pages
+  if doc.attr("media") == Some("prepress") {
+    c.ppbook = is_book
+    let setup = page_setup.val
+    let outer = t_num("page_margin_outer")
+    let inner = t_num("page_margin_inner")
+    let recto = (
+      inner.unwrap_or(setup.margin_left),
+      outer.unwrap_or(setup.margin_right),
+    )
+    let verso = (
+      outer.unwrap_or(setup.margin_left),
+      inner.unwrap_or(setup.margin_right),
+    )
+    let cover = if has_title_page ||
+      doc.has_attr("front-cover-image") ||
+      t_set("cover_front_image") {
+      (setup.margin_left, setup.margin_right)
+    } else {
+      recto
+    }
+    side_margins.val = Some((recto, verso))
+    flow.page_margins = Some(index => {
+      if index == 0 {
+        cover
+      } else if index % 2 == 0 {
+        recto
+      } else {
+        verso
+      }
+    })
+  } else {
+    side_margins.val = None
+  }
   flow.start_new_page()
   // the front cover, on a page of its own (`ink_cover_page`)
   let has_front_cover = c.ink_cover_page("front")
   c.has_front_cover = has_front_cover
+  // a book's title page goes on a recto page after a front cover
+  // (`start_title_page`)
+  if c.ppbook && has_front_cover && has_title_page {
+    flow.start_new_page()
+  }
   // an article's abstract section becomes an abstract block, out of the
   // TOC and the outline (the "demote abstract section" hack)
   match doc.sections().get(0) {
@@ -136,13 +185,6 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     }
     _ => ()
   }
-  let is_book = doc.doctype() == "book"
-  // a book (or `title-page`) has a title page instead of a title heading
-  let title_as_page = is_book || doc.has_attr("title-page")
-  let has_title_page = title_as_page &&
-    doc.has_header() &&
-    !doc.notitle() &&
-    !(tv("title_page") is Bool(false))
   let title_page_index = flow.page
   if has_title_page {
     c.ink_title_page()
@@ -176,6 +218,10 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   flow.left += indent_left
   flow.right -= indent_right
   if toc_at_top {
+    // a prepress book's TOC starts on a recto page
+    if c.ppbook && flow.on_verso() {
+      flow.start_new_page()
+    }
     flow.add_anchor(
       "toc",
       flow.dest_x(),
@@ -191,6 +237,17 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
         title_as_page && t_str("toc_break_after") != Some("auto"),
       ),
     )
+  }
+  // a prepress book's body starts on a recto page, unless its first block
+  // is `nonfacing`
+  let first_block = match doc.blocks.get(0) {
+    Some(b) if b.context == Preamble => b.blocks.get(0)
+    other => other
+  }
+  if c.ppbook &&
+    flow.on_verso() &&
+    !(first_block is Some(b) && b.has_option("nonfacing")) {
+    flow.start_new_page()
   }
   // pages before the body are front matter: numbered in roman, and without
   // running content (by default)
@@ -239,7 +296,11 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       let at = (key : String) => {
         match tv(key) {
           Str("toc") => Some(extent.from_page)
-          Str("after-toc") => Some(extent.to_page + 1)
+          Str("after-toc") => {
+            // in a prepress book, the recto page after the TOC
+            let after = extent.to_page + 1
+            Some(if c.ppbook && after % 2 == 1 { after + 1 } else { after })
+          }
           _ => None
         }
       }
@@ -254,7 +315,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     Some(extent) => {
       let last = flow.page
       ignore(c.ink_toc(levels, extent.from_page, extent.from_y, skip_numbering))
-      flow.page = last
+      flow.go_to_page(last)
     }
     None => ()
   }

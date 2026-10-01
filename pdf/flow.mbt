@@ -73,6 +73,12 @@ priv struct Flow {
   /// at the flow's first page break: whether nothing had been inked
   /// (asciidoctor-pdf's `DetectEmptyFirstPage`); None before it
   mut first_break_empty : Bool?
+  /// the left and right margins of a page by index, when they vary by page
+  /// (`media=prepress`)
+  mut page_margins : ((Int) -> (Double, Double))?
+  /// the current page's left and right margins
+  mut margin_left : Double
+  mut margin_right : Double
 }
 
 ///|
@@ -95,6 +101,27 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
     taring: 0,
     inked: false,
     first_break_empty: None,
+    page_margins: None,
+    margin_left: setup.margin_left,
+    margin_right: setup.margin_right,
+  }
+}
+
+///|
+/// Take the left and right margins of page `index` (`page_margins`; for
+/// `media=prepress`, asciidoctor-pdf's `init_page` sets the recto or verso
+/// margins), keeping any indentation from the margins.
+fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
+  match self.page_margins {
+    Some(margins_of) => {
+      let (l, r) = margins_of(index)
+      let width = page_width()
+      self.left = l + (self.left - self.margin_left)
+      self.right = width - r - (width - self.margin_right - self.right)
+      self.margin_left = l
+      self.margin_right = r
+    }
+    None => ()
   }
 }
 
@@ -106,6 +133,7 @@ fn Flow::start_new_page(self : Flow) -> Unit {
     items: [],
   })
   self.page = self.model.pages.length() - 1
+  self.apply_page_margins(self.page)
   self.top = self.page_top
   self.y = self.top
 }
@@ -135,12 +163,26 @@ fn Flow::advance_page(self : Flow) -> Unit {
     self.first_break_empty = Some(!self.inked)
   }
   if self.page + 1 < self.model.pages.length() {
-    self.page += 1
+    self.go_to_page(self.page + 1)
     self.top = self.page_top
     self.y = self.top
   } else {
     self.start_new_page()
   }
+}
+
+///|
+/// Whether the current page is a verso page (an even page number).
+fn Flow::on_verso(self : Flow) -> Bool {
+  (self.page + 1) % 2 == 0
+}
+
+///|
+/// Make page `index` the current page (Prawn's `go_to_page`), in its
+/// margins; the cursor is left where it is.
+fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
+  self.page = index
+  self.apply_page_margins(index)
 }
 
 ///|

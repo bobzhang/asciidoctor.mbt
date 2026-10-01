@@ -1051,7 +1051,7 @@ fn Converter::draw_cell_content(
           ignore(flow.model.pages.pop())
         }
       }
-      flow.page = page
+      flow.go_to_page(page)
       flow.y = y
       flow.left = left
       flow.right = right

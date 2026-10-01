@@ -144,7 +144,7 @@ fn Converter::ink_toc(
   front_matter : Int,
 ) -> Int {
   let flow = self.flow
-  flow.page = page
+  flow.go_to_page(page)
   flow.y = y
   flow.top = flow.page_top
   match self.doc.attr("toc-title") {
@@ -316,7 +316,7 @@ fn Converter::ink_toc_level(
         start_y = last_top
       }
       let (end_page, end_y) = (flow.page, flow.y)
-      flow.page = line_page
+      flow.go_to_page(line_page)
       flow.y = start_y
       let leader_here = dot_leader.text != "" &&
         (match dot_leader.levels {
@@ -354,7 +354,7 @@ fn Converter::ink_toc_level(
       } else {
         flow.typeset([label_fragment], metrics, style, align=Right)
       }
-      flow.page = end_page
+      flow.go_to_page(end_page)
       flow.y = end_y
     }
     if levels_for_entry >= entry_level {
@@ -456,15 +456,21 @@ fn Converter::convert_toc(
   let is_book = doc.doctype() == "book"
   let flow = self.flow
   if is_book {
-    // start_toc_page
+    // start_toc_page: on a new page, a recto one in a prepress book unless
+    // the macro is `nonfacing`
     if !flow.at_page_top() {
+      flow.advance_page()
+    }
+    if self.ppbook &&
+      flow.on_verso() &&
+      !(is_macro && node.has_option("nonfacing")) {
       flow.advance_page()
     }
   }
   if is_macro {
     let id = node.id.unwrap_or("toc")
     let left = (flow.left * 10000.0).floor() / 10000.0
-    let x = if left <= page_setup.val.margin_left { 0.0 } else { left }
+    let x = if left <= flow.margin_left { 0.0 } else { left }
     flow.add_anchor(id, x, flow.y)
     self.toc_node = Some((node, pdf_anchor_name(id)))
   }
@@ -476,7 +482,15 @@ fn Converter::convert_toc(
   if title_as_page {
     match tv("page_numbering_start_at") {
       Str("toc") => session.index.start_page_number = extent.from_page + 1
-      Str("after-toc") => session.index.start_page_number = extent.to_page + 2
+      Str("after-toc") => {
+        // in a prepress book, the recto page after the TOC
+        let start = extent.to_page + 2
+        session.index.start_page_number = if self.ppbook && start % 2 == 0 {
+          start + 1
+        } else {
+          start
+        }
+      }
       _ => ()
     }
   }

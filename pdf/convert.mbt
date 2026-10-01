@@ -32,6 +32,9 @@ priv struct Converter {
   /// asciidoctor-pdf's `pinned` option of `convert_image` (the title page
   /// logo): the image stays on the page, with no margin or float after it
   mut pinned : Bool
+  /// asciidoctor-pdf's `@ppbook`: a book for `media=prepress`, whose
+  /// chapters (and TOC and body) start on a recto page
+  mut ppbook : Bool
 }
 
 ///|
@@ -49,6 +52,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     float_box: None,
     has_front_cover: false,
     pinned: false,
+    ppbook: false,
   }
 }
 
@@ -731,7 +735,7 @@ fn Flow::dest_x(self : Flow) -> Double {
   // `add_dest_for_block`: `bounds.absolute_left.truncate 4`, 0 when at the
   // margin
   let left = (self.left * 10000.0).floor() / 10000.0
-  if left <= page_setup.val.margin_left {
+  if left <= self.margin_left {
     0.0
   } else {
     left
@@ -961,8 +965,15 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   } else {
     false
   }
-  if started_new && !flow.at_page_top() {
-    flow.advance_page()
+  if started_new {
+    // `start_new_chapter`: on a new page, a recto one in a prepress book
+    // unless `nonfacing`
+    if !flow.at_page_top() {
+      flow.advance_page()
+    }
+    if self.ppbook && flow.on_verso() && !section.has_option("nonfacing") {
+      flow.advance_page()
+    }
   }
   if !hidden && !started_new && !flow.at_page_top() {
     self.arrange_heading(heading, hlevel, section.has_blocks())

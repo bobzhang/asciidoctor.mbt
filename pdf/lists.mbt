@@ -233,7 +233,7 @@ fn Converter::convert_colist(self : Converter, node : @core.Node) -> Unit {
           line_height=conum_lh,
         )
       })
-      flow.page = page
+      flow.go_to_page(page)
       flow.y = y
       let margin_bottom = if index == items.length() - 1 {
         0.0
@@ -505,7 +505,7 @@ fn Converter::ink_list_marker(self : Converter, marker : Marker) -> Unit {
       let shift = 0.5 * glyphs.to_double()
       flow.ink_line(lines[0], flow.left - width - gap + shift, baseline)
     }
-    flow.page = page
+    flow.go_to_page(page)
     flow.y = y
   }
 }
@@ -810,7 +810,7 @@ fn Converter::convert_horizontal_dlist(
     let (term_page, term_y) = (flow.page, flow.y)
     match entry.desc {
       Some(desc) => {
-        flow.page = start_page
+        flow.go_to_page(start_page)
         flow.y = start_y
         // traverse_list_item: the description's text takes the prose
         // margin below when something follows it in the entry
@@ -833,7 +833,7 @@ fn Converter::convert_horizontal_dlist(
         })
         // the cursor ends below the last term
         if flow.page < term_page || (flow.page == term_page && flow.y < term_y) {
-          flow.page = term_page
+          flow.go_to_page(term_page)
           flow.y = term_y
         }
       }

@@ -35,14 +35,23 @@ fn trim_rect(v : @theme.Value) -> Array[@theme.Value] {
 }
 
 ///|
+/// The (left, right) page margins of recto and verso pages when they
+/// differ (`media=prepress`), else None.
+let side_margins : Ref[((Double, Double), (Double, Double))?] = { val: None, }
+
+///|
 /// A periphery's box on a page side (`allocate_running_content_layout`).
 fn periphery_trim(periphery : String, side : String) -> Trim {
   let setup = page_setup.val
+  let (margin_left, margin_right) = match side_margins.val {
+    Some((recto, verso)) => if side == "verso" { verso } else { recto }
+    None => (setup.margin_left, setup.margin_right)
+  }
   let page_margin = [
     setup.margin_top,
-    setup.margin_right,
+    margin_right,
     setup.margin_bottom,
-    setup.margin_left,
+    margin_left,
   ]
   let side_key = (name : String) => {
     match tv("\{periphery}_\{side}_\{name}") {
@@ -452,7 +461,28 @@ fn Converter::ink_running_content(
     } else {
       virtual_pgnum.to_string()
     }
-    let side = if virtual_pgnum % 2 == 0 { "verso" } else { "recto" }
+    // `pdf-folio-placement`: by the physical or the virtual page number
+    // (physical for prepress), optionally inverted
+    let placement = doc
+      .attr("pdf-folio-placement")
+      .unwrap_or(
+        if doc.attr("media") == Some("prepress") {
+          "physical"
+        } else {
+          "virtual"
+        },
+      )
+    let basis = if placement.has_prefix("physical") {
+      pgnum
+    } else {
+      virtual_pgnum
+    }
+    let even = basis % 2 == 0
+    let side = if even != placement.has_suffix("-inverted") {
+      "verso"
+    } else {
+      "recto"
+    }
     if pagenums {
       ignore(doc.set_attr("page-number", value=Str(label)))
     }
