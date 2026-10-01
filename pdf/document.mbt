@@ -357,6 +357,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // the back cover, on a page after the last; it is not labeled itself
   // (the labels are added before it), so it takes the last page's label
   let labeled_pages = flow.model.pages.length()
+  c.end_page_h = flow.model.pages[labeled_pages - 1].height_pt
   ignore(c.ink_cover_page("back"))
   keep_last_anchors(flow.model)
   for entry in @pdf.unembeddable_images(flow.model) {

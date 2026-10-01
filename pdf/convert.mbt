@@ -35,6 +35,9 @@ priv struct Converter {
   /// asciidoctor-pdf's `@ppbook`: a book for `media=prepress`, whose
   /// chapters (and TOC and body) start on a recto page
   mut ppbook : Bool
+  /// the height of the last content page, which asciidoctor-pdf's
+  /// `dest_top` of the outline's title takes (`page_height`)
+  mut end_page_h : Double
 }
 
 ///|
@@ -53,6 +56,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     has_front_cover: false,
     pinned: false,
     ppbook: false,
+    end_page_h: page_height(),
   }
 }
 
@@ -548,7 +552,13 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
       outline.push({
         title: sanitize(title),
         level: 0,
-        dest: Position(page=initial_page, x=0.0, y=0.0),
+        // `dest_top initial_pagenum`: at the height of the page the
+        // conversion ended on (the last content page)
+        dest: Position(
+          page=initial_page,
+          x=0.0,
+          y=self.flow.model.pages[initial_page].height_pt - self.end_page_h,
+        ),
         open: false,
       })
     _ => ()
