@@ -29,6 +29,9 @@ priv struct Converter {
   mut float_box : FloatBox?
   /// the first page is a front cover (see `ink_cover_page`)
   mut has_front_cover : Bool
+  /// asciidoctor-pdf's `pinned` option of `convert_image` (the title page
+  /// logo): the image stays on the page, with no margin or float after it
+  mut pinned : Bool
 }
 
 ///|
@@ -45,6 +48,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     disable_running_content: Map([("header", []), ("footer", [])]),
     float_box: None,
     has_front_cover: false,
+    pinned: false,
   }
 }
 

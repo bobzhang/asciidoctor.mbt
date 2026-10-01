@@ -321,6 +321,9 @@ fn Converter::finish_image(
   caption_height : Double,
 ) -> Unit {
   self.ink_image_caption(node, alignment, rendered_w, top=false)
+  if self.pinned {
+    return
+  }
   match (image_float(node), next_enclosed_block(node)) {
     (Some(float_to), Some(next)) if supports_float_wrapping(next) &&
       rendered_w < self.flow.width() =>

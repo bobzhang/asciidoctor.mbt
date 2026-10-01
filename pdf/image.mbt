@@ -82,7 +82,11 @@ fn resolve_length(
 }
 
 ///|
-fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
+fn Converter::convert_image(
+  self : Converter,
+  node : @core.Node,
+  relative_to_imagesdir? : Bool = true,
+) -> Unit {
   let flow = self.flow
   let target = node.attr("target").unwrap_or("")
   let (image_target, format) = image_target_and_format(
@@ -95,7 +99,11 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
     load_image_target(
       node,
       image_target,
-      start=node.document().attr("imagesdir").unwrap_or(""),
+      start?=if relative_to_imagesdir {
+        Some(node.document().attr("imagesdir").unwrap_or(""))
+      } else {
+        None
+      },
     )
   }
   let path = if image_target is Data(_) { target } else { path }
@@ -193,7 +201,7 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   // the image keeps its caption (below it) on the same page
   let caption_height = self.image_caption_height(node, alignment, explicit)
   if height > flow.cursor() - caption_height {
-    if !flow.at_page_top() && !first_child_at_top(node) {
+    if !self.pinned && !flow.at_page_top() && !first_child_at_top(node) {
       flow.advance_page()
     }
     if height > flow.cursor() - caption_height {

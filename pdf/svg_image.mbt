@@ -301,7 +301,7 @@ fn Converter::convert_svg_image(
   let caption_height = self.image_caption_height(node, alignment, width)
   let mut rendered_h = sizing.output_height
   if rendered_h > flow.cursor() - caption_height {
-    if !flow.at_page_top() && !first_child_at_top(node) {
+    if !self.pinned && !flow.at_page_top() && !first_child_at_top(node) {
       flow.advance_page()
     }
     let available_h = flow.cursor() - caption_height
