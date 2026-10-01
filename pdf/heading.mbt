@@ -35,11 +35,57 @@ fn Converter::heading_align(self : Converter, level : Int) -> Alignment {
 }
 
 ///|
+/// asciidoctor-pdf's `@section_indent` (`section_indent`, expanded by
+/// `expand_indent_value`): how far the body is indented from the left and
+/// the right; section titles, the TOC title, footnotes, the abstract and
+/// the index are outdented back.
+fn section_indent() -> (Double, Double)? {
+  match tv("section_indent") {
+    Null | Bool(false) => None
+    Array(items) =>
+      Some(
+        (
+          items.get(0).map(v => v.to_f()).unwrap_or(0.0),
+          items.get(1).map(v => v.to_f()).unwrap_or(0.0),
+        ),
+      )
+    v => Some((v.to_f(), v.to_f()))
+  }
+}
+
+///|
+/// `outdent_section`: `body` outside the section indent (when `enabled`).
+fn[T] Converter::outdent_section(
+  self : Converter,
+  enabled? : Bool = true,
+  body : () -> T,
+) -> T {
+  match section_indent() {
+    Some((left, right)) if enabled => self.flow.indent(-left, -right, body)
+    _ => body()
+  }
+}
+
+///|
 /// A heading at `level` (1 is the document title), asciidoctor-pdf's
 /// `ink_heading` in the heading font: its top margin (none at the top of a
 /// page, where `heading_margin_page_top` applies), the text, its bottom
-/// margin.
+/// margin; outside the section indent with `outdent`.
 fn Converter::ink_heading(
+  self : Converter,
+  title : String,
+  level : Int,
+  align? : Alignment,
+  category? : String,
+  outdent? : Bool = false,
+) -> Unit {
+  self.outdent_section(enabled=outdent, () => {
+    self.ink_heading_text(title, level, align?, category?)
+  })
+}
+
+///|
+fn Converter::ink_heading_text(
   self : Converter,
   title : String,
   level : Int,

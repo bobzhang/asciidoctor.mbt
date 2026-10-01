@@ -510,8 +510,13 @@ fn Converter::convert_media(
 /// first one in `abstract_first_line_font_style` (and colour); other
 /// blocks as usual.
 fn Converter::convert_abstract(self : Converter, node : @core.Node) -> Unit {
-  let flow = self.flow
   self.add_dest(node)
+  self.outdent_section(() => self.ink_abstract(node))
+}
+
+///|
+fn Converter::ink_abstract(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
   if t_set("abstract_padding") {
     unsupported("theme", "abstract_padding", node)
   }
@@ -590,22 +595,42 @@ fn Converter::convert_abstract(self : Converter, node : @core.Node) -> Unit {
         line_height~,
         bottom_gutter=self.gutter(child),
         first_line_style?=if first_line { Some(first) } else { None },
+        // convert_paragraph: the indent goes by the role's alignment, else
+        // the document's (not the abstract's)
+        text_indent=paragraph_text_indent(
+          child,
+          text_align_from_roles(child.roles(), query_theme=true).unwrap_or(
+            self.text_align,
+          ),
+        ),
       )
       first_line = false
-      if next_enclosed_block(child) is Some(_) {
-        flow.margin(prose_margin_bottom())
+      // convert_paragraph's insert_margin_bottom
+      match next_enclosed_block(child) {
+        Some(next) =>
+          match t_num("prose_margin_inner") {
+            Some(inner) if next.context == Paragraph => flow.margin(inner)
+            _ => flow.margin(prose_margin_bottom())
+          }
+        None => ()
       }
     }
   } else {
     let text = node.content()
     if !text.is_empty() {
+      let align = role_align(node.roles(), align)
       self.ink_prose(
         text,
         style~,
-        align=role_align(node.roles(), align),
+        align~,
         margin_bottom=0.0,
         line_height~,
         first_line_style?=if has_first { Some(first) } else { None },
+        text_indent=if align is (Justify | Left) {
+          t_num_or("prose_text_indent", 0.0)
+        } else {
+          0.0
+        },
       )
     }
   }

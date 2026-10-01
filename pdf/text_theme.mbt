@@ -242,8 +242,10 @@ fn pcdata_markup_at(text : String, i : Int, entities : Bool) -> Int {
     }
     let start = j
     while j < n &&
-          ((text[j] >= 'a' && text[j] <= 'z') ||
-          (text[j] >= '0' && text[j] <= '9')) {
+          (
+            (text[j] >= 'a' && text[j] <= 'z') ||
+            (text[j] >= '0' && text[j] <= '9')
+          ) {
       j += 1
     }
     if j > start && j < n && text[j] == ';' {

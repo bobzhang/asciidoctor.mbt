@@ -10,8 +10,14 @@ test "transform_text leaves markup and character references alone" {
     "HERE WE GO <strong>AGAIN</strong>",
   )
   assert_eq(transform_text("a & b", "uppercase"), "A & B")
-  assert_eq(transform_text("<EM>WAVE</EM> &AMP;", "lowercase"), "<EM>wave</EM> &amp;")
-  assert_eq(transform_text("foo-bar baz HTML", "capitalize"), "Foo-bar Baz Html")
+  assert_eq(
+    transform_text("<EM>WAVE</EM> &AMP;", "lowercase"),
+    "<EM>wave</EM> &amp;",
+  )
+  assert_eq(
+    transform_text("foo-bar baz HTML", "capitalize"),
+    "Foo-bar Baz Html",
+  )
   assert_eq(
     transform_text("here <em>we</em> go", "capitalize"),
     "Here <em>We</em> Go",

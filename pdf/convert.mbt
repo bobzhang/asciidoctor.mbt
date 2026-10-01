@@ -24,6 +24,9 @@ priv struct Converter {
   /// whose header or footer is left out (the TOC's, when the `toc::[]`
   /// macro has the `noheader` or `nofooter` option)
   disable_running_content : Map[String, Array[Int]]
+  /// asciidoctor-pdf's `@float_box`: the space beside a floated image
+  /// that the next paragraphs wrap into (see `init_float_box`)
+  mut float_box : FloatBox?
 }
 
 ///|
@@ -38,6 +41,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     toc_node: None,
     toc_levels: resolve_toclevels(doc),
     disable_running_content: Map([("header", []), ("footer", [])]),
+    float_box: None,
   }
 }
 
@@ -701,16 +705,25 @@ fn Converter::convert_block_body(self : Converter, node : @core.Node) -> Unit {
 ///|
 /// A named destination for the block at the cursor (asciidoctor-pdf's
 /// `add_dest_for_block`).
+fn Flow::dest_x(self : Flow) -> Double {
+  // `add_dest_for_block`: `bounds.absolute_left.truncate 4`, 0 when at the
+  // margin
+  let left = (self.left * 10000.0).floor() / 10000.0
+  if left <= page_setup.val.margin_left {
+    0.0
+  } else {
+    left
+  }
+}
+
+///|
 fn Converter::add_dest(self : Converter, node : @core.Node) -> Unit {
   match node.id {
-    Some(id) => {
+    Some(id) =>
       // `bounds.absolute_left.truncate 4`, 0 when at the margin; the y is
       // the cursor even at the top of a page (only sections jump to the
       // page's top edge)
-      let left = (self.flow.left * 10000.0).floor() / 10000.0
-      let x = if left <= page_setup.val.margin_left { 0.0 } else { left }
-      self.flow.add_anchor(id, x, self.flow.y)
-    }
+      self.flow.add_anchor(id, self.flow.dest_x(), self.flow.y)
     None => ()
   }
 }
@@ -794,6 +807,7 @@ fn Converter::ink_prose(
   bottom_gutter? : Double = 0.0,
   normalize_line_height? : Bool = false,
   first_line_style? : Style,
+  text_indent? : Double = 0.0,
 ) -> Unit {
   let face = self.flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
@@ -805,6 +819,7 @@ fn Converter::ink_prose(
     bottom_gutter~,
     normalize_line_height~,
     first_line_style?,
+    text_indent~,
   )
   self.flow.margin(margin_bottom)
 }
@@ -859,7 +874,12 @@ fn Converter::convert_floating_title(
     self.arrange_heading(title, hlevel, true)
   }
   self.add_dest(node)
-  self.ink_heading(title, hlevel, align?=text_align_from_roles(node.roles()))
+  self.ink_heading(
+    title,
+    hlevel,
+    align?=text_align_from_roles(node.roles()),
+    outdent=node.parent() is Some(p) && p.context == Section,
+  )
 }
 
 ///|
@@ -933,7 +953,15 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     None => "__anchor-\{start_page}-\{(page_height() - flow.y).ceil().to_int()}"
   }
   section.set_attr("pdf-anchor", value=Str(anchor)) |> ignore
-  flow.add_anchor(anchor, 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
+  flow.add_anchor(
+    anchor,
+    flow.dest_x(),
+    if flow.at_page_top() {
+      0.0
+    } else {
+      flow.y
+    },
+  )
   let (num_levels, expand_levels) = outline_levels(self.doc, self.toc_levels)
   if section.level <= num_levels && sanitize(title) != "" {
     // the depth in the section tree, not the section level: a document
@@ -954,15 +982,15 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     })
   }
   if !hidden {
-    self.ink_heading(heading, hlevel)
+    self.ink_heading(heading, hlevel, outdent=true)
   }
   if is_index {
-    self.convert_index_section()
+    self.outdent_section(() => self.convert_index_section())
   } else {
     self.traverse(section)
   }
   if chapterlike {
-    self.ink_footnotes(section)
+    self.outdent_section(() => self.ink_footnotes(section))
   }
 }
 
@@ -1022,25 +1050,67 @@ fn role_align(roles : Array[String], default : Alignment) -> Alignment {
 /// `text-*` role, else a role's `role_<name>_text_align`), in its roles'
 /// fonts; then the prose margin (`prose_margin_inner` between paragraphs,
 /// when the theme sets it).
+fn paragraph_text_indent(node : @core.Node, align : Alignment) -> Double {
+  // asciidoctor-pdf's `convert_paragraph`: the first line's indent,
+  // prose_text_indent, else prose_text_indent_inner after a paragraph
+  // (justified and left-aligned text only)
+  if align is (Justify | Left) {
+    let indent = t_num_or("prose_text_indent", 0.0)
+    let inner = t_num_or("prose_text_indent_inner", 0.0)
+    if indent > 0.0 {
+      indent
+    } else if inner > 0.0 &&
+      previous_sibling(node) is Some(prev) &&
+      prev.context == Paragraph {
+      inner
+    } else {
+      0.0
+    }
+  } else {
+    0.0
+  }
+}
+
+///|
 fn Converter::convert_paragraph(self : Converter, node : @core.Node) -> Unit {
   self.add_dest(node)
   let roles = node.roles()
+  let align = text_align_from_roles(roles, query_theme=true).unwrap_or(
+    self.text_align,
+  )
+  let text_indent = paragraph_text_indent(node, align)
+  // a float box takes the paragraph, unless a float group ended before it
+  match self.float_box {
+    Some(float_box) =>
+      if previous_sibling(node) is Some(prev) &&
+        prev.context == Open &&
+        prev.has_role("float-group") {
+        self.flow.y = float_box.bottom
+        self.float_box = None
+      } else {
+        self.ink_paragraph_in_float_box(
+          node,
+          float_box,
+          role_style(roles, base_style()),
+          align,
+          role_line_height(roles, base_line_height()),
+          text_indent,
+        )
+        return
+      }
+    None => ()
+  }
   if node.has_title() {
     self.ink_caption(node.title().unwrap_or(""))
-  }
-  if t_num_or("prose_text_indent", 0.0) > 0.0 ||
-    t_num_or("prose_text_indent_inner", 0.0) > 0.0 {
-    unsupported("theme", "prose_text_indent", node)
   }
   self.ink_prose(
     node.content(),
     style=role_style(roles, base_style()),
-    align=text_align_from_roles(roles, query_theme=true).unwrap_or(
-      self.text_align,
-    ),
+    align~,
     margin_bottom=0.0,
     line_height=role_line_height(roles, base_line_height()),
     bottom_gutter=self.gutter(node),
+    text_indent~,
   )
   match next_enclosed_block(node) {
     Some(next) =>
@@ -1063,6 +1133,8 @@ fn Converter::ink_caption(
   bottom? : Bool = false,
   category? : String,
   block_align? : Alignment,
+  block_width? : Double,
+  max_width? : String,
 ) -> Unit {
   // the category's caption keys (`table_caption_*`) before the generic ones
   let key = match category {
@@ -1105,16 +1177,83 @@ fn Converter::ink_caption(
   } else {
     (outside, inside)
   }
-  self.flow.margin(top_margin)
-  self.ink_prose(
-    text,
-    style~,
-    align=text_align,
-    margin_bottom=bottom_margin,
-    line_height~,
-    normalize=false,
-    normalize_line_height=true,
+  let (indent_left, indent_right) = caption_indents(
+    self.flow.width(),
+    align,
+    block_align,
+    block_width,
+    max_width,
   )
+  self.flow.margin(top_margin)
+  self.flow.indent(indent_left, indent_right, () => {
+    self.ink_prose(
+      text,
+      style~,
+      align=text_align,
+      margin_bottom=bottom_margin,
+      line_height~,
+      normalize=false,
+      normalize_line_height=true,
+    )
+  })
+}
+
+///|
+/// How far `ink_caption` indents a caption from each side for its
+/// `max_width`: `fit-content` (the block's width), `fit-content(N%)` (N% of
+/// it, placed by the caption's alignment), `N%` of the container or a
+/// length (placed by the caption's alignment); the caption then sits where
+/// the block does (`block_align`).
+fn caption_indents(
+  container_width : Double,
+  align : Alignment,
+  block_align : Alignment?,
+  block_width : Double?,
+  max_width : String?,
+) -> (Double, Double) {
+  guard max_width is Some(max_width) && max_width != "none" else {
+    return (0.0, 0.0)
+  }
+  let mut left = 0.0
+  let mut right = 0.0
+  let mut block_align = block_align
+  let share = (amount : Double, by : Alignment?) => {
+    match by {
+      Some(Right) => left += amount
+      Some(Center) => {
+        left += amount * 0.5
+        right += amount * 0.5
+      }
+      _ => right += amount
+    }
+  }
+  let max = if max_width.has_prefix("fit-content") {
+    let block_width = block_width.unwrap_or(container_width)
+    if !(max_width.has_suffix("t") || max_width.has_suffix("()")) {
+      let percent = @theme.ruby_string_to_f(
+        max_width[12:max_width.length() - 1].to_owned(),
+      )
+      let delta = block_width - block_width * percent / 100.0
+      if delta > 0.0 {
+        share(delta, Some(align))
+      }
+    }
+    block_width
+  } else if max_width.has_suffix("%") {
+    block_align = Some(align)
+    @cmp.minimum(
+      @theme.ruby_string_to_f(max_width) / 100.0 * container_width,
+      container_width,
+    )
+  } else {
+    block_align = Some(align)
+    @cmp.minimum(@theme.ruby_string_to_f(max_width), container_width)
+  }
+  let remainder = container_width - max
+  if remainder > 0.0 {
+    share(remainder, block_align)
+  }
+  (left, right)
 }
 
 ///|

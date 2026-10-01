@@ -590,25 +590,46 @@ fn Flow::typeset(
   hanging_indent? : Double = 0.0,
   normalize_line_height? : Bool = false,
   first_line_style? : Style,
+  text_indent? : Double = 0.0,
 ) -> Unit {
   self.last_line = None
   // a hanging indent: the first line takes the whole width, the next ones
   // are indented (Prawn's `indent_paragraphs` negated inside an indent);
+  // a text indent (`indent_paragraphs`): the first line of each paragraph
+  // (the text, and each line after a hard break) is indented;
   // a first line in a style of its own is broken off first
+  let mut paragraph_starts : Array[Bool] = []
   let lines = match first_line_style {
     Some(first) => {
+      // the first line box is indented (Prawn's `indent_paragraphs` in
+      // `text_with_formatted_first_line`); the rest is not
       let (line, rest) = split_first_line(
         restyle_fragments(fragments, first),
         fragments,
         self.catalog,
-        self.width(),
+        self.width() - text_indent,
         align,
       )
+      if text_indent > 0.0 {
+        paragraph_starts = [true]
+      }
       if rest.is_empty() {
         [line]
       } else {
         [line, ..typeset_lines(rest, self.catalog, self.width(), align)]
       }
+    }
+    None if text_indent > 0.0 => {
+      let (lines, starts) = typeset_paragraph_lines(
+        fragments,
+        self.catalog,
+        self.width(),
+        align,
+        first_width=self.width() - text_indent,
+        indent_paragraphs=true,
+      )
+      paragraph_starts = starts
+      lines
     }
     None =>
       typeset_lines(
@@ -649,7 +670,13 @@ fn Flow::typeset(
       }
       baseline = next
       depth = d
-      let x = if index == 0 { self.left } else { self.left + hanging_indent }
+      let x = if paragraph_starts.get(index) is Some(true) {
+        self.left + text_indent
+      } else if index == 0 {
+        self.left
+      } else {
+        self.left + hanging_indent
+      }
       self.ink_line(line, x, box_top + baseline)
       self.last_line = Some((line, self.page, box_top + baseline))
       self.last_line_first = index == 0

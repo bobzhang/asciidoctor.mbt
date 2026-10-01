@@ -133,8 +133,21 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   let toc_at_top = has_toc(doc) &&
     placement != "macro" &&
     placement != "preamble"
+  // the body, the TOC included, is inside the section indent
+  // (`indent_section`)
+  let (indent_left, indent_right) = section_indent().unwrap_or((0.0, 0.0))
+  flow.left += indent_left
+  flow.right -= indent_right
   if toc_at_top {
-    flow.add_anchor("toc", 0.0, if flow.at_page_top() { 0.0 } else { flow.y })
+    flow.add_anchor(
+      "toc",
+      flow.dest_x(),
+      if flow.at_page_top() {
+        0.0
+      } else {
+        flow.y
+      },
+    )
     c.toc_extent = Some(
       c.allocate_toc(
         levels,
@@ -166,7 +179,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     }
   }
   c.traverse(doc)
-  c.ink_footnotes(doc)
+  c.outdent_section(() => c.ink_footnotes(doc))
   match c.toc_extent {
     Some(extent) => {
       let last = flow.page
@@ -175,6 +188,8 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     }
     None => ()
   }
+  flow.left -= indent_left
+  flow.right += indent_right
   // a page started but never written to is dropped
   let pages = flow.model.pages
   if pages.length() > 1 &&

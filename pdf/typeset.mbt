@@ -254,23 +254,53 @@ fn build_items(
 
 ///|
 /// Break `fragments` into lines of at most `width` (the first line
-/// `first_width`) and place them.
+/// `first_width`, and with `indent_paragraphs` also each line after a hard
+/// break: Prawn's `indent_paragraphs` starts a paragraph there) and place
+/// them.
 fn typeset_lines(
   fragments : Array[Fragment],
   catalog : FontCatalog,
   width : Double,
   align : Alignment,
   first_width? : Double = width,
+  indent_paragraphs? : Bool = false,
 ) -> Array[Line] {
+  typeset_paragraph_lines(
+    fragments,
+    catalog,
+    width,
+    align,
+    first_width~,
+    indent_paragraphs~,
+  ).0
+}
+
+///|
+/// `typeset_lines`, and whether each line starts a paragraph (the first
+/// line, and with `indent_paragraphs` each line after a hard break).
+fn typeset_paragraph_lines(
+  fragments : Array[Fragment],
+  catalog : FontCatalog,
+  width : Double,
+  align : Alignment,
+  first_width? : Double = width,
+  indent_paragraphs? : Bool = false,
+) -> (Array[Line], Array[Bool]) {
   let fragments = catalog.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
-    fragments, catalog, width, first_width,
+    fragments,
+    catalog,
+    width,
+    first_width,
+    indent_paragraphs~,
   )
   let lines : Array[Line] = []
+  let starts : Array[Bool] = []
   for index, range in ranges {
     let (from, to, hard) = range
     let is_last = index == ranges.length() - 1
-    let limit = if index == 0 { first_width } else { width }
+    let start = index == 0 || (indent_paragraphs && ranges[index - 1].2)
+    let limit = if start { first_width } else { width }
     lines.push(
       place_line(
         fragments,
@@ -284,8 +314,9 @@ fn typeset_lines(
         hard,
       ),
     )
+    starts.push(start)
   }
-  lines
+  (lines, starts)
 }
 
 ///|
@@ -296,6 +327,7 @@ fn break_lines(
   catalog : FontCatalog,
   width : Double,
   first_width : Double,
+  indent_paragraphs? : Bool = false,
 ) -> (Array[Item], Array[Face], Array[(Int, Int, Bool)]) {
   let (items, faces) = build_items(fragments, catalog, available=width)
   let n = items.length()
@@ -316,7 +348,12 @@ fn break_lines(
       }
       break
     }
-    let limit = if ranges.is_empty() { first_width } else { width }
+    let limit = if ranges.is_empty() ||
+      (indent_paragraphs && ranges[ranges.length() - 1].2) {
+      first_width
+    } else {
+      width
+    }
     let mut w = 0.0
     // spaces a line starts with are dropped, as Prawn strips the first
     // fragment of each line (anchors in front of them notwithstanding)

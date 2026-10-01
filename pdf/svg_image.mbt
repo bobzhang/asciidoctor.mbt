@@ -308,17 +308,7 @@ fn Converter::convert_svg_image(
         rendered_w = available_w
       }
   }
-  let caption_height = if node.has_title() {
-    let style = Style::new(size=caption_font_size(), doc_italic=true)
-    flow.height_of(
-      parse_formatted(node.captioned_title(), style, normalize=false),
-      line_metrics(base_line_height(), flow.font(style), caption_font_size()),
-      style,
-    ) +
-    caption_margin_inside()
-  } else {
-    0.0
-  }
+  let caption_height = self.image_caption_height(node, alignment, width)
   let mut rendered_h = sizing.output_height
   if rendered_h > flow.cursor() - caption_height {
     if !flow.at_page_top() && !first_child_at_top(node) {
@@ -332,6 +322,7 @@ fn Converter::convert_svg_image(
     }
   }
   self.add_dest(node)
+  self.ink_image_caption(node, alignment, rendered_w, top=true)
   let left = match alignment {
     "center" => flow.left + (available_w - rendered_w) * 0.5
     "right" => flow.left + available_w - rendered_w
@@ -369,9 +360,6 @@ fn Converter::convert_svg_image(
   if !sizing.invalid {
     flow.move_down(rendered_h)
   }
-  if node.has_title() {
-    self.ink_caption(node.captioned_title(), bottom=true)
-  }
-  self.block_margin_bottom(node)
+  self.finish_image(node, alignment, rendered_w, rendered_h, caption_height)
   true
 }

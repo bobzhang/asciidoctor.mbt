@@ -153,7 +153,7 @@ fn Converter::ink_toc(
         Some(a) => alignment_of(a)
         None => self.heading_align(2)
       }
-      self.ink_heading(title, 2, align~, category="toc_title")
+      self.ink_heading(title, 2, align~, category="toc_title", outdent=true)
     }
     _ => ()
   }
