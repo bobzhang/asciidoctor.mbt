@@ -709,7 +709,15 @@ fn Converter::convert_block_body(self : Converter, node : @core.Node) -> Unit {
     Quote | Verse => self.convert_quote(node)
     Open => self.convert_open(node)
     ThematicBreak => self.convert_thematic_break(node)
-    PageBreak => if !self.flow.at_page_top() { self.flow.advance_page() }
+    PageBreak =>
+      if !self.flow.at_page_top() || node.has_option("always") {
+        // in a column box, a page break (unless the `column` role) leaves
+        // from the last column (`bounds.current_column = bounds.last_column`)
+        if !node.has_role("column") {
+          self.flow.to_last_column()
+        }
+        self.flow.advance_page()
+      }
     Toc => self.convert_toc(node, "macro")
     FloatingTitle => self.convert_floating_title(node)
     other => unsupported("block", other.name(), node)

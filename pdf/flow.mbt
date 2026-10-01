@@ -144,6 +144,23 @@ fn Flow::advance_page(self : Flow) -> Unit {
 }
 
 ///|
+/// In a column box, move to its last column (Prawn's
+/// `bounds.current_column = bounds.last_column`), so the next page break
+/// starts a new page.
+fn Flow::to_last_column(self : Flow) -> Unit {
+  match self.columns {
+    Some(columns) => {
+      let shift = columns.stride *
+        (columns.count - 1 - columns.current).to_double()
+      self.left += shift
+      self.right += shift
+      columns.current = columns.count - 1
+    }
+    None => ()
+  }
+}
+
+///|
 /// Lay out `body` in `count` columns `gap` apart, starting at the cursor
 /// (Prawn's `column_box` with `reflow_margins: true`); the cursor ends
 /// where the first column did, or, when the box went on past it, at the

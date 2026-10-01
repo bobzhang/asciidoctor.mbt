@@ -207,20 +207,31 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // the page the body starts on (`add_dest_for_top`)
   let top = top_anchor(doc)
   flow.add_anchor(top, 0.0, 0.0)
-  if !is_book && t_num_or("page_columns", 1.0) >= 2.0 {
-    unsupported("theme", "page_columns", doc)
-  }
-  // a man page starts with its name and purpose, as a section the outline
-  // (built from the document's sections) does not list
-  if doc.doctype() == "manpage" && doc.has_attr("manpurpose") {
-    let listed = c.outline.length()
-    c.convert_section(generate_manname_section(doc))
-    while c.outline.length() > listed {
-      ignore(c.outline.pop())
+  let body = () => {
+    // a man page starts with its name and purpose, as a section the
+    // outline (built from the document's sections) does not list
+    if doc.doctype() == "manpage" && doc.has_attr("manpurpose") {
+      let listed = c.outline.length()
+      c.convert_section(generate_manname_section(doc))
+      while c.outline.length() > listed {
+        ignore(c.outline.pop())
+      }
     }
+    c.traverse(doc)
+    c.outdent_section(() => c.ink_footnotes(doc))
   }
-  c.traverse(doc)
-  c.outdent_section(() => c.ink_footnotes(doc))
+  // an article's body in `page_columns` columns `page_column_gap` apart
+  // (the font size by default, Prawn's column box spacer)
+  let page_columns = t_num_or("page_columns", 1.0).to_int()
+  if !is_book && page_columns >= 2 {
+    flow.column_box(
+      page_columns,
+      t_num_or("page_column_gap", base_font_size()),
+      body,
+    )
+  } else {
+    body()
+  }
   // a TOC the macro placed in the body of a book starts the running content
   // or the page numbering when they start at `toc` or `after-toc`
   let (skip_running, skip_numbering) = match c.toc_extent {
