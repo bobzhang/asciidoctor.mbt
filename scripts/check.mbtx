@@ -27,7 +27,7 @@ async fn step(cmd : String, args : Array[String]) -> Unit {
 ///|
 async fn main {
   let corpus = @env.args().contains("--corpus")
-  step("moon", ["check", "--target", "all"])
+  step("moon", ["check", "--deny-warn", "--target", "all"])
   step("moon", ["test"])
   step("moon", ["test", "--target", "native"])
   step("moon", ["test", "--target", "js"])
