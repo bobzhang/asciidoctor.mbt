@@ -1213,34 +1213,19 @@ fn Converter::convert_table_body(
   }
   let layout = self.layout_table(node, columns, left)
   let below = caption_below("table")
-  // `table_caption_max_width` (default `fit-content`: the caption is no
-  // wider than the table, and aligned with it; `none`: the full width)
+  // `ink_table_caption`: `table_caption_max_width` (default `fit-content`:
+  // no wider than the table, and aligned with it; `none`: the full width)
   let caption = fn(bottom : Bool) {
-    let remainder = match t_str("table_caption_max_width") {
-      Some("none") => 0.0
-      Some(other) if other != "fit-content" && other != "fit-content()" => {
-        unsupported("theme", "table_caption_max_width: \{other}", node)
-        flow.width() - table_width
-      }
-      _ => flow.width() - table_width
-    }
-    let (l, r) = if remainder > 0.0 {
-      match alignment {
-        Center => (remainder * 0.5, remainder * 0.5)
-        Right => (remainder, 0.0)
-        _ => (0.0, remainder)
-      }
-    } else {
-      (0.0, 0.0)
-    }
-    flow.indent(l, r, () => {
-      self.ink_caption(
-        node.captioned_title(),
-        bottom~,
-        category="table",
-        block_align=alignment,
-      )
-    })
+    self.ink_caption(
+      node.captioned_title(),
+      bottom~,
+      category="table",
+      block_align=alignment,
+      block_width=table_width,
+      max_width=value_str(tv("table_caption_max_width")).unwrap_or(
+        "fit-content",
+      ),
+    )
   }
   if !contained && node.has_title() && !below {
     caption(false)
