@@ -29,7 +29,8 @@ https://github.com/mogest/prawn-svg
 
 * svg/ (the package bobzhang/asciidoctor-pdf/svg) is a port of prawn-svg,
   with which Asciidoctor PDF draws SVG images: its element processing,
-  attribute and CSS handling, and the calls it makes on the Prawn document.
+  attribute and CSS handling, and the calls it makes on the Prawn document
+  (except the parts adapted from Prawn itself, listed below).
 
 The MIT license text is in svg/LICENSE.
 
@@ -56,11 +57,13 @@ These releases may be used under Matz's original licensing terms for Ruby,
 or the GPLv2 or GPLv3. The adapted parts are used under Matz's terms, whose
 text is in LICENSES/LICENSE-prawn; they allow including part of the software
 in other software (clause 4), and the modified source is freely available in
-this module and at https://github.com/bobzhang/asciidoctor.mbt.
+this module and at https://github.com/bobzhang/asciidoctor.mbt. The GPLv2
+and GPLv3 files LICENSE-prawn mentions are not included, as the adapted parts
+are not used under those licenses.
 
 Elsewhere the module reproduces the observable behaviour of Prawn's text
 layout, TTFunk 1.7.0's font metrics and pdf-core 0.9.0's graphics state
-(same licensing as Prawn) without adapting their code.
+(same licensing as Prawn) with implementations of its own.
 
 == Asciidoctor (MIT)
 
