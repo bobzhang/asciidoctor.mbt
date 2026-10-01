@@ -1,1089 +1,545 @@
 # Known failures for scripts/pdf_compare.mbtx --spec-goldens --gate:
 # replayed spec goldens that do not pass yet, `name: categories; first gate failure`.
 # Regenerate with `-- --spec-goldens --write-known tests/pdf_golden/known_failures.txt` after fixing.
-abstract_spec-1.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-abstract_spec-1.26-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-abstract_spec-1.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-abstract_spec-1.29-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-abstract_spec-1.30-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-abstract_spec-1.6-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-abstract_spec-1.6-2: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-abstract_spec-1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-abstract_spec-1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-admonition_spec-1.1-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 41 in order of 41 Ruby / 43 spike
-admonition_spec-1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-admonition_spec-1.18-1: missing/extra text, extra running footer (nofooter ignored); lines: 12 in order of 12 Ruby / 13 spike
-admonition_spec-1.19.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-admonition_spec-1.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-admonition_spec-1.20.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.11-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.13-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.14-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.15-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.16-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.17-1: unsupported feature, missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.18-1: unsupported feature, missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.22-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.23-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.25-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.27-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.30-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 2 spike
-admonition_spec-1.20.30-2: unsupported feature, missing/extra text, geometry, styling/assets; lines: 2 in order of 4 Ruby / 6 spike
-admonition_spec-1.20.31-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-admonition_spec-1.4-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 28 in order of 28 Ruby / 30 spike
-admonition_spec-1.4-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 28 in order of 28 Ruby / 30 spike
-api_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-api_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-audio_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-audio_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-audio_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-audio_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-break_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-break_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-break_spec-1.1.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-break_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-break_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-break_spec-1.2.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-break_spec-1.3.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-break_spec-1.3.10-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-break_spec-1.3.11-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-break_spec-1.3.12-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 8 spike
-break_spec-1.3.13-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 34 in order of 34 Ruby / 37 spike
-break_spec-1.3.14-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 6 spike
-break_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-break_spec-1.3.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-break_spec-1.3.4-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-break_spec-1.3.5-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-break_spec-1.3.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 51 in order of 51 Ruby / 53 spike
-converter_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-converter_spec-1.2.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-converter_spec-1.2.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
+abstract_spec-1.10-1: missing/extra text, geometry, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+abstract_spec-1.10-2: missing/extra text, geometry, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+abstract_spec-1.11-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+abstract_spec-1.12-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+abstract_spec-1.32-1: unsupported feature, geometry, styling/assets; 1 lines indented differently
+abstract_spec-1.33-1: unsupported feature, line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+abstract_spec-1.34-1: unsupported feature, line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+abstract_spec-1.6-1: geometry, navigation/metadata, styling/assets; within 1pt 2/11 (18.181%) < 99.500%
+abstract_spec-1.6-2: geometry, navigation/metadata, styling/assets; within 1pt 2/11 (18.181%) < 99.500%
+abstract_spec-1.7-1: geometry, styling/assets; within 1pt 18/21 (85.714%) < 99.500%
+admonition_spec-1.13-1: geometry, styling/assets; within 1pt 10/11 (90.909%) < 99.500%
+admonition_spec-1.19.2-1: geometry, styling/assets; 3 lines indented differently
+admonition_spec-1.20.11-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.14-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.15-1: styling/assets; raster p1 4.873% of content differs > 1.250%
+admonition_spec-1.20.18-1: geometry, styling/assets; within 1pt 12/13 (92.307%) < 99.500%
+admonition_spec-1.20.3-1: geometry, styling/assets; within 1pt 0/30 (0%) < 99.500%
+admonition_spec-1.20.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.20.6-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.20.7-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.20.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+admonition_spec-1.3-1: navigation/metadata; structure: destinations
+admonition_spec-1.3-2: navigation/metadata; structure: destinations
+arrange_block_spec-1.11.3-1: missing/extra text, styling/assets; lines: 26 in order of 27 Ruby / 27 spike
+arrange_block_spec-1.11.3-2: missing/extra text, styling/assets; lines: 26 in order of 27 Ruby / 27 spike
+arrange_block_spec-1.7.1.8-1: navigation/metadata; structure: viewer settings
+arrange_block_spec-1.7.1.8-2: navigation/metadata; structure: viewer settings
+arrange_block_spec-1.7.1.9-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 19 in order of 21 Ruby / 21 spike
+arrange_block_spec-1.7.1.9-2: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 19 in order of 21 Ruby / 21 spike
+arrange_block_spec-1.7.2.16-1: navigation/metadata; structure: viewer settings
+arrange_block_spec-1.7.2.16-2: navigation/metadata; structure: viewer settings
+arrange_block_spec-1.9.1.6-1: geometry, styling/assets; 10 lines indented differently
+arrange_block_spec-1.9.1.6-2: geometry, styling/assets; 10 lines indented differently
+break_spec-1.2.3-1: styling/assets; raster p1 1.585% of content differs > 1.250%
+break_spec-1.2.3-2: styling/assets; raster p1 1.585% of content differs > 1.250%
+break_spec-1.3.10-1: navigation/metadata; structure: viewer settings
+break_spec-1.3.11-1: navigation/metadata; structure: viewer settings
+break_spec-1.3.12-1: navigation/metadata; structure: viewer settings
+break_spec-1.3.14-1: navigation/metadata; structure: viewer settings
+break_spec-1.3.16-1: navigation/metadata, styling/assets; structure: page boxes
+break_spec-1.3.18-1: line-wrap change, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+break_spec-1.3.5-1: styling/assets; raster p3 2.068% of content differs > 1.250%
+break_spec-1.3.8-1: styling/assets; raster p1 1.266% of content differs > 1.250%
+converter_spec-1.2.14.17-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 327 in order of 332 Ruby / 331 spike
+converter_spec-1.2.14.18-1: missing/extra text, geometry, navigation/metadata; lines: 351 in order of 357 Ruby / 356 spike
+converter_spec-1.2.14.4-1: geometry, navigation/metadata, styling/assets; within 1pt 0/1 (0%) < 99.500%
 converter_spec-1.2.3-1: styling/assets; raster p1 1.303% of content differs > 1.250%
 converter_spec-1.2.4-1: styling/assets; raster p1 1.303% of content differs > 1.250%
-cover_page_spec-1.1-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.10-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
-cover_page_spec-1.11-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
-cover_page_spec-1.12-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
-cover_page_spec-1.15-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 2
-cover_page_spec-1.16-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-cover_page_spec-1.16-2: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-cover_page_spec-1.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-cover_page_spec-1.18-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.18-2: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.19-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.2-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.20-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.20-2: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.21-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.22-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-cover_page_spec-1.23-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.23-2: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.24-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.25-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-cover_page_spec-1.25-2: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.26-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.27-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.28-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.29-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.3-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.30-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.30-2: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.31-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-cover_page_spec-1.33-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-cover_page_spec-1.34-1: missing/extra text, page break/extra pages, navigation/metadata, styling/assets, extra running footer (nofooter ignored); pages 2 vs 1
-cover_page_spec-1.35-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-cover_page_spec-1.36-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-cover_page_spec-1.37-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-cover_page_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-cover_page_spec-1.5-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-cover_page_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-10: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-3: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-4: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-5: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-6: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-7: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-8: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.10-9: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.12-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-dest_spec-1.12-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-dest_spec-1.12-3: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.12-4: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.17-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.18-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.19-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-dest_spec-1.20-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-dest_spec-1.24-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-dest_spec-1.25-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-dest_spec-1.25-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-dest_spec-1.26-1: missing/extra text, extra running footer (nofooter ignored); lines: 29 in order of 29 Ruby / 31 spike
-dest_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-dest_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-dest_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-dest_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-dest_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-dest_spec-1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-document_title_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-document_title_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-document_title_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-document_title_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-example_spec-1.1-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 30 in order of 30 Ruby / 32 spike
-example_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-example_spec-1.16-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-example_spec-1.18-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-example_spec-1.18-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-example_spec-1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-example_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-example_spec-1.20-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-example_spec-1.4-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-example_spec-1.5-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-example_spec-1.6-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-example_spec-1.8-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 34 in order of 34 Ruby / 36 spike
-example_spec-1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-floating_title_spec-1.10-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-floating_title_spec-1.11-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 1 in order of 1 Ruby / 4 spike
-floating_title_spec-1.14-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-floating_title_spec-1.14-2: missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-floating_title_spec-1.4-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-font_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 95 in order of 95 Ruby / 99 spike
-font_spec-1.1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 13 in order of 13 Ruby / 14 spike
-font_spec-1.1.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 23 in order of 23 Ruby / 24 spike
-font_spec-1.4.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.5.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-font_spec-1.5.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.5.4-11: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-font_spec-1.5.4-3: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.5.4-5: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.5.4-7: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.5.4-9: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-font_spec-1.6.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-font_spec-1.6.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-font_spec-1.7.1-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-font_spec-1.7.2-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-font_spec-1.7.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-footnote_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-footnote_spec-1.10-1: missing/extra text, geometry, navigation/metadata, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-footnote_spec-1.11-1: missing/extra text, page break/extra pages, geometry, extra running footer (nofooter ignored); lines: 56 in order of 56 Ruby / 58 spike
-footnote_spec-1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-footnote_spec-1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-footnote_spec-1.14-1: missing/extra text, geometry, navigation/metadata; lines: 2 in order of 3 Ruby / 5 spike
-footnote_spec-1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-footnote_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-footnote_spec-1.17-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-footnote_spec-1.18-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-footnote_spec-1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-footnote_spec-1.2-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 10 spike
-footnote_spec-1.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-footnote_spec-1.25-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 4 spike
-footnote_spec-1.27-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-footnote_spec-1.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-footnote_spec-1.29-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-footnote_spec-1.30-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-footnote_spec-1.31-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-footnote_spec-1.32-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-footnote_spec-1.35-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-footnote_spec-1.4-1: missing/extra text, geometry; lines: 7 in order of 7 Ruby / 9 spike
-footnote_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-formatted_text_formatter_spec-1.3.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-formatted_text_formatter_spec-1.3.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.25-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-formatted_text_formatter_spec-1.3.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.29-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.30-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.33-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.34-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-formatted_text_formatter_spec-1.3.39-1: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.39-2: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.39-3: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.41-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.5-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.3.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.4.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.4.11-1: missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.4.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.4.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.5.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.5.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-formatted_text_formatter_spec-1.5.8-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 3 spike
-formatted_text_formatter_spec-1.5.9-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 3 spike
-icon_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.12-1: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-icon_spec-1.13-1: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-icon_spec-1.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.14-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.14-3: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.18-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.18-2: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.19-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.19-2: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.2-1: unsupported feature, missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-icon_spec-1.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.3-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.3-2: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-icon_spec-1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_float_spec-1.46-1: unsupported feature, missing/extra text, geometry; lines: 1 in order of 3 Ruby / 4 spike
-image_float_spec-1.46-2: unsupported feature, missing/extra text, geometry; lines: 1 in order of 3 Ruby / 4 spike
-image_float_spec-1.47-1: unsupported feature, missing/extra text, geometry; lines: 1 in order of 3 Ruby / 4 spike
-image_float_spec-1.47-2: unsupported feature, missing/extra text, geometry; lines: 1 in order of 3 Ruby / 4 spike
-image_spec-1.10.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.10.11-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
-image_spec-1.10.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.10.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.10.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.10.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.10.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-image_spec-1.10.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.11.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.11.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.11.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.14-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.15-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.16-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.17-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.17-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.18-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.18-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.19-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.20-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.12.21-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.21-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.22-1: missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.12.23-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.12.24-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 3 spike
-image_spec-1.12.24-2: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 3 spike
-image_spec-1.12.27-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.1-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.1-2: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.13-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 11 spike
-image_spec-1.13.15-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.16-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); pages 2 vs 1
-image_spec-1.13.17-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.18-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.2-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.2-2: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.20-1: unsupported feature, missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.24-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.25-1: missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 3 spike
-image_spec-1.13.25-2: missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
-image_spec-1.13.27-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.29-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.30-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.31-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.32-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.33-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.34-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.37-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.38-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.39-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.40-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.40-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.41-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.41-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.41-3: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.41-4: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.42-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.45-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.46-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.13.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.13.5-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.13.7-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.13.8-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-image_spec-1.13.8-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 4 spike
-image_spec-1.14.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.14.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.14.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.14.6-2: missing/extra text, page break/extra pages, navigation/metadata, styling/assets, extra running footer (nofooter ignored); pages 2 vs 1
-image_spec-1.14.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
-image_spec-1.14.8-2: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 1 spike
-image_spec-1.15.1-1: unsupported feature, missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.16.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.16.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.17.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
+cover_page_spec-1.15-1: styling/assets; raster p2 1.303% of content differs > 1.250%
+cover_page_spec-1.16-1: navigation/metadata; structure: outline
+cover_page_spec-1.16-2: navigation/metadata; structure: outline
+cover_page_spec-1.27-1: page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.28-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.29-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.30-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.30-2: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.31-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.32-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.33-1: unsupported feature, geometry, navigation/metadata, styling/assets; within 1pt 0/2 (0%) < 99.500%
+cover_page_spec-1.34-1: unsupported feature, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
+cover_page_spec-1.36-1: unsupported feature, geometry, navigation/metadata, styling/assets; within 1pt 0/2 (0%) < 99.500%
+cover_page_spec-1.5-1: navigation/metadata; structure: outline
+cover_page_spec-1.7-1: geometry, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+cover_page_spec-1.8-1: geometry, styling/assets; within 1pt 1/3 (33.333%) < 99.500%
+dest_spec-1.24-1: styling/assets; raster p1 3.261% of content differs > 1.250%
+dest_spec-1.3-1: styling/assets; raster p3 2.068% of content differs > 1.250%
+dest_spec-1.6-1: styling/assets; raster p2 2.068% of content differs > 1.250%
+document_title_spec-1.2.2-1: styling/assets; raster p1 1.260% of content differs > 1.250%
+example_spec-1.13-1: styling/assets; raster p1 7.467% of content differs > 1.250%
+floating_title_spec-1.14-1: styling/assets; raster p1 3.547% of content differs > 1.250%
+floating_title_spec-1.14-2: styling/assets; raster p1 2.288% of content differs > 1.250%
+floating_title_spec-1.4-1: styling/assets; raster p2 1.701% of content differs > 1.250%
+floating_title_spec-1.5-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+floating_title_spec-1.6-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+font_spec-1.1.13-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
+font_spec-1.1.14-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 3 Ruby / 3 spike
+font_spec-1.1.3-1: missing/extra text, geometry; words: 57 shared of 59 Ruby / 58 spike
+font_spec-1.1.4-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike
+font_spec-1.1.5-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike
+font_spec-1.3.1-1: styling/assets; structure: fonts
+font_spec-1.4.4-1: styling/assets; structure: fonts
+font_spec-1.5.3-1: styling/assets; raster p1 10.005% of content differs > 1.250%
+font_spec-1.5.4-10: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-12: geometry, styling/assets; within 1pt 4/8 (50.000%) < 99.500%
+font_spec-1.5.4-2: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-4: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.5.4-5: styling/assets; raster p1 2.675% of content differs > 1.250%
+font_spec-1.5.4-6: geometry, styling/assets; within 1pt 1/5 (20.000%) < 99.500%
+font_spec-1.5.4-8: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+font_spec-1.6.1-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 8 Ruby / 8 spike
+font_spec-1.6.2-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
+footnote_spec-1.10-1: geometry, navigation/metadata; within 1pt 7/12 (58.333%) < 99.500%
+footnote_spec-1.11-1: reading order, geometry; within 1pt 407/428 (95.093%) < 99.500%
+footnote_spec-1.14-1: line-wrap change, geometry, navigation/metadata; lines: 2 in order of 3 Ruby / 4 spike
+footnote_spec-1.17-1: reading order, geometry; coverage 17/18 (94.444%) < 99.000%
+footnote_spec-1.18-1: reading order, geometry; coverage 25/27 (92.592%) < 99.000%
+footnote_spec-1.2-1: reading order, geometry; coverage 25/26 (96.153%) < 99.000%
+footnote_spec-1.25-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 3 spike
+footnote_spec-1.26-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 3 spike
+footnote_spec-1.29-1: reading order, geometry; coverage 31/32 (96.875%) < 99.000%
+footnote_spec-1.3-1: reading order, geometry; 1 lines indented differently
+footnote_spec-1.30-1: reading order, geometry; coverage 14/16 (87.500%) < 99.000%
+footnote_spec-1.32-1: reading order, geometry; coverage 27/28 (96.428%) < 99.000%
+footnote_spec-1.4-1: reading order, geometry; 1 lines indented differently
+footnote_spec-1.6-1: geometry, navigation/metadata; within 1pt 11/21 (52.380%) < 99.500%
+formatted_text_formatter_spec-1.3.20-1: styling/assets; raster p1 2.548% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.21-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.22-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.23-1: styling/assets; raster p1 2.060% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.35-1: styling/assets; raster p1 4.963% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.35-2: styling/assets; raster p1 2.484% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.35-3: styling/assets; raster p1 2.127% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.35-4: styling/assets; raster p1 4.964% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.36-1: styling/assets; raster p1 4.963% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.36-2: styling/assets; raster p1 2.484% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.36-3: styling/assets; raster p1 2.127% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.36-4: styling/assets; raster p1 2.904% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.37-1: styling/assets; raster p1 1.537% of content differs > 1.250%
+formatted_text_formatter_spec-1.3.39-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.3.39-2: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.3.39-3: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+formatted_text_formatter_spec-1.4.1-1: styling/assets; raster p1 8.361% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.1-2: styling/assets; raster p1 8.361% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.11-1: geometry, styling/assets; within 1pt 2/5 (40.000%) < 99.500%
+formatted_text_formatter_spec-1.4.13-1: styling/assets; raster p1 8.279% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.13-2: styling/assets; raster p1 8.279% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.14-1: styling/assets; raster p1 2.417% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.14-2: styling/assets; raster p1 2.417% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.15-1: styling/assets; raster p1 4.431% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.16-1: styling/assets; raster p1 1.890% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.16-2: styling/assets; raster p1 1.890% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.2-1: styling/assets; raster p1 2.941% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.2-2: styling/assets; raster p1 2.941% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.22-1: styling/assets; raster p1 16.640% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.24-1: styling/assets; raster p1 4.379% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.27-1: styling/assets; structure: fonts
+formatted_text_formatter_spec-1.4.31-1: styling/assets; structure: fonts
+formatted_text_formatter_spec-1.4.32-1: styling/assets; raster p1 4.134% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.33-1: styling/assets; raster p1 3.235% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.34-1: styling/assets; raster p1 3.235% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.35-1: styling/assets; raster p1 1.599% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.37-1: styling/assets; raster p4 3.812% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.4-1: styling/assets; raster p1 5.861% of content differs > 1.250%
+formatted_text_formatter_spec-1.4.5-1: styling/assets; raster p1 4.715% of content differs > 1.250%
+formatted_text_formatter_spec-1.5.7-1: styling/assets; raster p4 4.091% of content differs > 1.250%
+icon_spec-1.12-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+icon_spec-1.13-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+icon_spec-1.18-1: navigation/metadata, styling/assets; structure: links
+icon_spec-1.18-2: navigation/metadata, styling/assets; structure: links
+icon_spec-1.19-1: navigation/metadata, styling/assets; structure: links
+icon_spec-1.19-2: navigation/metadata, styling/assets; structure: links
+icon_spec-1.2-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.10.10-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
+image_spec-1.10.11-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
+image_spec-1.10.7-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.10.8-4: geometry, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.11.4-1: styling/assets; raster p1 25.978% of content differs > 1.250%
+image_spec-1.12.19-1: styling/assets; raster p1 99.975% of content differs > 1.250%
+image_spec-1.12.20-1: geometry, styling/assets; within 1pt 2/3 (66.666%) < 99.500%
+image_spec-1.12.22-1: geometry, styling/assets; within 1pt 0/3 (0%) < 99.500%
+image_spec-1.12.25-1: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-2: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-3: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.25-4: styling/assets; raster p1 23.669% of content differs > 1.250%
+image_spec-1.12.26-1: styling/assets; raster p1 45.157% of content differs > 1.250%
+image_spec-1.12.28-1: styling/assets; raster p1 99.975% of content differs > 1.250%
+image_spec-1.13.17-1: styling/assets; raster p1 4.105% of content differs > 1.250%
+image_spec-1.13.18-1: styling/assets; raster p1 2.606% of content differs > 1.250%
+image_spec-1.13.25-1: styling/assets; raster p1 46.798% of content differs > 1.250%
+image_spec-1.13.25-2: styling/assets; raster p1 46.637% of content differs > 1.250%
+image_spec-1.13.8-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
+image_spec-1.14.7-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.14.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
+image_spec-1.14.8-2: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 0 spike
 image_spec-1.17.10-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
 image_spec-1.17.11-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
 image_spec-1.17.12-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 2
 image_spec-1.17.13-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
 image_spec-1.17.14-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 4 vs 1
-image_spec-1.17.15-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 1 in order of 1 Ruby / 4 spike
-image_spec-1.17.16-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 3 in order of 3 Ruby / 5 spike
+image_spec-1.17.15-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 1 in order of 1 Ruby / 2 spike
+image_spec-1.17.16-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
 image_spec-1.17.3-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
 image_spec-1.17.4-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 4 in order of 4 Ruby / 6 spike
 image_spec-1.17.5-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 3
-image_spec-1.17.6-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
-image_spec-1.17.7-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
+image_spec-1.17.6-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
+image_spec-1.17.7-1: unsupported feature, missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
 image_spec-1.17.8-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 2 vs 1
 image_spec-1.17.9-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
 image_spec-1.17.9-2: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
-image_spec-1.18.1-1: missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 8 spike
-image_spec-1.18.2-1: missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 7 spike
-image_spec-1.18.3-1: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-image_spec-1.18.4-1: missing/extra text, styling/assets; lines: 0 in order of 0 Ruby / 4 spike
-image_spec-1.19.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.19.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-image_spec-1.20.11-1: missing/extra text, page break/extra pages, navigation/metadata, styling/assets, extra running footer (nofooter ignored); pages 2 vs 1
-image_spec-1.20.11-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 4 spike
-image_spec-1.20.13-1: missing/extra text, page break/extra pages, navigation/metadata, styling/assets, extra running footer (nofooter ignored); pages 2 vs 1
-image_spec-1.20.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.15-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.20.16-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.20.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.17-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.20.17-3: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.20.18-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.20-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.21-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
-image_spec-1.20.22-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.20.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.5-1: missing/extra text, geometry; lines: 0 in order of 1 Ruby / 2 spike
-image_spec-1.20.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.20.7-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 11 in order of 11 Ruby / 12 spike
-image_spec-1.20.9-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-image_spec-1.21.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.21.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.21.2-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.21.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-image_spec-1.21.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.21.5-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.21.6-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.21.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.21.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.21.8-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.21.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-image_spec-1.22.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.22.1-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.22.12-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
-image_spec-1.22.12-2: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
-image_spec-1.22.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-image_spec-1.22.3-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-image_spec-1.22.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-image_spec-1.22.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-image_spec-1.22.8-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 0 in order of 2 Ruby / 3 spike
-image_spec-1.4-1: missing/extra text, geometry, navigation/metadata; lines: 1 in order of 2 Ruby / 3 spike
-image_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-image_spec-1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 3 spike
-image_spec-1.9-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 3 spike
-index_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-index_spec-1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 14 in order of 14 Ruby / 16 spike
-index_spec-1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-index_spec-1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 17 in order of 17 Ruby / 19 spike
-index_spec-1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-index_spec-1.13-2: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
+image_spec-1.20.11-1: styling/assets; raster p2 2.583% of content differs > 1.250%
+image_spec-1.20.11-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
+image_spec-1.20.15-1: styling/assets; raster p1 2.583% of content differs > 1.250%
+image_spec-1.20.21-1: reading order, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+image_spec-1.20.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+image_spec-1.21.1-1: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.2-1: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.2-2: styling/assets; raster p1 1.352% of content differs > 1.250%
+image_spec-1.21.6-1: geometry, navigation/metadata, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.21.8-1: geometry, navigation/metadata, styling/assets; within 1pt 0/5 (0%) < 99.500%
+image_spec-1.22.3-1: reading order, geometry; 1 lines indented differently
+image_spec-1.22.3-2: reading order, geometry; 1 lines indented differently
+image_spec-1.23.10-1: styling/assets; raster p1 35.978% of content differs > 1.250%
+image_spec-1.23.11-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.11-2: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.12-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.12-2: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+image_spec-1.23.3-1: styling/assets; raster p1 1.532% of content differs > 1.250%
+image_spec-1.23.6-1: styling/assets; raster p1 1.763% of content differs > 1.250%
+image_spec-1.23.9-1: styling/assets; raster p1 34.782% of content differs > 1.250%
+image_spec-1.3-1: geometry, styling/assets; within 1pt 0/3 (0%) < 99.500%
+image_spec-1.8-1: navigation/metadata; structure: destinations
+image_spec-1.8-2: navigation/metadata; structure: destinations
 index_spec-1.14-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 4 vs 3
-index_spec-1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 13 spike
-index_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 13 spike
-index_spec-1.16-2: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 13 spike
-index_spec-1.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 10 spike
-index_spec-1.18-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-index_spec-1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-index_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-index_spec-1.20-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-index_spec-1.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 10 spike
-index_spec-1.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 13 spike
-index_spec-1.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 11 spike
-index_spec-1.24-1: missing/extra text, extra running footer (nofooter ignored); lines: 13 in order of 13 Ruby / 17 spike
-index_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-index_spec-1.32-1: missing/extra text, extra running footer (nofooter ignored); lines: 11 in order of 11 Ruby / 15 spike
-index_spec-1.32-2: missing/extra text, extra running footer (nofooter ignored); lines: 11 in order of 11 Ruby / 15 spike
-index_spec-1.33-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 14 spike
-index_spec-1.34-1: missing/extra text, extra running footer (nofooter ignored); lines: 16 in order of 16 Ruby / 20 spike
-index_spec-1.34-2: missing/extra text, extra running footer (nofooter ignored); lines: 16 in order of 16 Ruby / 20 spike
-index_spec-1.35-1: missing/extra text, extra running footer (nofooter ignored); lines: 14 in order of 14 Ruby / 18 spike
-index_spec-1.35-2: missing/extra text, extra running footer (nofooter ignored); lines: 14 in order of 14 Ruby / 18 spike
-index_spec-1.39-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 10 spike
-index_spec-1.40-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-index_spec-1.41-1: missing/extra text, extra running footer (nofooter ignored); lines: 34 in order of 34 Ruby / 36 spike
-index_spec-1.45-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 16 in order of 20 Ruby / 23 spike
-index_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-index_spec-1.50-1: missing/extra text, extra running footer (nofooter ignored); lines: 16 in order of 16 Ruby / 17 spike
-index_spec-1.51-1: missing/extra text, extra running footer (nofooter ignored); lines: 50 in order of 50 Ruby / 52 spike
-index_spec-1.52.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-index_spec-1.52.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-index_spec-1.52.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 12 spike
-index_spec-1.52.3-2: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 12 spike
-index_spec-1.52.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 12 in order of 12 Ruby / 14 spike
-index_spec-1.52.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 11 spike
-index_spec-1.52.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-index_spec-1.52.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-index_spec-1.52.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-index_spec-1.52.8-2: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-index_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-index_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-index_spec-1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 15 in order of 15 Ruby / 18 spike
-index_spec-1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-link_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.16-7: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.16-8: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.16-9: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.7-3: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-link_spec-1.1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.2.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-link_spec-1.2.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-list_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.1.20-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.1.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-list_spec-1.1.24-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.1.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.3.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-list_spec-1.3.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 11 spike
-list_spec-1.3.12-1: missing/extra text, geometry; lines: 0 in order of 10 Ruby / 11 spike
-list_spec-1.3.12-2: missing/extra text, geometry; lines: 0 in order of 10 Ruby / 11 spike
-list_spec-1.3.12-3: missing/extra text, geometry; lines: 0 in order of 10 Ruby / 11 spike
-list_spec-1.3.12-4: missing/extra text, geometry; lines: 0 in order of 10 Ruby / 11 spike
-list_spec-1.3.12-5: missing/extra text, geometry; lines: 0 in order of 10 Ruby / 11 spike
-list_spec-1.3.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.3.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.3.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.18-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 4 spike
-list_spec-1.3.19-1: missing/extra text, geometry; lines: 2 in order of 5 Ruby / 6 spike
-list_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-list_spec-1.3.20-1: missing/extra text, geometry; lines: 0 in order of 3 Ruby / 4 spike
-list_spec-1.3.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.3.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.3.23-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.3.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.3.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 26 in order of 26 Ruby / 27 spike
-list_spec-1.3.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 26 in order of 26 Ruby / 27 spike
-list_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-list_spec-1.4.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-list_spec-1.5.1-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.5.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.12.10-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.12.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.5.12.12-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.5.12.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.12.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-list_spec-1.5.12.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 10 spike
-list_spec-1.5.12.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.5.12.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.12.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.12.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.12.23-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 50 in order of 50 Ruby / 52 spike
-list_spec-1.5.12.24-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 36 in order of 36 Ruby / 38 spike
-list_spec-1.5.12.4-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.12.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.12.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-list_spec-1.5.12.8-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.12.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.13.1-1: missing/extra text, geometry; lines: 2 in order of 5 Ruby / 8 spike
-list_spec-1.5.13.2-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 6 spike
-list_spec-1.5.13.3-1: missing/extra text, geometry; lines: 1 in order of 4 Ruby / 8 spike
-list_spec-1.5.13.4-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 5 spike
-list_spec-1.5.13.5-1: missing/extra text, geometry; lines: 3 in order of 5 Ruby / 6 spike
-list_spec-1.5.13.6-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 4 spike
-list_spec-1.5.14.1-1: missing/extra text, geometry; lines: 2 in order of 5 Ruby / 8 spike
-list_spec-1.5.14.2-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 6 spike
-list_spec-1.5.14.3-1: missing/extra text, geometry; lines: 1 in order of 4 Ruby / 8 spike
-list_spec-1.5.14.4-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 5 spike
-list_spec-1.5.14.5-1: missing/extra text, geometry; lines: 3 in order of 5 Ruby / 6 spike
-list_spec-1.5.2-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.5.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-list_spec-1.5.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.5.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-list_spec-1.6.1-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 4 Ruby / 5 spike
-list_spec-1.6.2-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 5 Ruby / 6 spike
-list_spec-1.6.3-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 5 spike
-list_spec-1.6.4-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 3 Ruby / 4 spike
-list_spec-1.7.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.7.16-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-list_spec-1.7.17-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-list_spec-1.7.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-list_spec-1.7.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.7.3-2: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.7.3-3: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.7.3-4: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-list_spec-1.7.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 50 in order of 50 Ruby / 52 spike
-list_spec-1.7.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.7.8-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.8.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.8.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-list_spec-1.8.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-listing_spec-1.13-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-listing_spec-1.2-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 0 in order of 4 Ruby / 3 spike
-listing_spec-1.21-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-listing_spec-1.22-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-listing_spec-1.23-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-listing_spec-1.24-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-listing_spec-1.25-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-listing_spec-1.26-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-listing_spec-1.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 40 in order of 40 Ruby / 42 spike
-listing_spec-1.33-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-listing_spec-1.4-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 40 in order of 40 Ruby / 42 spike
-listing_spec-1.45-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-listing_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-listing_spec-1.5-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-listing_spec-1.7-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 26 in order of 26 Ruby / 28 spike
-listing_spec-1.7-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 26 in order of 26 Ruby / 28 spike
-listing_spec-1.8-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 80 in order of 80 Ruby / 82 spike
-listing_spec-1.9-1: missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 62 in order of 62 Ruby / 64 spike
-manpage_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-manpage_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-manpage_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-manpage_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-open_spec-1.1-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-open_spec-1.2-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 35 in order of 35 Ruby / 37 spike
-open_spec-1.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 60 in order of 60 Ruby / 63 spike
-open_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-open_spec-1.5-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-outline_spec-1.1.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.1.10-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-outline_spec-1.1.2-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.1.3-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.4-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.5-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.5-2: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.5-3: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.5-4: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.5-5: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.1.8-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-outline_spec-1.1.9-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-outline_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-outline_spec-1.2.10-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-outline_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 9 spike
-outline_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 9 spike
-outline_spec-1.2.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 9 spike
-outline_spec-1.2.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 9 spike
-outline_spec-1.2.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-outline_spec-1.2.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-outline_spec-1.2.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-outline_spec-1.2.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-outline_spec-1.3.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-outline_spec-1.3.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-outline_spec-1.3.11-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-outline_spec-1.3.12-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-outline_spec-1.3.13-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-outline_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.3.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.3.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-outline_spec-1.3.5-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.3.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.3.7-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-outline_spec-1.3.8-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-outline_spec-1.3.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-outline_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-outline_spec-1.4.2-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.4.3-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-outline_spec-1.4.4-1: missing/extra text, geometry, navigation/metadata, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-outline_spec-1.5.1-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-outline_spec-1.5.2-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
-outline_spec-1.5.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-outline_spec-1.6.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-outline_spec-1.6.2-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-outline_spec-1.6.3-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.1.14-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.1.15-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.1.3-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.1.5-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.2.2-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.3.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.11-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.13-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.5-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.7-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.4.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.11-1: geometry, navigation/metadata, styling/assets; within 1pt 0/9 (0%) < 99.500%
-page_spec-1.5.12-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 6 spike
-page_spec-1.5.6-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.6-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.7-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.7-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.7-3: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.7-4: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.7-5: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.8-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.5.9-2: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.7.16-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.18-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.19-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.20-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.21-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.21-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.22-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.23-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.24-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.25-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.26-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.27-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.28-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.29-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.30-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.30-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.31-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-page_spec-1.7.32-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-page_spec-1.7.33-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.34-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.35-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.36-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.37-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.39-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.7.40-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.41-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-page_spec-1.7.42-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.43-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.43-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.43-3: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.44-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.45-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.46-1: missing/extra text, geometry, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.47-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.48-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.48-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.49-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.49-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.51-1: missing/extra text, navigation/metadata, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-page_spec-1.7.52-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.53-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.54-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.55-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.7.56-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.57-1: missing/extra text, geometry, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.58-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
-page_spec-1.7.59-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-page_spec-1.7.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-page_spec-1.8.1-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 52 in order of 68 Ruby / 79 spike
-page_spec-1.8.2-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 2
-page_spec-1.8.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 42 in order of 42 Ruby / 43 spike
-paragraph_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-paragraph_spec-1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-paragraph_spec-1.12-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-paragraph_spec-1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-paragraph_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-paragraph_spec-1.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-paragraph_spec-1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-paragraph_spec-1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-paragraph_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-paragraph_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-pass_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.16-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.17-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.18-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.19-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.20-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.5-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-pdf_info_spec-1.2.6-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-pdf_info_spec-1.2.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-pdf_info_spec-1.2.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-pdf_info_spec-1.2.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.2.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-pdf_info_spec-1.3.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.3.2-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.3.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.3.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.3.5-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.3.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-pdf_info_spec-1.4.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
+index_spec-1.25-1: styling/assets; raster p3 2.384% of content differs > 1.250%
+index_spec-1.32-1: styling/assets; raster p4 1.312% of content differs > 1.250%
+index_spec-1.32-2: styling/assets; raster p4 1.312% of content differs > 1.250%
+index_spec-1.33-1: styling/assets; raster p4 1.372% of content differs > 1.250%
+index_spec-1.34-1: styling/assets; raster p4 1.372% of content differs > 1.250%
+index_spec-1.34-2: styling/assets; raster p4 1.372% of content differs > 1.250%
+index_spec-1.35-1: styling/assets; raster p4 1.372% of content differs > 1.250%
+index_spec-1.35-2: styling/assets; raster p4 1.372% of content differs > 1.250%
+index_spec-1.36-1: styling/assets; raster p4 1.605% of content differs > 1.250%
+index_spec-1.7-1: styling/assets; raster p4 5.245% of content differs > 1.250%
+index_spec-1.9-1: styling/assets; raster p2 1.482% of content differs > 1.250%
+link_spec-1.1.17-1: navigation/metadata; structure: outline
+link_spec-1.1.17-2: navigation/metadata; structure: outline
+link_spec-1.1.18-1: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+link_spec-1.1.18-2: missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+link_spec-1.4.1-1: styling/assets; raster p1 2.773% of content differs > 1.250%
+link_spec-1.4.1-2: styling/assets; raster p1 2.773% of content differs > 1.250%
+link_spec-1.4.2-1: styling/assets; raster p1 1.436% of content differs > 1.250%
+link_spec-1.4.2-2: styling/assets; raster p1 1.436% of content differs > 1.250%
+list_spec-1.1.18-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+list_spec-1.1.18-2: styling/assets; raster p1 4.257% of content differs > 1.250%
+list_spec-1.1.27-1: styling/assets; raster p2 3.013% of content has flat (fill) differences > 0.500%
+list_spec-1.2.3-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+list_spec-1.2.4-1: geometry, styling/assets; within 1pt 2/4 (50.000%) < 99.500%
+list_spec-1.3.12-1: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-2: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-3: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-4: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.12-5: reading order, geometry, styling/assets; lines: 0 in order of 10 Ruby / 10 spike
+list_spec-1.3.18-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 3 spike
+list_spec-1.3.19-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 5 Ruby / 5 spike
+list_spec-1.3.20-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 3 Ruby / 3 spike
+list_spec-1.3.8-1: styling/assets; raster p1 2.028% of content differs > 1.250%
+list_spec-1.3.9-1: styling/assets; raster p1 2.047% of content differs > 1.250%
+list_spec-1.7.11-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.12-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.13-1: missing/extra text, geometry; lines: 1 in order of 5 Ruby / 5 spike
+list_spec-1.7.14-1: missing/extra text, geometry; lines: 8 in order of 18 Ruby / 18 spike
+list_spec-1.7.15-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 4 Ruby / 4 spike
+listing_spec-1.1-1: styling/assets; raster p1 69.972% of content has flat (fill) differences > 0.500%
+listing_spec-1.28-1: unsupported feature, styling/assets; raster p1 25.201% of content differs > 1.250%
+listing_spec-1.29-1: unsupported feature, styling/assets; raster p1 15.600% of content differs > 1.250%
+listing_spec-1.30-1: unsupported feature, styling/assets; raster p1 38.938% of content differs > 1.250%
+listing_spec-1.31-1: unsupported feature, styling/assets; raster p1 24.263% of content differs > 1.250%
+listing_spec-1.39-1: styling/assets; raster p1 1.898% of content differs > 1.250%
+listing_spec-1.6-1: navigation/metadata; structure: destinations
+listing_spec-1.6-2: navigation/metadata; structure: destinations
+manpage_spec-1.5-1: navigation/metadata; structure: outline
+media_spec-1.2.2-1: styling/assets; raster p5 3.149% of content differs > 1.250%
+media_spec-1.2.3-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 3
+media_spec-1.2.4-1: styling/assets; raster p9 8.550% of content differs > 1.250%
+media_spec-1.2.5-1: styling/assets; raster p5 1.432% of content differs > 1.250%
+media_spec-1.2.6-1: styling/assets; raster p3 1.432% of content differs > 1.250%
+media_spec-1.2.7-1: styling/assets; raster p4 2.514% of content differs > 1.250%
+media_spec-1.2.8-1: styling/assets; raster p2 2.514% of content differs > 1.250%
+media_spec-1.2.9-1: styling/assets; raster p1 1.360% of content differs > 1.250%
+open_spec-1.2-1: reading order, geometry; coverage 120/122 (98.360%) < 99.000%
+outline_spec-1.1.10-1: navigation/metadata; structure: outline
+outline_spec-1.1.3-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.4-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.5-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.5-2: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.5-3: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.5-4: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.5-5: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.6-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.1.8-1: navigation/metadata; structure: outline
+outline_spec-1.1.9-1: styling/assets; raster p1 2.911% of content differs > 1.250%
+outline_spec-1.2.1-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.2.10-1: navigation/metadata, styling/assets; structure: outline
+outline_spec-1.2.2-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.2.3-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.2.4-1: styling/assets; raster p3 4.456% of content differs > 1.250%
+outline_spec-1.2.5-1: styling/assets; raster p5 1.685% of content differs > 1.250%
+outline_spec-1.2.6-1: styling/assets; raster p3 1.951% of content differs > 1.250%
+outline_spec-1.2.7-1: styling/assets; raster p3 2.459% of content differs > 1.250%
+outline_spec-1.2.8-1: styling/assets; raster p3 2.313% of content differs > 1.250%
+outline_spec-1.2.9-1: styling/assets; raster p3 1.447% of content differs > 1.250%
+outline_spec-1.3.1-1: styling/assets; raster p2 4.429% of content differs > 1.250%
+outline_spec-1.3.11-1: styling/assets; raster p1 1.784% of content differs > 1.250%
+outline_spec-1.3.12-1: styling/assets; raster p1 1.784% of content differs > 1.250%
+outline_spec-1.3.13-1: navigation/metadata; structure: outline
+outline_spec-1.3.2-1: styling/assets; raster p2 1.588% of content differs > 1.250%
+outline_spec-1.3.4-1: styling/assets; raster p1 1.588% of content differs > 1.250%
+outline_spec-1.4.4-1: geometry, navigation/metadata, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+outline_spec-1.5.1-1: styling/assets; raster p3 1.731% of content differs > 1.250%
+outline_spec-1.5.2-1: styling/assets; raster p4 1.731% of content differs > 1.250%
+outline_spec-1.6.1-1: styling/assets; raster p2 2.869% of content differs > 1.250%
+outline_spec-1.6.2-1: navigation/metadata, styling/assets; structure: outline
+outline_spec-1.6.3-1: navigation/metadata; structure: outline
+page_spec-1.5.10-1: geometry, styling/assets; within 1pt 4/6 (66.666%) < 99.500%
+page_spec-1.5.11-1: geometry; within 1pt 6/9 (66.666%) < 99.500%
+page_spec-1.5.13-1: geometry, styling/assets; within 1pt 12/14 (85.714%) < 99.500%
+page_spec-1.5.14-1: geometry, styling/assets; within 1pt 12/14 (85.714%) < 99.500%
+page_spec-1.5.15-1: styling/assets; raster p1 1.303% of content differs > 1.250%
+page_spec-1.5.16-1: styling/assets; raster p1 1.303% of content differs > 1.250%
+page_spec-1.5.18-1: geometry; 5 lines indented differently
+page_spec-1.6.10-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
+page_spec-1.6.11-1: unsupported feature, missing/extra text, page break/extra pages, geometry, styling/assets; lines: 2 in order of 3 Ruby / 5 spike
+page_spec-1.6.12-1: navigation/metadata, styling/assets; structure: page boxes
+page_spec-1.6.6-1: navigation/metadata; structure: links
+page_spec-1.6.9-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
+page_spec-1.7.14-1: styling/assets; raster p1 6.241% of content differs > 1.250%
+page_spec-1.7.15-1: styling/assets; raster p1 6.241% of content differs > 1.250%
+page_spec-1.7.45-1: styling/assets; raster p2 17.767% of content has flat (fill) differences > 0.500%
+page_spec-1.7.50-1: navigation/metadata; structure: viewer settings
+page_spec-1.7.51-1: navigation/metadata; structure: viewer settings
+page_spec-1.7.52-1: styling/assets; raster p1 88.226% of content differs > 1.250%
+page_spec-1.7.54-1: reading order, geometry, styling/assets; coverage 2/3 (66.666%) < 99.000%
+page_spec-1.7.55-1: reading order, geometry, styling/assets; coverage 2/3 (66.666%) < 99.000%
+page_spec-1.7.56-1: reading order, geometry, styling/assets; coverage 7/8 (87.500%) < 99.000%
+page_spec-1.7.57-1: reading order, geometry, styling/assets; coverage 7/8 (87.500%) < 99.000%
+page_spec-1.7.58-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 3 Ruby / 4 spike
+page_spec-1.8.1-1: navigation/metadata, styling/assets; structure: viewer settings
+page_spec-1.8.2-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+page_spec-1.8.3-1: styling/assets; raster p1 3.432% of content has flat (fill) differences > 0.500%
+paragraph_spec-1.17-2: styling/assets; raster p1 5.222% of content differs > 1.250%
+paragraph_spec-1.2-1: styling/assets; raster p3 1.340% of content differs > 1.250%
+paragraph_spec-1.2-2: styling/assets; raster p3 1.340% of content differs > 1.250%
+pdf_info_spec-1.2.16-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.17-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.18-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.19-1: navigation/metadata; structure: document info
+pdf_info_spec-1.2.20-1: navigation/metadata; structure: document info
+pdf_info_spec-1.3.2-1: navigation/metadata; structure: outline
+pdf_info_spec-1.3.3-1: styling/assets; raster p1 2.911% of content differs > 1.250%
+pdf_info_spec-1.3.4-1: styling/assets; raster p1 3.292% of content differs > 1.250%
 pdf_info_spec-1.4.3-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 1
-pdfmark_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 12 spike
-pdfmark_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-preamble_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-preamble_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-preamble_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-preamble_spec-1.1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-preamble_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-preamble_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-preamble_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-preamble_spec-1.2.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-preamble_spec-1.2.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-preamble_spec-1.2.6-1: missing/extra text, geometry, navigation/metadata; lines: 4 in order of 5 Ruby / 6 spike
-quote_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-quote_spec-1.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-quote_spec-1.12-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-quote_spec-1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-quote_spec-1.15-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-quote_spec-1.18-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-quote_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-quote_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-quote_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-quote_spec-1.5-1: missing/extra text, geometry; lines: 2 in order of 3 Ruby / 4 spike
-quote_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-quote_spec-1.6-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-quote_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-running_content_spec-1.1.3-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
+pdfmark_spec-1.2.1-1: styling/assets; raster p4 2.432% of content differs > 1.250%
+pdfmark_spec-1.2.2-1: styling/assets; raster p3 7.836% of content differs > 1.250%
+preamble_spec-1.2.6-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+quote_spec-1.13-1: styling/assets; raster p1 93.817% of content has flat (fill) differences > 0.500%
+quote_spec-1.5-1: missing/extra text, geometry; lines: 2 in order of 3 Ruby / 3 spike
 running_content_spec-1.1.4-1: unsupported feature, missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
 running_content_spec-1.1.5-1: unsupported feature, missing/extra text, page break/extra pages, navigation/metadata, styling/assets; pages 3 vs 1
-running_content_spec-1.2.5-1: missing/extra text; lines: 3 in order of 3 Ruby / 5 spike
-running_content_spec-1.2.6-1: missing/extra text; lines: 3 in order of 3 Ruby / 5 spike
-running_content_spec-1.2.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-running_content_spec-1.6.31-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-section_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-section_spec-1.18-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.19-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-section_spec-1.20-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.21-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.22-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.23-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.24-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.25-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.33-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-section_spec-1.38-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.39-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-section_spec-1.40-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.41-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 9 spike
-section_spec-1.42-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 9 spike
-section_spec-1.43-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 3 in order of 5 Ruby / 9 spike
-section_spec-1.43-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 9 spike
-section_spec-1.44-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-section_spec-1.45-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-section_spec-1.46-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-section_spec-1.47-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 1 in order of 3 Ruby / 5 spike
-section_spec-1.47-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-section_spec-1.48-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-section_spec-1.49-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-section_spec-1.51-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 9 spike
-section_spec-1.52-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 13 spike
-section_spec-1.54-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-section_spec-1.55-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-section_spec-1.56-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-section_spec-1.56-2: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-section_spec-1.57-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-section_spec-1.57-2: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-section_spec-1.58-1: missing/extra text, geometry, navigation/metadata; lines: 4 in order of 5 Ruby / 6 spike
-section_spec-1.58-2: missing/extra text, geometry, navigation/metadata; lines: 4 in order of 5 Ruby / 6 spike
-section_spec-1.59-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 8 spike
-section_spec-1.59-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 8 spike
-section_spec-1.60-1: missing/extra text, extra running footer (nofooter ignored); lines: 43 in order of 43 Ruby / 44 spike
-section_spec-1.61-1: missing/extra text, extra running footer (nofooter ignored); lines: 44 in order of 44 Ruby / 46 spike
-section_spec-1.67-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-section_spec-1.74-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-section_spec-1.74-2: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-section_spec-1.79-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-sidebar_spec-1.10-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-sidebar_spec-1.11-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-sidebar_spec-1.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 6 spike
-sidebar_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-sidebar_spec-1.4-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-sidebar_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-sidebar_spec-1.6-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-sidebar_spec-1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-sidebar_spec-1.8-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 31 in order of 31 Ruby / 33 spike
-source_spec-1.1.1-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-source_spec-1.1.10-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-source_spec-1.1.10-2: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-source_spec-1.1.2-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-source_spec-1.1.3-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-source_spec-1.1.4-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-source_spec-1.1.5-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-source_spec-1.1.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-source_spec-1.1.7-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-source_spec-1.1.8-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-source_spec-1.1.9-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-source_spec-1.2.1-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-source_spec-1.2.2-1: unsupported feature, missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-stem_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-stem_spec-1.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-stem_spec-1.3-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-table_spec-1.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-table_spec-1.11.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.11.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-table_spec-1.11.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.12.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.13.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-table_spec-1.13.10-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 9 Ruby / 8 spike
-table_spec-1.13.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.13.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.13.16-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.13.17-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.13.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.13.26-1: missing/extra text, extra running footer (nofooter ignored); lines: 29 in order of 29 Ruby / 32 spike
-table_spec-1.13.27-1: missing/extra text, extra running footer (nofooter ignored); lines: 30 in order of 30 Ruby / 33 spike
-table_spec-1.13.28-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 37 in order of 37 Ruby / 40 spike
-table_spec-1.13.29-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-table_spec-1.13.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.30-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.13.31-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.32-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.13.33-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 24 in order of 24 Ruby / 26 spike
-table_spec-1.13.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.13.8-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.8-3: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.13.9-1: missing/extra text, geometry, navigation/metadata; lines: 8 in order of 9 Ruby / 9 spike
-table_spec-1.14.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-table_spec-1.15.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-table_spec-1.15.3-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 58 in order of 58 Ruby / 61 spike
-table_spec-1.15.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-table_spec-1.16.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.16.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.16.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.16.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 65 in order of 65 Ruby / 68 spike
-table_spec-1.17.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-table_spec-1.17.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-table_spec-1.17.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-table_spec-1.17.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 12 spike
-table_spec-1.17.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-table_spec-1.17.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-table_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.4.12-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.4.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.24-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.4.25-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.4.26-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.4.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.3-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.4.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.4.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.4.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.5.1-1: missing/extra text, geometry; lines: 2 in order of 2 Ruby / 10 spike
-table_spec-1.5.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-table_spec-1.5.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-table_spec-1.5.13-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-table_spec-1.5.18-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.19-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.2-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 2 Ruby / 12 spike
-table_spec-1.5.20-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.5.22-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.23-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.29-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.5.30-1: missing/extra text, extra running footer (nofooter ignored); lines: 55 in order of 55 Ruby / 57 spike
-table_spec-1.5.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-table_spec-1.5.5-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-table_spec-1.5.6-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 0 in order of 0 Ruby / 1 spike
-table_spec-1.6.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-table_spec-1.6.10-1: missing/extra text; lines: 26 in order of 26 Ruby / 31 spike
-table_spec-1.6.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.6.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 6 spike
-table_spec-1.6.3-2: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 6 spike
-table_spec-1.6.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-table_spec-1.6.7-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.6.8-1: missing/extra text; lines: 26 in order of 26 Ruby / 30 spike
-table_spec-1.6.9-1: missing/extra text; lines: 27 in order of 27 Ruby / 31 spike
-table_spec-1.7.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.8.3-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-table_spec-1.9.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-table_spec-1.9.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-table_spec-1.9.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-thematic_break_spec-1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-title_page_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-title_page_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-title_page_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-title_page_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.3.1-1: styling/assets; raster p1 11.975% of content differs > 1.250%
-title_page_spec-1.3.10-1: styling/assets; raster p1 3.952% of content differs > 1.250%
-title_page_spec-1.3.11-1: styling/assets; raster p1 4.771% of content differs > 1.250%
-title_page_spec-1.3.16-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.3.17-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.3.5-1: styling/assets; raster p1 11.975% of content differs > 1.250%
-title_page_spec-1.3.6-1: styling/assets; raster p1 54.334% of content differs > 1.250%
-title_page_spec-1.3.8-1: styling/assets; raster p1 3.641% of content differs > 1.250%
-title_page_spec-1.3.9-1: styling/assets; raster p1 4.727% of content differs > 1.250%
-title_page_spec-1.4.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 8 spike
-title_page_spec-1.4.2-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
-title_page_spec-1.4.3-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
-title_page_spec-1.4.4-1: page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-title_page_spec-1.4.5-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
-title_page_spec-1.4.6-1: page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
-title_page_spec-1.4.7-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-title_page_spec-1.5.29-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-toc_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-toc_spec-1.1.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 11 in order of 11 Ruby / 13 spike
-toc_spec-1.1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 84 in order of 84 Ruby / 87 spike
-toc_spec-1.1.12-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 34 vs 33
-toc_spec-1.1.13-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 26 vs 25
-toc_spec-1.1.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 10 spike
-toc_spec-1.1.15-1: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 44 spike
-toc_spec-1.1.15-2: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 44 spike
-toc_spec-1.1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 11 spike
-toc_spec-1.1.17-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-toc_spec-1.1.19-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-toc_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 11 spike
-toc_spec-1.1.21-1: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 44 spike
-toc_spec-1.1.22-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-toc_spec-1.1.23-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-toc_spec-1.1.24-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-toc_spec-1.1.25-1: missing/extra text, extra running footer (nofooter ignored); lines: 33 in order of 33 Ruby / 36 spike
-toc_spec-1.1.26-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-toc_spec-1.1.27-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 8 spike
-toc_spec-1.1.28-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-toc_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 11 spike
-toc_spec-1.1.34-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 10 spike
-toc_spec-1.1.35-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-toc_spec-1.1.36-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-toc_spec-1.1.37-1: missing/extra text, extra running footer (nofooter ignored); lines: 82 in order of 82 Ruby / 120 spike
-toc_spec-1.1.38-1: missing/extra text, geometry, navigation/metadata; lines: 5 in order of 6 Ruby / 9 spike
-toc_spec-1.1.39-1: missing/extra text, geometry, navigation/metadata; lines: 8 in order of 9 Ruby / 12 spike
-toc_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-toc_spec-1.1.4-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 8 spike
-toc_spec-1.1.48-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 10 in order of 10 Ruby / 14 spike
-toc_spec-1.1.49-1: missing/extra text, extra running footer (nofooter ignored); lines: 80 in order of 80 Ruby / 118 spike
-toc_spec-1.1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-toc_spec-1.1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 12 spike
-toc_spec-1.1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 12 spike
-toc_spec-1.1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 12 in order of 12 Ruby / 14 spike
-toc_spec-1.1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 12 in order of 12 Ruby / 14 spike
-toc_spec-1.11-1: missing/extra text, navigation/metadata, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-toc_spec-1.12-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-toc_spec-1.13-1: missing/extra text, geometry, navigation/metadata, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 7 spike
-toc_spec-1.14-1: missing/extra text, extra running footer (nofooter ignored); lines: 192 in order of 192 Ruby / 230 spike
-toc_spec-1.15-1: missing/extra text, geometry; lines: 3 in order of 4 Ruby / 5 spike
-toc_spec-1.16-1: missing/extra text, extra running footer (nofooter ignored); lines: 6 in order of 6 Ruby / 8 spike
-toc_spec-1.2.1-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-toc_spec-1.2.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-toc_spec-1.2.2-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-toc_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 41 spike
-toc_spec-1.2.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 6 spike
-toc_spec-1.2.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 82 in order of 82 Ruby / 86 spike
-toc_spec-1.2.5-2: missing/extra text, extra running footer (nofooter ignored); lines: 82 in order of 82 Ruby / 86 spike
-toc_spec-1.2.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-toc_spec-1.2.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 41 spike
-toc_spec-1.2.8-2: missing/extra text, extra running footer (nofooter ignored); lines: 39 in order of 39 Ruby / 41 spike
-toc_spec-1.2.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 8 in order of 8 Ruby / 9 spike
-verse_spec-1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-verse_spec-1.1-2: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-verse_spec-1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-verse_spec-1.12-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-verse_spec-1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-verse_spec-1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 5 spike
-verse_spec-1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-video_spec-1.1.1-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 2 spike
-video_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-video_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-video_spec-1.1.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-video_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-video_spec-1.2.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-video_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-video_spec-1.3.2-2: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-xref_spec-1.1.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-xref_spec-1.1.10-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-xref_spec-1.1.11-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-xref_spec-1.1.12-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-xref_spec-1.1.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-xref_spec-1.1.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 5 in order of 5 Ruby / 7 spike
-xref_spec-1.1.4-1: missing/extra text, styling/assets, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.1.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.1.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.1.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.1.7-2: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.1.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 9 spike
-xref_spec-1.1.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-xref_spec-1.2.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-xref_spec-1.2.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 4 spike
-xref_spec-1.2.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 1 in order of 1 Ruby / 2 spike
-xref_spec-1.2.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 9 in order of 9 Ruby / 12 spike
-xref_spec-1.2.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-xref_spec-1.2.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 4 in order of 4 Ruby / 7 spike
-xref_spec-1.3.1-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 11 spike
-xref_spec-1.3.10-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.3.11-1: missing/extra text, geometry, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 4 spike
-xref_spec-1.3.2-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 11 spike
-xref_spec-1.3.3-1: missing/extra text, extra running footer (nofooter ignored); lines: 7 in order of 7 Ruby / 11 spike
-xref_spec-1.3.4-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-xref_spec-1.3.5-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-xref_spec-1.3.6-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-xref_spec-1.3.7-1: missing/extra text, extra running footer (nofooter ignored); lines: 3 in order of 3 Ruby / 5 spike
-xref_spec-1.3.8-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
-xref_spec-1.3.9-1: missing/extra text, extra running footer (nofooter ignored); lines: 2 in order of 2 Ruby / 3 spike
+running_content_spec-1.10.17-1: missing/extra text; lines: 1 in order of 1 Ruby / 2 spike
+running_content_spec-1.10.20-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.10.23-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.10.29-1: navigation/metadata, styling/assets; structure: links
+running_content_spec-1.10.29-2: navigation/metadata, styling/assets; structure: links
+running_content_spec-1.10.3-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 2 spike
+running_content_spec-1.10.6-2: missing/extra text; lines: 23 in order of 23 Ruby / 24 spike
+running_content_spec-1.10.7-1: navigation/metadata; structure: viewer settings
+running_content_spec-1.4.17-1: styling/assets; raster p3 1.854% of content differs > 1.250%
+running_content_spec-1.4.27-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 3 in order of 5 Ruby / 4 spike
+running_content_spec-1.4.28-1: styling/assets; raster p3 1.854% of content differs > 1.250%
+running_content_spec-1.4.4-1: styling/assets; raster p2 2.252% of content differs > 1.250%
+running_content_spec-1.4.5-1: styling/assets; raster p2 2.252% of content differs > 1.250%
+running_content_spec-1.4.7-1: styling/assets; raster p2 2.252% of content differs > 1.250%
+running_content_spec-1.6.21-1: styling/assets; raster p1 4.264% of content differs > 1.250%
+running_content_spec-1.6.22-1: styling/assets; raster p1 5.030% of content differs > 1.250%
+running_content_spec-1.6.24-1: styling/assets; raster p1 2.618% of content differs > 1.250%
+running_content_spec-1.6.32-1: unsupported feature, geometry; within 1pt 5/9 (55.555%) < 99.500%
+running_content_spec-1.6.33-1: unsupported feature, geometry; within 1pt 4/6 (66.666%) < 99.500%
+running_content_spec-1.6.36-1: unsupported feature, geometry; within 1pt 4/5 (80.000%) < 99.500%
+running_content_spec-1.6.7-4: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.7-5: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.7-6: geometry; within 1pt 1/5 (20.000%) < 99.500%
+running_content_spec-1.6.9-1: missing/extra text, geometry; lines: 1 in order of 2 Ruby / 1 spike
+running_content_spec-1.7.5-1: geometry; 1 lines indented differently
+running_content_spec-1.8.1-1: navigation/metadata; structure: viewer settings
+running_content_spec-1.9.1-1: missing/extra text, geometry; lines: 3 in order of 4 Ruby / 4 spike
+running_content_spec-1.9.12-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 8 Ruby / 7 spike
+running_content_spec-1.9.3-1: missing/extra text, geometry; lines: 2 in order of 4 Ruby / 4 spike
+section_spec-1.10-1: styling/assets; raster p1 2.354% of content differs > 1.250%
+section_spec-1.18-1: styling/assets; raster p1 3.003% of content differs > 1.250%
+section_spec-1.19-1: styling/assets; raster p1 2.636% of content differs > 1.250%
+section_spec-1.20-1: styling/assets; raster p1 2.636% of content differs > 1.250%
+section_spec-1.22-1: styling/assets; raster p1 3.821% of content differs > 1.250%
+section_spec-1.23-1: styling/assets; raster p1 3.003% of content differs > 1.250%
+section_spec-1.24-1: styling/assets; raster p1 2.919% of content differs > 1.250%
+section_spec-1.24-2: styling/assets; raster p1 2.919% of content differs > 1.250%
+section_spec-1.25-1: styling/assets; raster p1 2.919% of content differs > 1.250%
+section_spec-1.25-2: styling/assets; raster p1 2.919% of content differs > 1.250%
+section_spec-1.26-1: styling/assets; raster p4 3.352% of content differs > 1.250%
+section_spec-1.29-1: styling/assets; raster p1 1.433% of content differs > 1.250%
+section_spec-1.30-1: styling/assets; raster p1 7.477% of content differs > 1.250%
+section_spec-1.30-2: styling/assets; raster p1 7.477% of content differs > 1.250%
+section_spec-1.31-1: styling/assets; raster p1 2.690% of content differs > 1.250%
+section_spec-1.31-2: styling/assets; raster p1 2.690% of content differs > 1.250%
+section_spec-1.32-1: styling/assets; raster p1 2.304% of content differs > 1.250%
+section_spec-1.32-2: styling/assets; raster p1 2.304% of content differs > 1.250%
+section_spec-1.33-1: styling/assets; raster p1 6.856% of content differs > 1.250%
+section_spec-1.34-1: styling/assets; raster p1 4.465% of content differs > 1.250%
+section_spec-1.35-1: styling/assets; raster p1 3.123% of content differs > 1.250%
+section_spec-1.36-1: styling/assets; raster p1 5.409% of content differs > 1.250%
+section_spec-1.37-1: styling/assets; raster p1 1.902% of content differs > 1.250%
+section_spec-1.38-1: styling/assets; raster p1 2.006% of content differs > 1.250%
+section_spec-1.39-1: styling/assets; raster p1 1.347% of content differs > 1.250%
+section_spec-1.40-1: styling/assets; raster p1 1.265% of content differs > 1.250%
+section_spec-1.41-1: styling/assets; raster p3 2.603% of content differs > 1.250%
+section_spec-1.42-1: styling/assets; raster p3 2.603% of content differs > 1.250%
+section_spec-1.43-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 3 in order of 5 Ruby / 5 spike
+section_spec-1.43-2: styling/assets; raster p5 2.921% of content differs > 1.250%
+section_spec-1.44-1: styling/assets; raster p3 2.921% of content differs > 1.250%
+section_spec-1.45-1: styling/assets; raster p2 3.001% of content differs > 1.250%
+section_spec-1.46-1: styling/assets; raster p3 3.001% of content differs > 1.250%
+section_spec-1.47-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 1 in order of 3 Ruby / 3 spike
+section_spec-1.47-2: styling/assets; raster p3 3.661% of content differs > 1.250%
+section_spec-1.49-1: styling/assets; raster p2 1.405% of content differs > 1.250%
+section_spec-1.50-1: styling/assets; raster p4 1.759% of content differs > 1.250%
+section_spec-1.51-1: styling/assets; raster p4 2.145% of content differs > 1.250%
+section_spec-1.52-1: styling/assets; raster p5 2.145% of content differs > 1.250%
+section_spec-1.53-1: styling/assets; raster p5 1.759% of content differs > 1.250%
+section_spec-1.58-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+section_spec-1.58-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 4 spike
+section_spec-1.59-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 6 spike
+section_spec-1.59-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 7 Ruby / 6 spike
+section_spec-1.63-1: styling/assets; raster p2 1.845% of content differs > 1.250%
+section_spec-1.66-1: styling/assets; raster p2 1.455% of content differs > 1.250%
+section_spec-1.7-1: styling/assets; raster p1 1.809% of content differs > 1.250%
+section_spec-1.7-2: styling/assets; raster p1 13.075% of content differs > 1.250%
+section_spec-1.70-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+section_spec-1.71-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 8 spike
+section_spec-1.73-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
+section_spec-1.77-1: styling/assets; raster p5 2.371% of content differs > 1.250%
+section_spec-1.8-1: styling/assets; raster p1 10.193% of content differs > 1.250%
+section_spec-1.80.3-1: styling/assets; raster p4 3.074% of content differs > 1.250%
+section_spec-1.9-1: styling/assets; raster p1 2.354% of content differs > 1.250%
+source_spec-1.1.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.1.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.1.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
+source_spec-1.1.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+table_spec-1.10.1-1: geometry, styling/assets; within 1pt 11/13 (84.615%) < 99.500%
+table_spec-1.11.5-1: geometry; within 1pt 9/13 (69.230%) < 99.500%
+table_spec-1.13.10-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 9 Ruby / 7 spike
+table_spec-1.13.16-1: geometry, styling/assets; within 1pt 2/3 (66.666%) < 99.500%
+table_spec-1.13.19-1: geometry, styling/assets; within 1pt 3/6 (50.000%) < 99.500%
+table_spec-1.13.20-1: geometry, styling/assets; within 1pt 4/13 (30.769%) < 99.500%
+table_spec-1.13.21-1: geometry, styling/assets; within 1pt 0/1 (0%) < 99.500%
+table_spec-1.13.22-1: geometry, styling/assets; within 1pt 0/8 (0%) < 99.500%
+table_spec-1.13.23-1: geometry, navigation/metadata, styling/assets; 3 lines indented differently
+table_spec-1.13.5-1: geometry, styling/assets; within 1pt 1/5 (20.000%) < 99.500%
+table_spec-1.13.9-1: missing/extra text, geometry, navigation/metadata; lines: 8 in order of 9 Ruby / 8 spike
+table_spec-1.14.12-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 41 in order of 42 Ruby / 42 spike
+table_spec-1.15.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 8 Ruby / 8 spike
+table_spec-1.17.4-1: missing/extra text, geometry, styling/assets; lines: 7 in order of 7 Ruby / 8 spike
+table_spec-1.4.16-1: styling/assets; raster p1 3.734% of content differs > 1.250%
+table_spec-1.4.17-1: styling/assets; raster p1 2.295% of content differs > 1.250%
+table_spec-1.4.22-1: styling/assets; raster p1 6.480% of content differs > 1.250%
+table_spec-1.4.24-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.25-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.26-1: styling/assets; raster p1 24.097% of content differs > 1.250%
+table_spec-1.4.27-1: styling/assets; raster p1 23.883% of content differs > 1.250%
+table_spec-1.4.31-1: styling/assets; raster p1 4.532% of content differs > 1.250%
+table_spec-1.5.1-1: missing/extra text, geometry; lines: 2 in order of 2 Ruby / 9 spike
+table_spec-1.5.10-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+table_spec-1.5.2-1: missing/extra text, geometry, styling/assets; lines: 2 in order of 2 Ruby / 11 spike
+table_spec-1.5.7-1: styling/assets; raster p1 28.520% of content differs > 1.250%
+table_spec-1.5.8-1: line-wrap change, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+table_spec-1.5.8-2: line-wrap change, geometry, styling/assets; lines: 0 in order of 2 Ruby / 1 spike
+table_spec-1.5.9-1: geometry, styling/assets; within 1pt 1/2 (50.000%) < 99.500%
+table_spec-1.6.10-1: missing/extra text; lines: 26 in order of 26 Ruby / 28 spike
+table_spec-1.6.8-1: missing/extra text; lines: 26 in order of 26 Ruby / 27 spike
+table_spec-1.6.9-1: missing/extra text; lines: 27 in order of 27 Ruby / 28 spike
+thematic_break_spec-1.10-1: styling/assets; raster p1 1.585% of content differs > 1.250%
+thematic_break_spec-1.3-1: geometry, styling/assets; within 1pt 0/1 (0%) < 99.500%
+title_page_spec-1.3.6-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 1 Ruby / 3 spike
+title_page_spec-1.4.3-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+title_page_spec-1.4.4-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+title_page_spec-1.4.5-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 3 vs 2
+title_page_spec-1.4.6-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 1
+title_page_spec-1.5.16-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 2 spike
+title_page_spec-1.5.18-1: unsupported feature, styling/assets; raster p1 11.975% of content differs > 1.250%
+title_page_spec-1.5.31-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 5 vs 4
+title_page_spec-1.5.36-1: styling/assets; raster p1 3.020% of content differs > 1.250%
+title_page_spec-1.5.39-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; pages 2 vs 3
+toc_spec-1.1.1-1: styling/assets; raster p3 7.688% of content differs > 1.250%
+toc_spec-1.1.11-1: styling/assets; raster p6 3.288% of content differs > 1.250%
+toc_spec-1.1.12-1: styling/assets; raster p14 2.358% of content differs > 1.250%
+toc_spec-1.1.13-1: styling/assets; raster p14 2.358% of content differs > 1.250%
+toc_spec-1.1.16-1: styling/assets; raster p4 6.753% of content differs > 1.250%
+toc_spec-1.1.2-1: styling/assets; raster p4 7.688% of content differs > 1.250%
+toc_spec-1.1.22-1: styling/assets; raster p1 1.480% of content differs > 1.250%
+toc_spec-1.1.23-1: styling/assets; raster p1 1.480% of content differs > 1.250%
+toc_spec-1.1.28-1: styling/assets; raster p4 2.472% of content differs > 1.250%
+toc_spec-1.1.28-2: styling/assets; raster p4 2.472% of content differs > 1.250%
+toc_spec-1.1.29-1: styling/assets; raster p7 1.388% of content differs > 1.250%
+toc_spec-1.1.3-1: styling/assets; raster p5 6.335% of content differs > 1.250%
+toc_spec-1.1.30-1: styling/assets; raster p7 1.337% of content differs > 1.250%
+toc_spec-1.1.31-1: styling/assets; raster p5 1.337% of content differs > 1.250%
+toc_spec-1.1.32-1: styling/assets; raster p3 1.392% of content differs > 1.250%
+toc_spec-1.1.34-1: styling/assets; raster p4 7.836% of content differs > 1.250%
+toc_spec-1.1.35-1: styling/assets; raster p2 2.093% of content differs > 1.250%
+toc_spec-1.1.36-1: styling/assets; raster p3 1.677% of content differs > 1.250%
+toc_spec-1.1.37-1: styling/assets; raster p9 2.755% of content differs > 1.250%
+toc_spec-1.1.38-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 5 in order of 6 Ruby / 7 spike
+toc_spec-1.1.39-1: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 8 in order of 9 Ruby / 10 spike
+toc_spec-1.1.4-2: missing/extra text, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 6 spike
+toc_spec-1.1.41-1: styling/assets; raster p3 1.677% of content differs > 1.250%
+toc_spec-1.1.42-1: styling/assets; raster p4 4.429% of content differs > 1.250%
+toc_spec-1.1.43-1: styling/assets; raster p3 1.617% of content differs > 1.250%
+toc_spec-1.1.44-1: styling/assets; raster p4 4.429% of content differs > 1.250%
+toc_spec-1.1.45-1: styling/assets; raster p4 4.429% of content differs > 1.250%
+toc_spec-1.1.46-1: styling/assets; raster p3 1.799% of content differs > 1.250%
+toc_spec-1.1.47-1: styling/assets; raster p3 1.381% of content differs > 1.250%
+toc_spec-1.1.48-1: styling/assets; raster p6 2.490% of content differs > 1.250%
+toc_spec-1.1.49-1: styling/assets; raster p40 2.386% of content differs > 1.250%
+toc_spec-1.1.6-1: styling/assets; raster p6 1.685% of content differs > 1.250%
+toc_spec-1.1.7-1: styling/assets; raster p6 1.685% of content differs > 1.250%
+toc_spec-1.1.9-1: styling/assets; raster p4 1.976% of content differs > 1.250%
+toc_spec-1.10-1: styling/assets; raster p3 2.817% of content differs > 1.250%
+toc_spec-1.11-1: navigation/metadata; structure: outline
+toc_spec-1.12-1: geometry, styling/assets; within 1pt 3/4 (75.000%) < 99.500%
+toc_spec-1.13-1: geometry, navigation/metadata, styling/assets; within 1pt 90/93 (96.774%) < 99.500%
+toc_spec-1.14-1: styling/assets; raster p4 1.810% of content differs > 1.250%
+toc_spec-1.15-1: missing/extra text, geometry, styling/assets; lines: 3 in order of 4 Ruby / 4 spike
+toc_spec-1.16-1: styling/assets; raster p3 2.813% of content differs > 1.250%
+toc_spec-1.2.6-1: styling/assets; raster p3 2.583% of content differs > 1.250%
+toc_spec-1.5-1: styling/assets; raster p3 2.354% of content differs > 1.250%
+toc_spec-1.6-1: styling/assets; raster p3 4.742% of content differs > 1.250%
+toc_spec-1.6-2: styling/assets; raster p3 4.742% of content differs > 1.250%
+toc_spec-1.7-1: styling/assets; raster p3 4.742% of content differs > 1.250%
+toc_spec-1.8-1: styling/assets; raster p3 2.777% of content differs > 1.250%
+toc_spec-1.8-2: styling/assets; raster p3 6.040% of content differs > 1.250%
+toc_spec-1.8-3: styling/assets; raster p3 6.040% of content differs > 1.250%
+toc_spec-1.8-4: styling/assets; raster p3 6.040% of content differs > 1.250%
+toc_spec-1.9-1: styling/assets; raster p3 2.377% of content differs > 1.250%
+toc_spec-1.9-2: styling/assets; raster p3 2.377% of content differs > 1.250%
+verse_spec-1.10-1: styling/assets; raster p1 93.817% of content has flat (fill) differences > 0.500%
+video_spec-1.1.1-1: unsupported feature, missing/extra text, navigation/metadata, styling/assets; lines: 0 in order of 0 Ruby / 1 spike
+xref_spec-1.1.4-1: styling/assets; raster p1 2.093% of content differs > 1.250%
+xref_spec-1.1.5-1: styling/assets; raster p1 1.366% of content differs > 1.250%
+xref_spec-1.1.6-1: styling/assets; raster p1 1.391% of content differs > 1.250%
+xref_spec-1.2.4-1: styling/assets; raster p4 2.432% of content differs > 1.250%
+xref_spec-1.3.4-1: styling/assets; raster p3 2.427% of content differs > 1.250%
+xref_spec-1.3.5-1: styling/assets; raster p3 2.427% of content differs > 1.250%
+xref_spec-1.3.6-1: styling/assets; raster p3 2.427% of content differs > 1.250%
+xref_spec-1.3.7-1: styling/assets; raster p3 2.427% of content differs > 1.250%
