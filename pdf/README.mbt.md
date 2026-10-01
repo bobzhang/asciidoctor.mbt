@@ -9,7 +9,7 @@ Ruby `asciidoctor-pdf` does (same themes, same fonts, same page layout), on top 
 
 * Runs on the `native` and `wasm` targets.
 * Self-contained: asciidoctor-pdf's themes and the fonts they use (Noto Serif, M+ 1mn, Noto Sans,
-  M+ 1p Fallback, Noto Emoji) and prawn-icon's icon fonts (Font Awesome 5, Foundation Icons,
+  M+ 1p Fallback, Noto Emoji) and the icon fonts prawn-icon draws with (Font Awesome 5, Foundation Icons,
   PaymentFont) are bundled; no Ruby, gem or font files are needed.
 
 ## Command line
@@ -119,7 +119,7 @@ repository, which converts with both and compares page count, text, the position
 (±1pt), rasterized pages and PDF structure:
 
 * the gate (36 documents covering every feature above): 36 / 36 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 1977 / 2329 pass (the rest are listed with
+* the conversions of asciidoctor-pdf's own RSpec suite: 1978 / 2329 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
@@ -140,4 +140,5 @@ repository, which converts with both and compares page count, text, the position
 
 MIT (see LICENSE). This is a port of Asciidoctor PDF, Copyright (C) 2014-present OpenDevise Inc.
 and the Asciidoctor Project (MIT). The bundled fonts keep their own licenses (Apache 2.0, SIL OFL
-1.1, M+ FONTS, MIT); see NOTICE and `fonts/LICENSES`.
+1.1, M+ FONTS, MIT), and the icon names come from the icon fonts' own projects; see NOTICE and
+`fonts/LICENSES`.

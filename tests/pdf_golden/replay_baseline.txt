@@ -3,9 +3,9 @@
 
 records: 2440
 replayed: 2329 / 2440
-  pass: 1977 / 2329
-  fail: 352 / 2329 (352 listed as known, 0 new)
-  theme-dependent: 1229 / 2329 (pass 1031)
+  pass: 1978 / 2329
+  fail: 351 / 2329 (351 listed as known, 0 new)
+  theme-dependent: 1229 / 2329 (pass 1032)
   default theme: 1100 / 2329 (pass 946)
 not replayed, skipped: 111 / 2440
 
@@ -34,17 +34,17 @@ replayed by status:
 failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): 0 / 2329
 
 failing records by category (a record can be in several):
-  267	styling/assets
-  194	geometry
+  266	styling/assets
+  193	geometry
   112	navigation/metadata
-  104	missing/extra text
+  103	missing/extra text
   61	unsupported feature
   44	page break/extra pages
   22	reading order
   8	line-wrap change
 
 failing records by first gate failure:
-  101	lines
+  100	lines
   86	raster
   58	geometry (within 1pt)
   35	pages
@@ -60,12 +60,12 @@ failing records by first gate failure:
   2	structure: page boxes
 
 failing records by gate failure (any):
-  249	raster
-  154	raster (flat fills)
+  248	raster
+  153	raster (flat fills)
   147	geometry (within 1pt)
-  135	lines
-  113	coverage
-  104	words
+  134	lines
+  112	coverage
+  103	words
   58	structure: outline
   52	structure: destinations
   51	structure: fonts
@@ -98,7 +98,7 @@ failing records reporting unsupported content (kind, what):
 
 by spec file: pass / replayed (records, theme-dependent)
   abstract_spec: 27 / 37 (38, themes 29)
-  admonition_spec: 64 / 77 (83, themes 53)
+  admonition_spec: 65 / 77 (83, themes 53)
   api_spec: 2 / 2 (2, themes 0)
   arrange_block_spec: 91 / 97 (111, themes 111)
   audio_spec: 4 / 4 (4, themes 0)

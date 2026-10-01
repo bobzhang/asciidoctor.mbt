@@ -20,7 +20,6 @@ admonition_spec-1.20.18-1: geometry, styling/assets; within 1pt 12/13 (92.307%) 
 admonition_spec-1.20.3-1: geometry, styling/assets; within 1pt 0/30 (0%) < 99.500%
 admonition_spec-1.20.5-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
 admonition_spec-1.20.6-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
-admonition_spec-1.20.7-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
 admonition_spec-1.20.8-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
 admonition_spec-1.3-1: navigation/metadata; structure: destinations
 admonition_spec-1.3-2: navigation/metadata; structure: destinations
