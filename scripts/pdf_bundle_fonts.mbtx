@@ -8,8 +8,9 @@
 //   pdf/fonts/sans      default-sans: Noto Sans
 //   pdf/fonts/fallback  default-with-font-fallbacks: M+ 1p Fallback, Noto
 //                       Emoji
-//   pdf/fonts/icons     prawn-icon 3.0.0's icon fonts and legends
-//                       (`icons=font`)
+//   pdf/fonts/icons     the icon fonts prawn-icon 3.0.0 ships (`icons=font`)
+//                       and, for each, the names of its icons
+//                       (`<set>/glyphs.txt`)
 //
 // Each file is zlib-compressed and ASCII85-armoured (as pagelayout bundles
 // its fonts), split into string literals of `chunk` characters;
@@ -19,6 +20,25 @@
 // 3.0.0's `data/fonts`, from the gems installed in .repos/gems-pdf (see
 // scripts/pdf_compare.mbtx).
 //
+// The icon names (`name: glyph` per line) are not prawn-icon's legends
+// (`<set>/<set>.yml`, under prawn-icon's license) but come from the icon
+// fonts' own projects:
+//   fas, far, fab  the glyph names of the Font Awesome 5.15.1 fonts
+//                  themselves (`post` table, through the `cmap`)
+//   fi             Foundation Icons 3.0's foundation-icons.css (MIT, ZURB;
+//                  zurb/foundation-icon-fonts afed003, whose
+//                  foundation-icons.ttf is byte-identical to prawn-icon's),
+//                  in scripts/pdf_icon_names; the font's glyphs are only
+//                  named `uniF100`...
+//   pf             PaymentFont 1.2.5's sass/_variables.scss (MIT; tag
+//                  1.2.5 of AlexanderPoellmann/PaymentFont, whose
+//                  paymentfont-webfont.ttf is byte-identical to
+//                  prawn-icon's), in scripts/pdf_icon_names; the font has
+//                  no glyph names
+// Every table is checked against prawn-icon's legend: the same names with
+// the same code points, each in the font's `cmap` (the run fails
+// otherwise), so icons render exactly as with prawn-icon.
+//
 // Usage: moon run --target native scripts/pdf_bundle_fonts.mbtx
 import {
   "moonbitlang/async@0.22.4",
@@ -26,6 +46,7 @@ import {
   "moonbitlang/pdflite@0.3.1",
   "moonbitlang/pdflite/flate",
   "moonbitlang/pdflite/codec",
+  "moonbitlang/core/encoding/utf8",
 }
 
 ///|
@@ -39,23 +60,36 @@ let icon_fonts : String = ".repos/gems-pdf/gems/prawn-icon-3.0.0/data/fonts"
 let chunk : Int = 32768
 
 ///|
+/// Where a bundled file comes from: a file, or the icon names of an icon
+/// set (see `icon_names`).
+enum Source {
+  File(String)
+  IconNames(String)
+}
+
+///|
 /// A package to generate: its directory, a description of what it bundles,
-/// and its files (the name a theme or prawn-icon knows the file by, and the
-/// path of the source).
+/// and its files (the name a theme or prawn-icon knows the file by, and its
+/// source).
 struct Pack {
   dir : String
   what : String
-  files : Array[(String, String)]
+  files : Array[(String, Source)]
 }
 
 ///|
-fn gem(name : String) -> (String, String) {
-  (name, "\{gem_fonts}/\{name}")
+fn gem(name : String) -> (String, Source) {
+  (name, File("\{gem_fonts}/\{name}"))
 }
 
 ///|
-fn icon(name : String) -> (String, String) {
-  (name, "\{icon_fonts}/\{name}")
+fn icon(name : String) -> (String, Source) {
+  (name, File("\{icon_fonts}/\{name}"))
+}
+
+///|
+fn icon_names(set : String) -> (String, Source) {
+  ("\{set}/glyphs.txt", IconNames(set))
 }
 
 ///|
@@ -92,21 +126,332 @@ let packs : Array[Pack] = [
   },
   {
     dir: "pdf/fonts/icons",
-    what: "prawn-icon 3.0.0's icon fonts and legends (data/fonts)",
+    what: "the icon fonts of prawn-icon 3.0.0 (data/fonts) and their icon names",
     files: [
       icon("fab/fa-brands.ttf"),
-      icon("fab/fab.yml"),
+      icon_names("fab"),
       icon("far/fa-regular.ttf"),
-      icon("far/far.yml"),
+      icon_names("far"),
       icon("fas/fa-solid.ttf"),
-      icon("fas/fas.yml"),
+      icon_names("fas"),
       icon("fi/foundation-icons.ttf"),
-      icon("fi/fi.yml"),
+      icon_names("fi"),
       icon("pf/paymentfont-webfont.ttf"),
-      icon("pf/pf.yml"),
+      icon_names("pf"),
     ],
   },
 ]
+
+///|
+/// The icon sets: name, font (in prawn-icon's `data/fonts`), and where the
+/// icon names come from (see the header).
+let icon_sets : Array[(String, String, IconNameSource)] = [
+  ("fab", "fab/fa-brands.ttf", GlyphNames),
+  ("far", "far/fa-regular.ttf", GlyphNames),
+  ("fas", "fas/fa-solid.ttf", GlyphNames),
+  (
+    "fi",
+    "fi/foundation-icons.ttf",
+    Css("scripts/pdf_icon_names/foundation-icons.css", ".fi-", ":before { content: \""),
+  ),
+  (
+    "pf",
+    "pf/paymentfont-webfont.ttf",
+    Css("scripts/pdf_icon_names/paymentfont-variables.scss", "$pf-var-", ": \""),
+  ),
+]
+
+///|
+/// Where an icon set's names come from: the font's glyph names, or the
+/// lines `<prefix>name<separator>\XXXX"` of a stylesheet.
+enum IconNameSource {
+  GlyphNames
+  Css(String, String, String)
+}
+
+///|
+fn u16(b : Bytes, o : Int) -> Int {
+  (b[o].to_int() << 8) | b[o + 1].to_int()
+}
+
+///|
+fn u32(b : Bytes, o : Int) -> Int {
+  (u16(b, o) << 16) | u16(b, o + 2)
+}
+
+///|
+/// The offset of table `tag` of a TrueType font.
+fn sfnt_table(b : Bytes, tag : String) -> Int? {
+  for i in 0..<u16(b, 4) {
+    let rec = 12 + 16 * i
+    let t = StringBuilder()
+    for j in 0..<4 {
+      t.write_char(b[rec + j].to_int().unsafe_to_char())
+    }
+    if t.to_string() == tag {
+      return Some(u32(b, rec + 8))
+    }
+  }
+  None
+}
+
+///|
+/// The 258 standard Macintosh glyph names, which a `post` table of format
+/// 2.0 refers to by index (Font Awesome's `apple` and `less` are two).
+let mac_glyph_names : Array[String] = [
+  ".notdef", ".null", "nonmarkingreturn", "space", "exclam", "quotedbl", "numbersign",
+  "dollar", "percent", "ampersand", "quotesingle", "parenleft", "parenright",
+  "asterisk", "plus", "comma", "hyphen", "period", "slash", "zero", "one", "two",
+  "three", "four", "five", "six", "seven", "eight", "nine", "colon", "semicolon",
+  "less", "equal", "greater", "question", "at", "A", "B", "C", "D", "E", "F", "G",
+  "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
+  "X", "Y", "Z", "bracketleft", "backslash", "bracketright", "asciicircum",
+  "underscore", "grave", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",
+  "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+  "braceleft", "bar", "braceright", "asciitilde", "Adieresis", "Aring", "Ccedilla",
+  "Eacute", "Ntilde", "Odieresis", "Udieresis", "aacute", "agrave", "acircumflex",
+  "adieresis", "atilde", "aring", "ccedilla", "eacute", "egrave", "ecircumflex",
+  "edieresis", "iacute", "igrave", "icircumflex", "idieresis", "ntilde", "oacute",
+  "ograve", "ocircumflex", "odieresis", "otilde", "uacute", "ugrave", "ucircumflex",
+  "udieresis", "dagger", "degree", "cent", "sterling", "section", "bullet",
+  "paragraph", "germandbls", "registered", "copyright", "trademark", "acute",
+  "dieresis", "notequal", "AE", "Oslash", "infinity", "plusminus", "lessequal",
+  "greaterequal", "yen", "mu", "partialdiff", "summation", "product", "pi",
+  "integral", "ordfeminine", "ordmasculine", "Omega", "ae", "oslash",
+  "questiondown", "exclamdown", "logicalnot", "radical", "florin", "approxequal",
+  "Delta", "guillemotleft", "guillemotright", "ellipsis", "nonbreakingspace",
+  "Agrave", "Atilde", "Otilde", "OE", "oe", "endash", "emdash", "quotedblleft",
+  "quotedblright", "quoteleft", "quoteright", "divide", "lozenge", "ydieresis",
+  "Ydieresis", "fraction", "currency", "guilsinglleft", "guilsinglright", "fi",
+  "fl", "daggerdbl", "periodcentered", "quotesinglbase", "quotedblbase",
+  "perthousand", "Acircumflex", "Ecircumflex", "Aacute", "Edieresis", "Egrave",
+  "Iacute", "Icircumflex", "Idieresis", "Igrave", "Oacute", "Ocircumflex", "apple",
+  "Ograve", "Uacute", "Ucircumflex", "Ugrave", "dotlessi", "circumflex", "tilde",
+  "macron", "breve", "dotaccent", "ring", "cedilla", "hungarumlaut", "ogonek",
+  "caron", "Lslash", "lslash", "Scaron", "scaron", "Zcaron", "zcaron", "brokenbar",
+  "Eth", "eth", "Yacute", "yacute", "Thorn", "thorn", "minus", "multiply",
+  "onesuperior", "twosuperior", "threesuperior", "onehalf", "onequarter",
+  "threequarters", "franc", "Gbreve", "gbreve", "Idotaccent", "Scedilla",
+  "scedilla", "Cacute", "cacute", "Ccaron", "ccaron", "dcroat",
+]
+
+///|
+/// Icons a Font Awesome font has no glyph for, which prawn-icon's legends
+/// list all the same: (set, name, code point), from Font Awesome 5.15.1's
+/// own metadata (metadata/icons.yml: `unicode` of an icon listing the
+/// set's style, marked `private`). Prawn draws the font's missing glyph for
+/// them; they are kept so that the icons render as they do with prawn-icon.
+let metadata_only_icons : Array[(String, String, Int)] = [
+  ("fab", "font-awesome-logo-full", 0xf4e6),
+  ("far", "font-awesome-logo-full", 0xf4e6),
+  ("fas", "font-awesome-logo-full", 0xf4e6),
+]
+
+///|
+/// The glyph names of a font's `post` table (format 2.0), by glyph id.
+fn post_glyph_names(b : Bytes) -> Array[String?] {
+  guard sfnt_table(b, "post") is Some(p) && u32(b, p) == 0x20000 else {
+    abort("the font has no post table of format 2.0")
+  }
+  let n = u16(b, p + 32)
+  let index = Array::makei(n, i => u16(b, p + 34 + 2 * i))
+  let names : Array[String] = []
+  let mut o = p + 34 + 2 * n
+  while o < b.length() {
+    let len = b[o].to_int()
+    if o + 1 + len > b.length() {
+      break
+    }
+    let sb = StringBuilder()
+    for j in 0..<len {
+      sb.write_char(b[o + 1 + j].to_int().unsafe_to_char())
+    }
+    names.push(sb.to_string())
+    o += 1 + len
+  }
+  index.map(i => if i >= 258 { names.get(i - 258) } else { Some(mac_glyph_names[i]) })
+}
+
+///|
+/// The Unicode `cmap` of a font (platform 3, encoding 1, format 4): code
+/// point → glyph id.
+fn unicode_cmap(b : Bytes) -> Map[Int, Int] {
+  guard sfnt_table(b, "cmap") is Some(c) else { abort("the font has no cmap") }
+  let out : Map[Int, Int] = Map([])
+  for i in 0..<u16(b, c + 2) {
+    let rec = c + 4 + 8 * i
+    let off = c + u32(b, rec + 4)
+    if u16(b, rec) != 3 || u16(b, rec + 2) != 1 || u16(b, off) != 4 {
+      continue
+    }
+    let segs = u16(b, off + 6) / 2
+    let ends = off + 14
+    let starts = ends + 2 * segs + 2
+    let deltas = starts + 2 * segs
+    let ranges = deltas + 2 * segs
+    for s in 0..<segs {
+      let start = u16(b, starts + 2 * s)
+      let delta = u16(b, deltas + 2 * s)
+      let range = u16(b, ranges + 2 * s)
+      for cp in start..=u16(b, ends + 2 * s) {
+        if cp == 0xFFFF {
+          continue
+        }
+        let gid = if range == 0 {
+          (cp + delta) & 0xFFFF
+        } else {
+          let g = u16(b, ranges + 2 * s + range + 2 * (cp - start))
+          if g == 0 {
+            0
+          } else {
+            (g + delta) & 0xFFFF
+          }
+        }
+        if gid != 0 {
+          out[cp] = gid
+        }
+      }
+    }
+  }
+  out
+}
+
+///|
+fn hex_value(s : String) -> Int {
+  let mut v = 0
+  for c in s {
+    v = v * 16 +
+      (match c {
+        '0'..='9' => c.to_int() - '0'.to_int()
+        'a'..='f' => c.to_int() - 'a'.to_int() + 10
+        'A'..='F' => c.to_int() - 'A'.to_int() + 10
+        _ => abort("not hexadecimal: \{s}")
+      })
+  }
+  v
+}
+
+///|
+/// The icon names of a set: name → code point, sorted by name.
+async fn derive_icon_names(
+  set : String,
+  font : Bytes,
+  source : IconNameSource,
+) -> Array[(String, Int)] {
+  let map : Map[String, Int] = Map([])
+  match source {
+    GlyphNames => {
+      let names = post_glyph_names(font)
+      for cp, gid in unicode_cmap(font) {
+        guard names.get(gid) is Some(Some(name)) else { continue }
+        match map.get(name) {
+          // a glyph under several code points: the lowest
+          Some(other) if other < cp => ()
+          _ => map[name] = cp
+        }
+      }
+      for entry in metadata_only_icons {
+        let (s, name, cp) = entry
+        if s == set && !map.contains(name) {
+          map[name] = cp
+        }
+      }
+    }
+    Css(path, prefix, separator) =>
+      for line in @fs.read_file(path).text().split("\n") {
+        let line = line.trim().to_owned()
+        guard line.has_prefix(prefix) && line.find(separator) is Some(i) else {
+          continue
+        }
+        let name = line[prefix.length():i].to_owned()
+        let rest = line[i + separator.length():].to_owned()
+        guard rest.has_prefix("\\") && rest.find("\"") is Some(j) else {
+          abort("\{path}: unexpected line: \{line}")
+        }
+        map[name] = hex_value(rest[1:j].to_owned())
+      }
+  }
+  let entries = map.to_array()
+  entries.sort_by((a, b) => a.0.compare(b.0))
+  entries
+}
+
+///|
+/// prawn-icon's legend of a set (`<set>/<set>.yml`): name → code point.
+async fn prawn_icon_legend(set : String) -> Map[String, Int] {
+  let map : Map[String, Int] = Map([])
+  for line in @fs.read_file("\{icon_fonts}/\{set}/\{set}.yml").text().split("\n") {
+    let line = line.trim().to_owned()
+    guard line.find(": ") is Some(i) && !line.has_prefix("__") else {
+      continue
+    }
+    let name = line[:i].to_owned()
+    let value = line[i + 2:].to_owned()
+    guard value.has_prefix("\"") && value.has_suffix("\"") else { continue }
+    let value = value[1:value.length() - 1].to_owned()
+    map[name] = if value.has_prefix("\\u") {
+      hex_value(value[2:].to_owned())
+    } else {
+      guard value.iter().collect() is [c] else {
+        abort("\{set}.yml: unexpected value of \{name}")
+      }
+      c.to_int()
+    }
+  }
+  map
+}
+
+///|
+/// The icon names of `set` as bundled: `name: glyph` lines (the glyph as
+/// the character itself), checked against prawn-icon's legend.
+async fn icon_names_file(set : String) -> Bytes {
+  guard icon_sets.search_by(s => s.0 == set) is Some(i) else {
+    abort("unknown icon set \{set}")
+  }
+  let (_, font_file, source) = icon_sets[i]
+  let font = @fs.read_file("\{icon_fonts}/\{font_file}").binary()
+  guard mac_glyph_names.length() == 258 else {
+    abort("\{mac_glyph_names.length()} standard Macintosh glyph names")
+  }
+  let entries = derive_icon_names(set, font, source)
+  let cmap = unicode_cmap(font)
+  let legend = prawn_icon_legend(set)
+  let problems = []
+  let derived : Map[String, Int] = Map::from_array(entries)
+  for name, cp in legend {
+    match derived.get(name) {
+      Some(c) if c == cp => ()
+      Some(c) =>
+        problems.push(
+          "\{name}: U+\{c.to_string(radix=16)}, prawn-icon U+\{cp.to_string(radix=16)}",
+        )
+      None => problems.push("\{name}: missing (prawn-icon U+\{cp.to_string(radix=16)})")
+    }
+  }
+  for entry in entries {
+    let (name, cp) = entry
+    if !legend.contains(name) {
+      problems.push("\{name}: not in prawn-icon's legend")
+    }
+    if !cmap.contains(cp) &&
+      !metadata_only_icons.contains((set, name, cp)) {
+      problems.push("\{name}: U+\{cp.to_string(radix=16)} is not in the font")
+    }
+  }
+  if !problems.is_empty() {
+    abort("\{set}: the icon names differ from prawn-icon's:\n" + problems.join("\n"))
+  }
+  println(
+    "\{set}: \{entries.length()} icon names, identical to prawn-icon's legend",
+  )
+  let sb = StringBuilder()
+  for entry in entries {
+    sb.write_string("\{entry.0}: ")
+    sb.write_char(entry.1.unsafe_to_char())
+    sb.write_char('\n')
+  }
+  @utf8.encode(sb.to_string())
+}
 
 ///|
 /// License and notice files copied to pdf/fonts/LICENSES: (source, name).
@@ -121,7 +466,7 @@ let licenses : Array[(String, String)] = [
   ("\{icon_fonts}/fas/LICENSE", "LICENSE-fontawesome"),
   ("\{icon_fonts}/fi/LICENSE", "LICENSE-foundation-icons"),
   ("\{icon_fonts}/pf/LICENSE", "LICENSE-paymentfont"),
-  ("\{icon_fonts}/../../LICENSE", "LICENSE-prawn-icon"),
+  ("scripts/pdf_icon_names/LICENSE-paymentfont", "LICENSE-paymentfont-1.2.5"),
 ]
 
 ///|
@@ -167,7 +512,10 @@ async fn generate(pack : Pack) -> Unit {
   let mut packed = 0
   for file in pack.files {
     let (name, source) = file
-    let data = @fs.read_file(source).binary()
+    let data = match source {
+      File(path) => @fs.read_file(path).binary()
+      IconNames(set) => icon_names_file(set)
+    }
     let armoured = @codec.pdf_ascii85_encode(
       @flate.pdf_flate_encode_with_level(data, 9),
     )

@@ -2,4 +2,8 @@ import {
   "bobzhang/asciidoctor-pdf/fonts",
 }
 
+import {
+  "moonbitlang/core/encoding/utf8",
+} for "test"
+
 supported_targets = "native+wasm"

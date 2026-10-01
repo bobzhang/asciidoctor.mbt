@@ -340,17 +340,25 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
   // loaded with it, when the document may ask for font icons)
   let icon_sets : Array[IconSet] = []
   let sources = session().registration
-  let read_icon_file : ((String) -> Bytes?)? = match
+  // each set's font and its icon names: prawn-icon's legend in a copy of
+  // its `data/fonts`, the bundle's own table otherwise (see `@icons.fonts`)
+  let read_icon_set : ((String, String, String) -> (Bytes?, Bytes?))? = match
     (sources.icon_fonts_dir, sources.icon_bundle) {
     _ if !may_use_font_icons(doc) && !theme_uses_icon_fonts(theme) => None
-    (Some(dir), _) => Some(file => vfs.read(dir + "/" + file))
-    (None, Some(bundle)) => Some(file => bundle.get(file))
+    (Some(dir), _) =>
+      Some((_, font, legend) => {
+        (vfs.read(dir + "/" + font), vfs.read(dir + "/" + legend))
+      })
+    (None, Some(bundle)) =>
+      Some((name, font, _) => {
+        (bundle.get(font), bundle.get("\{name}/glyphs.txt"))
+      })
     (None, None) => None
   }
-  if read_icon_file is Some(read) {
+  if read_icon_set is Some(read) {
     for entry in default_icon_font_files() {
       let (name, font, legend) = entry
-      match (read(font), read(legend)) {
+      match read(name, font, legend) {
         (Some(font), Some(legend)) =>
           icon_sets.push({ name, font, legend: @core.decode_text(legend), })
         _ => ()

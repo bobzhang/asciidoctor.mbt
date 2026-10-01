@@ -174,7 +174,7 @@ fn load_face(
 pub struct FontCatalog {
   priv faces : Map[String, Face]
   priv registry : @fonts.FontRegistry
-  /// icon set (`fas`) → icon name → glyph (prawn-icon's legends)
+  /// icon set (`fas`) → icon name → glyph (see `IconSet`)
   priv icons : Map[String, Map[String, String]]
   /// Font Awesome 4 icon name (`fa-save`) → set and name (`far-save`)
   /// (asciidoctor-pdf's `fa-legacy-mapping.yml`)
@@ -185,12 +185,52 @@ pub struct FontCatalog {
 
 ///|
 /// An icon font of prawn-icon (`data/fonts/<set>/`): the set's name (`fas`,
-/// `far`, `fab`, `fi`, `pf`), its TrueType font and its legend (`<set>.yml`,
-/// which names each glyph).
+/// `far`, `fab`, `fi`, `pf`), its TrueType font and its legend, which names
+/// each glyph: `name: glyph` lines (`fire: "…"`, under the set's key in
+/// prawn-icon's `<set>.yml`; the bundled `@icons.fonts()` have their own
+/// tables, `<set>/glyphs.txt`, made from the fonts' projects).
 pub(all) struct IconSet {
   name : String
   font : Bytes
   legend : String
+}
+
+///|
+/// A double-quoted YAML scalar's `\uXXXX` escapes decoded (prawn-icon's
+/// `fi.yml` writes its glyphs so).
+fn decode_unicode_escapes(value : String) -> String {
+  guard value.contains("\\u") else { return value }
+  let sb = StringBuilder()
+  let chars = value.iter().collect()
+  let mut i = 0
+  let digit = (c : Char) => {
+    match c {
+      '0'..='9' => Some(c.to_int() - '0'.to_int())
+      'a'..='f' => Some(c.to_int() - 'a'.to_int() + 10)
+      'A'..='F' => Some(c.to_int() - 'A'.to_int() + 10)
+      _ => None
+    }
+  }
+  while i < chars.length() {
+    if chars[i] == '\\' && i + 5 < chars.length() && chars[i + 1] == 'u' {
+      let mut code = 0
+      let mut valid = true
+      for j in (i + 2)..<(i + 6) {
+        match digit(chars[j]) {
+          Some(d) => code = code * 16 + d
+          None => valid = false
+        }
+      }
+      if valid {
+        sb.write_char(code.unsafe_to_char())
+        i += 6
+        continue
+      }
+    }
+    sb.write_char(chars[i])
+    i += 1
+  }
+  sb.to_string()
 }
 
 ///|
@@ -210,11 +250,11 @@ fn parse_flat_yaml(text : String) -> Map[String, String] {
       continue
     }
     let mut value = line[i + 2:].trim().to_owned()
-    if value.length() >= 2 &&
-      (
-        (value.has_prefix("\"") && value.has_suffix("\"")) ||
-        (value.has_prefix("'") && value.has_suffix("'"))
-      ) {
+    if value.length() >= 2 && value.has_prefix("\"") && value.has_suffix("\"") {
+      value = decode_unicode_escapes(value[1:value.length() - 1].to_owned())
+    } else if value.length() >= 2 &&
+      value.has_prefix("'") &&
+      value.has_suffix("'") {
       value = value[1:value.length() - 1].to_owned()
     }
     map[key] = value
