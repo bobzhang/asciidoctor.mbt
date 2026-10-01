@@ -22,10 +22,18 @@ test "ruby_capitalize titlecases the first character as Ruby does" {
 
 ///|
 test "attribute_modified matches Ruby's @attributes_modified" {
-  // Ruby records an attribute the document unsets in its header, not the
-  // ones it sets there: @attributes_modified is ["sectids"] here
-  let doc = @asciidoctor.load("= Title\n:icons: font\n:!sectids:\n\ntext\n")
+  // values checked against Ruby Asciidoctor: header entries that set or
+  // unset are recorded; in the body only unsetting is; `icons` is locked in
+  // the default secure mode, so its entry is ignored
+  let doc = @asciidoctor.load(
+    "= Title\n:hset: x\n:!hunset:\n:icons: font\n:!sectids:\n\n:bset: y\n\n:!bunset:\n\ntext\n",
+  )
+  doc.convert() |> ignore
+  inspect(doc.attribute_modified("hset"), content="true")
+  inspect(doc.attribute_modified("hunset"), content="true")
   inspect(doc.attribute_modified("sectids"), content="true")
+  inspect(doc.attribute_modified("bset"), content="false")
+  inspect(doc.attribute_modified("bunset"), content="true")
   inspect(doc.attribute_modified("icons"), content="false")
   inspect(doc.attribute_modified("doctype"), content="false")
 }
