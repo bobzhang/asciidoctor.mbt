@@ -45,6 +45,71 @@ pub struct SvgDocument {
   priv elements_by_id : Map[String, Node]
   priv gradients : Map[String, GradientElement]
   priv mut env : Environment?
+  /// the work budget, shared with the SVG documents drawn inside this one
+  priv mut limits : Limits
+  /// how many SVG documents this one is drawn inside (0 at the top)
+  priv mut nesting : Int
+  /// how many elements are being processed, one inside the other
+  priv mut depth : Int
+  /// the elements being processed, innermost last (`Element` uids, shared
+  /// by the copies `<use>` makes): a reference must not lead back to one
+  priv active : Array[Int]
+  /// the gradients being read (ids): an `href` must not lead back to one
+  priv resolving : Array[String]
+  /// the first element with each id, once `find_raw` needs it
+  priv mut raw_ids : Map[String, Element]?
+}
+
+///|
+/// What drawing an SVG may cost. Nothing in an SVG is unbounded on its
+/// own (the tree is at most `max_xml_depth` deep, references never lead
+/// back to an element being processed), but references multiply: ten
+/// `<use>`s of a group of ten `<use>`s of ... draw 10^n elements. Every
+/// element processed and every call copied (clip paths, markers) is paid
+/// for from this budget, which is shared by the SVG images drawn inside
+/// the document.
+priv struct Limits {
+  mut work : Int
+}
+
+///|
+/// The work budget of a document and the SVG images in it. A drawing
+/// that legitimately needs more is far beyond what prawn-svg can render.
+let max_work : Int = 250_000
+
+///|
+/// The deepest elements may be processed one inside the other, counting
+/// the elements each `<use>` brings in.
+let max_depth : Int = 512
+
+///|
+/// The deepest SVG documents may be drawn inside each other (`<image>`s
+/// of SVG documents).
+let max_nesting : Int = 8
+
+///|
+/// Pay for `units` of work; false (with a warning, once) when the budget
+/// is exhausted, and the work must not be done.
+fn SvgDocument::spend(self : SvgDocument, units : Int) -> Bool {
+  if self.limits.work > max_work {
+    return false
+  }
+  self.limits.work += units
+  if self.limits.work > max_work {
+    self.warnings.push(
+      "SVG is too complex to render in full; skipping the rest of it",
+    )
+    return false
+  }
+  true
+}
+
+///|
+/// Add a warning unless it was already given.
+fn SvgDocument::warn_once(self : SvgDocument, message : String) -> Unit {
+  if !self.warnings.contains(message) {
+    self.warnings.push(message)
+  }
 }
 
 ///|
@@ -87,6 +152,12 @@ pub fn SvgDocument::parse(
     elements_by_id: {},
     gradients: {},
     env: None,
+    limits: { work: 0, },
+    nesting: 0,
+    depth: 0,
+    active: [],
+    resolving: [],
+    raw_ids: None,
   }
 }
 
@@ -94,12 +165,21 @@ pub fn SvgDocument::parse(
 /// The first element of the tree whose `id` is `id` (prawn-svg's XPath
 /// fallback for references to elements not processed yet).
 fn SvgDocument::find_raw(self : SvgDocument, id : String) -> Element? {
-  for e in self.root.descendants() {
-    if e.attr("id") == Some(id) {
-      return Some(e)
+  let ids = match self.raw_ids {
+    Some(ids) => ids
+    None => {
+      // indexed once: a scan per reference is quadratic
+      let ids : Map[String, Element] = Map([])
+      for e in self.root.descendants() {
+        if e.attr("id") is Some(i) && !ids.contains(i) {
+          ids[i] = e
+        }
+      }
+      self.raw_ids = Some(ids)
+      ids
     }
   }
-  None
+  ids.get(id)
 }
 
 ///|
@@ -117,6 +197,7 @@ pub fn SvgDocument::render(
   page_height~ : Double,
   stack~ : TransformationStack,
 ) -> Array[@pagelayout.GraphicOp] {
+  self.limits.work = 0
   let calls = self.calls(env)
   let ops = []
   if calls is Some(calls) {
@@ -149,6 +230,9 @@ fn SvgDocument::calls(self : SvgDocument, env : Environment) -> Array[Call]? {
   self.warnings.clear()
   self.elements_by_id.clear()
   self.gradients.clear()
+  self.depth = 0
+  self.active.clear()
+  self.resolving.clear()
   let calls = []
   let root = Node::new(self, Root, Some(self.root), calls, State::new(sizing))
   root.process()

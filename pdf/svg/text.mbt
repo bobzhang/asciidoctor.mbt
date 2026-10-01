@@ -247,22 +247,31 @@ fn Node::parse_text_step(self : Node) -> Unit raise Skip {
   }
   self.items = []
   guard self.source is Some(source) else { return }
-  let children = if self.name == "tref" {
+  // the children, and the element they are the children of
+  let (children, parent) = if self.name == "tref" {
     match self.href() {
-      Some(h) if h.has_prefix("#") =>
-        match
-          self.doc.elements_by_id.get(
-            h.unsafe_substring(start=1, end=h.length()),
-          ) {
-          Some(node) if node.name == "text" =>
-            node.source.map(s => s.children).unwrap_or([])
-          _ => []
+      Some(h) if h.has_prefix("#") => {
+        let id = h.unsafe_substring(start=1, end=h.length())
+        match self.doc.elements_by_id.get(id) {
+          Some({ name: "text", source: Some(s), .. }) => {
+            // the text it refers to must not contain it
+            if self.doc.active.contains(s.uid) {
+              raise SkipWarning(
+                "tref tag has a circular reference to '#\{id}'; skipping tag",
+              )
+            }
+            (s.children, s)
+          }
+          _ => ([], source)
         }
-      _ => []
+      }
+      _ => ([], source)
     }
   } else {
-    source.children
+    (source.children, source)
   }
+  self.doc.active.push(parent.uid)
+  defer ignore(self.doc.active.pop())
   for child in children {
     match child {
       Text(t) => self.append_text(t)

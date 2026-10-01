@@ -102,6 +102,20 @@ fn Call::copy(self : Call) -> Call {
 }
 
 ///|
+/// The number of calls in `calls`, those in blocks included (what copying
+/// them costs).
+fn call_count(calls : Array[Call]) -> Int {
+  let mut n = 0
+  for call in calls {
+    n += 1
+    if call.block() is Some(children) {
+      n += call_count(children)
+    }
+  }
+  n
+}
+
+///|
 /// The children of a call with a block.
 fn Call::block(self : Call) -> Array[Call]? {
   match self {

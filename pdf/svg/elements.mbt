@@ -390,6 +390,30 @@ fn Node::extract_attributes_and_properties(self : Node) -> Unit {
 
 ///|
 fn Node::process(self : Node) -> Unit {
+  let doc = self.doc
+  if !doc.spend(1) {
+    return
+  }
+  if doc.depth >= max_depth {
+    doc.warn_once(
+      "SVG elements are nested too deeply; skipping the deepest ones",
+    )
+    return
+  }
+  doc.depth += 1
+  let uid = match self.source {
+    Some(s) => {
+      doc.active.push(s.uid)
+      true
+    }
+    None => false
+  }
+  defer {
+    doc.depth -= 1
+    if uid {
+      ignore(doc.active.pop())
+    }
+  }
   if self.kind == TextElement {
     self.process_text()
     return
@@ -522,6 +546,9 @@ fn Node::apply_clip_path(self : Node) -> Unit {
   match self.url_reference(Some(value), "clipPath") {
     None => self.warn("Could not resolve clip-path URI to a clipPath element")
     Some(clip) => {
+      if !self.doc.spend(call_count(clip.base_calls)) {
+        return
+      }
       self.enter(SaveState([]))
       for call in clip.base_calls {
         self.add(call.copy())

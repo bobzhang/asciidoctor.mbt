@@ -261,14 +261,54 @@ fn point_on_line(
 let kappa : Double = 4.0 * ((2.0 : Double).sqrt() - 1.0) / 3.0
 
 ///|
+/// What ends a call with a block once its children have run.
+priv enum Epilogue {
+  NoEpilogue
+  /// restore both graphics states (a transformation or transparency block)
+  RestoreBoth
+  /// restore the graphics state only (Prawn's `save_graphics_state` block)
+  RestoreState
+  /// paint the path the children built
+  PaintPath(PaintKind, Bool)
+  /// restore the character spacing
+  RestoreSpacing(Double)
+  /// restore the text rendering mode
+  RestoreMode(String)
+}
+
+///|
+priv struct Frame {
+  calls : Array[Call]
+  mut next : Int
+  epilogue : Epilogue
+}
+
+///|
+/// Run the calls. Blocks nest as deep as the SVG's elements (and the
+/// elements `<use>` brings in) do, so they are run from an explicit stack
+/// rather than by recursion.
 fn Lowering::run(self : Lowering, calls : Array[Call]) -> Unit {
-  for call in calls {
-    self.call(call)
+  let frames = [Frame::{ calls, next: 0, epilogue: NoEpilogue }]
+  while frames.last() is Some(frame) {
+    if frame.next < frame.calls.length() {
+      let call = frame.calls[frame.next]
+      frame.next += 1
+      match self.call(call) {
+        Some((children, epilogue)) =>
+          frames.push({ calls: children, next: 0, epilogue })
+        None => ()
+      }
+    } else {
+      ignore(frames.pop())
+      self.finish(frame.epilogue)
+    }
   }
 }
 
 ///|
-fn Lowering::call(self : Lowering, call : Call) -> Unit {
+/// Run a call; for a call with a block, start it and return its children
+/// and what ends it.
+fn Lowering::call(self : Lowering, call : Call) -> (Array[Call], Epilogue)? {
   match call {
     Transform(m, None) => {
       self.prawn.add(anchored(m, self.anchor.0, self.anchor.1))
@@ -279,24 +319,19 @@ fn Lowering::call(self : Lowering, call : Call) -> Unit {
       self.save()
       self.prawn.add(anchored(m, self.anchor.0, self.anchor.1))
       self.transform(m)
-      self.run(children)
-      self.restore()
-      self.prawn.restore()
+      return Some((children, RestoreBoth))
     }
     Transparent(fill, stroke, children) => {
       self.prawn.save()
       self.save()
       self.ops.push(Alpha(fill, stroke))
-      self.run(children)
-      self.restore()
-      self.prawn.restore()
+      return Some((children, RestoreBoth))
     }
     SaveState(children) => {
       // the block form: Prawn never pops the level it pushed
       self.prawn.save()
       self.save()
-      self.run(children)
-      self.restore()
+      return Some((children, RestoreState))
     }
     Save => {
       self.prawn.save()
@@ -306,37 +341,8 @@ fn Lowering::call(self : Lowering, call : Call) -> Unit {
       self.prawn.restore()
       self.restore()
     }
-    Paint(kind, even_odd, children) => {
-      self.run(children)
-      let segments = self.take_path()
-      if segments.is_empty() {
-        return
-      }
-      let fill = match kind {
-        FillOnly | FillAndStroke => Some(self.paint(self.state.fill))
-        _ => None
-      }
-      let stroke = match kind {
-        StrokeOnly | FillAndStroke => Some(self.paint(self.state.stroke))
-        _ => None
-      }
-      if fill is None && stroke is None {
-        return
-      }
-      self.ops.push(
-        Path({
-          segments,
-          fill,
-          fill_rule: if even_odd {
-            EvenOdd
-          } else {
-            NonZero
-          },
-          stroke,
-          stroke_style: self.stroke_style(),
-        }),
-      )
-    }
+    Paint(kind, even_odd, children) =>
+      return Some((children, PaintPath(kind, even_odd)))
     FillColor(rgb) => self.state.fill = { rgb, gradient: None, }
     StrokeColor(rgb) => self.state.stroke = { rgb, gradient: None, }
     FillGradient(g) =>
@@ -404,21 +410,19 @@ fn Lowering::call(self : Lowering, call : Call) -> Unit {
     }
     TextGroup(children) => {
       self.cursor = (0, 0)
-      self.run(children)
+      return Some((children, NoEpilogue))
     }
     CharacterSpacing(v, children) => {
       let saved = self.spacing
       self.spacing = v
-      self.run(children)
-      self.spacing = saved
+      return Some((children, RestoreSpacing(saved)))
     }
     TextRenderingMode(m, children) => {
       let saved = self.mode
       self.mode = m
-      self.run(children)
-      self.mode = saved
+      return Some((children, RestoreMode(saved)))
     }
-    Noop(children) => self.run(children)
+    Noop(children) => return Some((children, NoEpilogue))
     Font(family, subfamily) => self.font = Some((family, subfamily))
     DrawText(text, options) => self.draw_text(text, options)
     Image(data, mime, x, y, w, h) =>
@@ -445,6 +449,52 @@ fn Lowering::call(self : Lowering, call : Call) -> Unit {
         None => ()
       }
       self.doc.warnings.append(document.warnings)
+    }
+  }
+  None
+}
+
+///|
+/// End a call with a block, its children run.
+fn Lowering::finish(self : Lowering, epilogue : Epilogue) -> Unit {
+  match epilogue {
+    NoEpilogue => ()
+    RestoreBoth => {
+      self.restore()
+      self.prawn.restore()
+    }
+    RestoreState => self.restore()
+    RestoreSpacing(saved) => self.spacing = saved
+    RestoreMode(saved) => self.mode = saved
+    PaintPath(kind, even_odd) => {
+      let segments = self.take_path()
+      if segments.is_empty() {
+        return
+      }
+      let fill = match kind {
+        FillOnly | FillAndStroke => Some(self.paint(self.state.fill))
+        _ => None
+      }
+      let stroke = match kind {
+        StrokeOnly | FillAndStroke => Some(self.paint(self.state.stroke))
+        _ => None
+      }
+      if fill is None && stroke is None {
+        return
+      }
+      self.ops.push(
+        Path({
+          segments,
+          fill,
+          fill_rule: if even_odd {
+            EvenOdd
+          } else {
+            NonZero
+          },
+          stroke,
+          stroke_style: self.stroke_style(),
+        }),
+      )
     }
   }
 }

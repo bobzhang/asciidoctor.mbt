@@ -28,6 +28,13 @@ fn Node::parse_use(self : Node) -> Unit raise Skip {
   guard target is Some((kind, source)) else {
     raise SkipWarning("no tag with ID '\{id}' was found, referenced by use tag")
   }
+  // a use inside what it references (directly, or through other uses)
+  // would expand forever
+  if self.doc.active.contains(source.uid) {
+    raise SkipWarning(
+      "use tag has a circular reference to '#\{id}'; skipping tag",
+    )
+  }
   let kind = if source.name == "symbol" {
     if source.attr("viewBox") is Some(_) {
       Viewport

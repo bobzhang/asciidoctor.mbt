@@ -37,6 +37,9 @@ fn SvgDocument::register_gradient(
   source : Element,
 ) -> Unit raise Skip {
   guard node.attr("id") is Some(id) else { raise SkipQuietly }
+  // the gradient it inherits from must not lead back to it
+  self.resolving.push(strip(id))
+  defer ignore(self.resolving.pop())
   let parent = match node.href() {
     Some(h) if h.has_prefix("#") =>
       self.gradient(h.unsafe_substring(start=1, end=h.length()))
@@ -146,6 +149,12 @@ fn SvgDocument::gradient(self : SvgDocument, id : String) -> GradientElement? {
   match self.gradients.get(id) {
     Some(g) => return Some(g)
     None => ()
+  }
+  if self.resolving.contains(id) {
+    self.warnings.push(
+      "gradient has a circular reference to '#\{id}'; ignoring it",
+    )
+    return None
   }
   guard self.find_raw(id) is Some(raw) &&
     (raw.name == "linearGradient" || raw.name == "radialGradient") else {

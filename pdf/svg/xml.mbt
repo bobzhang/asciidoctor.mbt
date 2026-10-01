@@ -131,6 +131,39 @@ priv struct XmlReader {
   mut pos : Int
   entities : Map[String, String]
   mut count : Int
+  /// how many elements the one being read is inside
+  mut depth : Int
+}
+
+///|
+/// The deepest element nesting a document may have (the root is at depth
+/// 1). Reading, copying, drawing and lowering an SVG are all recursive
+/// over its tree; REXML itself has no limit, but prawn-svg's recursion
+/// runs out of Ruby stack long before the input does.
+let max_xml_depth : Int = 256
+
+///|
+/// The most bytes the references of one text or attribute value may expand
+/// to (REXML's `Security.entity_expansion_text_limit`).
+let entity_expansion_text_limit : Int = 10240
+
+///|
+/// The number of bytes `s` takes in UTF-8.
+fn utf8_size(s : String) -> Int {
+  let mut n = 0
+  for ch in s {
+    let c = ch.to_int()
+    n += if c < 0x80 {
+      1
+    } else if c < 0x800 {
+      2
+    } else if c < 0x10000 {
+      3
+    } else {
+      4
+    }
+  }
+  n
 }
 
 ///|
@@ -211,15 +244,21 @@ fn XmlReader::name(self : XmlReader) -> String raise XmlError {
 }
 
 ///|
-/// Expand character and entity references.
+/// Expand character and entity references. As REXML's
+/// `Text.unnormalize`, the expansions of one value may total at most
+/// `entity_expansion_text_limit` bytes; an entity's own expansion is cut
+/// short as soon as it exceeds that, so that nested entities cannot blow
+/// up first.
 fn XmlReader::expand(
   self : XmlReader,
   raw : String,
   depth? : Int = 0,
-) -> String {
+) -> String raise XmlError {
   guard raw.contains("&") else { return raw }
+  let too_large = XmlError("entity expansion has grown too large")
   let sb = StringBuilder()
   let n = raw.length()
+  let mut sum = 0
   let mut i = 0
   while i < n {
     let c = raw[i]
@@ -247,19 +286,25 @@ fn XmlReader::expand(
             "quot" => Some("\"")
             "apos" => Some("'")
             _ =>
-              self.entities
-              .get(name)
-              .map(value => {
-                if depth < 8 {
-                  self.expand(value, depth=depth + 1)
-                } else {
-                  value
-                }
-              })
+              match self.entities.get(name) {
+                Some(value) =>
+                  Some(
+                    if depth < 8 {
+                      self.expand(value, depth=depth + 1)
+                    } else {
+                      value
+                    },
+                  )
+                None => None
+              }
           }
         }
         match replacement {
           Some(r) => {
+            sum += utf8_size(r)
+            if sum > entity_expansion_text_limit {
+              raise too_large
+            }
             sb.write_string(r)
             i = j + 1
             continue
@@ -352,6 +397,13 @@ fn XmlReader::element(
   parent : Element?,
 ) -> Element raise XmlError {
   // after `<`
+  if self.depth >= max_xml_depth {
+    raise XmlError("elements are nested more than \{max_xml_depth} deep")
+  }
+  self.depth += 1
+  defer {
+    self.depth -= 1
+  }
   let qname = self.name()
   let attributes = []
   let mut self_closing = false
@@ -417,7 +469,7 @@ fn XmlReader::element(
     return element
   }
   let text = StringBuilder()
-  let flush = fn() {
+  let flush = fn() raise XmlError {
     if !text.is_empty() {
       element.children.push(Text(self.expand(text.to_string())))
       text.reset()
@@ -465,7 +517,7 @@ fn XmlReader::element(
 ///|
 /// Parse a document, returning its root element.
 pub fn parse_xml(text : String) -> Element raise XmlError {
-  let reader = XmlReader::{ text, pos: 0, entities: {}, count: 0, }
+  let reader = XmlReader::{ text, pos: 0, entities: {}, count: 0, depth: 0, }
   // a byte order mark
   if reader.peek() == 0xFEFF {
     reader.pos += 1

@@ -137,6 +137,10 @@ fn Node::apply_marker(
     self.warn("<marker> cannot be rendered due to invalid sizing information")
     return
   }
+  // a copy of the marker's calls at every vertex
+  if !self.doc.spend(call_count(self.base_calls)) {
+    return
+  }
   // in the element's top-level calls
   let saved = element.calls
   element.calls = element.base_calls

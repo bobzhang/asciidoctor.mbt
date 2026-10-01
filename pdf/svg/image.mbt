@@ -198,6 +198,13 @@ fn Node::parse_image(self : Node) -> Unit raise Skip {
       if !text.contains("<svg") {
         raise SkipWarning("Unsupported image type supplied to image tag")
       }
+      // an SVG that shows itself (or one that shows it) would be drawn
+      // forever
+      if self.doc.nesting >= max_nesting {
+        raise SkipWarning(
+          "SVG images are nested more than \{max_nesting} deep; skipping tag",
+        )
+      }
       let document = SvgDocument::parse(
         text,
         (width, height),
@@ -207,6 +214,8 @@ fn Node::parse_image(self : Node) -> Unit raise Skip {
       ) catch {
         _ => raise SkipWarning("Unsupported image type supplied to image tag")
       }
+      document.nesting = self.doc.nesting + 1
+      document.limits = self.doc.limits
       (
         (document.sizing.output_width, document.sizing.output_height),
         Err(document),
