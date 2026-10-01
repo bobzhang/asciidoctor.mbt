@@ -122,14 +122,33 @@ test "a document keeps the fonts registered when it was loaded" {
   try document_catalog(after) catch {
     e =>
       inspect(
-        e,
-        content=(
-          #|Failure(theming.mbt:305:15-307:16@bobzhang/asciidoctor-pdf FAILED: font /asciidoctor-pdf/data/fonts/notoserif-regular-subset.ttf not found in GEM_FONTS_DIR)
+        e
+        .to_string()
+        .contains(
+          "font /asciidoctor-pdf/data/fonts/notoserif-regular-subset.ttf not found in GEM_FONTS_DIR",
         ),
+        content="true",
       )
   } noraise {
     _ => fail("expected the fonts not to be found")
   }
+}
+
+///|
+test "icon fonts are loaded for icons=font set in the body" {
+  register(icon_fonts=@icons.fonts())
+  // the entry takes effect only as the conversion reaches the paragraph
+  // (safe mode, so that the document may set `icons`)
+  let doc = @asciidoctor.load(
+    "= Title\n\n:icons: font\n\nicon:heart[] text\n",
+    options=@core.Options::new(backend="pdf", standalone=true, safe=1, attributes=[
+      ("reproducible", Str("")),
+    ]),
+  )
+  register()
+  inspect(doc.attr("icons") is None, content="true")
+  activate_session(doc)
+  inspect(document_catalog(doc).has_icons(), content="true")
 }
 
 ///|

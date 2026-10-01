@@ -210,6 +210,31 @@ fn read_gem_font_file(vfs : &@core.Vfs, name : String) -> Bytes? {
 }
 
 ///|
+/// Whether `doc` may draw font icons: `icons=font` in its header (or from
+/// the API), or an attribute entry in its body (or in a nested document's)
+/// that sets it, which takes effect only as the conversion reaches it.
+fn may_use_font_icons(doc : @core.Node) -> Bool {
+  if doc.attr("icons") == Some("font") {
+    return true
+  }
+  let found = Ref(false)
+  ignore(
+    doc.find_by(traverse_documents=true, filter=node => {
+      match node.attributes.entries {
+        Some(entries) if entries
+          .iter()
+          .any(e => e.name == "icons" && e.value == Some("font")) => {
+          found.val = true
+          Stop
+        }
+        _ => Skip
+      }
+    }),
+  )
+  found.val
+}
+
+///|
 /// Whether the theme sets text in an icon font without `icons=font`: a
 /// font family (`ulist_marker_checked_font_family: fas`), a fallback font,
 /// or `<font name="fas">` in a content template.
@@ -312,13 +337,12 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
   }
   // prawn-icon's fonts, which only `icons=font` draws with (prawn-icon
   // loads them on demand; the catalog is complete once loaded, so they are
-  // loaded with it, when the document asks for font icons)
+  // loaded with it, when the document may ask for font icons)
   let icon_sets : Array[IconSet] = []
   let sources = session().registration
   let read_icon_file : ((String) -> Bytes?)? = match
     (sources.icon_fonts_dir, sources.icon_bundle) {
-    _ if doc.attr("icons") != Some("font") && !theme_uses_icon_fonts(theme) =>
-      None
+    _ if !may_use_font_icons(doc) && !theme_uses_icon_fonts(theme) => None
     (Some(dir), _) => Some(file => vfs.read(dir + "/" + file))
     (None, Some(bundle)) => Some(file => bundle.get(file))
     (None, None) => None
