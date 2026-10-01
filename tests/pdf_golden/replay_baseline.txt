@@ -91,8 +91,8 @@ failing records reporting unsupported content (kind, what):
   2	theme header_column_rule
   1	block video poster image
   1	image PNG this backend cannot read (1x)
-  1	image format of /Users/dii/git/asciidoctor.mbt/.repos/asciidoctor-pdf-2.3.27/spec/fixtures/red-green-blue.pdf
-  1	image format of /Users/dii/git/asciidoctor.mbt/.repos/asciidoctor-pdf-2.3.27/spec/output/replay/image_spec-1.14.7-1/tmp-1.png
+  1	image format of $SPEC_ROOT/spec/fixtures/red-green-blue.pdf
+  1	image format of $SPEC_ROOT/spec/output/replay/image_spec-1.14.7-1/tmp-1.png
   1	image format of tux-bg.pdf
   1	inline image icon
 

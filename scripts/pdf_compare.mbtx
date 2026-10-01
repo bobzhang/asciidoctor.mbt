@@ -8,9 +8,22 @@
 //                 instead of the built-in cases
 //   --known FILE  known differences, `name: reason` per line (default
 //                 pdf/tests/known_differences.txt); reported, but they do
-//                 not fail the gate
+//                 not fail the gate when both conversions succeeded and
+//                 were measured (status ok): a known entry never excuses
+//                 a crash, a timeout, a missing or invalid PDF
 //   --gate        exit non-zero when a document (not a known difference)
-//                 violates the acceptance thresholds below or failed
+//                 violates the acceptance thresholds below or failed.
+//                 CASE arguments that select nothing, or a selection of
+//                 no documents, are an error; a full --spec-goldens replay
+//                 fails when it replays fewer records than the harvest
+//                 counted (tests/pdf_golden/record_counts.txt)
+//   --ruby RUBY   the Ruby that runs the oracle (default
+//                 $ASCIIDOCTOR_PDF_RUBY, else Homebrew's Ruby on macOS when
+//                 installed, else `ruby` on PATH)
+//   --gems DIR    the gem home with asciidoctor-pdf 2.3.27 and its
+//                 dependencies (default $ASCIIDOCTOR_PDF_GEMS, else
+//                 .repos/gems-pdf, which scripts/pdf_harvest.mbtx sets up;
+//                 see pdf/docs/oracle.md)
 //   --jobs N      documents compared in parallel (default 4)
 //   --spike EXE   the spike executable to run (default: the release build)
 //   --oracle-cache DIR
@@ -116,17 +129,77 @@ import {
 }
 
 ///|
-let ruby : String = "/opt/homebrew/opt/ruby/bin/ruby"
+/// The Ruby that runs the oracle (see `configure_oracle`).
+let ruby_exe : Ref[String] = { val: "ruby" }
 
 ///|
-let gems : String = ".repos/gems-pdf"
+/// The gem home with asciidoctor-pdf and its dependencies, absolute (see
+/// `configure_oracle`).
+let gem_home : Ref[String] = { val: ".repos/gems-pdf" }
 
 ///|
-let fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
+/// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
+/// Apple silicon and Intel).
+let ruby_candidates : Array[String] = [
+  "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+]
+
+///|
+/// Set the oracle's Ruby and gem home: `--ruby` / `--gems`, else the
+/// environment (ASCIIDOCTOR_PDF_RUBY, ASCIIDOCTOR_PDF_GEMS), else Homebrew's
+/// Ruby when installed (the system Ruby of macOS is too old) or `ruby` on
+/// PATH, and .repos/gems-pdf.
+async fn configure_oracle(ruby_flag : String?, gems_flag : String?) -> Unit {
+  let setting = (flag : String?, name : String) => match flag {
+    Some(v) => Some(v)
+    None =>
+      match @env.get_env_var(name) {
+        Some(v) if v != "" => Some(v)
+        _ => None
+      }
+  }
+  let mut ruby = "ruby"
+  match setting(ruby_flag, "ASCIIDOCTOR_PDF_RUBY") {
+    Some(r) => ruby = r
+    None =>
+      for candidate in ruby_candidates {
+        if file_exists(candidate) {
+          ruby = candidate
+          break
+        }
+      }
+  }
+  ruby_exe.val = ruby
+  let dir = setting(gems_flag, "ASCIIDOCTOR_PDF_GEMS").unwrap_or(".repos/gems-pdf")
+  gem_home.val = @fs.realpath(dir) catch { _ => dir }
+}
+
+///|
+fn ruby() -> String {
+  ruby_exe.val
+}
+
+///|
+fn gems() -> String {
+  gem_home.val
+}
+
+///|
+fn fonts() -> String {
+  "\{gem_home.val}/gems/asciidoctor-pdf-2.3.27/data/fonts"
+}
 
 ///|
 /// prawn-icon's icon fonts (Font Awesome and others), for `icons=font`
-let icon_fonts : String = ".repos/gems-pdf/gems/prawn-icon-3.0.0/data/fonts"
+fn icon_fonts() -> String {
+  "\{gem_home.val}/gems/prawn-icon-3.0.0/data/fonts"
+}
+
+///|
+/// The environment the oracle runs in: its gems only.
+fn gem_env() -> Map[String, String] {
+  { "GEM_HOME": gem_home.val, "GEM_PATH": gem_home.val }
+}
 
 ///|
 let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"
@@ -2029,6 +2102,96 @@ fn Record::passes(self : Record) -> Bool {
 }
 
 ///|
+/// A known difference excuses the record: an entry names it and the
+/// comparison completed (status ok) but measured differences. A known
+/// entry never excuses a crash, a timeout, a missing or invalid PDF or a
+/// failed measurement: those are not expected differences but a broken
+/// comparison.
+fn Record::excused(self : Record) -> Bool {
+  self.status == "ok" && !self.passes() && self.known is Some(_)
+}
+
+///|
+/// The record fails the gate.
+fn Record::fails(self : Record) -> Bool {
+  self.status != "skipped" && !self.passes() && !self.excused()
+}
+
+///|
+/// The cases `selected` names (a case's name, or for spec goldens a spec
+/// file's prefix such as `abstract_spec`), every case when none is named;
+/// an error when a name selects nothing or nothing is selected at all (a
+/// gate over no documents would pass vacuously).
+fn select_cases(
+  all_cases : Array[Case],
+  selected : Array[String],
+) -> Result[Array[Case], String] {
+  let matches = (c : Case, s : String) => c.name == s ||
+    c.name.has_prefix(s + "-")
+  let unknown = selected.filter(s => !all_cases.iter().any(c => matches(c, s)))
+  if !unknown.is_empty() {
+    return Err("no document is named \{unknown.join(", ")}")
+  }
+  let todo = all_cases.filter(c => selected.is_empty() ||
+    selected.iter().any(s => matches(c, s)))
+  if todo.is_empty() {
+    return Err("no documents to compare")
+  }
+  Ok(todo)
+}
+
+///|
+/// What a full spec-golden replay lacks: each spec file must yield the
+/// records the harvest counted (`record_counts.txt`: `count<TAB>path`,
+/// keyed here by file name), and every record loaded must have been
+/// replayed; one line per shortfall.
+fn coverage_problems(
+  expected : Map[String, Int],
+  loaded : Map[String, Int],
+  replayed : Int,
+) -> Array[String] {
+  let problems = []
+  if expected.is_empty() {
+    problems.push("no harvested record counts to check the replay against")
+  }
+  for file, n in expected {
+    let got = loaded.get(file).unwrap_or(0)
+    if got < n {
+      problems.push("\{file}: \{got} records replayed, \{n} harvested")
+    }
+  }
+  let total = loaded.values().fold(init=0, (a, b) => a + b)
+  if replayed != total {
+    problems.push("\{replayed} records compared, \{total} loaded")
+  }
+  problems
+}
+
+///|
+/// The harvested record counts of a spec-golden directory, by file name.
+async fn read_record_counts(dir : String) -> Map[String, Int] {
+  let counts : Map[String, Int] = Map([])
+  let text = @fs.read_file("\{dir}/record_counts.txt").text() catch {
+    _ => return counts
+  }
+  for line in text.split("\n") {
+    if line.has_prefix("#") || line.trim() == "" {
+      continue
+    }
+    let parts = line.split("\t").map(s => s.to_owned()).collect()
+    if parts.length() == 2 {
+      let path = parts[1]
+      let file = match path.rev_find("/") {
+        Some(i) => path[i + 1:].to_owned()
+        None => path
+      }
+      counts[file] = @string.parse_int(parts[0]) catch { _ => 0 }
+    }
+  }
+  counts
+}
+
+///|
 /// Badness, for sorting the summary worst first.
 fn Record::severity(self : Record) -> Double {
   if self.status == "skipped" {
@@ -2094,7 +2257,7 @@ fn Record::to_json(self : Record) -> Json {
     "gate": js(
       if self.passes() {
         "pass"
-      } else if self.known is Some(_) {
+      } else if self.excused() {
         "known"
       } else {
         "fail"
@@ -2147,14 +2310,14 @@ async fn run_oracle(
   ruby_pdf : String,
   env : Map[String, String],
 ) -> Run {
-  let args = ["\{gems}/bin/asciidoctor-pdf", "-o", ruby_pdf, input]
+  let args = ["\{gems()}/bin/asciidoctor-pdf", "-o", ruby_pdf, input]
   // a document that shows the time of its conversion (`{localtime}` and
   // the like) is always converted afresh
   let shows_time = (@fs.read_file(input).text() catch { _ => "" }).contains(
     "{local",
   )
   guard oracle_cache.val is Some(cache) && !shows_time else {
-    return run(ruby, args, env~, timeout=conversion_timeout_ms)
+    return run(ruby(), args, env~, timeout=conversion_timeout_ms)
   }
   let key = "\{cache}/\{name}-\{input_sha[:16]}"
   if file_exists("\{key}.json") {
@@ -2174,7 +2337,7 @@ async fn run_oracle(
       }
     }
   }
-  let r = run(ruby, args, env~, timeout=conversion_timeout_ms)
+  let r = run(ruby(), args, env~, timeout=conversion_timeout_ms)
   if !r.timed_out {
     if r.code == 0 {
       ignore(run("cp", [ruby_pdf, "\{key}.pdf"]))
@@ -2343,11 +2506,10 @@ async fn load_spec_goldens(
   pdfs : String,
   gallery : String,
 ) -> Array[Case] {
-  let root = @fs.realpath(".")
   let spec_root = @fs.realpath(spec_repo) catch {
     _ => fail("\{spec_repo} is missing: run scripts/pdf_harvest.mbtx first")
   }
-  let gems_root = @fs.realpath(gems) catch { _ => "\{root}/\{gems}" }
+  let gems_root = gems()
   let home = @env.get_env_var("HOME").unwrap_or("/tmp")
   let out = []
   for file in @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl")) {
@@ -2710,8 +2872,7 @@ async fn compare_case(
     Some(spec) => prepare_spec_case(c, spec, dir, ruby_pdf)
     None => {
       let input_sha = sha256(input)
-      let root = @fs.realpath(".") catch { _ => "." }
-      let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+      let env = gem_env()
       (run_oracle(name, input, input_sha, ruby_pdf, env), [input], None)
     }
   }
@@ -2720,9 +2881,9 @@ async fn compare_case(
     spike_exe.val,
     [
       "--fonts-dir",
-      fonts,
+      fonts(),
       "--icon-fonts-dir",
-      icon_fonts,
+      icon_fonts(),
       "--trace",
       "\{dir}/trace.tsv",
       "-o",
@@ -2840,7 +3001,7 @@ fn Record::summary_line(self : Record) -> String {
     Some(m) => {
       let t = m.text
       let (worst, page) = m.worst_raster()
-      "\{self.name}: \{if self.passes() { "PASS" } else if self.known is Some(_) { "KNOWN" } else { "FAIL" }} pages \{m.ruby.pages}/\{m.spike.pages}, lines \{ratio(t.ordered_lines, t.ruby_lines)} (spike \{t.spike_lines}), words \{ratio(t.common_words, t.ruby_words)} (spike \{t.spike_words}), ±1pt \{ratio(t.within, t.measured)} coverage \{pct(t.measured, t.ruby_words)}, raster worst p\{page} \{share_pct(worst)} flat \{share_pct(m.worst_flat().0)}, structure \{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}" +
+      "\{self.name}: \{if self.passes() { "PASS" } else if self.excused() { "KNOWN" } else { "FAIL" }} pages \{m.ruby.pages}/\{m.spike.pages}, lines \{ratio(t.ordered_lines, t.ruby_lines)} (spike \{t.spike_lines}), words \{ratio(t.common_words, t.ruby_words)} (spike \{t.spike_words}), ±1pt \{ratio(t.within, t.measured)} coverage \{pct(t.measured, t.ruby_words)}, raster worst p\{page} \{share_pct(worst)} flat \{share_pct(m.worst_flat().0)}, structure \{m.structure.iter().filter(c => c.ok).count()}/\{m.structure.length()}" +
       (if self.categories.is_empty() { "" } else { " [\{self.categories.join(", ")}]" })
     }
   }
@@ -2850,7 +3011,7 @@ fn Record::summary_line(self : Record) -> String {
 fn gate_cell(r : Record) -> String {
   if r.passes() {
     "<span class=\"pass\">pass</span>"
-  } else if r.known is Some(k) {
+  } else if r.excused() && r.known is Some(k) {
     "<span class=\"known\" title=\"\{html_escape(k)}\">known</span>"
   } else {
     "<span class=\"fail\">FAIL</span>"
@@ -3003,7 +3164,7 @@ async fn write_outputs(
       skipped += 1
     } else if r.passes() {
       pass += 1
-    } else if r.known is Some(_) {
+    } else if r.excused() {
       known += 1
     }
   }
@@ -3104,8 +3265,7 @@ async fn write_outputs(
 
 ///|
 async fn tool_versions() -> Json {
-  let root = @fs.realpath(".") catch { _ => "." }
-  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+  let env = gem_env()
   let version = fn(r : Run) {
     first_line(if r.out.trim() == "" { r.err } else { r.out })
   }
@@ -3125,8 +3285,8 @@ async fn tool_versions() -> Json {
   }
   let dirty = run("git", ["status", "--porcelain", "--", "pdf", "scripts"]).out.trim() != ""
   {
-    "ruby": js(version(run(ruby, ["-v"]))),
-    "asciidoctor_pdf": js(version(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-v"], env~))),
+    "ruby": js(version(run(ruby(), ["-v"]))),
+    "asciidoctor_pdf": js(version(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-v"], env~))),
     "poppler": js(version(run("pdftotext", ["-v"]))),
     "moon": js(version(run("moon", ["version"]))),
     "asciidoctor_mbt_commit": js(run("git", ["rev-parse", "HEAD"]).out.trim().to_owned() + (if dirty { " (modified)" } else { "" })),
@@ -3162,19 +3322,113 @@ async fn read_known(path : String) -> Map[String, String] {
 /// flagged by the metric meant to catch it — and that the uncorrupted PDF,
 /// compared with itself, passes everything. Also renders the oracle twice
 /// and checks the renderings are identical (the raster noise floor).
+/// The gate's own decisions, on made-up records: what a known difference
+/// excuses, what a selection may name, what a full replay must cover.
+fn gate_logic_checks(check : (String, Bool, String) -> Unit) -> Unit {
+  let record = (status : String, known : String?, failures : Array[String]) => {
+    Record::{
+      name: "doc",
+      input: "doc.adoc",
+      input_sha: "",
+      status,
+      reason: "",
+      ruby_run: None,
+      spike_run: None,
+      unsupported: [],
+      known,
+      measured: None,
+      categories: [],
+      gate_failures: failures,
+      dir: "",
+      theme: None,
+    }
+  }
+  let known = Some("an accepted difference")
+  check("gate: a passing record passes", !record("ok", None, []).fails(), "")
+  check(
+    "gate: a differing record fails",
+    record("ok", None, ["pages 2 vs 3"]).fails(),
+    "",
+  )
+  check(
+    "gate: a known difference excuses a differing record",
+    !record("ok", known, ["pages 2 vs 3"]).fails(),
+    "",
+  )
+  for status in [
+    "oracle_failed", "spike_failed", "both_failed", "timeout", "invalid_pdf", "measurement_failed",
+  ] {
+    let r = record(status, known, [])
+    check(
+      "gate: a known difference does not excuse \{status}",
+      r.fails() && !r.excused(),
+      "",
+    )
+  }
+  check(
+    "gate: a skipped record neither passes nor fails",
+    !record("skipped", None, []).fails() && !record("skipped", None, []).passes(),
+    "",
+  )
+  let cases : Array[Case] = [
+    { name: "sampler", input: "", wrapper: "", spec: None },
+    { name: "abstract_spec-1.2-1", input: "", wrapper: "", spec: None },
+  ]
+  check("selection: none selects all", select_cases(cases, []) is Ok([_, _]), "")
+  check(
+    "selection: a spec file selects its records",
+    select_cases(cases, ["abstract_spec"]) is Ok([_]),
+    "",
+  )
+  check(
+    "selection: an unknown name is an error",
+    select_cases(cases, ["sampler", "__nonexistent__"]) is Err(_),
+    "",
+  )
+  check("selection: nothing to select is an error", select_cases([], []) is Err(_), "")
+  let expected = { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }
+  check(
+    "coverage: every harvested record replayed",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }, 5).is_empty(),
+    "",
+  )
+  check(
+    "coverage: a record gone from a spec file",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 1 }, 4).length() == 1,
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 1 }, 4).join("; "),
+  )
+  check(
+    "coverage: a spec file gone",
+    coverage_problems(expected, { "a_spec.jsonl": 3 }, 3).length() == 1,
+    "",
+  )
+  check(
+    "coverage: a record not compared",
+    coverage_problems(expected, { "a_spec.jsonl": 3, "b_spec.jsonl": 2 }, 4).length() == 1,
+    "",
+  )
+  check(
+    "coverage: no harvested counts",
+    !coverage_problems({}, { "a_spec.jsonl": 3 }, 3).is_empty(),
+    "",
+  )
+}
+
+///|
 async fn self_test(gallery : String) -> Bool {
   let dir = "\{gallery}/self-test"
   ignore(run("rm", ["-rf", dir]))
   ignore(run("mkdir", ["-p", dir]))
-  let good = "\{dir}/good.pdf"
-  let r = run(spike_exe.val, ["--fonts-dir", fonts, "-o", good, "pdf/tests/sampler.adoc"])
-  if r.code != 0 {
-    println("self-test: the spike failed on the sampler: \{r.err}")
-    return false
-  }
   let results = []
   let check = fn(label : String, ok : Bool, detail : String) {
     results.push((label, ok, detail))
+  }
+  gate_logic_checks(check)
+  let good = "\{dir}/good.pdf"
+  let r = run(spike_exe.val, ["--fonts-dir", fonts(), "-o", good, "pdf/tests/sampler.adoc"])
+  if r.code != 0 {
+    println("self-test: the spike failed on the sampler: \{r.err}")
+    return false
   }
   let measure_to = async fn(other : String, sub : String) -> Measured? {
     let d = "\{dir}/\{sub}"
@@ -3204,12 +3458,11 @@ async fn self_test(gallery : String) -> Bool {
   }
   // repeated oracle renders
   {
-    let root = @fs.realpath(".") catch { _ => "." }
-    let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+    let env = gem_env()
     let a = "\{dir}/oracle-a.pdf"
     let b = "\{dir}/oracle-b.pdf"
-    ignore(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"], env~))
-    ignore(run(ruby, ["\{gems}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"], env~))
+    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"], env~))
+    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"], env~))
     let d = "\{dir}/oracle"
     ignore(run("mkdir", ["-p", d]))
     try {
@@ -3370,7 +3623,7 @@ fn spec_summary(records : Array[Record], source : String) -> String {
   let themed = replayed.filter(r => r.theme is Some(_))
   let passing = replayed.filter(r => r.passes())
   let failing = replayed.filter(r => !r.passes())
-  let known = failing.filter(r => r.known is Some(_))
+  let known = failing.filter(r => r.excused())
   let lines = [
     "# PDF spec-golden replay: \{source}", "# Generated by `scripts/pdf_compare.mbtx -- --spec-goldens`; counts are records (conversions).",
     "", "records: \{total}", "replayed: \{replayed.length()} / \{total}", "  pass: \{passing.length()} / \{replayed.length()}",
@@ -3500,6 +3753,8 @@ async fn main {
   let mut spec_pdfs = default_spec_pdfs
   let mut write_known : String? = None
   let mut baseline : String? = None
+  let mut ruby_flag : String? = None
+  let mut gems_flag : String? = None
   let mut i = 1
   while i < args.length() {
     match args[i] {
@@ -3546,6 +3801,14 @@ async fn main {
         write_known = Some(args[i + 1])
         i += 1
       }
+      "--ruby" if i + 1 < args.length() => {
+        ruby_flag = Some(args[i + 1])
+        i += 1
+      }
+      "--gems" if i + 1 < args.length() => {
+        gems_flag = Some(args[i + 1])
+        i += 1
+      }
       "--baseline" if i + 1 < args.length() => {
         baseline = Some(args[i + 1])
         i += 1
@@ -3569,6 +3832,12 @@ async fn main {
       default_known
     },
   )
+  configure_oracle(ruby_flag, gems_flag)
+  if !file_exists("\{gems()}/bin/asciidoctor-pdf") {
+    fail(
+      "no asciidoctor-pdf in \{gems()}: run scripts/pdf_harvest.mbtx (it installs the oracle's gems), or pass --gems DIR (see pdf/docs/oracle.md)",
+    )
+  }
   if build {
     let r = run("moon", ["-C", "pdf", "build", "--target", "native", "--release"], timeout=1_800_000)
     if r.code != 0 {
@@ -3602,8 +3871,10 @@ async fn main {
       }).collect()
   }
   // a spec run also selects by spec file (`abstract_spec`)
-  let todo = all_cases.filter(c => selected.is_empty() ||
-    selected.iter().any(s => c.name == s || c.name.has_prefix(s + "-")))
+  let todo = match select_cases(all_cases, selected) {
+    Ok(todo) => todo
+    Err(message) => fail(message)
+  }
   let tools = tool_versions()
   let results : Array[Record?] = Array::make(todo.length(), None)
   let next : Ref[Int] = { val: 0 }
@@ -3636,16 +3907,38 @@ async fn main {
   }
   write_outputs(gallery, records, tools, title)
   let skipped = records.filter(r => r.status == "skipped").length()
-  let failing = records.filter(r => r.status != "skipped" && !r.passes() && r.known is None)
+  let failing = records.filter(r => r.fails())
   let passing = records.filter(r => r.passes()).length()
   let known_count = records.length() - skipped - passing - failing.length()
   println(
     "\{records.length()} documents: \{passing} pass, \{known_count} known, \{failing.length()} fail" +
     (if skipped > 0 { ", \{skipped} not replayed" } else { "" }),
   )
+  // a full replay must cover every harvested record: one that silently
+  // went missing would otherwise look like a smaller suite that passes
+  let coverage = match spec_goldens {
+    Some(dir) if selected.is_empty() => {
+      let loaded : Map[String, Int] = Map([])
+      for c in all_cases {
+        match c.spec {
+          Some(s) =>
+            bump(loaded, s.spec_file.replace(old=".rb", new=".jsonl"))
+          None => ()
+        }
+      }
+      coverage_problems(read_record_counts(dir), loaded, records.length())
+    }
+    _ => []
+  }
   match spec_goldens {
     Some(dir) => {
+      // machine-independent: the checkouts' absolute paths (in the spike's
+      // diagnostics) as the placeholders the harvest writes
+      let root = @fs.realpath(".") catch { _ => "." }
       let text = spec_summary(records, dir)
+        .replace_all(old=@fs.realpath(spec_repo) catch { _ => spec_repo }, new="$SPEC_ROOT")
+        .replace_all(old=gems(), new="$GEMS")
+        .replace_all(old=root, new="$ROOT")
       @fs.write_file("\{gallery}/spec_summary.txt", text, create_mode=CreateOrTruncate)
       match baseline {
         Some(file) => @fs.write_file(file, text, create_mode=CreateOrTruncate)
@@ -3678,6 +3971,9 @@ async fn main {
     None => ()
   }
   println("wrote \{gallery}/index.html and \{gallery}/summary.json")
+  if !coverage.is_empty() {
+    fail("the replay does not cover the harvest: \{coverage.join("; ")}")
+  }
   if gate && !failing.is_empty() {
     fail("gate: \{failing.length()} documents fail: \{failing.map(r => r.name).join(", ")}")
   }
