@@ -1231,6 +1231,13 @@ pub fn Node::attribute_locked(self : Node, name : String) -> Bool {
 }
 
 ///|
+/// Whether the document set or unset the attribute (an attribute entry),
+/// Ruby's `@attributes_modified.include? name`.
+pub fn Node::attribute_modified(self : Node, name : String) -> Bool {
+  self.doc().attributes_modified.contains(name)
+}
+
+///|
 /// Sets an attribute in the header attribute snapshot.
 pub fn Node::set_header_attribute(
   self : Node,

@@ -15,6 +15,33 @@ pub fn convert(doc : @core.Node) -> Bytes raise {
 }
 
 ///|
+/// asciidoctor-pdf's `Document#attr_unspecified?`: the attribute is not
+/// locked, the document did not set or unset it, and the API's attributes
+/// do not name it (soft `name@`, `!name` and `name!` forms included).
+fn attr_unspecified(doc : @core.Node, name : String) -> Bool {
+  if doc.attribute_locked(name) || doc.attribute_modified(name) {
+    return false
+  }
+  for entry in doc.options().attributes {
+    let (key, value) = entry
+    let named = if key == name {
+      true
+    } else if value is Str("@") {
+      key == "!\{name}" || key == "\{name}!"
+    } else if key.has_suffix("@") {
+      let k = key[:key.length() - 1].to_owned()
+      k == name || k == "!\{name}" || k == "\{name}!"
+    } else {
+      false
+    }
+    if named {
+      return false
+    }
+  }
+  true
+}
+
+///|
 /// The front matter of the document: how many pages have no running
 /// content, and how many are not numbered from the body on
 /// (`running_content_start_at`, `page_numbering_start_at`).
@@ -80,8 +107,12 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   font_scope.val = None
   page_setup.val = resolve_page_setup(doc)
   report_document_features(doc, catalog)
-  // `pagenums` is on unless the document turns it off
-  ignore(doc.set_attr("pagenums", value=Str(""), overwrite=false))
+  // `outline`, `outline-title` and `pagenums` are on unless specified
+  for name in ["outline", "outline-title", "pagenums"] {
+    if attr_unspecified(doc, name) {
+      ignore(doc.set_attr(name, value=Str("")))
+    }
+  }
   let flow = Flow::new(catalog)
   let c = Converter::new(doc, flow)
   c.text_align = match doc.attr("text-align") {

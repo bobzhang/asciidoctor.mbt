@@ -521,9 +521,14 @@ fn keep_last_anchors(model : @pagelayout.PageModel) -> Unit {
 fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
   let doc = self.doc
   let outline : Array[@pdf.OutlineEntry] = []
+  // `add_outline`: only when the `outline` attribute is set; the title
+  // entry is `outline-title`'s (the document title when empty)
+  if !doc.has_attr("outline") {
+    return outline
+  }
   let outline_title = match doc.attr("outline-title") {
-    Some(t) if t != "" => Some(t)
-    _ => resolve_doctitle(doc)
+    Some("") => resolve_doctitle(doc)
+    title => title
   }
   match outline_title {
     Some(title) =>
@@ -963,7 +968,12 @@ fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
     },
   )
   let (num_levels, expand_levels) = outline_levels(self.doc, self.toc_levels)
-  if section.level <= num_levels && sanitize(title) != "" {
+  // `add_outline_level` leaves out an empty, untitled last section
+  let untitled_last = hidden &&
+    !section.has_blocks() &&
+    self.doc.blocks.last() is Some(last) &&
+    physical_equal(last, section)
+  if section.level <= num_levels && sanitize(title) != "" && !untitled_last {
     // the depth in the section tree, not the section level: a document
     // without a header may start at `===`, and its first sections are
     // still top-level entries
