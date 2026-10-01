@@ -245,19 +245,8 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     pages[pages.length() - 1].items.iter().all(fn(i) { i is Anchor(_) }) {
     ignore(pages.pop())
   }
-  // the page background (`page_background_color`), under everything
-  let background = page_background_color()
-  if background != rgb_hex(0xFFFFFF) {
-    for page in flow.model.pages {
-      page.items.insert(
-        0,
-        rect_item(0.0, 0.0, page_width(), page_height(), fill=background),
-      )
-    }
-  }
-  if t_set("page_background_image") || doc.has_attr("page-background-image") {
-    unsupported("theme", "page background image", doc)
-  }
+  // the page backgrounds (`init_page`), under everything
+  c.ink_page_backgrounds(if has_title_page { Some(0) } else { None })
   if flow.model.pages.length() > body_start {
     if !doc.has_attr("noheader") && t_num_or("header_height", 0.0) != 0.0 {
       c.ink_running_content(
