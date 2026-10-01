@@ -151,7 +151,7 @@ test "document info, top anchor and outline levels" {
   ].filter_map(entry => entry.1.map(value => "\{entry.0}=\{value}"))
   inspect(
     entries.join("; "),
-    content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=asciidoctor.mbt (spike)",
+    content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=Asciidoctor PDF 0.1.0 (MoonBit), based on pagelayout",
   )
   inspect(top_anchor(doc), content="__anchor-top")
   let (num, expand) = outline_levels(doc, resolve_toclevels(doc))
@@ -216,7 +216,7 @@ test "index terms are anchored, stored and sorted as asciidoctor-pdf does" {
   inspect(tiger.anchor(), content="__indextermdef-\{md5_hex(b"tiger")}")
   index.link_associations()
   let felis = index.categories.get("F").unwrap().sorted_terms()[0]
-  inspect(felis.see.map(s => s.is_term), content="Some(false)")
+  debug_inspect(felis.see.map(s => s.is_term), content="Some(false)")
   // a dry run stores nothing
   session.scratch += 1
   let before = index.sequence
