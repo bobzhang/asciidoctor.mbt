@@ -3,7 +3,8 @@ Copyright (C) 2026 Hongbo Zhang and the contributors to asciidoctor.mbt.
 Licensed under the MIT License (see LICENSE).
 
 This module contains third-party material, listed below with its license.
-The license texts are in LICENSE (MIT) and in fonts/LICENSES.
+The license texts are in LICENSE (MIT), svg/LICENSE (prawn-svg, MIT) and in
+fonts/LICENSES.
 
 == Asciidoctor PDF 2.3.27 (MIT)
 
@@ -19,6 +20,17 @@ https://github.com/asciidoctor/asciidoctor-pdf
   copied from its spec/fixtures.
 
 The MIT license text is in LICENSE.
+
+== prawn-svg 0.34.2 (MIT)
+
+Copyright 2010-2019 Roger Nesbitt.
+https://github.com/mogest/prawn-svg
+
+* svg/ (the package bobzhang/asciidoctor-pdf/svg) is a port of prawn-svg,
+  with which Asciidoctor PDF draws SVG images: its element processing,
+  attribute and CSS handling, and the calls it makes on the Prawn document.
+
+The MIT license text is in svg/LICENSE.
 
 == Asciidoctor (MIT)
 
