@@ -54,6 +54,8 @@ priv struct Session {
   pending_diagnostics : Array[String]
   /// `convert_document` is converting the document
   mut converting : Bool
+  /// the fonts (`family (style)`) reported as unknown
+  unknown_fonts : Map[String, Bool]
 }
 
 ///|
@@ -74,6 +76,7 @@ fn Session::new() -> Session {
     ],
     pending_diagnostics: [],
     converting: false,
+    unknown_fonts: Map([]),
   }
 }
 

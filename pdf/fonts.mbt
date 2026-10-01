@@ -427,6 +427,43 @@ fn FontCatalog::has_icons(self : FontCatalog) -> Bool {
 }
 
 ///|
+/// The face text in a family neither the catalog nor the base font family
+/// has is set in: Prawn's default font (Helvetica) in that style, reported
+/// once per document (Prawn raises `UnknownFont`, which ends the
+/// conversion).
+fn FontCatalog::unknown_face(
+  self : FontCatalog,
+  family : String,
+  bold : Bool,
+  italic : Bool,
+) -> Face {
+  let style = match (bold, italic) {
+    (false, false) => "normal"
+    (true, false) => "bold"
+    (false, true) => "italic"
+    (true, true) => "bold_italic"
+  }
+  let known = session().unknown_fonts
+  let key = "\{family} (\{style})"
+  if !known.contains(key) {
+    known[key] = true
+    report(
+      "WARNING \{key} is not a known font; using Helvetica instead at <document>",
+    )
+  }
+  match self.faces.get(face_key("Helvetica", bold, italic)) {
+    Some(face) => face
+    None =>
+      // the standard families are always there, unless the catalog has a
+      // Helvetica of its own without that style
+      match self.faces.get(face_key("Helvetica", false, false)) {
+        Some(face) => face
+        None => self.faces.values().next().unwrap()
+      }
+  }
+}
+
+///|
 fn FontCatalog::face(
   self : FontCatalog,
   family : String,
@@ -441,7 +478,7 @@ fn FontCatalog::face(
         None =>
           match self.faces.get(face_key(base_font_family(), bold, italic)) {
             Some(face) => face
-            None => abort("font catalog has no face for \{family}")
+            None => self.unknown_face(family, bold, italic)
           }
       }
   }

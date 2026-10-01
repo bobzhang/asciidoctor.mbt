@@ -88,3 +88,22 @@ test "a theme warning given while loading is reported by the conversion" {
     ),
   )
 }
+
+///|
+test "an unknown base font is reported, and Helvetica stands in" {
+  register(pdf_theme=files => {
+    let theme = @theme.load_theme(files)
+    theme["base_font_family"] = Str("No Such Font")
+    theme
+  })
+  let pdf = convert_document(load_pdf("text\n\n*bold*\n"), test_catalog())
+  register()
+  inspect(pdf.length() > 0, content="true")
+  inspect(
+    conversion_warnings().join("\n"),
+    content=(
+      #|WARNING No Such Font (normal) is not a known font; using Helvetica instead at <document>
+      #|WARNING No Such Font (bold) is not a known font; using Helvetica instead at <document>
+    ),
+  )
+}
