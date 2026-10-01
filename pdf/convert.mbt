@@ -92,19 +92,19 @@ fn Converter::dry_run(
   scratch.text_align = self.text_align
   // the outermost dry run restores the document's attributes, and so its
   // counters (a footnote's number), when it ends (`push_scratch`)
-  let saved_attributes = if session.scratch == 0 {
+  let saved_attributes = if session().scratch == 0 {
     Some(self.doc.attributes.copy())
   } else {
     None
   }
-  session.scratch += 1
+  session().scratch += 1
   let footnotes = self.doc.catalog().footnotes
   let registered = footnotes.length()
   body(scratch)
   while footnotes.length() > registered {
     ignore(footnotes.pop())
   }
-  session.scratch -= 1
+  session().scratch -= 1
   match saved_attributes {
     Some(saved) => self.doc.attributes.replace(saved)
     None => ()
@@ -235,6 +235,19 @@ fn Converter::with_text_align(
 let diagnostics : Array[String] = []
 
 ///|
+/// Report a diagnostic (see `diagnostics`): one of the conversion in
+/// progress, or, outside a conversion (while the document is loaded), one
+/// its conversions report first.
+fn report(line : String) -> Unit {
+  let s = session()
+  if s.converting {
+    diagnostics.push(line)
+  } else {
+    s.pending_diagnostics.push(line)
+  }
+}
+
+///|
 /// The unsupported content and the warnings the last `convert_document`
 /// met (see `diagnostics`), in document order.
 pub fn conversion_warnings() -> Array[String] {
@@ -321,7 +334,7 @@ fn source_location(node : @core.Node) -> String {
 ///|
 /// Record content the spike leaves out or approximates.
 fn unsupported(kind : String, what : String, node : @core.Node) -> Unit {
-  diagnostics.push("UNSUPPORTED \{kind} \{what} at \{source_location(node)}")
+  report("UNSUPPORTED \{kind} \{what} at \{source_location(node)}")
 }
 
 ///|
@@ -329,7 +342,7 @@ fn unsupported(kind : String, what : String, node : @core.Node) -> Unit {
 /// error on its log), e.g. content cut off: `WARNING <message> at
 /// <file>:<line>`.
 fn warning(message : String, node : @core.Node) -> Unit {
-  diagnostics.push("WARNING \{message} at \{source_location(node)}")
+  report("WARNING \{message} at \{source_location(node)}")
 }
 
 ///|
@@ -964,7 +977,7 @@ fn Converter::convert_floating_title(
 fn Converter::convert_section(self : Converter, section : @core.Node) -> Unit {
   let flow = self.flow
   let is_index = section.sectname == Some("index")
-  if is_index && session.index.is_empty() {
+  if is_index && session().index.is_empty() {
     return
   }
   let title = numbered_title(section, formal=true)

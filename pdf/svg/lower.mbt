@@ -288,14 +288,14 @@ priv struct Frame {
 /// elements `<use>` brings in) do, so they are run from an explicit stack
 /// rather than by recursion.
 fn Lowering::run(self : Lowering, calls : Array[Call]) -> Unit {
-  let frames = [Frame::{ calls, next: 0, epilogue: NoEpilogue }]
+  let frames = [Frame::{ calls, next: 0, epilogue: NoEpilogue, }]
   while frames.last() is Some(frame) {
     if frame.next < frame.calls.length() {
       let call = frame.calls[frame.next]
       frame.next += 1
       match self.call(call) {
         Some((children, epilogue)) =>
-          frames.push({ calls: children, next: 0, epilogue })
+          frames.push({ calls: children, next: 0, epilogue, })
         None => ()
       }
     } else {

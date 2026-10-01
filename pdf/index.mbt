@@ -380,7 +380,7 @@ fn IndexCatalog::sorted_categories(self : IndexCatalog) -> Array[IndexTerm] {
 /// asciidoctor-pdf's `convert_index_section`: the categories in columns
 /// (`index_columns()`, unless already in a column box).
 fn Converter::convert_index_section(self : Converter) -> Unit {
-  let index = session.index
+  let index = session().index
   index.link_associations()
   let flow = self.flow
   if flow.columns is Some(_) || index_columns() < 2 {
@@ -404,7 +404,7 @@ fn Converter::convert_index_categories(self : Converter) -> Unit {
   let space_needed = description_list_term_spacing() +
     2.0 *
     flow.height_of([{ text: "A", style: base, anchor: None, }], metrics, base)
-  for category in session.index.sorted_categories() {
+  for category in session().index.sorted_categories() {
     if space_needed > flow.cursor() {
       flow.advance_page()
     }

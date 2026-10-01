@@ -196,7 +196,7 @@ test "index terms are anchored, stored and sorted as asciidoctor-pdf does" {
     text.contains("<a id=\"__indexterm-2\" type=\"indexterm\"></a>"),
     content="true",
   )
-  let index = session.index
+  let index = session().index
   inspect(
     index.sorted_categories().map(c => c.name).join(" "),
     content="@ C F T É",
@@ -218,11 +218,11 @@ test "index terms are anchored, stored and sorted as asciidoctor-pdf does" {
   let felis = index.categories.get("F").unwrap().sorted_terms()[0]
   inspect(felis.see.map(s => s.is_term), content="Some(false)")
   // a dry run stores nothing
-  session.scratch += 1
+  session().scratch += 1
   let before = index.sequence
   ignore(doc.blocks[0].content())
   inspect(index.sequence == before, content="true")
-  session.scratch -= 1
+  session().scratch -= 1
 }
 
 ///|

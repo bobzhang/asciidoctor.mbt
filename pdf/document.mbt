@@ -10,7 +10,7 @@
 /// `sourcemap` for `conversion_warnings` to say where the unsupported
 /// content is.
 pub fn convert(doc : @core.Node) -> Bytes raise {
-  diagnostics.clear()
+  activate_session(doc)
   convert_document(doc, document_catalog(doc))
 }
 
@@ -101,7 +101,16 @@ fn front_matter(
 /// Convert a document loaded with `backend=pdf` (see `register`) to PDF,
 /// set in the fonts of `catalog`.
 pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise {
+  // the document's own state (its theme, index, footnotes, images), which
+  // another document loaded or converted since must not have touched
+  activate_session(doc)
+  let state = session()
   diagnostics.clear()
+  diagnostics.append(state.pending_diagnostics)
+  state.converting = true
+  defer {
+    state.converting = false
+  }
   trace.clear()
   trace_depth.val = 0
   let theme = document_theme(doc)
@@ -259,7 +268,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     body_start,
     has_front_cover~,
   )
-  session.index.start_page_number = skip_numbering + 1
+  session().index.start_page_number = skip_numbering + 1
   // the top of the document, for `<<_top>>`-style references: the top of
   // the page the body starts on (`add_dest_for_top`)
   let top = top_anchor(doc)
@@ -361,7 +370,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   ignore(c.ink_cover_page("back"))
   keep_last_anchors(flow.model)
   for entry in @pdf.unembeddable_images(flow.model) {
-    diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
+    report("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
   }
   let initial_zoom : @pdf.InitialZoom? = match t_str("page_initial_zoom") {
     Some("Fit") => Some(Fit)

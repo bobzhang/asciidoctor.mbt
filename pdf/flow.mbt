@@ -483,7 +483,7 @@ fn Flow::line_items(
   // placeholder's box
   for placed in line.images {
     let (x, index, w, h, increased, style, face) = placed
-    let image = session.inline_images[index]
+    let image = session().inline_images[index]
     let a = face.ascender_pt(style.size)
     let d = face.descender_pt(style.size)
     let (top, box_top, box_height) = if increased {
@@ -642,7 +642,7 @@ fn Flow::ink_line(
     // (InlineDestinationMarker)
     for anchor in line.anchors {
       if anchor.0.has_prefix("__indexterm-") {
-        session.index.link_dest_to_page(anchor.0, self.page + 1)
+        session().index.link_dest_to_page(anchor.0, self.page + 1)
       }
     }
   }

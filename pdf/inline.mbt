@@ -7,6 +7,8 @@
 ///|
 priv struct InlineConverter {
   mut resolving_xref : Bool
+  /// the document's state
+  session : Session
 }
 
 ///|
@@ -14,13 +16,16 @@ priv struct InlineConverter {
 /// conversion. Inline content is converted whenever the core asks (section
 /// titles already while parsing), so this lives with the converter the
 /// core creates for the document, as asciidoctor-pdf's converter instance
-/// does.
+/// does: two documents loaded one after the other, then converted in any
+/// order, each keep their own. The converter makes its session the active
+/// one (`session()`) whenever it converts, and `convert_document` makes
+/// the document's active (see `activate_session`).
 priv struct Session {
   /// how deep in dry runs (asciidoctor-pdf's scratch document): inline
   /// conversions there must leave no trace (index terms are not stored)
   mut scratch : Int
   /// the index terms met so far
-  mut index : IndexCatalog
+  index : IndexCatalog
   /// how many footnotes are inked (`@rendered_footnotes`): a book inks
   /// them after each chapter, and labels count from there
   mut rendered_footnotes : Int
@@ -30,8 +35,6 @@ priv struct Session {
   /// font icons (`icon:name[]`) take; loaded once per document, unless
   /// `register` was given one
   mut catalog : FontCatalog?
-  /// the catalog `register` was given, which every document uses
-  mut fixed_catalog : FontCatalog?
   /// the document's theme, once loaded (see `document_theme`)
   mut theme : @theme.Theme?
   /// the bibliography entries referenced so far (`@bibref_refs`)
@@ -41,20 +44,79 @@ priv struct Session {
   normal_spent : Map[String, Bool]
   /// the inline images met so far (`<img src="N">` is the Nth)
   inline_images : Array[InlineImage]
+  /// the transformation stacks of the Prawn documents SVG images are drawn
+  /// into: the document's and the scratch document's (see
+  /// `Flow::svg_stack`)
+  svg_stacks : Array[@svg.TransformationStack]
+  /// the diagnostics reported outside `convert_document` (while the
+  /// document was loaded, or by `convert` before it), which each of its
+  /// conversions reports first (see `report`)
+  pending_diagnostics : Array[String]
+  /// `convert_document` is converting the document
+  mut converting : Bool
 }
 
 ///|
-let session : Session = {
-  scratch: 0,
-  index: IndexCatalog::new(),
-  rendered_footnotes: 0,
-  footnote_labels: Map([]),
-  catalog: None,
-  fixed_catalog: None,
-  theme: None,
-  bibref_refs: Map([]),
-  normal_spent: Map([]),
-  inline_images: [],
+fn Session::new() -> Session {
+  {
+    scratch: 0,
+    index: IndexCatalog::new(),
+    rendered_footnotes: 0,
+    footnote_labels: Map([]),
+    catalog: registration.catalog,
+    theme: None,
+    bibref_refs: Map([]),
+    normal_spent: Map([]),
+    inline_images: [],
+    svg_stacks: [
+      @svg.TransformationStack::new(),
+      @svg.TransformationStack::new(),
+    ],
+    pending_diagnostics: [],
+    converting: false,
+  }
+}
+
+///|
+/// What `register` was given, which every document uses.
+priv struct Registration {
+  /// the catalog every document is set in, if any
+  mut catalog : FontCatalog?
+}
+
+///|
+let registration : Registration = { catalog: None, }
+
+///|
+/// The session of the document being converted (a placeholder until a
+/// document is).
+let active_session : Ref[Session] = { val: Session::new(), }
+
+///|
+/// The session of the document being converted.
+fn session() -> Session {
+  active_session.val
+}
+
+///|
+/// Make `state` the active session, and its theme, once loaded, the theme
+/// of the conversion.
+fn activate(state : Session) -> Unit {
+  active_session.val = state
+  match state.theme {
+    Some(theme) => current_theme.val = theme
+    None => ()
+  }
+}
+
+///|
+/// The transform that makes a document's converter activate its session.
+let activate_transform : String = "__pdf_activate_session__"
+
+///|
+/// Make the session of `doc`'s converter the active one (see `Session`).
+fn activate_session(doc : @core.Node) -> Unit {
+  ignore(doc.converter().convert(doc, activate_transform))
 }
 
 ///|
@@ -73,24 +135,16 @@ pub fn register(
   icon_fonts_dir? : String,
   pdf_theme? : (@theme.Files) -> @theme.Theme raise,
 ) -> Unit {
-  session.fixed_catalog = catalog
+  registration.catalog = catalog
   font_sources.fonts_dir = fonts_dir
   font_sources.icon_fonts_dir = icon_fonts_dir
   font_sources.pdf_theme = pdf_theme
   @core.register_converter(["pdf"], fn(_backend, _htmlsyntax, _doc) {
-    // a new document: a new index (nested documents share their parent's
-    // converter), theme and fonts
-    session.theme = None
-    session.catalog = session.fixed_catalog
-    session.index = IndexCatalog::new()
-    session.scratch = 0
-    session.rendered_footnotes = 0
-    session.footnote_labels.clear()
-    session.bibref_refs.clear()
-    session.normal_spent.clear()
-    session.inline_images.clear()
-    reset_svg_stacks()
-    ({ resolving_xref: false, } : InlineConverter)
+    // a new document: its own session (nested documents share their
+    // parent's converter, and so its session)
+    let state = Session::new()
+    activate(state)
+    ({ resolving_xref: false, session: state, } : InlineConverter)
   })
 }
 
@@ -107,7 +161,9 @@ impl @core.Converter for InlineConverter with fn backend_traits(_self) {
 
 ///|
 impl @core.Converter for InlineConverter with fn convert(self, node, transform) {
+  activate(self.session)
   match transform {
+    "__pdf_activate_session__" => ""
     "inline_quoted" => convert_inline_quoted(node)
     "inline_anchor" => self.convert_inline_anchor(node)
     "inline_break" => "\{node.text().unwrap_or("")}<br>"
@@ -152,10 +208,10 @@ fn list_attr(node : @core.Node, name : String) -> Array[String] {
 /// the visible text and stores nothing.
 fn convert_inline_indexterm(node : @core.Node) -> String {
   let visible = node.inline_type == Some("visible")
-  if session.scratch > 0 {
+  if session().scratch > 0 {
     return if visible { node.text().unwrap_or("") } else { "" }
   }
-  let index = session.index
+  let index = session().index
   let anchor_name = index.next_anchor_name()
   let dest : IndexDest = { anchor: anchor_name, page: None, page_sortable: 0, }
   let anchor = if visible {
@@ -306,9 +362,9 @@ fn InlineConverter::convert_inline_anchor(
                     xrefstyle?=node.attr("xrefstyle", inherited=true),
                   )
                   if ref_.inline_type == Some("bibref") &&
-                    session.scratch == 0 &&
-                    !session.bibref_refs.contains(refid) {
-                    session.bibref_refs[refid] = true
+                    session().scratch == 0 &&
+                    !session().bibref_refs.contains(refid) {
+                    session().bibref_refs[refid] = true
                     anchor = "<a id=\"_bibref_ref_\{refid}\"></a>"
                   }
                   self.resolving_xref = false
@@ -331,7 +387,7 @@ fn InlineConverter::convert_inline_anchor(
         Some(r) => "[\{r}]"
         None => "[\{id}]"
       }
-      let reftext = if session.bibref_refs.contains(id) {
+      let reftext = if session().bibref_refs.contains(id) {
         "<a anchor=\"_bibref_ref_\{id}\">\{reftext}</a>"
       } else {
         reftext
@@ -536,9 +592,9 @@ fn convert_inline_footnote(node : @core.Node) -> String {
       // counted from the footnotes inked so far (a book's chapter), or the
       // label it was inked with
       let number = @string.parse_int(index) catch { _ => 0 }
-      let label = match session.footnote_labels.get(number) {
+      let label = match session().footnote_labels.get(number) {
         Some(label) => label
-        None => (number - session.rendered_footnotes).to_string()
+        None => (number - session().rendered_footnotes).to_string()
       }
       "<sup class=\"wj\">\{anchor}[<a anchor=\"_footnotedef_\{index}\">\{label}</a>]</sup>"
     }

@@ -74,8 +74,8 @@ fn apply_text_styles(
   let mut s = style
   match font_style {
     Some(fs) => {
-      if fs == "normal_italic" && !session.normal_spent.contains(setting) {
-        session.normal_spent[setting] = true
+      if fs == "normal_italic" && !session().normal_spent.contains(setting) {
+        session().normal_spent[setting] = true
         s = { ..s, bold: false, italic: false, }
       }
       let (bold, italic) = font_style_of(fs)

@@ -350,8 +350,8 @@ fn convert_inline_image(node : @core.Node) -> String {
       } else {
         width
       }
-      let index = session.inline_images.length()
-      session.inline_images.push({
+      let index = session().inline_images.length()
+      session().inline_images.push({
         data,
         mime,
         px_w,

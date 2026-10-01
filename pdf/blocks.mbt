@@ -1078,10 +1078,10 @@ fn Converter::convert_thematic_break(
 /// count from the first footnote inked here.
 fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
   let footnotes = self.doc.footnotes()
-  if footnotes.length() <= session.rendered_footnotes {
+  if footnotes.length() <= session().rendered_footnotes {
     return
   }
-  let pending = footnotes[session.rendered_footnotes:].to_owned()
+  let pending = footnotes[session().rendered_footnotes:].to_owned()
   let flow = self.flow
   let is_last = match self.doc.blocks.last() {
     Some(last) => physical_equal(last, node)
@@ -1101,7 +1101,7 @@ fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
   let spacing = t_num_or("footnotes_item_spacing", 0.0)
   let face = flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
-  let offset = session.rendered_footnotes
+  let offset = session().rendered_footnotes
   let texts = pending.map(fn(fn_) {
     "<a id=\"_footnotedef_\{fn_.index}\"></a>[<a anchor=\"_footnoteref_\{fn_.index}\">\{fn_.index - offset}</a>] \{fn_.text}"
   })
@@ -1129,9 +1129,9 @@ fn Converter::ink_footnotes(self : Converter, node : @core.Node) -> Unit {
         .xreftext(xrefstyle?=self.doc.attr("xrefstyle"))
         .unwrap_or("")
       for fn_ in pending {
-        session.footnote_labels[fn_.index] = "\{fn_.index - offset} - \{xreftext}"
+        session().footnote_labels[fn_.index] = "\{fn_.index - offset} - \{xreftext}"
       }
     }
-    session.rendered_footnotes = footnotes.length()
+    session().rendered_footnotes = footnotes.length()
   }
 }

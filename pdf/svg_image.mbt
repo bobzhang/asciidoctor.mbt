@@ -5,23 +5,11 @@
 // its `InlineImageArranger` and `InlineImageRenderer`.
 
 ///|
-/// The transformation stacks of the Prawn documents asciidoctor-pdf draws
-/// SVG images into: the document, and the scratch document of dry runs
-/// (see `@svg.TransformationStack`).
-let svg_stacks : Array[@svg.TransformationStack] = [
-  @svg.TransformationStack::new(),
-  @svg.TransformationStack::new(),
-]
-
-///|
-fn reset_svg_stacks() -> Unit {
-  svg_stacks[0] = @svg.TransformationStack::new()
-  svg_stacks[1] = @svg.TransformationStack::new()
-}
-
-///|
+/// The transformation stack of the Prawn document asciidoctor-pdf draws
+/// SVG images into: the document's, or the scratch document's in dry runs
+/// (see `@svg.TransformationStack`); each document has its own.
 fn Flow::svg_stack(self : Flow) -> @svg.TransformationStack {
-  svg_stacks[if self.scratch { 1 } else { 0 }]
+  session().svg_stacks[if self.scratch { 1 } else { 0 }]
 }
 
 ///|
@@ -165,7 +153,7 @@ fn inline_svg(
     )
   catch {
     @svg.SvgError(message) => {
-      if session.scratch == 0 {
+      if session().scratch == 0 {
         warning("could not embed image: \{path}; \{message}", node)
       }
       None

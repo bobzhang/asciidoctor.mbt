@@ -195,7 +195,7 @@ fn build_items(
     if style.image >= 0 {
       // an inline image: one placeholder as wide as the image
       let (width, _, _) = inline_image_size(
-        session.inline_images[style.image],
+        session().inline_images[style.image],
         available,
         face.height_pt(style.size),
       )
@@ -675,7 +675,7 @@ fn place_line(
       // an image more than one and a half lines tall makes the line as
       // tall as the image, over the text's descender
       let (_, image_h, increased) = inline_image_size(
-        session.inline_images[style.image],
+        session().inline_images[style.image],
         limit,
         h,
       )
@@ -714,7 +714,7 @@ fn place_line(
     if style.image >= 0 {
       let face = faces[fragment]
       let (w, h, increased) = inline_image_size(
-        session.inline_images[style.image],
+        session().inline_images[style.image],
         limit,
         face.height_pt(style.size),
       )

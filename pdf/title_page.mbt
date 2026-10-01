@@ -142,7 +142,7 @@ fn Converter::ink_title_page_logo(
     None => (if from_theme { from_theme_path(value) } else { value }, false)
   }
   if image_target_and_format(path, attrs_str(attrs, "format")).1 == "pdf" {
-    diagnostics.push(
+    report(
       "ERROR " + "PDF format not supported for title page logo image: \{path}",
     )
     return

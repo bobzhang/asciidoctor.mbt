@@ -49,7 +49,7 @@ fn signifier(doc : @core.Node, name : String, default : String) -> String {
 /// `formal` adds the part or chapter signifier in a book. The index
 /// section has no title while there are no index terms (it is hidden).
 fn numbered_title(section : @core.Node, formal? : Bool = false) -> String {
-  if section.sectname == Some("index") && session.index.is_empty() {
+  if section.sectname == Some("index") && session().index.is_empty() {
     return ""
   }
   let doc = section.document()
@@ -481,11 +481,11 @@ fn Converter::convert_toc(
   // numbering starts there
   if title_as_page {
     match tv("page_numbering_start_at") {
-      Str("toc") => session.index.start_page_number = extent.from_page + 1
+      Str("toc") => session().index.start_page_number = extent.from_page + 1
       Str("after-toc") => {
         // in a prepress book, the recto page after the TOC
         let start = extent.to_page + 2
-        session.index.start_page_number = if self.ppbook && start % 2 == 0 {
+        session().index.start_page_number = if self.ppbook && start % 2 == 0 {
           start + 1
         } else {
           start

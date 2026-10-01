@@ -551,7 +551,7 @@ fn parse_formatted(
             Some(s) => @string.parse_int(s) catch { _ => -1 }
             None => -1
           }
-          if index >= 0 && index < session.inline_images.length() {
+          if index >= 0 && index < session().inline_images.length() {
             flush()
             fragments.push({
               text: "\u{2063}",

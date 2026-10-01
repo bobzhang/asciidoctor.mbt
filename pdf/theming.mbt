@@ -63,7 +63,7 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
       Some(
         build(files).copy() catch {
           e => {
-            diagnostics.push(
+            report(
               "WARNING could not load the pdf_theme option because of \{e}; reverting to default theme at <document>",
             )
             @theme.load_theme(files) catch {
@@ -83,7 +83,7 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
             Some(dir) => "the pdf theme `\{name}' in \{dir}"
             None => "the built-in pdf theme `\{name}'"
           }
-          diagnostics.push(
+          report(
             "WARNING could not locate or load \{where_} because of \{e}; reverting to default theme at <document>",
           )
           @theme.load_theme(files) catch {
@@ -111,11 +111,11 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
 /// conversions of the parse ask for it before the conversion starts, as
 /// asciidoctor-pdf's `convert_inline_*` do with `load_theme node.document`).
 fn document_theme(doc : @core.Node) -> @theme.Theme {
-  match session.theme {
+  match session().theme {
     Some(theme) => theme
     None => {
       let theme = load_document_theme(doc)
-      session.theme = Some(theme)
+      session().theme = Some(theme)
       current_theme.val = theme
       theme
     }
@@ -126,11 +126,11 @@ fn document_theme(doc : @core.Node) -> @theme.Theme {
 /// The font catalog of `doc`'s conversion: the one `register` was given,
 /// else its theme's fonts, loaded once per document.
 fn document_catalog(doc : @core.Node) -> FontCatalog raise {
-  match session.catalog {
+  match session().catalog {
     Some(catalog) => catalog
     None => {
       let catalog = load_document_fonts(doc)
-      session.catalog = Some(catalog)
+      session().catalog = Some(catalog)
       catalog
     }
   }
