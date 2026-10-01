@@ -544,3 +544,37 @@ pub fn Node::read_contents(
   }
   contents
 }
+
+///|
+/// Ruby's `String#upcase` (full Unicode case mapping), for backends.
+///
+/// Matches Ruby 2.6.10 (Unicode 12.1, the version this port's case tables
+/// are generated from) for valid Unicode input; newer Rubies map some
+/// characters added in later Unicode versions differently. A lone surrogate
+/// is passed through unchanged, where Ruby raises `ArgumentError`.
+pub fn ruby_upcase(str : String) -> String {
+  @rb.upcase(str)
+}
+
+///|
+/// Ruby's `String#downcase` (full Unicode case mapping), for backends.
+///
+/// Matches Ruby 2.6.10 (Unicode 12.1, the version this port's case tables
+/// are generated from) for valid Unicode input; newer Rubies map some
+/// characters added in later Unicode versions differently. A lone surrogate
+/// is passed through unchanged, where Ruby raises `ArgumentError`.
+pub fn ruby_downcase(str : String) -> String {
+  @rb.downcase(str)
+}
+
+///|
+/// Ruby's `String#capitalize`, for backends: the first character takes
+/// its titlecase mapping and the rest are downcased.
+///
+/// Matches Ruby 2.6.10 (Unicode 12.1, the version this port's case tables
+/// are generated from) for valid Unicode input; newer Rubies map some
+/// characters added in later Unicode versions differently. A lone surrogate
+/// is passed through unchanged, where Ruby raises `ArgumentError`.
+pub fn ruby_capitalize(str : String) -> String {
+  @rb.capitalize(str)
+}

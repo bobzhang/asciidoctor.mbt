@@ -134,6 +134,12 @@ pub fn roman_to_int(String) -> Int
 
 pub fn rootname(String) -> String
 
+pub fn ruby_capitalize(String) -> String
+
+pub fn ruby_downcase(String) -> String
+
+pub fn ruby_upcase(String) -> String
+
 pub fn safe_mode_name_for_value(Int) -> String?
 
 pub fn safe_mode_value_for_name(String) -> Int?
@@ -581,6 +587,7 @@ pub fn Node::assign_caption(Self, String?, caption_context? : String) -> Unit
 pub fn Node::assign_numeral(Self, Self) -> Unit
 pub fn Node::attr(Self, String, default? : String, inherited? : Bool, fallback_name? : String) -> String?
 pub fn Node::attribute_locked(Self, String) -> Bool
+pub fn Node::attribute_modified(Self, String) -> Bool
 pub fn Node::author(Self) -> String?
 pub fn Node::authors(Self) -> Array[Author]
 pub fn Node::backend(Self) -> String

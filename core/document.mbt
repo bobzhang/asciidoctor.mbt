@@ -1231,6 +1231,17 @@ pub fn Node::attribute_locked(self : Node, name : String) -> Bool {
 }
 
 ///|
+/// Ruby's `@attributes_modified.include? name`: whether an attribute entry
+/// changed the attribute, as Ruby records it — an entry in the header that
+/// sets or unsets it, or one in the body that unsets it (a body entry that
+/// sets an attribute is not recorded). Entries for a locked attribute (one
+/// set by the API, or by the safe mode, such as `icons` when secure) are
+/// ignored and not recorded.
+pub fn Node::attribute_modified(self : Node, name : String) -> Bool {
+  self.doc().attributes_modified.contains(name)
+}
+
+///|
 /// Sets an attribute in the header attribute snapshot.
 pub fn Node::set_header_attribute(
   self : Node,
