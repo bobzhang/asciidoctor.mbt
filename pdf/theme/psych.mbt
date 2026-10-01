@@ -15,6 +15,12 @@ pub suberror ThemeError {
 } derive(Debug)
 
 ///|
+pub extend ThemeError with Debug::{to_repr}
+
+///|
+pub extend ThemeError with Show::{to_string, output}
+
+///|
 pub impl Show for ThemeError with fn output(self, logger) {
   let ThemeError(message) = self
   logger.write_string(message)

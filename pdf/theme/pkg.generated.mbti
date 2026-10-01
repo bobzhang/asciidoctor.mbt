@@ -54,6 +54,9 @@ pub let warnings : Array[String]
 pub suberror ThemeError {
   ThemeError(String)
 } derive(@debug.Debug)
+pub fn ThemeError::output(Self, &Logger) -> Unit
+pub fn ThemeError::to_repr(Self) -> @debug.Repr
+pub fn ThemeError::to_string(Self) -> String
 pub impl Show for ThemeError
 
 // Types and methods
@@ -94,9 +97,12 @@ pub(all) enum Value {
 } derive(Eq, @debug.Debug)
 pub fn Value::as_number(Self) -> Double?
 pub fn Value::dump(Self) -> String
+pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::inspect_ruby(Self) -> String
 pub fn Value::is_numeric(Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
 pub fn Value::to_f(Self) -> Double
+pub fn Value::to_repr(Self) -> @debug.Repr
 pub fn Value::to_ruby_s(Self) -> String
 pub fn Value::truthy(Self) -> Bool
 
