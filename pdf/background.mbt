@@ -22,6 +22,8 @@ priv struct BoxImage {
   vposition : String
   /// the macro's `link`
   link : String?
+  /// the macro's alt text, in brackets (`image_opts[:alt]`)
+  alt : String?
 }
 
 ///|
@@ -32,6 +34,8 @@ priv enum Background {
   NoImage
   /// `none`
   Cleared
+  /// the image named cannot be read (its resolved path)
+  Unreadable(String)
   Symbolic(String)
   Found(BoxImage)
 }
@@ -184,6 +188,32 @@ fn Converter::resolve_background_image(
   if value == "none" {
     return Cleared
   }
+  match self.resolve_box_image(value, from_theme, container, layout~) {
+    Unreadable(resolved) => {
+      warning(
+        "\{key.replace_all(old="-", new=" ").replace_all(old="_", new=" ")} not found or readable: \{resolved}",
+        doc,
+      )
+      NoImage
+    }
+    found => found
+  }
+}
+
+///|
+/// The image `value` names (`resolve_background_image` from its value on,
+/// `resolve_image_options`): an image macro's attributes size it in the
+/// `container`; with `background`, fit defaults to `contain`, else an
+/// explicit width applies before fitting.
+fn Converter::resolve_box_image(
+  self : Converter,
+  value : String,
+  from_theme : Bool,
+  container : (Double, Double),
+  layout? : String = "portrait",
+  background? : Bool = true,
+) -> Background {
+  let doc = self.doc
   let mut path = value
   let mut attrs : @core.Attributes? = None
   // relative to: the images directory (an image macro), the theme's
@@ -250,13 +280,7 @@ fn Converter::resolve_background_image(
       (doc.vfs().read(resolved), resolved)
     }
   }
-  guard data is Some(data) else {
-    warning(
-      "\{key.replace_all(old="-", new=" ").replace_all(old="_", new=" ")} not found or readable: \{resolved}",
-      doc,
-    )
-    return NoImage
-  }
+  guard data is Some(data) else { return Unreadable(resolved) }
   if format == "pdf" {
     unsupported("image", "format of \{path}", doc)
     return NoImage
@@ -269,13 +293,20 @@ fn Converter::resolve_background_image(
   let mut width : Double? = None
   let mut height : Double? = None
   match attrs {
+    Some(attrs) if !background &&
+      !attrs.contains("fit") &&
+      macro_explicit_width(attrs, cw) is Some(w) => width = Some(w)
+    Some(attrs) if !background && !attrs.contains("fit") =>
+      fit = Some(container)
     Some(attrs) => {
-      match attrs_str(attrs, "position").bind(background_position) {
-        Some((p, v)) => {
-          position = p
-          vposition = v
+      if background {
+        match attrs_str(attrs, "position").bind(background_position) {
+          Some((p, v)) => {
+            position = p
+            vposition = v
+          }
+          None => ()
         }
-        None => ()
       }
       let image_fit = match attrs_str(attrs, "fit").unwrap_or("contain") {
         "fill" if svg => "contain"
@@ -330,6 +361,7 @@ fn Converter::resolve_background_image(
     position,
     vposition,
     link: attrs.bind(a => attrs_str(a, "link")),
+    alt: attrs.bind(a => attrs_str(a, "alt")).map(a => "[\{a}]"),
   })
 }
 

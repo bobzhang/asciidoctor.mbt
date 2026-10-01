@@ -422,6 +422,14 @@ fn Converter::ink_running_content(
     unsupported("theme", periphery + "_column_rule", doc)
   }
   let valign = t_str(periphery + "_vertical_align").unwrap_or("middle")
+  // images go by `<periphery>_image_vertical_align`, else by the content's
+  let img_valign = match
+    t_str(periphery + "_image_vertical_align").or_some(Some(valign)) {
+    Some("middle") | None => "center"
+    Some(v) => v
+  }
+  // the image a column's content names, resolved once per side and column
+  let images : Map[String, Background] = Map([])
   let face = flow.font(base)
   let metrics = line_metrics(line_height, face, base.size)
   // the footer's content moves down by half its border
@@ -520,12 +528,87 @@ fn Converter::ink_running_content(
         continue
       }
       let key = "\{periphery}_\{side}_\{position}"
-      let raw = match tv(key + "_content") {
+      let mut raw = match tv(key + "_content") {
         Null | Str("") => continue
         v => v.to_ruby_s()
       }
-      if raw.contains("image:") {
-        unsupported("theme", "image in running content", doc)
+      // content that is an image macro is an image in the column, aligned
+      // as the column is; one that cannot be read stays an inline image
+      // (its alt text)
+      match image_macro(raw) {
+        Some((_, attrlist)) => {
+          let resolved = match images.get(key) {
+            Some(r) => r
+            None => {
+              let r = self.resolve_box_image(
+                raw,
+                true,
+                (width, content_height),
+                background=false,
+              )
+              images[key] = r
+              r
+            }
+          }
+          match resolved {
+            Found(img) => {
+              let img = {
+                ..img,
+                position: match align {
+                  Center => "center"
+                  Right => "right"
+                  _ => "left"
+                },
+                vposition: img_valign,
+              }
+              match
+                self.box_image_items(
+                  img,
+                  content_left + x,
+                  box_top,
+                  width,
+                  content_height,
+                ) {
+                Some((drawn, iw, ih)) => {
+                  page.items.append(drawn)
+                  match img.link {
+                    Some(link) if link != "" => {
+                      let (ix, iy) = match drawn.get(0) {
+                        Some(Image(i)) => (i.x_pt, i.y_pt)
+                        Some(Graphic(g)) => (g.x_pt, g.y_pt)
+                        _ => (content_left + x, box_top)
+                      }
+                      page.items.push(
+                        Link({
+                          x_pt: ix,
+                          y_pt: iy,
+                          w_pt: iw,
+                          h_pt: ih,
+                          target: if link.has_prefix("#") {
+                            Named(pdf_anchor_name(link[1:].to_owned()))
+                          } else {
+                            Uri(link)
+                          },
+                        }),
+                      )
+                    }
+                    _ => ()
+                  }
+                  continue
+                }
+                // an image that cannot be drawn shows its alt text
+                None =>
+                  match img.alt {
+                    Some(alt) => raw = alt
+                    None => continue
+                  }
+              }
+            }
+            Unreadable(path) => raw = "image:\{path}[\{attrlist}]"
+            _ => raw = "image:[\{attrlist}]"
+          }
+        }
+        None => ()
       }
       let (style, _) = theme_font(base, line_height, key)
       let content = if raw == "{page-number}" {
