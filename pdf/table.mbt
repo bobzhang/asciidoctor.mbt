@@ -714,6 +714,10 @@ fn table_rules(node : @core.Node) -> Rules {
 /// how many header rows, rows and columns it has.
 priv struct TableLayout {
   cells : Array[TableCell]
+  /// the cells (indices into `cells`, in order) that start in each row: a
+  /// tall table is drawn page by page and row by row, and a scan of every
+  /// cell for each would be quadratic
+  by_row : Array[Array[Int]]
   row_heights : Array[Double]
   head_rows : Int
   num_rows : Int
@@ -863,8 +867,13 @@ fn Converter::layout_table(
       }
     }
   }
+  let by_row : Array[Array[Int]] = Array::makei(num_rows, _ => [])
+  for i, cell in cells {
+    by_row[cell.row].push(i)
+  }
   {
     cells,
+    by_row,
     row_heights,
     head_rows: rows.head.length(),
     num_rows,
@@ -894,10 +903,8 @@ fn TableLayout::span_height(self : TableLayout, cell : TableCell) -> Double {
 /// (prawn-table's `height_with_span`).
 fn TableLayout::row_height_with_span(self : TableLayout, row : Int) -> Double {
   let mut h = self.row_heights[row]
-  for cell in self.cells {
-    if cell.row == row {
-      h = @cmp.maximum(h, self.span_height(cell))
-    }
+  for i in self.by_row[row] {
+    h = @cmp.maximum(h, self.span_height(self.cells[i]))
   }
   h
 }
@@ -1076,7 +1083,13 @@ fn Converter::draw_table_rows(
     tops[r] = y
     y += layout.row_heights[r]
   }
-  let on_page = layout.cells.filter(c => tops.contains(c.row))
+  // in the order of `cells`
+  let indices = []
+  for r in rows {
+    indices.append(layout.by_row[r])
+  }
+  indices.sort()
+  let on_page = indices.map(i => layout.cells[i])
   for cell in on_page {
     // body rows take the row colours, restarting on every page
     // (`set_background_color`)
