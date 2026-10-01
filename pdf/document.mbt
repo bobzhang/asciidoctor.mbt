@@ -50,6 +50,7 @@ fn front_matter(
   has_title_page : Bool,
   toc_at_top : Bool,
   body_start : Int,
+  has_front_cover? : Bool = false,
 ) -> (Int, Int) {
   // pages (0-based) before the body
   let body_offset = body_start
@@ -60,26 +61,27 @@ fn front_matter(
     }
     let numbering = match tv("page_numbering_start_at") {
       Int(n) => body_offset + @cmp.maximum(n.to_int() - 1, 0)
+      Str("cover") if has_front_cover => 0
       _ => body_offset
     }
     return (running, numbering)
   }
-  let zero = 0
-  let first = if has_title_page { 1 } else { 0 }
+  let zero = if has_front_cover { 1 } else { 0 }
+  let first = if has_title_page { zero + 1 } else { zero }
   let resolve = (key : String) => {
     match tv(key) {
       Int(n) => ("body", body_offset + @cmp.maximum(n.to_int() - 1, 0))
       v => {
         let at = value_str(v).unwrap_or("body")
-        let at = match at {
-          "title" => if has_title_page { "title" } else { "toc" }
-          "toc" => if toc_at_top { "toc" } else { "body" }
-          "after-toc" => "body"
-          "cover" => if key == "page_numbering_start_at" { "title" } else { at }
-          other => other
+        let numbering = key == "page_numbering_start_at"
+        match at {
+          "cover" if numbering && has_front_cover => ("cover", 0)
+          "cover" if numbering => ("title", body_offset)
+          "title" => (if has_title_page { "title" } else { "toc" }, body_offset)
+          "toc" => (if toc_at_top { "toc" } else { "body" }, body_offset)
+          "after-toc" => ("body", body_offset)
+          other => (other, body_offset)
         }
-        let at = if at == "toc" && !toc_at_top { "body" } else { at }
-        (at, body_offset)
       }
     }
   }
@@ -121,6 +123,9 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     _ => t_align("base_text_align", Left)
   }
   flow.start_new_page()
+  // the front cover, on a page of its own (`ink_cover_page`)
+  let has_front_cover = c.ink_cover_page("front")
+  c.has_front_cover = has_front_cover
   // an article's abstract section becomes an abstract block, out of the
   // TOC and the outline (the "demote abstract section" hack)
   match doc.sections().get(0) {
@@ -138,6 +143,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     doc.has_header() &&
     !doc.notitle() &&
     !(tv("title_page") is Bool(false))
+  let title_page_index = flow.page
   if has_title_page {
     c.ink_title_page()
     flow.start_new_page()
@@ -190,7 +196,11 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // running content (by default)
   let body_start = if title_as_page { flow.page } else { article_body_start }
   let (skip_running, skip_numbering) = front_matter(
-    title_as_page, has_title_page, toc_at_top, body_start,
+    title_as_page,
+    has_title_page,
+    toc_at_top,
+    body_start,
+    has_front_cover~,
   )
   session.index.start_page_number = skip_numbering + 1
   // the top of the document, for `<<_top>>`-style references: the top of
@@ -246,7 +256,14 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
     ignore(pages.pop())
   }
   // the page backgrounds (`init_page`), under everything
-  c.ink_page_backgrounds(if has_title_page { Some(0) } else { None })
+  c.ink_page_backgrounds(
+    if has_title_page {
+      Some(title_page_index)
+    } else {
+      None
+    },
+    front_cover=has_front_cover,
+  )
   if flow.model.pages.length() > body_start {
     if !doc.has_attr("noheader") && t_num_or("header_height", 0.0) != 0.0 {
       c.ink_running_content(
@@ -265,6 +282,10 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       )
     }
   }
+  // the back cover, on a page after the last; it is not labeled itself
+  // (the labels are added before it), so it takes the last page's label
+  let labeled_pages = flow.model.pages.length()
+  ignore(c.ink_cover_page("back"))
   keep_last_anchors(flow.model)
   for entry in @pdf.unembeddable_images(flow.model) {
     diagnostics.push("UNSUPPORTED image \{entry.0} (\{entry.1}x) at <document>")
@@ -306,7 +327,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       // the OS/2 typographic metrics
       typo_metrics=true,
       page_labels=Array::makei(flow.model.pages.length(), i => {
-        page_label(i + 1, skip_numbering)
+        page_label(@cmp.minimum(i, labeled_pages - 1) + 1, skip_numbering)
       }),
     ),
   )

@@ -492,11 +492,19 @@ fn Converter::page_bg_images(
 /// then the page background image of the page's side and layout; the title
 /// page (`title_page`, an index) takes `title_page_background_color` and
 /// `title-page-background-image` instead where they are set.
-fn Converter::ink_page_backgrounds(self : Converter, title_page : Int?) -> Unit {
+fn Converter::ink_page_backgrounds(
+  self : Converter,
+  title_page : Int?,
+  front_cover? : Bool = false,
+) -> Unit {
   let pages = self.flow.model.pages
   let color = page_background_color()
   let cache : Map[String, Map[String, BoxImage?]] = Map([])
   for index, page in pages {
+    // a cover page has no background
+    if front_cover && index == 0 {
+      continue
+    }
     let (w, h) = (page.width_pt, page.height_pt)
     let layout = if w > h { "landscape" } else { "portrait" }
     let side = if (index + 1) % 2 == 1 { "recto" } else { "verso" }
@@ -543,4 +551,39 @@ fn Converter::ink_page_backgrounds(self : Converter, title_page : Int?) -> Unit 
       page.items.insert(i, item)
     }
   }
+}
+
+///|
+/// `ink_cover_page`: the `front-cover-image` or `back-cover-image` (theme
+/// `cover_front_image`, `cover_back_image`) on a page of its own, without
+/// page background or running content: the front cover on the current
+/// (first) page, which the content then leaves, the back cover on a page
+/// after the last; `""` is a blank page, `~` no cover. Returns whether a
+/// cover page was added.
+fn Converter::ink_cover_page(self : Converter, face : String) -> Bool {
+  let flow = self.flow
+  let (w, h) = (page_width(), page_height())
+  let items = match
+    self.resolve_background_image(
+      Some("\{face}-cover-image"),
+      "cover_\{face}_image",
+      (w, h),
+      symbolic=true,
+    ) {
+    Symbolic("") => []
+    Found(img) =>
+      match self.box_image_items(img, 0.0, 0.0, w, h) {
+        Some((drawn, _, _)) => drawn
+        None => if face == "front" { return false } else { [] }
+      }
+    _ => return false
+  }
+  if face == "back" {
+    flow.start_new_page()
+  }
+  flow.model.pages[flow.page].items.append(items)
+  if face == "front" {
+    flow.start_new_page()
+  }
+  true
 }

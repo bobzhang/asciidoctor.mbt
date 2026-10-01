@@ -27,6 +27,8 @@ priv struct Converter {
   /// asciidoctor-pdf's `@float_box`: the space beside a floated image
   /// that the next paragraphs wrap into (see `init_float_box`)
   mut float_box : FloatBox?
+  /// the first page is a front cover (see `ink_cover_page`)
+  mut has_front_cover : Bool
 }
 
 ///|
@@ -42,6 +44,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     toc_levels: resolve_toclevels(doc),
     disable_running_content: Map([("header", []), ("footer", [])]),
     float_box: None,
+    has_front_cover: false,
   }
 }
 
@@ -530,15 +533,17 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
     Some("") => resolve_doctitle(doc)
     title => title
   }
+  // the title goes to the first page after the front cover, if any
+  let initial_page = if self.has_front_cover { 1 } else { 0 }
   match outline_title {
-    Some(title) =>
+    Some(title) if self.flow.model.pages.length() > initial_page =>
       outline.push({
         title: sanitize(title),
         level: 0,
-        dest: Position(page=0, x=0.0, y=0.0),
+        dest: Position(page=initial_page, x=0.0, y=0.0),
         open: false,
       })
-    None => ()
+    _ => ()
   }
   let sections = self.outline
   let toc_title = doc.attr("toc-title").unwrap_or("")
