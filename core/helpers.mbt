@@ -544,3 +544,21 @@ pub fn Node::read_contents(
   }
   contents
 }
+
+///|
+/// Ruby's `String#upcase` (full Unicode case mapping), for backends.
+pub fn ruby_upcase(str : String) -> String {
+  @rb.upcase(str)
+}
+
+///|
+/// Ruby's `String#downcase` (full Unicode case mapping), for backends.
+pub fn ruby_downcase(str : String) -> String {
+  @rb.downcase(str)
+}
+
+///|
+/// Ruby's `String#capitalize`, for backends.
+pub fn ruby_capitalize(str : String) -> String {
+  @rb.capitalize(str)
+}

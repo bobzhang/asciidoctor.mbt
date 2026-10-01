@@ -641,7 +641,14 @@ pub fn capitalize(s : String) -> String {
   let w = if s[0] >= 0xD800 && s[0] <= 0xDBFF && s.length() > 1 { 2 } else { 1 }
   let head = s.unsafe_substring(start=0, end=w)
   let tail = s.unsafe_substring(start=w, end=s.length())
-  upcase(head) + downcase(tail)
+  // the first character takes its titlecase mapping (Ruby uses it, not
+  // upcase: "ǆ" -> "ǅ", "ß" -> "Ss")
+  let title = match head.iter().next() {
+    Some(c) if c.to_int() >= 128 =>
+      lookup_case(title_keys, title_vals, c.to_int())
+    _ => None
+  }
+  title.unwrap_or(upcase(head)) + downcase(tail)
 }
 
 ///|
