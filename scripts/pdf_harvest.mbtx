@@ -511,7 +511,13 @@ async fn main {
     }
   }
   if update_counts || previous.is_empty() {
-    let merged = previous.copy()
+    // a full harvest replaces the counts, so a spec that lost all its
+    // records drops out; a partial one merges into them
+    let merged = if specs.is_empty() {
+      Map([])
+    } else {
+      previous.copy()
+    }
     for k, v in counts {
       merged[k] = v
     }
