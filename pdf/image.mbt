@@ -85,11 +85,20 @@ fn resolve_length(
 fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
   let flow = self.flow
   let target = node.attr("target").unwrap_or("")
-  let path = node.normalize_system_path(
+  let (image_target, format) = image_target_and_format(
     target,
-    start=node.document().attr("imagesdir").unwrap_or(""),
+    node.attr("format"),
   )
-  let data = if is_gif(node, target) { None } else { node.vfs().read(path) }
+  let (data, path) = if format == "gif" {
+    (None, "")
+  } else {
+    load_image_target(
+      node,
+      image_target,
+      start=node.document().attr("imagesdir").unwrap_or(""),
+    )
+  }
+  let path = if image_target is Data(_) { target } else { path }
   let info = data.bind(image_info)
   // `float` (left or right), else `align` (left when unknown), else the
   // last alignment role
@@ -109,7 +118,7 @@ fn Converter::convert_image(self : Converter, node : @core.Node) -> Unit {
           .unwrap_or("left")
       }
   }
-  let svg = is_svg(node, target)
+  let svg = format == "svg"
   if data is Some(bytes) && svg {
     if self.convert_svg_image(node, path, bytes, alignment) {
       return
@@ -259,12 +268,21 @@ priv struct InlineImage {
 fn convert_inline_image(node : @core.Node) -> String {
   let target = node.target.unwrap_or("")
   let alt = node.attr("alt").unwrap_or("")
-  let path = node.normalize_system_path(
+  let (image_target, format) = image_target_and_format(
     target,
-    start=node.document().attr("imagesdir").unwrap_or(""),
+    node.attr("format"),
   )
-  let bytes = if is_gif(node, target) { None } else { node.vfs().read(path) }
-  let svg = is_svg(node, target)
+  let (bytes, path) = if format == "gif" {
+    (None, "")
+  } else {
+    load_image_target(
+      node,
+      image_target,
+      start=node.document().attr("imagesdir").unwrap_or(""),
+    )
+  }
+  let path = if image_target is Data(_) { target } else { path }
+  let svg = format == "svg"
   let loaded = bytes.bind(data => {
     if svg {
       // prawn-svg's intrinsic size, in the bounds of the page's content
@@ -425,15 +443,4 @@ fn inline_image_size(
 fn content_height() -> Double {
   let setup = page_setup.val
   setup.height - setup.margin_top - setup.margin_bottom
-}
-
-///|
-/// Whether the image is a GIF (its `format` attribute, else its target's
-/// extension): without prawn-gmagick, asciidoctor-pdf treats it as missing
-/// and shows its alt text.
-fn is_gif(node : @core.Node, target : String) -> Bool {
-  match node.attr("format") {
-    Some(format) => format.to_lower() == "gif"
-    None => target.to_lower().has_suffix(".gif")
-  }
 }

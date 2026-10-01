@@ -25,16 +25,6 @@ fn Flow::svg_stack(self : Flow) -> @svg.TransformationStack {
 }
 
 ///|
-/// Whether an image is SVG: its `format` attribute, else its target's
-/// extension (`Asciidoctor::Image.format`).
-fn is_svg(node : @core.Node, target : String) -> Bool {
-  match node.attr("format") {
-    Some(format) => format.to_lower() == "svg"
-    None => target.to_lower().has_suffix(".svg")
-  }
-}
-
-///|
 /// The families Prawn knows (`font_families`), with their styles: the
 /// catalog's (not the icon sets'), and Prawn's built-in AFM families.
 fn FontCatalog::svg_families(
