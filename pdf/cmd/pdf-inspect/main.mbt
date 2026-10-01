@@ -7,6 +7,10 @@
 //     outline (titles, depth, open state, resolved targets), named
 //     destinations (in name-tree order, resolved), page labels, the
 //     information dictionary and the catalog's viewer settings.
+//   pdf-inspect content FILE PAGE
+//     The decoded content streams of page PAGE (1-based), for triage.
+//   pdf-inspect fontfile FILE NAME OUT
+//     Write the embedded program of the font whose name ends with NAME.
 //   pdf-inspect mutate KIND IN OUT
 //     Write a deliberately corrupted copy of IN (for the comparison's
 //     self-test): delete-text, reorder-lines, shift-block, drop-graphics,
@@ -709,6 +713,34 @@ fn Inspector::fonts(self : Inspector) -> Array[Json] raise {
 }
 
 ///|
+/// The embedded font program (FontFile, FontFile2 or FontFile3) of the
+/// font whose BaseFont ends with `name`.
+fn Inspector::font_file(self : Inspector, name : String) -> Bytes? raise {
+  let mut found : Bytes? = None
+  self.doc.iter_objects_in_order((_, obj) => {
+    guard found is None && obj is PdfDictionary(_) else { return }
+    guard self.get(obj, "/Type") is Some(PdfNameObject(t)) &&
+      name_text(t) == "FontDescriptor" else {
+      return
+    }
+    guard self.get(obj, "/FontName") is Some(PdfNameObject(n)) &&
+      name_text(n).has_suffix(name) else {
+      return
+    }
+    for key in ["/FontFile", "/FontFile2", "/FontFile3"] {
+      match self.get(obj, key) {
+        Some(PdfStreamObject(_) as stream) => {
+          found = Some(stream.stream_bytes() catch { _ => b"" })
+          return
+        }
+        _ => ()
+      }
+    }
+  })
+  found
+}
+
+///|
 fn box_json(values : Array[Double]) -> Json {
   if values.length() == 4 {
     Json::array(values.map(v => Json::number(v)))
@@ -1359,7 +1391,7 @@ fn is_flat(img : Image, x : Int, y : Int) -> Bool {
 
 ///|
 fn usage() -> String {
-  "usage: pdf-inspect info FILE | mutate KIND IN OUT | rastercmp A.ppm B.ppm DIFF.png"
+  "usage: pdf-inspect info FILE | content FILE PAGE | fontfile FILE NAME OUT | mutate KIND IN OUT | rastercmp A.ppm B.ppm DIFF.png"
 }
 
 ///|
@@ -1374,6 +1406,28 @@ async fn main {
       )
       let json = Inspector::new(doc).info()
       @stdio.stdout.write(json.stringify() + "\n")
+    }
+    "content" if args.length() == 4 => {
+      let bytes = @fs.read_file(args[2]).binary()
+      let doc = @pdflite.pdf_decompress_pdf(
+        @pdflite.pdf_read_document_from_bytes(bytes),
+      )
+      let inspector = Inspector::new(doc)
+      let index = @string.parse_int(args[3]) - 1
+      guard doc.pages_of_pagetree().get(index) is Some(page) else {
+        fail("no page \{args[3]}")
+      }
+      @stdio.stdout.write(latin1(inspector.content_bytes(page)))
+    }
+    "fontfile" if args.length() == 5 => {
+      let bytes = @fs.read_file(args[2]).binary()
+      let doc = @pdflite.pdf_decompress_pdf(
+        @pdflite.pdf_read_document_from_bytes(bytes),
+      )
+      guard Inspector::new(doc).font_file(args[3]) is Some(font) else {
+        fail("no embedded font \{args[3]}")
+      }
+      @fs.write_file(args[4], font, create_mode=CreateOrTruncate)
     }
     "mutate" if args.length() == 5 => {
       let bytes = @fs.read_file(args[3]).binary()
