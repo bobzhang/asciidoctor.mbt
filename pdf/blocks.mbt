@@ -173,6 +173,50 @@ fn Converter::convert_code(
     parse_formatted(text, style, normalize=false)
   }
   let (pad_top, pad_right, pad_bottom, pad_left) = padding_of("code")
+  // `autofit` (`compute_autofit_font_size`): a smaller font when the widest
+  // line does not fit, no smaller than `code_font_size_min` (else
+  // `base_font_size_min`); the line metrics stay those of the code font
+  let (fragments, style) = if node.has_option("autofit") ||
+    node.document().has_attr("autofit-option") {
+    let widths = [0.0]
+    for fragment in fragments {
+      let parts = fragment.text.split("\n").collect()
+      for i, part in parts {
+        if i > 0 {
+          widths.push(0.0)
+        }
+        widths[widths.length() - 1] += flow.width_of(
+          part.to_owned(),
+          fragment.style,
+        )
+      }
+    }
+    let actual = widths.fold(init=0.0, @cmp.maximum)
+    let available = flow.width() - pad_left - pad_right
+    if actual > available {
+      let adjusted = (available * style.size / actual * 10000.0).floor() /
+        10000.0
+      let min = match tv("code_font_size_min") {
+        Null => tv("base_font_size_min")
+        v => v
+      }
+      let size = match resolve_font_size(min, style.size) {
+        Some(m) if adjusted < m => m
+        _ => adjusted
+      }
+      (
+        fragments.map(f => {
+          ..f,
+          style: { ..f.style, size: f.style.size * size / style.size, },
+        }),
+        { ..style, size, },
+      )
+    } else {
+      (fragments, style)
+    }
+  } else {
+    (fragments, style)
+  }
   let below = caption_below("code")
   // arrange_block: the caption and the background are tared, so the block
   // starts on the next page when not even its first line (with the room
