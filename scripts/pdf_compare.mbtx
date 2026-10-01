@@ -2502,7 +2502,10 @@ async fn load_spec_goldens(
         text,
         base_dir: match (base_dir, text) {
           (Some(d), _) => Some(d)
-          // a string is converted from the directory rspec ran in
+          // a string is converted from the directory rspec ran in, unless
+          // a docdir attribute gives the base directory
+          (None, Some(_)) if attributes.get("docdir") is Some(String(_)) =>
+            None
           (None, Some(_)) => Some(spec_root)
           (None, None) => None
         },
