@@ -274,6 +274,81 @@ fn admonition_icon(name : String) -> (String, String, Color, Double) {
 /// `icons=font`, the icon) in a column left of a rule
 /// (`admonition_column_rule_*`), the content right of it in the
 /// `admonition` font, all in the admonition padding and frame.
+fn Converter::admonition_icon_image(
+  self : Converter,
+  node : @core.Node,
+  name : String,
+) -> BoxImage? {
+  // `convert_admonition` with image icons: the `icon` attribute's image
+  // (or `<iconsdir>/<name>.<icontype>`, `get_icon_image_path`) unless the
+  // theme's `admonition_icon_<name>` has an `image`, resolved against the
+  // theme's directory
+  let doc = self.doc
+  let has_icon = node.has_attr("icon")
+  let theme_image = match tv("admonition_icon_\{name}") {
+    Hash(map, ..) =>
+      match map.get("image") {
+        Some(Null) | None => None
+        Some(v) => Some(v.to_ruby_s())
+      }
+    _ => None
+  }
+  let (path, format) = match theme_image {
+    Some(image) if !has_icon => {
+      let themesdir = current_theme.val.dir()
+      let path = with_attrs(doc, [("imagesdir", themesdir)], () => {
+        apply_subs_discretely(doc, image)
+      })
+      (
+        @theme.resolve_theme_asset(theme_files(doc), path, theme_dir=themesdir),
+        image_target_and_format(path, None).1,
+      )
+    }
+    _ => {
+      // the data-uri attribute is off while the icon's path is computed
+      let data_uri = doc.attr("data-uri")
+      if data_uri is Some(_) {
+        ignore(doc.remove_attr("data-uri"))
+      }
+      let uri = node.icon_uri(name)
+      match data_uri {
+        Some(v) => ignore(doc.set_attr("data-uri", value=Str(v)))
+        None => ()
+      }
+      let (_, format) = image_target_and_format(uri, None)
+      let path = if uri.has_prefix("/") {
+        uri
+      } else {
+        doc.normalize_system_path(uri)
+      }
+      (path, format)
+    }
+  }
+  match doc.vfs().read(path) {
+    Some(data) =>
+      Some({
+        data,
+        svg: format == "svg",
+        path,
+        fit: None,
+        width: None,
+        height: None,
+        position: "center",
+        vposition: "center",
+        link: None,
+        alt: None,
+      })
+    None => {
+      warning(
+        "admonition icon image\{if has_icon { "" } else { " for " + name.to_upper() }} not found or not readable: \{path}",
+        node,
+      )
+      None
+    }
+  }
+}
+
+///|
 fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
   let flow = self.flow
   let name = node.attr("name").unwrap_or("")
@@ -290,11 +365,14 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
         None => None
       }
     }
-    Some(_) => {
-      unsupported("block", "admonition icon image", node)
-      None
-    }
-    None => None
+    _ => None
+  }
+  // other icons are images: the `icon` attribute's, else the theme's
+  // `admonition_icon_<name>` image, else `<iconsdir>/<name>.<icontype>`
+  let icon_image = match self.doc.attr("icons") {
+    Some(icons) if icon is None && (icons != "font" || node.has_attr("icon")) =>
+      self.admonition_icon_image(node, name)
+    _ => None
   }
   let (label_style, label) = admonition_label_font(
     name,
@@ -319,8 +397,11 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
         0.0
       }
   }
-  let label_width = match min_width {
-    Some(w) if w > natural_width => w
+  let label_width = match (icon_image, min_width) {
+    // an image takes `admonition_label_min_width`, else 36pt
+    (Some(_), Some(w)) => w
+    (Some(_), None) => 36.0
+    (None, Some(w)) if w > natural_width => w
     _ => natural_width
   }
   let (pad_top, pad_right, pad_bottom, pad_left) = admonition_padding()
@@ -406,6 +487,47 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
             )
           }
         }
+        _ if first &&
+          (match icon_image {
+            Some(img) => {
+              // the image in the label box, as wide as the label column
+              // (a raster image no wider than its natural size), no taller
+              // than the box
+              let height = bottom - top
+              let img = match image_info(img.data) {
+                Some((px_w, px_h, _)) if !img.svg => {
+                  let mut w = @cmp.minimum(px_w.to_double() * 0.75, label_width)
+                  let h = w * px_h.to_double() / px_w.to_double()
+                  if h > height {
+                    w = w * height / h
+                  }
+                  { ..img, width: Some(w), }
+                }
+                _ => { ..img, width: Some(label_width), height: Some(height), }
+              }
+              let img = {
+                ..img,
+                position: match label_align {
+                  Center => "center"
+                  Right => "right"
+                  _ => "left"
+                },
+                vposition: if valign == "middle" {
+                  "center"
+                } else {
+                  valign
+                },
+              }
+              match c.box_image_items(img, box_left, top, label_width, height) {
+                Some((drawn, _, _)) => {
+                  items.append(drawn)
+                  true
+                }
+                None => false
+              }
+            }
+            None => false
+          }) => ()
         _ =>
           if first && label_lines.length() > 0 {
             // the label is centred vertically on the part of the block on

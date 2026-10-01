@@ -418,7 +418,7 @@ fn Converter::box_image_items(
       @utf8.decode_lossy(img.data),
       (w, h),
       width?=img.width,
-      height?=if img.width is None { img.height } else { None },
+      height?=img.height,
     ) catch {
       @svg.SvgError(message) => {
         if !flow.scratch {
@@ -438,7 +438,6 @@ fn Converter::box_image_items(
           sizing.resize(height=fh)
         }
       }
-      (_, Some(_), Some(hh)) => sizing.resize(height=hh)
       _ => ()
     }
     let (iw, ih) = (sizing.output_width, sizing.output_height)
