@@ -36,7 +36,8 @@ priv struct Converter {
   /// chapters (and TOC and body) start on a recto page
   mut ppbook : Bool
   /// the height of the last content page, which asciidoctor-pdf's
-  /// `dest_top` of the outline's title takes (`page_height`)
+  /// `dest_top` of the outline's title and the `FitH` open action take
+  /// (`page_height`)
   mut end_page_h : Double
 }
 

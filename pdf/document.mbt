@@ -366,7 +366,12 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   let initial_zoom : @pdf.InitialZoom? = match t_str("page_initial_zoom") {
     Some("Fit") => Some(Fit)
     Some("FitV") => Some(FitV)
-    Some("FitH") => Some(FitH)
+    // `dest_fit_horizontally page_height, state.pages[0]`: the window's top
+    // at the height of the page current when the open action is set (the
+    // last content page, before the back cover), measured from the first
+    // page's bottom edge
+    Some("FitH") =>
+      Some(FitHAt(top=flow.model.pages[0].height_pt - c.end_page_h))
     _ => None
   }
   let page_mode : @pdf.PageMode = match
