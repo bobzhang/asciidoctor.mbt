@@ -437,6 +437,29 @@ fn Converter::convert_list_item(
   _metrics : LineMetrics,
   align? : Alignment,
 ) -> Unit {
+  self.ink_list_marker(marker)
+  let margin_bottom = if is_compound_item(item) {
+    prose_margin_bottom()
+  } else if next_enclosed_block(item, descend=true) is Some(_) {
+    list_item_spacing()
+  } else {
+    0.0
+  }
+  match item.text() {
+    Some(text) if !text.is_empty() =>
+      self.ink_prose(text, align?, margin_bottom~, normalize_line_height=true)
+    // an item without text or blocks still takes a line (`DummyText`)
+    _ =>
+      if !item.has_blocks() {
+        self.ink_prose("", margin_bottom~, normalize_line_height=true)
+      }
+  }
+  self.traverse(item)
+}
+
+///|
+/// A list item's marker (the start of `convert_list_item`), unless empty.
+fn Converter::ink_list_marker(self : Converter, marker : Marker) -> Unit {
   let flow = self.flow
   let base = base_style()
   if !marker.text.is_empty() {
@@ -485,23 +508,127 @@ fn Converter::convert_list_item(
     flow.page = page
     flow.y = y
   }
-  let margin_bottom = if is_compound_item(item) {
-    prose_margin_bottom()
-  } else if next_enclosed_block(item, descend=true) is Some(_) {
-    list_item_spacing()
-  } else {
-    0.0
+}
+
+///|
+/// `convert_dlist` of an `unordered` or `ordered` description list: a
+/// bulleted (disc) or numbered list whose items are the subject in bold
+/// (with `subject-stop`, `:` by default, unless it ends in punctuation),
+/// then the description's text (on a line of its own with the `stack`
+/// role) and blocks.
+fn Converter::convert_dlist_as_list(
+  self : Converter,
+  node : @core.Node,
+  style : String,
+) -> Unit {
+  let parent = node.parent().unwrap_or(node)
+  let list = @core.Node::new_list(
+    parent,
+    if style == "unordered" {
+      Ulist
+    } else {
+      Olist
+    },
+  )
+  let stack = node.has_role("stack")
+  let stop = match node.attr("subject-stop") {
+    Some(s) => s
+    None => if stack { "" } else { ":" }
   }
-  match item.text() {
-    Some(text) if !text.is_empty() =>
-      self.ink_prose(text, align?, margin_bottom~, normalize_line_height=true)
-    // an item without text or blocks still takes a line (`DummyText`)
-    _ =>
-      if !item.has_blocks() {
-        self.ink_prose("", margin_bottom~, normalize_line_height=true)
+  for entry in node.dlist_items {
+    let subject = entry.terms.get(0).bind(t => t.text()).unwrap_or("")
+    let text = match entry.desc {
+      Some(desc) => {
+        let plain = sanitize(subject)
+        let punct = plain != "" &&
+          ".!?;:".contains_char(plain[plain.length() - 1].unsafe_to_char())
+        let desc_text = match desc.text() {
+          Some(t) if t != "" => (if stack { "<br>" } else { " " }) + t
+          _ => ""
+        }
+        "+++<strong>\{subject}\{if punct { "" } else { stop }}</strong>\{desc_text}+++"
       }
+      None => "+++<strong>\{subject}</strong>+++"
+    }
+    let item = @core.Node::new_list_item(list, text~)
+    match entry.desc {
+      Some(desc) =>
+        for block in desc.blocks.copy() {
+          item.append(block)
+        }
+      None => ()
+    }
+    list.append(item)
   }
-  self.traverse(item)
+  if style == "unordered" {
+    let marker : Marker = {
+      text: ulist_marker_content("disc"),
+      keys: ["ulist_marker_disc", "ulist_marker"],
+    }
+    self.convert_list(list, fn(_index, _item) { marker })
+  } else {
+    self.convert_list(list, fn(index, _item) {
+      { text: "\{index + 1}.", keys: ["olist_marker"], }
+    })
+  }
+}
+
+///|
+/// `convert_dlist` of a `qanda` list: a numbered list (`convert_list`)
+/// whose items are the questions in italics, each followed by the term
+/// spacing, then the answer (`traverse_list_item`).
+fn Converter::convert_qanda(self : Converter, node : @core.Node) -> Unit {
+  let flow = self.flow
+  if node.has_title() {
+    self.ink_caption(node.title().unwrap_or(""), category="list")
+  }
+  let base = base_style()
+  let metrics = line_metrics(base_line_height(), flow.font(base), base.size)
+  let align = list_text_align(node)
+  flow.indent(list_indent(), 0.0, fn() {
+    for index, entry in node.dlist_items {
+      if !flow.at_page_top() &&
+        flow.cursor() <
+        base_line_height() * base.size + metrics.leading + metrics.padding_top {
+        flow.advance_page()
+      }
+      self.ink_list_marker({ text: "\{index + 1}.", keys: [], })
+      // convert_list_item's margin: the answer's (the junction)
+      let margin_bottom = match entry.desc {
+        Some(desc) if is_compound_item(desc) => prose_margin_bottom()
+        Some(desc) if next_enclosed_block(desc, descend=true) is Some(_) =>
+          list_item_spacing()
+        _ => 0.0
+      }
+      for term in entry.terms {
+        self.ink_prose(
+          "<em>\{term.text().unwrap_or("")}</em>",
+          align?,
+          margin_bottom=description_list_term_spacing(),
+          normalize_line_height=true,
+        )
+      }
+      match entry.desc {
+        Some(desc) => {
+          match desc.text() {
+            Some(text) if text != "" =>
+              self.ink_prose(
+                text,
+                align?,
+                margin_bottom~,
+                normalize_line_height=true,
+              )
+            _ => ()
+          }
+          self.traverse(desc)
+        }
+        None => ()
+      }
+    }
+  })
+  if !list_nested(node) && next_enclosed_block(node) is Some(_) {
+    flow.margin(prose_margin_bottom())
+  }
 }
 
 ///|
@@ -527,6 +654,17 @@ fn dlist_term_style() -> (Style, Double) {
 ///|
 fn Converter::convert_dlist(self : Converter, node : @core.Node) -> Unit {
   self.add_dest(node)
+  match node.style {
+    Some("unordered" | "ordered" as style) => {
+      self.convert_dlist_as_list(node, style)
+      return
+    }
+    Some("qanda") => {
+      self.convert_qanda(node)
+      return
+    }
+    _ => ()
+  }
   let flow = self.flow
   if node.has_title() {
     self.ink_caption(node.title().unwrap_or(""), category="description_list")
