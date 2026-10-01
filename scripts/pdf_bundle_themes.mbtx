@@ -4,19 +4,24 @@
 // `themes_dir`.
 //
 // Usage: moon run --target native scripts/pdf_bundle_themes.mbtx
+// (the gem is read from $ASCIIDOCTOR_PDF_GEMS, else .repos/gems-pdf; see
+// pdf/docs/oracle.md)
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
+  "moonbitlang/core/env",
 }
-
-///|
-let themes : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/themes"
 
 ///|
 let out : String = "pdf/theme/bundled.mbt"
 
 ///|
 async fn main {
+  let gems = match @env.get_env_var("ASCIIDOCTOR_PDF_GEMS") {
+    Some(d) if d != "" => d
+    _ => ".repos/gems-pdf"
+  }
+  let themes = "\{gems}/gems/asciidoctor-pdf-2.3.27/data/themes"
   let names = @fs.readdir(themes).filter(n => n.has_suffix("-theme.yml"))
   names.sort()
   let sb = StringBuilder()

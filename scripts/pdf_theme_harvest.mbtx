@@ -8,18 +8,47 @@
 // reproduce.
 //
 // Usage: moon run --target native scripts/pdf_theme_harvest.mbtx
+//
+// Ruby is $ASCIIDOCTOR_PDF_RUBY, else Homebrew's Ruby on macOS when
+// installed, else `ruby` on PATH; the gems are $ASCIIDOCTOR_PDF_GEMS, else
+// .repos/gems-pdf (scripts/pdf_harvest.mbtx installs them; see
+// pdf/docs/oracle.md).
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
   "moonbitlang/async/process",
+  "moonbitlang/core/env",
   "moonbitlang/core/json",
 }
 
 ///|
-let ruby : String = "/opt/homebrew/opt/ruby/bin/ruby"
+/// The Ruby that runs the oracle.
+async fn ruby() -> String {
+  match @env.get_env_var("ASCIIDOCTOR_PDF_RUBY") {
+    Some(r) if r != "" => return r
+    _ => ()
+  }
+  for candidate in [
+    "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+  ] {
+    if (@fs.exists(candidate) catch { _ => false }) {
+      return candidate
+    }
+  }
+  "ruby"
+}
 
 ///|
-let gems : String = ".repos/gems-pdf"
+/// The gem home of the oracle, absolute.
+async fn gems() -> String {
+  let dir = match @env.get_env_var("ASCIIDOCTOR_PDF_GEMS") {
+    Some(d) if d != "" => d
+    _ => ".repos/gems-pdf"
+  }
+  @fs.realpath(dir) catch {
+    _ => fail("no gems in \{dir}: run scripts/pdf_harvest.mbtx first")
+  }
+}
 
 ///|
 let spec_dir : String = ".repos/asciidoctor-pdf/spec"
@@ -128,11 +157,11 @@ async fn main {
     .map(n => "\{testdata}/\{n}")
   extras.sort()
   extras.append(extract_doc_examples())
-  let root = @fs.realpath(".")
-  let env = { "GEM_HOME": "\{root}/\{gems}", "GEM_PATH": "\{root}/\{gems}" }
+  let gems = gems()
+  let env = { "GEM_HOME": gems, "GEM_PATH": gems }
   let args = ["scripts/pdf_theme/harvest.rb", spec_dir, jsonl]
   args.append(extras)
-  let (code, stdout, stderr) = @process.collect_output(ruby, args, extra_env=env)
+  let (code, stdout, stderr) = @process.collect_output(ruby(), args, extra_env=env)
   if code != 0 {
     println(stdout.text() + stderr.text())
     fail("harvest.rb failed (exit \{code})")

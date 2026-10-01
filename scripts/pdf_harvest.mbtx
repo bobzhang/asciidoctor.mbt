@@ -14,17 +14,30 @@
 // Replay them through the acceptance gate with
 //   moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens
 //
-// Sets up what it needs: a shallow clone of asciidoctor-pdf at the release tag
+// Sets up what it needs (see pdf/docs/oracle.md): the oracle's runtime gems
+// (asciidoctor-pdf 2.3.27 and its dependencies at pinned versions) in
+// .repos/gems-pdf, a shallow clone of asciidoctor-pdf at the release tag
 // (.repos/asciidoctor-pdf-2.3.27; the spec suite is not part of the gem, and
 // .repos/asciidoctor-pdf stays at its own pinned commit for the corpus
 // scripts) and the spec dependencies at pinned versions in
-// .repos/gems-pdf-spec, on top of the oracle's runtime gems in .repos/gems-pdf.
+// .repos/gems-pdf-spec.
 //
-// Fails if the RSpec run fails other than on the known environmental failures
-// below, or if a spec file yields fewer records than record_counts.txt says
-// (pass --update-counts after an intended change).
+// The run writes into a staging area (_build/pdf-spec-cache/staging) and
+// replaces the committed records and the reference PDFs only once it is
+// validated: it fails, leaving them as they were, if the RSpec run fails
+// other than on the known environmental failures below, or if a spec file
+// yields fewer records than record_counts.txt says (pass --update-counts
+// after an intended change).
 //
-// Usage: moon run --target native scripts/pdf_harvest.mbtx -- [--update-counts] [spec/xxx_spec.rb...]
+// Usage: moon run --target native scripts/pdf_harvest.mbtx -- [options] [spec/xxx_spec.rb...]
+//   --update-counts   accept the record counts of this harvest
+//   --ruby RUBY       the Ruby to run (default $ASCIIDOCTOR_PDF_RUBY, else
+//                     Homebrew's Ruby on macOS when installed, else `ruby`
+//                     on PATH); gems are installed with the `gem` next to it
+//   --gems DIR        the oracle's gem home (default $ASCIIDOCTOR_PDF_GEMS,
+//                     else .repos/gems-pdf)
+//   --spec-gems DIR   the spec dependencies' gem home (default
+//                     $ASCIIDOCTOR_PDF_SPEC_GEMS, else .repos/gems-pdf-spec)
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/async/fs",
@@ -35,10 +48,19 @@ import {
 }
 
 ///|
-let ruby : String = "/opt/homebrew/opt/ruby/bin/ruby"
+/// The Ruby that runs the specs (see `configure`).
+let ruby : Ref[String] = { val: "ruby" }
 
 ///|
-let gem_cmd : String = "/opt/homebrew/opt/ruby/bin/gem"
+/// The `gem` command of that Ruby.
+let gem_cmd : Ref[String] = { val: "gem" }
+
+///|
+/// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
+/// Apple silicon and Intel).
+let ruby_candidates : Array[String] = [
+  "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+]
 
 ///|
 let spec_repo : String = ".repos/asciidoctor-pdf-2.3.27"
@@ -55,10 +77,43 @@ let spec_tag : String = "v2.3.27"
 let spec_commit : String = "39a97554fbd2c27cdd919bde3091dc048b174ce6"
 
 ///|
-let runtime_gems : String = ".repos/gems-pdf"
+/// The oracle's gem home, absolute (see `configure`).
+let runtime_gems : Ref[String] = { val: ".repos/gems-pdf" }
 
 ///|
-let spec_gems : String = ".repos/gems-pdf-spec"
+/// The spec dependencies' gem home, absolute (see `configure`).
+let spec_gems : Ref[String] = { val: ".repos/gems-pdf-spec" }
+
+///|
+/// The oracle: asciidoctor-pdf 2.3.27 and its runtime dependencies, at the
+/// versions the gem home the goldens were harvested with has (installed
+/// 2026-09-29).
+let runtime_pinned : Array[(String, String)] = [
+  ("Ascii85", "2.0.1"),
+  ("addressable", "2.9.0"),
+  ("afm", "1.0.0"),
+  ("asciidoctor", "2.0.26"),
+  ("asciidoctor-pdf", "2.3.27"),
+  ("base64", "0.3.0"),
+  ("bigdecimal", "4.1.3"),
+  ("concurrent-ruby", "1.3.8"),
+  ("css_parser", "1.22.0"),
+  ("hashery", "2.1.2"),
+  ("logger", "1.7.0"),
+  ("matrix", "0.4.3"),
+  ("pdf-core", "0.9.0"),
+  ("pdf-reader", "2.16.0"),
+  ("polyglot", "0.3.5"),
+  ("prawn", "2.4.0"),
+  ("prawn-icon", "3.0.0"),
+  ("prawn-svg", "0.34.2"),
+  ("prawn-table", "0.2.2"),
+  ("prawn-templates", "0.1.2"),
+  ("public_suffix", "7.0.5"),
+  ("rexml", "3.4.4"),
+  ("treetop", "1.6.18"),
+  ("ttfunk", "1.7.0"),
+]
 
 ///|
 /// The development dependencies of asciidoctor-pdf.gemspec and the Gemfile
@@ -103,7 +158,82 @@ let golden_dir : String = "tests/pdf_golden"
 let pdf_cache : String = "_build/pdf-spec-cache/pdfs"
 
 ///|
+/// Where a harvest is written before it is validated: `jsonl/` and `pdfs/`.
+let staging : String = "_build/pdf-spec-cache/staging"
+
+///|
 let record_counts_path : String = "tests/pdf_golden/record_counts.txt"
+
+///|
+async fn exists(path : String) -> Bool {
+  @fs.exists(path) catch {
+    _ => false
+  }
+}
+
+///|
+/// `path` from the working directory `root`, unless absolute.
+fn absolute(path : String, root : String) -> String {
+  if path.has_prefix("/") {
+    path
+  } else {
+    "\{root}/\{path}"
+  }
+}
+
+///|
+/// Set the Ruby and the gem homes from the flags, else the environment,
+/// else the defaults (see the usage above). Returns the arguments left.
+async fn configure(args : Array[String], root : String) -> Array[String] {
+  let flags : Map[String, String] = Map([])
+  let rest = []
+  let mut i = 0
+  while i < args.length() {
+    match args[i] {
+      "--ruby" | "--gems" | "--spec-gems" as flag if i + 1 < args.length() => {
+        flags[flag] = args[i + 1]
+        i += 1
+      }
+      arg => rest.push(arg)
+    }
+    i += 1
+  }
+  let setting = (flag : String, name : String) => match flags.get(flag) {
+    Some(v) => Some(v)
+    None =>
+      match @env.get_env_var(name) {
+        Some(v) if v != "" => Some(v)
+        _ => None
+      }
+  }
+  match setting("--ruby", "ASCIIDOCTOR_PDF_RUBY") {
+    Some(r) => ruby.val = r
+    None =>
+      for candidate in ruby_candidates {
+        if exists(candidate) {
+          ruby.val = candidate
+          break
+        }
+      }
+  }
+  // the gem command that belongs to that Ruby
+  gem_cmd.val = match ruby.val.rev_find("/") {
+    Some(i) if exists(ruby.val[:i].to_owned() + "/gem") =>
+      ruby.val[:i].to_owned() + "/gem"
+    _ => "gem"
+  }
+  runtime_gems.val = absolute(
+    setting("--gems", "ASCIIDOCTOR_PDF_GEMS").unwrap_or(".repos/gems-pdf"),
+    root,
+  )
+  spec_gems.val = absolute(
+    setting("--spec-gems", "ASCIIDOCTOR_PDF_SPEC_GEMS").unwrap_or(
+      ".repos/gems-pdf-spec",
+    ),
+    root,
+  )
+  rest
+}
 
 ///|
 async fn git(args : Array[String]) -> String {
@@ -116,7 +246,7 @@ async fn git(args : Array[String]) -> String {
 
 ///|
 async fn ensure_spec_repo() -> Unit {
-  if !(@fs.exists(spec_repo) catch { _ => false }) {
+  if !exists(spec_repo) {
     println("clone \{spec_url} \{spec_tag} into \{spec_repo}")
     git([
       "clone", "--quiet", "--depth", "1", "--branch", spec_tag, spec_url, spec_repo,
@@ -130,17 +260,23 @@ async fn ensure_spec_repo() -> Unit {
 }
 
 ///|
-async fn ensure_gems(env : Map[String, String]) -> Unit {
-  let installed = @fs.readdir("\{spec_gems}/specifications") catch { _ => [] }
-  for g in pinned_gems {
+/// Install the `pinned` gems missing from the gem home `dir` (each at its
+/// version, without resolving dependencies: the list is complete).
+async fn ensure_gems(dir : String, pinned : Array[(String, String)]) -> Unit {
+  let installed = @fs.readdir("\{dir}/specifications") catch { _ => [] }
+  let env = { "GEM_HOME": dir, "GEM_PATH": dir }
+  for g in pinned {
     let (name, version) = g
     if installed.contains("\{name}-\{version}.gemspec") {
       continue
     }
-    println("gem install \{name} \{version}")
+    println("gem install \{name} \{version} into \{dir}")
     let code = @process.run(
-      gem_cmd,
-      ["install", "--no-document", "--ignore-dependencies", name, "-v", version],
+      gem_cmd.val,
+      [
+        "install", "--no-document", "--ignore-dependencies", "--install-dir", dir,
+        name, "-v", version,
+      ],
       extra_env=env,
     )
     if code != 0 {
@@ -221,46 +357,41 @@ fn sorted_counts(m : Map[String, Int]) -> Array[(String, Int)] {
 
 ///|
 async fn main {
-  let args = @env.args()[1:].to_array().filter(a => a != "--")
+  let root = @fs.realpath(".")
+  let args = configure(@env.args()[1:].to_array().filter(a => a != "--"), root)
   let update_counts = args.contains("--update-counts")
   let specs = args.filter(a => !a.has_prefix("--"))
-  let root = @fs.realpath(".")
+  ensure_gems(runtime_gems.val, runtime_pinned)
   ensure_spec_repo()
   let spec_root = @fs.realpath(spec_repo)
   let env = {
-    "GEM_HOME": "\{root}/\{spec_gems}",
-    "GEM_PATH": "\{root}/\{spec_gems}:\{root}/\{runtime_gems}",
+    "GEM_HOME": spec_gems.val,
+    "GEM_PATH": "\{spec_gems.val}:\{runtime_gems.val}",
     "TZ": "UTC",
     "LANG": "en_US.UTF-8",
     // fixed document and PDF dates, so that a harvest is reproducible
     // (the specs that need other dates set their own)
     "SOURCE_DATE_EPOCH": source_date_epoch,
   }
-  ensure_gems(env)
-  // a full run starts from scratch; a partial run replaces its spec files
-  if specs.is_empty() {
-    ignore(@process.run("rm", ["-rf", pdf_cache]))
-    for f in (@fs.readdir(golden_dir) catch { _ => [] }) {
-      if f.has_suffix(".jsonl") {
-        @fs.remove("\{golden_dir}/\{f}")
-      }
-    }
-  }
-  ignore(@process.run("mkdir", ["-p", pdf_cache, golden_dir]))
-  let out_dir = "\{root}/_build/pdf-spec-cache/jsonl"
-  ignore(@process.run("rm", ["-rf", out_dir]))
+  ensure_gems(spec_gems.val, pinned_gems)
+  // everything goes to the staging area first; the committed records and
+  // the reference PDFs are replaced once the harvest is validated
+  let out_dir = "\{root}/\{staging}/jsonl"
+  let staged_pdfs = "\{root}/\{staging}/pdfs"
+  ignore(@process.run("rm", ["-rf", "\{root}/\{staging}"]))
+  ignore(@process.run("mkdir", ["-p", out_dir, staged_pdfs]))
   let harvest_env = env.copy()
   harvest_env["PDF_HARVEST_SPEC_ROOT"] = spec_root
   harvest_env["PDF_HARVEST_OUT"] = out_dir
-  harvest_env["PDF_HARVEST_PDFS"] = "\{root}/\{pdf_cache}"
-  harvest_env["PDF_HARVEST_GEMS"] = "\{@fs.realpath(runtime_gems)}:\{@fs.realpath(spec_gems)}"
+  harvest_env["PDF_HARVEST_PDFS"] = staged_pdfs
+  harvest_env["PDF_HARVEST_GEMS"] = "\{@fs.realpath(runtime_gems.val)}:\{@fs.realpath(spec_gems.val)}"
   let rspec_args = [
-    "\{root}/\{spec_gems}/bin/rspec", "--require", "\{root}/scripts/pdf_harvest/harvest.rb",
+    "\{spec_gems.val}/bin/rspec", "--require", "\{root}/scripts/pdf_harvest/harvest.rb",
     "--format", "progress", ..specs,
   ]
-  println("$ rspec \{specs.join(" ")} (in \{spec_repo})")
+  println("$ rspec \{specs.join(" ")} (in \{spec_repo}, with \{ruby.val})")
   let (code, out) = @process.collect_output_merged(
-    ruby,
+    ruby.val,
     rspec_args,
     cwd=spec_root,
     extra_env=harvest_env,
@@ -278,13 +409,16 @@ async fn main {
     let unexpected = failed.filter(f => !known_failures.contains(f))
     if failed.is_empty() || !unexpected.is_empty() {
       println(text)
-      fail("rspec failed unexpectedly (exit \{code}): \{unexpected.join(" ")}")
+      fail(
+        "rspec failed unexpectedly (exit \{code}): \{unexpected.join(" ")}; \{golden_dir} and \{pdf_cache} are unchanged",
+      )
     }
     println("  \{failed.length()} known environmental failure(s) (cli_spec)")
   }
-  // move the records into place and tally them
+  // tally the staged records
   let run_info = @json.parse(@fs.read_file("\{out_dir}/.run.json").text())
   let files = @fs.readdir(out_dir, sort=true).filter(f => f.has_suffix(".jsonl"))
+  let staged : Map[String, String] = Map([])
   let counts : Map[String, Int] = Map([])
   let skipped : Map[String, Int] = Map([])
   let vias : Map[String, Int] = Map([])
@@ -295,7 +429,7 @@ async fn main {
   let mut ephemeral = 0
   for f in files {
     let data = @fs.read_file("\{out_dir}/\{f}").text()
-    @fs.write_file("\{golden_dir}/\{f}", data, create_mode=CreateOrTruncate)
+    staged[f] = data
     let mut n = 0
     for line in data.split("\n") {
       if line.trim() == "" {
@@ -330,7 +464,7 @@ async fn main {
     records += n
     counts["\{golden_dir}/\{f}"] = n
   }
-  // record-count guard
+  // record-count guard, before anything is replaced
   let previous = read_counts()
   let shrunk = []
   for name, n in previous {
@@ -340,6 +474,40 @@ async fn main {
     let now = counts.get(name).unwrap_or(0)
     if ran && now < n {
       shrunk.push("\{name}: \{now} < \{n}")
+    }
+  }
+  if !shrunk.is_empty() && !update_counts && !previous.is_empty() {
+    fail(
+      "records disappeared: \{shrunk.join(", ")}; \{golden_dir} and \{pdf_cache} are unchanged (the harvest is in \{staging})",
+    )
+  }
+  if records == 0 {
+    fail("the harvest recorded nothing; \{golden_dir} and \{pdf_cache} are unchanged")
+  }
+  // validated: replace the records (a full run drops those of spec files
+  // that no longer yield any) and the reference PDFs
+  if specs.is_empty() {
+    for f in (@fs.readdir(golden_dir) catch { _ => [] }) {
+      if f.has_suffix(".jsonl") && !staged.contains(f) {
+        @fs.remove("\{golden_dir}/\{f}")
+      }
+    }
+  }
+  for f, data in staged {
+    @fs.write_file("\{golden_dir}/\{f}", data, create_mode=CreateOrTruncate)
+  }
+  if specs.is_empty() {
+    ignore(@process.run("rm", ["-rf", pdf_cache]))
+    ignore(@process.run("mkdir", ["-p", "_build/pdf-spec-cache"]))
+    if @process.run("mv", [staged_pdfs, pdf_cache]) != 0 {
+      fail("could not move \{staged_pdfs} to \{pdf_cache}")
+    }
+  } else {
+    ignore(@process.run("mkdir", ["-p", pdf_cache]))
+    for f in @fs.readdir(staged_pdfs) {
+      if @process.run("mv", ["-f", "\{staged_pdfs}/\{f}", "\{pdf_cache}/\{f}"]) != 0 {
+        fail("could not move \{staged_pdfs}/\{f} to \{pdf_cache}")
+      }
     }
   }
   if update_counts || previous.is_empty() {
@@ -358,8 +526,6 @@ async fn main {
     }
     @fs.write_file(record_counts_path, lines.join("\n") + "\n", create_mode=CreateOrTruncate)
     println("wrote \{record_counts_path}")
-  } else if !shrunk.is_empty() {
-    fail("records disappeared: \{shrunk.join(", ")}")
   }
   let num = fn(key : String) { field(run_info, key).as_number().unwrap_or(0.0).to_int() }
   if specs.is_empty() {
@@ -390,4 +556,5 @@ async fn main {
   } else {
     println("\{records} conversions recorded (\{replayable} replayable, \{themed} theme-dependent)")
   }
+  ignore(@process.run("rm", ["-rf", "\{root}/\{staging}"]))
 }
