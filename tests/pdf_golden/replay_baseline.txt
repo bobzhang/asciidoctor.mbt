@@ -4,7 +4,7 @@
 records: 2440
 replayed: 2329 / 2440
   pass: 1787 / 2329
-  fail: 542 / 2329 (262 listed as known, 280 new)
+  fail: 542 / 2329 (542 listed as known, 0 new)
   theme-dependent: 1229 / 2329 (pass 949)
   default theme: 1100 / 2329 (pass 838)
 not replayed, skipped: 111 / 2440
