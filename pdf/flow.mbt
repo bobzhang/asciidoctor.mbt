@@ -79,8 +79,9 @@ priv struct Flow {
   /// the current page's left and right margins
   mut margin_left : Double
   mut margin_right : Double
-  /// the width of the page the bounds were set for
+  /// the size of the page the bounds were set for
   mut page_width_now : Double
+  mut page_height_now : Double
 }
 
 ///|
@@ -107,6 +108,7 @@ fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
     margin_left: setup.margin_left,
     margin_right: setup.margin_right,
     page_width_now: setup.width,
+    page_height_now: setup.height,
   }
 }
 
@@ -164,12 +166,16 @@ fn Flow::page_h(self : Flow) -> Double {
 /// margin stay where the page setup puts them.
 fn Flow::fit_page_size(self : Flow) -> Unit {
   guard self.model.pages.get(self.page) is Some(p) else { return }
-  let setup = page_setup.val
-  self.bottom = p.height_pt - setup.margin_bottom
-  let right_edge = p.width_pt - self.margin_right
-  let old_edge = self.page_width_now - self.margin_right
-  self.right += right_edge - old_edge
-  self.page_width_now = p.width_pt
+  // only a change of size moves the bounds (a flow may have bounds of its
+  // own, as a table cell's or a dry run's)
+  if p.height_pt != self.page_height_now {
+    self.bottom += p.height_pt - self.page_height_now
+    self.page_height_now = p.height_pt
+  }
+  if p.width_pt != self.page_width_now {
+    self.right += p.width_pt - self.page_width_now
+    self.page_width_now = p.width_pt
+  }
 }
 
 ///|
