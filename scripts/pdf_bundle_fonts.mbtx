@@ -1,0 +1,237 @@
+// Bundle the fonts Ruby asciidoctor-pdf ships in the PDF backend, so that
+// it needs no font files at run time (native and wasm alike): writes one
+// `data_*.mbt` per file and a `data_registry.mbt` into each of the font
+// packages below, and copies the fonts' license files to pdf/fonts/LICENSES.
+//
+//   pdf/fonts           the default theme's fonts (Noto Serif, M+ 1mn) and
+//                       asciidoctor-pdf's fa-legacy-mapping.yml
+//   pdf/fonts/sans      default-sans: Noto Sans
+//   pdf/fonts/fallback  default-with-font-fallbacks: M+ 1p Fallback, Noto
+//                       Emoji
+//   pdf/fonts/icons     prawn-icon 3.0.0's icon fonts and legends
+//                       (`icons=font`)
+//
+// Each file is zlib-compressed and ASCII85-armoured (as pagelayout bundles
+// its fonts), split into string literals of `chunk` characters;
+// `@fonts.inflate_armoured` restores it when a document first needs it.
+//
+// The sources are asciidoctor-pdf 2.3.27's `data/fonts` and prawn-icon
+// 3.0.0's `data/fonts`, from the gems installed in .repos/gems-pdf (see
+// scripts/pdf_compare.mbtx).
+//
+// Usage: moon run --target native scripts/pdf_bundle_fonts.mbtx
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/pdflite@0.3.1",
+  "moonbitlang/pdflite/flate",
+  "moonbitlang/pdflite/codec",
+}
+
+///|
+let gem_fonts : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/data/fonts"
+
+///|
+let icon_fonts : String = ".repos/gems-pdf/gems/prawn-icon-3.0.0/data/fonts"
+
+///|
+/// Characters of armoured text per literal.
+let chunk : Int = 32768
+
+///|
+/// A package to generate: its directory, a description of what it bundles,
+/// and its files (the name a theme or prawn-icon knows the file by, and the
+/// path of the source).
+struct Pack {
+  dir : String
+  what : String
+  files : Array[(String, String)]
+}
+
+///|
+fn gem(name : String) -> (String, String) {
+  (name, "\{gem_fonts}/\{name}")
+}
+
+///|
+fn icon(name : String) -> (String, String) {
+  (name, "\{icon_fonts}/\{name}")
+}
+
+///|
+let packs : Array[Pack] = [
+  {
+    dir: "pdf/fonts",
+    what: "asciidoctor-pdf 2.3.27's default fonts (data/fonts)",
+    files: [
+      gem("notoserif-regular-subset.ttf"),
+      gem("notoserif-bold-subset.ttf"),
+      gem("notoserif-italic-subset.ttf"),
+      gem("notoserif-bold_italic-subset.ttf"),
+      gem("mplus1mn-regular-subset.ttf"),
+      gem("mplus1mn-bold-subset.ttf"),
+      gem("mplus1mn-italic-subset.ttf"),
+      gem("mplus1mn-bold_italic-subset.ttf"),
+      gem("fa-legacy-mapping.yml"),
+    ],
+  },
+  {
+    dir: "pdf/fonts/sans",
+    what: "asciidoctor-pdf 2.3.27's Noto Sans fonts (data/fonts)",
+    files: [
+      gem("notosans-regular-subset.ttf"),
+      gem("notosans-bold-subset.ttf"),
+      gem("notosans-italic-subset.ttf"),
+      gem("notosans-bold_italic-subset.ttf"),
+    ],
+  },
+  {
+    dir: "pdf/fonts/fallback",
+    what: "asciidoctor-pdf 2.3.27's fallback fonts (data/fonts)",
+    files: [gem("mplus1p-regular-fallback.ttf"), gem("notoemoji-subset.ttf")],
+  },
+  {
+    dir: "pdf/fonts/icons",
+    what: "prawn-icon 3.0.0's icon fonts and legends (data/fonts)",
+    files: [
+      icon("fab/fa-brands.ttf"),
+      icon("fab/fab.yml"),
+      icon("far/fa-regular.ttf"),
+      icon("far/far.yml"),
+      icon("fas/fa-solid.ttf"),
+      icon("fas/fas.yml"),
+      icon("fi/foundation-icons.ttf"),
+      icon("fi/fi.yml"),
+      icon("pf/paymentfont-webfont.ttf"),
+      icon("pf/pf.yml"),
+    ],
+  },
+]
+
+///|
+/// License and notice files copied to pdf/fonts/LICENSES: (source, name).
+let licenses : Array[(String, String)] = [
+  ("\{gem_fonts}/LICENSE-noto", "LICENSE-noto"),
+  ("\{gem_fonts}/LICENSE-mplus", "LICENSE-mplus"),
+  ("\{gem_fonts}/ABOUT-notoserif-subset", "ABOUT-notoserif-subset"),
+  ("\{gem_fonts}/ABOUT-notosans-subset", "ABOUT-notosans-subset"),
+  ("\{gem_fonts}/ABOUT-mplus1mn-subset", "ABOUT-mplus1mn-subset"),
+  ("\{gem_fonts}/ABOUT-mplus1p-subset", "ABOUT-mplus1p-subset"),
+  ("\{gem_fonts}/ABOUT-notoemoji-subset", "ABOUT-notoemoji-subset"),
+  ("\{icon_fonts}/fas/LICENSE", "LICENSE-fontawesome"),
+  ("\{icon_fonts}/fi/LICENSE", "LICENSE-foundation-icons"),
+  ("\{icon_fonts}/pf/LICENSE", "LICENSE-paymentfont"),
+  ("\{icon_fonts}/../../LICENSE", "LICENSE-prawn-icon"),
+]
+
+///|
+/// A MoonBit identifier for a file name: `fas/fa-solid.ttf` → `fas_fa_solid_ttf`.
+fn ident(name : String) -> String {
+  let sb = StringBuilder()
+  for c in name {
+    sb.write_char(if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') {
+      c
+    } else if c >= 'A' && c <= 'Z' {
+      (c.to_int() + 32).unsafe_to_char()
+    } else {
+      '_'
+    })
+  }
+  sb.to_string()
+}
+
+///|
+/// A bytes literal of printable ASCII (the armour), with `"` and `\`
+/// escaped.
+fn literal(text : BytesView) -> String {
+  let sb = StringBuilder()
+  sb.write_string("b\"")
+  for b in text {
+    match b {
+      b'"' => sb.write_string("\\x22")
+      b'\\' => sb.write_string("\\x5c")
+      _ => sb.write_char(b.to_int().unsafe_to_char())
+    }
+  }
+  sb.write_string("\"")
+  sb.to_string()
+}
+
+///|
+async fn generate(pack : Pack) -> Unit {
+  let registry = StringBuilder()
+  registry.write_string(
+    "///|\n// Generated by scripts/pdf_bundle_fonts.mbtx; do not edit.\n\n///|\n/// The bundled files: \{pack.what}.\nfn bundled_files() -> Array[(String, () -> Array[Bytes])] {\n  [\n",
+  )
+  let mut raw = 0
+  let mut packed = 0
+  for file in pack.files {
+    let (name, source) = file
+    let data = @fs.read_file(source).binary()
+    let armoured = @codec.pdf_ascii85_encode(
+      @flate.pdf_flate_encode_with_level(data, 9),
+    )
+    raw += data.length()
+    packed += armoured.length()
+    let id = ident(name)
+    let sb = StringBuilder()
+    sb.write_string(
+      "///|\n// Generated by scripts/pdf_bundle_fonts.mbtx from \{name} (\{data.length()} bytes); do not edit.\n// zlib-compressed, ASCII85-armoured.\n\n///|\nfn \{id}() -> Array[Bytes] {\n  [\n",
+    )
+    let mut start = 0
+    while start < armoured.length() {
+      let end = if start + chunk < armoured.length() {
+        start + chunk
+      } else {
+        armoured.length()
+      }
+      sb.write_string("    \{literal(armoured[start:end])},\n")
+      start = end
+    }
+    sb.write_string("  ]\n}\n")
+    @fs.write_file(
+      "\{pack.dir}/data_\{id}.mbt",
+      sb.to_string(),
+      create_mode=CreateOrTruncate,
+    )
+    registry.write_string("    (\"\{name}\", \{id}),\n")
+  }
+  registry.write_string("  ]\n}\n")
+  @fs.write_file(
+    "\{pack.dir}/data_registry.mbt",
+    registry.to_string(),
+    create_mode=CreateOrTruncate,
+  )
+  println(
+    "\{pack.dir}: \{pack.files.length()} files, \{raw} bytes -> \{packed} armoured",
+  )
+}
+
+///|
+async fn main {
+  for pack in packs {
+    @fs.mkdir(pack.dir, recursive=true) catch {
+      _ => ()
+    }
+    // drop the data of files no longer bundled
+    for name in @fs.readdir(pack.dir) {
+      if name.has_prefix("data_") && name.has_suffix(".mbt") {
+        @fs.remove("\{pack.dir}/\{name}")
+      }
+    }
+    generate(pack)
+  }
+  let dir = "pdf/fonts/LICENSES"
+  @fs.mkdir(dir, recursive=true) catch {
+    _ => ()
+  }
+  for entry in licenses {
+    let (source, name) = entry
+    @fs.write_file(
+      "\{dir}/\{name}",
+      @fs.read_file(source).binary(),
+      create_mode=CreateOrTruncate,
+    )
+  }
+  println("wrote \{dir} (\{licenses.length()} files)")
+}

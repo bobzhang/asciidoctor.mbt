@@ -1,13 +1,19 @@
 name = "bobzhang/asciidoctor-pdf"
 
-version = "0.0.1"
+version = "0.1.0"
+
+readme = "README.mbt.md"
+
+repository = "https://github.com/bobzhang/asciidoctor.mbt"
 
 license = "MIT"
 
-description = "PDF backend for asciidoctor.mbt (spike), on moonbitlang/pagelayout"
+keywords = [ "asciidoc", "asciidoctor", "asciidoctor-pdf", "pdf" ]
+
+description = "PDF backend for asciidoctor.mbt: a port of Asciidoctor PDF 2.3.27 with its themes and fonts bundled"
 
 import {
-  "bobzhang/asciidoctor@0.3.1",
+  "bobzhang/asciidoctor@0.3.3",
   "moonbitlang/pagelayout@0.7.0",
   "moonbitlang/pdflite@0.3.1",
   "moonbitlang/async@0.22.4",

@@ -5,24 +5,6 @@
 // with `@io.run_with_files` loads whatever the theme names.
 
 ///|
-/// Where the fonts the theme loader's virtual `GEM_FONTS_DIR`
-/// (`@theme.fonts_dir`) stands for really are, and prawn-icon's icon fonts
-/// (`icons=font`); set by `register`.
-priv struct FontSources {
-  mut fonts_dir : String?
-  mut icon_fonts_dir : String?
-  /// the `pdf_theme` API option (see `register`)
-  mut pdf_theme : ((@theme.Files) -> @theme.Theme raise)?
-}
-
-///|
-let font_sources : FontSources = {
-  fonts_dir: None,
-  icon_fonts_dir: None,
-  pdf_theme: None,
-}
-
-///|
 /// The theme loader's view of the document's VFS: text files by absolute
 /// path.
 fn theme_files(doc : @core.Node) -> @theme.Files {
@@ -58,7 +40,7 @@ fn load_document_theme(doc : @core.Node) -> @theme.Theme {
   let themesdir = doc.attr("pdf-themesdir").map(d => sub_docdir(d, doc))
   // the `pdf_theme` option wins over `pdf-theme` and `media` (a copy: the
   // conversion's defaults must not leak into the next one)
-  let option_theme = match font_sources.pdf_theme {
+  let option_theme = match session().registration.pdf_theme {
     Some(build) =>
       Some(
         build(files).copy() catch {
@@ -209,13 +191,49 @@ fn prepare_theme(theme : @theme.Theme) -> Unit {
 }
 
 ///|
-/// A path of the theme loader (a font under the virtual `GEM_FONTS_DIR`)
-/// as a real path.
-fn real_font_path(path : String) -> String {
-  match font_sources.fonts_dir {
-    Some(dir) if path.has_prefix(@theme.fonts_dir + "/") =>
-      dir + path[@theme.fonts_dir.length():].to_owned()
-    _ => path
+/// A file of asciidoctor-pdf's font directory (`GEM_FONTS_DIR`), by its
+/// name there: from `fonts_dir` when `register` was given one, else from
+/// the bundled fonts.
+fn read_gem_font_file(vfs : &@core.Vfs, name : String) -> Bytes? {
+  let sources = session().registration
+  match sources.fonts_dir {
+    Some(dir) => vfs.read(dir + "/" + name)
+    None => {
+      for bundle in sources.bundles {
+        if bundle.get(name) is Some(data) {
+          return Some(data)
+        }
+      }
+      None
+    }
+  }
+}
+
+///|
+/// Whether the theme sets text in an icon font without `icons=font`: a
+/// font family (`ulist_marker_checked_font_family: fas`), a fallback font,
+/// or `<font name="fas">` in a content template.
+fn theme_uses_icon_fonts(theme : @theme.Theme) -> Bool {
+  let names = icon_set_names
+  let mentions = (value : @theme.Value) => {
+    match value {
+      Str(s) =>
+        names.contains(s) || names.iter().any(n => s.contains("\"\{n}\""))
+      Array(items) => items.iter().any(v => v is Str(s) && names.contains(s))
+      _ => false
+    }
+  }
+  theme.keys().iter().any(key => mentions(theme.at(key)))
+}
+
+///|
+/// A font file: one under the theme loader's virtual `GEM_FONTS_DIR` (see
+/// `read_gem_font_file`), else a file of the document's VFS.
+fn read_font_file(vfs : &@core.Vfs, path : String) -> Bytes? {
+  if path.has_prefix(@theme.fonts_dir + "/") {
+    read_gem_font_file(vfs, path[@theme.fonts_dir.length() + 1:].to_owned())
+  } else {
+    vfs.read(path)
   }
 }
 
@@ -276,7 +294,7 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
           let path = path.to_ruby_s()
           let mut data : Bytes? = None
           for dir in dirs {
-            data = vfs.read(real_font_path(absolute_path_in(path, dir)))
+            data = read_font_file(vfs, absolute_path_in(path, dir))
             if data is Some(_) {
               break
             }
@@ -292,26 +310,35 @@ fn load_document_fonts(doc : @core.Node) -> FontCatalog raise {
       }
     _ => ()
   }
+  // prawn-icon's fonts, which only `icons=font` draws with (prawn-icon
+  // loads them on demand; the catalog is complete once loaded, so they are
+  // loaded with it, when the document asks for font icons)
   let icon_sets : Array[IconSet] = []
-  match font_sources.icon_fonts_dir {
-    Some(dir) =>
-      for entry in default_icon_font_files() {
-        let (name, font, legend) = entry
-        match (vfs.read(dir + "/" + font), vfs.read(dir + "/" + legend)) {
-          (Some(font), Some(legend)) =>
-            icon_sets.push({ name, font, legend: @core.decode_text(legend), })
-          _ => ()
-        }
-      }
-    None => ()
+  let sources = session().registration
+  let read_icon_file : ((String) -> Bytes?)? = match
+    (sources.icon_fonts_dir, sources.icon_bundle) {
+    _ if doc.attr("icons") != Some("font") && !theme_uses_icon_fonts(theme) =>
+      None
+    (Some(dir), _) => Some(file => vfs.read(dir + "/" + file))
+    (None, Some(bundle)) => Some(file => bundle.get(file))
+    (None, None) => None
   }
-  let legacy_icon_mapping = match font_sources.fonts_dir {
-    Some(dir) =>
-      vfs
-      .read(dir + "/fa-legacy-mapping.yml")
-      .map(@core.decode_text)
-      .unwrap_or("")
-    None => ""
+  if read_icon_file is Some(read) {
+    for entry in default_icon_font_files() {
+      let (name, font, legend) = entry
+      match (read(font), read(legend)) {
+        (Some(font), Some(legend)) =>
+          icon_sets.push({ name, font, legend: @core.decode_text(legend), })
+        _ => ()
+      }
+    }
+  }
+  let legacy_icon_mapping = if icon_sets.is_empty() {
+    ""
+  } else {
+    read_gem_font_file(vfs, "fa-legacy-mapping.yml")
+    .map(@core.decode_text)
+    .unwrap_or("")
   }
   let fallbacks = match theme["font_fallbacks"] {
     Array(items) => items.map(v => v.to_ruby_s())

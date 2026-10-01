@@ -25,3 +25,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+The PDF backend in pdf/ (the module bobzhang/asciidoctor-pdf) is a port of
+Asciidoctor PDF, Copyright (C) 2014-present OpenDevise Inc. and the
+Asciidoctor Project, and bundles fonts under their own licenses; see
+pdf/LICENSE and pdf/NOTICE. The harvested conversions in tests/pdf_golden
+derive from Asciidoctor PDF's test suite under the same MIT license.

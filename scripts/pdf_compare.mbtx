@@ -93,7 +93,7 @@
 //   triage     the first measured word off by more than 1pt
 //              (`geometry.first_off`: its positions, the last good word
 //              before it, and the spike block each is in, from the spike's
-//              `--trace`) and the first differing line (`lines.first_diff`);
+//              `--layout-trace`) and the first differing line (`lines.first_diff`);
 //              scripts/pdf_triage.mbtx groups failing documents by them
 //   structure  fonts (embedded, ToUnicode, same families), page boxes,
 //              link annotations (count, target, rectangle within 1pt),
@@ -182,17 +182,6 @@ fn ruby() -> String {
 ///|
 fn gems() -> String {
   gem_home.val
-}
-
-///|
-fn fonts() -> String {
-  "\{gem_home.val}/gems/asciidoctor-pdf-2.3.27/data/fonts"
-}
-
-///|
-/// prawn-icon's icon fonts (Font Awesome and others), for `icons=font`
-fn icon_fonts() -> String {
-  "\{gem_home.val}/gems/prawn-icon-3.0.0/data/fonts"
 }
 
 ///|
@@ -1763,12 +1752,12 @@ priv struct Measured {
   text : TextMetrics
   structure : Array[Check]
   raster : Array[PageRaster]
-  /// where the spike put each block (its `--trace`)
+  /// where the spike put each block (its `--layout-trace`)
   trace : Array[Traced]
 }
 
 ///|
-/// One block of the spike's `--trace`: nesting depth, what it is, its
+/// One block of the spike's `--layout-trace`: nesting depth, what it is, its
 /// source line, and where its conversion started and ended (page from 1,
 /// y in points from the page top).
 priv struct Traced {
@@ -2880,14 +2869,11 @@ async fn compare_case(
   let sr = run(
     spike_exe.val,
     [
-      "--fonts-dir",
-      fonts(),
-      "--icon-fonts-dir",
-      icon_fonts(),
-      "--trace",
+      "--layout-trace",
       "\{dir}/trace.tsv",
+      // absolute: a relative -o resolves from -B, as in Ruby
       "-o",
-      spike_pdf,
+      (@fs.realpath(dir) catch { _ => dir }) + "/spike.pdf",
       ..spike_args,
     ],
     timeout=conversion_timeout_ms,
@@ -3425,7 +3411,7 @@ async fn self_test(gallery : String) -> Bool {
   }
   gate_logic_checks(check)
   let good = "\{dir}/good.pdf"
-  let r = run(spike_exe.val, ["--fonts-dir", fonts(), "-o", good, "pdf/tests/sampler.adoc"])
+  let r = run(spike_exe.val, ["-o", good, "pdf/tests/sampler.adoc"])
   if r.code != 0 {
     println("self-test: the spike failed on the sampler: \{r.err}")
     return false

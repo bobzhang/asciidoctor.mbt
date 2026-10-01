@@ -107,3 +107,55 @@ test "an unknown base font is reported, and Helvetica stands in" {
     ),
   )
 }
+
+///|
+test "a document keeps the fonts registered when it was loaded" {
+  register()
+  let before = load_pdf("text\n")
+  // registered after `before` was loaded: no bundled fonts at all
+  register(fonts=[])
+  let after = load_pdf("text\n")
+  register()
+  activate_session(before)
+  ignore(document_catalog(before))
+  activate_session(after)
+  try document_catalog(after) catch {
+    e =>
+      inspect(
+        e,
+        content=(
+          #|Failure(theming.mbt:305:15-307:16@bobzhang/asciidoctor-pdf FAILED: font /asciidoctor-pdf/data/fonts/notoserif-regular-subset.ttf not found in GEM_FONTS_DIR)
+        ),
+      )
+  } noraise {
+    _ => fail("expected the fonts not to be found")
+  }
+}
+
+///|
+test "a document keeps the icon fonts registered when it was loaded" {
+  // `icons` is locked in the API's secure safe mode: set it from outside
+  let load_icons = () => {
+    @asciidoctor.load(
+      "icon:heart[]\n",
+      options=@core.Options::new(backend="pdf", standalone=true, attributes=[
+        ("reproducible", Str("")),
+        ("icons", Str("font")),
+      ]),
+    )
+  }
+  register(icon_fonts=@icons.fonts())
+  let with_icons = load_icons()
+  register()
+  let without_icons = load_icons()
+  activate_session(with_icons)
+  inspect(document_catalog(with_icons).has_icons(), content="true")
+  activate_session(without_icons)
+  inspect(document_catalog(without_icons).has_icons(), content="false")
+  // the icon fonts are loaded only for the documents that use them
+  register(icon_fonts=@icons.fonts())
+  let plain = load_pdf("no icons here\n")
+  register()
+  activate_session(plain)
+  inspect(document_catalog(plain).has_icons(), content="false")
+}

@@ -1,0 +1,6 @@
+import {
+  "moonbitlang/pdflite/codec",
+  "moonbitlang/pdflite/flate",
+}
+
+supported_targets = "native+wasm"

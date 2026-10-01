@@ -1,0 +1,84 @@
+asciidoctor-pdf for MoonBit (bobzhang/asciidoctor-pdf)
+Copyright (C) 2026 Hongbo Zhang and the contributors to asciidoctor.mbt.
+Licensed under the MIT License (see LICENSE).
+
+This module contains third-party material, listed below with its license.
+The license texts are in LICENSE (MIT) and in fonts/LICENSES.
+
+== Asciidoctor PDF 2.3.27 (MIT)
+
+Copyright (C) 2014-present OpenDevise Inc. and the Asciidoctor Project.
+https://github.com/asciidoctor/asciidoctor-pdf
+
+* The conversion is a port of Asciidoctor PDF's converter and theme loader.
+* theme/bundled.mbt holds the text of its bundled themes (data/themes/*.yml).
+* fonts/data_fa_legacy_mapping_yml.mbt holds its mapping of Font Awesome 4
+  icon names (data/fonts/fa-legacy-mapping.yml).
+* theme/harvest_test.mbt and theme/testdata are derived from its test suite
+  (spec/theme_loader_spec.rb and its fixtures); tests/images holds images
+  copied from its spec/fixtures.
+
+The MIT license text is in LICENSE.
+
+== Asciidoctor (MIT)
+
+Copyright (C) 2012-present Dan Allen, Sarah White, Ryan Waldron, and the
+individual contributors to Asciidoctor. Used through the bobzhang/asciidoctor
+module, a port of Asciidoctor. https://github.com/asciidoctor/asciidoctor
+
+== Bundled fonts
+
+The fonts are the files Asciidoctor PDF 2.3.27 and prawn-icon 3.0.0 ship,
+unmodified (stored zlib-compressed and ASCII85-encoded in the data_*.mbt
+files by scripts/pdf_bundle_fonts.mbtx of the asciidoctor.mbt repository).
+A PDF made with them embeds subsets of them; the font licenses do not apply
+to such documents.
+
+Noto Serif and Noto Sans (subsets) -- Apache License 2.0
+  fonts/ (notoserif-*-subset.ttf), fonts/sans (notosans-*-subset.ttf).
+  Google Noto fonts, https://github.com/googlefonts/noto-fonts, subset by
+  the Asciidoctor PDF project. License: fonts/LICENSES/LICENSE-noto;
+  provenance: fonts/LICENSES/ABOUT-notoserif-subset, ABOUT-notosans-subset.
+
+Noto Emoji (subset) -- Apache License 2.0
+  fonts/fallback (notoemoji-subset.ttf).
+  https://github.com/googlefonts/noto-emoji, subset by the Asciidoctor PDF
+  project. License: fonts/LICENSES/LICENSE-noto; provenance:
+  fonts/LICENSES/ABOUT-notoemoji-subset.
+
+M+ 1mn and M+ 1p (subsets) -- M+ FONTS license (free use, copy and
+distribution, with or without modification)
+  fonts/ (mplus1mn-*-subset.ttf), fonts/fallback
+  (mplus1p-regular-fallback.ttf). Copyright (C) 2002-2019 M+ FONTS PROJECT,
+  https://mplus-fonts.osdn.jp, subset by the Asciidoctor PDF project.
+  License: fonts/LICENSES/LICENSE-mplus; provenance:
+  fonts/LICENSES/ABOUT-mplus1mn-subset, ABOUT-mplus1p-subset.
+
+Font Awesome Free 5.15.1 (fonts) -- SIL Open Font License 1.1
+  fonts/icons (fas/fa-solid.ttf, far/fa-regular.ttf, fab/fa-brands.ttf).
+  Copyright (c) Fonticons, Inc., https://fontawesome.com. License:
+  fonts/LICENSES/OFL-fontawesome.txt; Font Awesome's license summary:
+  fonts/LICENSES/LICENSE-fontawesome. Brand icons are trademarks of their
+  respective owners.
+
+Foundation Icons 3.0 -- MIT License
+  fonts/icons (fi/foundation-icons.ttf). Made by ZURB 2013,
+  https://zurb.com/playground/foundation-icon-fonts-3. License:
+  fonts/LICENSES/LICENSE-foundation-icons.
+
+PaymentFont 1.2.5 -- MIT License (as distributed with prawn-icon)
+  fonts/icons (pf/paymentfont-webfont.ttf). https://paymentfont.com.
+  License: fonts/LICENSES/LICENSE-paymentfont.
+
+prawn-icon 3.0.0 icon legends -- Ruby License or GPLv2/GPLv3
+  fonts/icons (fab/fab.yml, far/far.yml, fas/fas.yml, fi/fi.yml,
+  pf/pf.yml): tables of each icon font's glyph names and code points, as
+  prawn-icon ships them. Copyright Jesse Doyle and the prawn-icon
+  contributors, https://github.com/jessedoyle/prawn-icon. License:
+  fonts/LICENSES/LICENSE-prawn-icon.
+
+== Fonts of dependencies
+
+Programs built with this module also link moonbitlang/pagelayout, which
+bundles Carlito, Liberation and Noto Sans SC fonts under the SIL Open Font
+License 1.1 (see that module's fonts/LICENSES).

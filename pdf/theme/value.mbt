@@ -27,6 +27,12 @@ pub(all) enum Value {
 } derive(Eq, Debug)
 
 ///|
+pub extend Value with Eq::{not_equal, equal}
+
+///|
+pub extend Value with Debug::{to_repr}
+
+///|
 /// Ruby's truthiness: everything but nil and false.
 pub fn Value::truthy(self : Value) -> Bool {
   !(self is (Null | Bool(false)))

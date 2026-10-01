@@ -38,6 +38,8 @@ jobs:
         run: |
           moon fmt
           moon info
+          moon -C pdf fmt
+          moon -C pdf info
           git diff --exit-code
 
       # type-check all targets, unit tests on wasm-gc/native/js, golden parity
@@ -47,5 +49,24 @@ jobs:
       # the PDF backend is a separate module (pdf/), built on moonbitlang/pagelayout
       - name: PDF backend
         run: |
-          moon -C pdf check --target all
+          moon -C pdf check --target all --deny-warn
           moon -C pdf test --target native
+
+      # the asciidoctor-pdf command, native and wasm (as moonx runs it), with
+      # its bundled fonts: sample documents must convert to valid PDFs
+      # (checked by the script, and by poppler's pdfinfo where installed)
+      - name: Install poppler
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: PDF smoke test
+        run: |
+          moon -C pdf build --target native --release
+          moon -C pdf build --target wasm --release
+          moon run --target native scripts/pdf_smoke.mbtx
+
+      # The comparison with Ruby asciidoctor-pdf (scripts/pdf_compare.mbtx
+      # --gate, --self-test, --spec-goldens) needs Ruby, the asciidoctor-pdf
+      # gems and poppler; it is run locally (see README.mbt.md, Development).

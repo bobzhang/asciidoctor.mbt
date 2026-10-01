@@ -465,7 +465,7 @@ fn pdf_info(doc : @core.Node) -> @pdf.DocumentInfo {
     producer=doc
       .attr("producer")
       .map(sanitize)
-      .unwrap_or("asciidoctor.mbt (spike)"),
+      .unwrap_or("Asciidoctor PDF \{version} (MoonBit), based on pagelayout"),
     creation_date?,
     mod_date?,
   )

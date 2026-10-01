@@ -67,7 +67,7 @@ test "running content columns" {
     ),
   )
   use_theme("")
-  inspect(
+  debug_inspect(
     periphery_columns("footer", "recto", 500.0).map(c => c.3),
     content="[500, 500, 500]",
   )
