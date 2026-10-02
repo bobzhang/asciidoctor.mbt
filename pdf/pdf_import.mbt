@@ -12,17 +12,18 @@
 /// None when the bytes are not a readable PDF.
 priv struct PdfPages {
   data : Bytes
-  document : @pdflite.PdfDocument
+  source : @pdflite.PdfPageSource
   count : Int
 }
 
 ///|
 fn read_pdf_pages(data : Bytes) -> PdfPages? {
-  let document = @pdflite.pdf_read_document_from_bytes(data) catch {
+  let source = @pdflite.PdfPageSource::new(
+    @pdflite.pdf_read_document_from_bytes(data),
+  ) catch {
     _ => return None
   }
-  let count = document.endpage() catch { _ => 0 }
-  Some({ data, document, count, })
+  Some({ data, source, count: source.page_count(), })
 }
 
 ///|
@@ -33,7 +34,7 @@ fn read_pdf_pages(data : Bytes) -> PdfPages? {
 fn PdfPages::page(self : PdfPages, number : Int) -> (Int, Double, Double)? {
   let index = if number >= 1 { number } else { self.count + number }
   guard index >= 1 && index <= self.count else { return None }
-  let (w, h) = self.document.page_display_size(index) catch { _ => return None }
+  let (w, h) = self.source.page_display_size(index) catch { _ => return None }
   Some((index, w, h))
 }
 
