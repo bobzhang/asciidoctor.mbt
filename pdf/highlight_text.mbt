@@ -145,22 +145,36 @@ fn restore_conums(
   linenums? : Int,
   highlight? : Map[Int, Color],
 ) -> Array[Fragment] {
-  let lines : Array[Array[Fragment]] = [[]]
+  // a line is made when a fragment is on it (Ruby's `lines[n] ||= []`): no
+  // fragments, no lines, and no callouts (a block of callouts alone)
+  let lines : Array[Array[Fragment]] = []
+  let line_at = (n : Int) => {
+    while lines.length() <= n {
+      lines.push([])
+    }
+    lines[n]
+  }
+  let mut line_num = 0
   for fragment in fragments {
     let text = fragment.text
+    let line = line_at(line_num)
     if text == "\n" {
-      lines.push([])
+      line_num += 1
+      ignore(line_at(line_num))
     } else if text.contains("\n") {
       for idx, part in text.split("\n").collect() {
-        if idx > 0 {
-          lines.push([])
+        let line = if idx == 0 {
+          line
+        } else {
+          line_num += 1
+          line_at(line_num)
         }
         if part != "" {
-          lines[lines.length() - 1].push({ ..fragment, text: part.to_owned(), })
+          line.push({ ..fragment, text: part.to_owned(), })
         }
       }
     } else {
-      lines[lines.length() - 1].push(fragment)
+      line.push(fragment)
     }
   }
   let conum_family = match t_str("conum_font_family") {

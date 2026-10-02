@@ -208,3 +208,123 @@ test "a numbered line that cannot fit fails the conversion" {
     _ => fail("expected the conversion to fail")
   }
 }
+
+///|
+test "a block of callouts alone shows no callout" {
+  // restore_conums makes a line only for a fragment on it: Rouge leaves
+  // no fragment, so there is no line to put the callout back on
+  let source =
+    #|:source-highlighter: rouge
+    #|
+    #|[source,ruby]
+    #|----
+    #|<1>
+    #|----
+  debug_inspect(code_text(source), content="(\"\", true)")
+  inspect(
+    describe_fragments(
+      restore_conums([], extract_conums("<1>").1, text_style(), linenums=1),
+    ),
+    content="",
+  )
+}
+
+///|
+/// The colours of the filled rectangles of the first block of `source`
+/// (safe mode, page size and theme as the document says), set alone on a
+/// page, in order.
+fn block_fills(source : String) -> Array[String] raise {
+  let doc = load_safe(source)
+  activate_session(doc)
+  use_theme("extends: default\n")
+  session().page_setup = resolve_page_setup(doc)
+  let flow = new_flow(test_catalog())
+  flow.start_new_page()
+  Converter::new(doc, flow).convert_block(doc.blocks[0])
+  flow.model.pages
+  .iter()
+  .flat_map(page => page.items.iter())
+  .filter_map(item => {
+    match item {
+      Rect({ fill: Some(c), .. }) => Some(hex6(c))
+      _ => None
+    }
+  })
+  .collect()
+}
+
+///|
+test "the blank of a wrapped numbered line has no background" {
+  // tulip gives the line numbers a background; the blank SourceWrap puts
+  // where a line wraps has none (one 766daf: the number of line 1)
+  let fills = block_fills(
+    (
+      #|:source-highlighter: rouge
+      #|:rouge-style: tulip
+      #|:pdf-page-size: [220, 400]
+      #|
+      #|[source,ruby,linenums]
+      #|----
+      #|
+    ) +
+    "x".repeat(60) +
+    "\n----\n",
+  )
+  inspect(fills.filter(c => c == "766daf").length(), content="1")
+}
+
+///|
+test "source-highlighter is locked off from the server safe mode up" {
+  let source =
+    #|:source-highlighter: rouge
+    #|
+    #|[source,ruby]
+    #|----
+    #|puts 1
+    #|----
+  let highlighted = (safe : Int?, attributes : Array[(String, @core.AttrVal)]) => {
+    register()
+    let doc = @asciidoctor.load(
+      source,
+      options=@core.Options::new(
+        backend="pdf",
+        standalone=true,
+        safe?,
+        attributes~,
+      ),
+    )
+    doc.syntax_highlighter() is Some(_)
+  }
+  // the API's default is secure
+  inspect(highlighted(None, []), content="false")
+  inspect(highlighted(Some(10), []), content="false")
+  inspect(highlighted(Some(1), []), content="true")
+  // the API can still set it
+  inspect(
+    highlighted(None, [("source-highlighter", @core.AttrVal::Str("rouge"))]),
+    content="true",
+  )
+}
+
+///|
+test "each document highlights with its own Rouge style" {
+  let source = (style : String) => {
+    ":source-highlighter: rouge\n:rouge-style: \{style}\n\n[source,ruby]\n----\nputs 1\n----\n"
+  }
+  let tulip = load_safe(source("tulip"))
+  let github = load_safe(source("github"))
+  let background = (doc : @core.Node) => {
+    activate_session(doc)
+    use_theme("extends: default\n")
+    let converter = Converter::new(doc, new_flow(test_catalog()))
+    converter.code_chunks(doc.blocks[0], text_style()).background
+    .map(hex6)
+    .unwrap_or("none")
+  }
+  let first = background(tulip)
+  let second = background(github)
+  inspect(first != second, content="true")
+  // converting the other document in between changes neither
+  inspect(background(tulip) == first, content="true")
+  inspect(background(github) == second, content="true")
+}

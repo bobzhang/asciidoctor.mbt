@@ -119,6 +119,11 @@ int main(void) {
 SELECT id, name FROM users WHERE age > 21 ORDER BY name; -- adults
 ----
 
+[source,php?start_inline=1]
+----
+$total = array_sum([1, 2, 3]); echo "total: $total";
+----
+
 [source,unknownlanguage]
 ----
 plain text, as Rouge knows no such language
