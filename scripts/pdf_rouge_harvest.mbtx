@@ -1,0 +1,339 @@
+// Harvest Rouge 3.30.0 (the version asciidoctor-pdf's spec suite resolves
+// to) for pdf/rouge, the MoonBit port of its lexers and themes: runs
+// scripts/pdf_rouge/harvest.rb and writes
+//
+//   pdf/rouge/tokens_data.mbt   every token type and its short name
+//   pdf/rouge/themes_data.mbt   every Rouge theme (and asciidoctor-pdf's
+//                               default), styles resolved per token type
+//   pdf/rouge/unicode_data.mbt  the Unicode properties Rouge's lexers use
+//                               that the regex engine lacks, from the
+//                               running Ruby's Onigmo
+//   pdf/rouge/harvest_test.mbt  one test per lexing case of the ported
+//                               lexers (`lexer_tags`): Rouge's demo and
+//                               visual sample of each, and the source
+//                               blocks of asciidoctor-pdf's specs in their
+//                               languages; the token stream must match
+//
+// Usage: moon run --target native scripts/pdf_rouge_harvest.mbtx
+//
+// Needs the spec gems of scripts/pdf_harvest.mbtx (rouge 3.30.0 in
+// .repos/gems-pdf-spec, $ASCIIDOCTOR_PDF_SPEC_GEMS), the asciidoctor-pdf
+// checkouts it makes, and clones Rouge's repository at v3.30.0 into
+// .repos/rouge-3.30.0 for its visual samples (the gem has only the demos).
+// Ruby is $ASCIIDOCTOR_PDF_RUBY, else Homebrew's Ruby on macOS when
+// installed, else `ruby` on PATH.
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+}
+
+///|
+/// The lexers ported to pdf/rouge, by tag: every `Lexer::new("tag", ...)`
+/// in its lexer_*.mbt files.
+async fn lexer_tags() -> Array[String] {
+  let tags = []
+  let marker = "Lexer::new(\""
+  for name in @fs.readdir(out_dir, sort=true) {
+    if !name.has_prefix("lexer_") || !name.has_suffix(".mbt") {
+      continue
+    }
+    let text = @fs.read_file("\{out_dir}/\{name}").text()
+    let mut rest = text[:]
+    while rest.find(marker) is Some(i) {
+      rest = rest[i + marker.length():]
+      match rest.find("\"") {
+        Some(j) => {
+          let tag = rest[:j].to_string()
+          if !tags.contains(tag) {
+            tags.push(tag)
+          }
+          rest = rest[j:]
+        }
+        None => break
+      }
+    }
+  }
+  tags
+}
+
+///|
+let rouge_repo : String = ".repos/rouge-3.30.0"
+
+///|
+let rouge_url : String = "https://github.com/rouge-ruby/rouge"
+
+///|
+let rouge_tag : String = "v3.30.0"
+
+///|
+let rouge_commit : String = "8d90cb2063c37fe92dae76a28e9b147da6805aa2"
+
+///|
+let spec_dir : String = ".repos/asciidoctor-pdf-2.3.27/spec"
+
+///|
+let pdf_lib : String = ".repos/gems-pdf/gems/asciidoctor-pdf-2.3.27/lib"
+
+///|
+let out_dir : String = "pdf/rouge"
+
+///|
+let json_out : String = "_build/rouge/harvest.json"
+
+///|
+/// The Ruby that runs the oracle.
+async fn ruby() -> String {
+  match @env.get_env_var("ASCIIDOCTOR_PDF_RUBY") {
+    Some(r) if r != "" => return r
+    _ => ()
+  }
+  for candidate in [
+    "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+  ] {
+    if (@fs.exists(candidate) catch { _ => false }) {
+      return candidate
+    }
+  }
+  "ruby"
+}
+
+///|
+/// The spec gem home (with rouge 3.30.0), absolute.
+async fn spec_gems() -> String {
+  let dir = match @env.get_env_var("ASCIIDOCTOR_PDF_SPEC_GEMS") {
+    Some(d) if d != "" => d
+    _ => ".repos/gems-pdf-spec"
+  }
+  @fs.realpath(dir) catch {
+    _ => fail("no gems in \{dir}: run scripts/pdf_harvest.mbtx first")
+  }
+}
+
+///|
+async fn git(args : Array[String]) -> String {
+  let (code, out, err) = @process.collect_output("git", args)
+  if code != 0 {
+    fail("git \{args.join(" ")}: \{err.text()}")
+  }
+  out.text().trim().to_owned()
+}
+
+///|
+async fn ensure_rouge_repo() -> Unit {
+  if !(@fs.exists(rouge_repo) catch { _ => false }) {
+    println("clone \{rouge_url} \{rouge_tag} into \{rouge_repo}")
+    ignore(
+      git([
+        "clone", "--quiet", "--depth", "1", "--branch", rouge_tag, rouge_url, rouge_repo,
+      ]),
+    )
+  }
+  let head = git(["-C", rouge_repo, "rev-parse", "HEAD"])
+  if head != rouge_commit {
+    fail("\{rouge_repo} is at \{head}, expected \{rouge_tag} (\{rouge_commit})")
+  }
+}
+
+///|
+/// A MoonBit string literal.
+fn lit(s : String) -> String {
+  let sb = StringBuilder()
+  sb.write_char('"')
+  for c in s {
+    let code = c.to_int()
+    match c {
+      '"' => sb.write_string("\\\"")
+      '\\' => sb.write_string("\\\\")
+      '\n' => sb.write_string("\\n")
+      '\r' => sb.write_string("\\r")
+      '\t' => sb.write_string("\\t")
+      _ if code < 0x20 ||
+        (code >= 0x7F && code < 0xA0) ||
+        code == 0xAD ||
+        (code >= 0x200B && code <= 0x200F) ||
+        (code >= 0x2028 && code <= 0x202E) ||
+        (code >= 0x2060 && code <= 0x206F) ||
+        code == 0xFEFF =>
+        sb.write_string("\\u{\{code.to_string(radix=16)}}")
+      c => sb.write_char(c)
+    }
+  }
+  sb.write_char('"')
+  sb.to_string()
+}
+
+///|
+fn str(j : Json) -> String {
+  match j {
+    String(s) => s
+    _ => ""
+  }
+}
+
+///|
+fn items(j : Json) -> Array[Json] {
+  match j {
+    Array(a) => a
+    _ => []
+  }
+}
+
+///|
+fn field(j : Json, key : String) -> Json {
+  match j {
+    Object(m) => m.get(key).unwrap_or(Json::null())
+    _ => Json::null()
+  }
+}
+
+///|
+fn boolean(j : Json) -> String {
+  match j {
+    True => "true"
+    _ => "false"
+  }
+}
+
+///|
+let header : String = "///|\n// Generated by scripts/pdf_rouge_harvest.mbtx from Rouge 3.30.0\n// (scripts/pdf_rouge/harvest.rb); do not edit.\n"
+
+///|
+fn gen_tokens(data : Json) -> String {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  sb.write_string(
+    "\n///|\n/// Every token type of Rouge: qualified name and short name.\nlet token_table : Array[(String, String)] = [\n",
+  )
+  for t in items(field(data, "tokens")) {
+    let pair = items(t)
+    sb.write_string("  (\{lit(str(pair[0]))}, \{lit(str(pair[1]))}),\n")
+  }
+  sb.write_string("]\n")
+  sb.to_string()
+}
+
+///|
+fn gen_themes(data : Json) -> String {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  sb.write_string(
+    "\n///|\n/// Every Rouge theme by name: the style each token type has in it\n/// (its own or inherited from a parent theme): token, foreground,\n/// background (empty when unset), bold, italic, underline.\nlet theme_table : Array[(String, Array[(String, String, String, Bool, Bool, Bool)])] = [\n",
+  )
+  guard field(data, "themes") is Object(themes) else { return "" }
+  let names = themes.keys().collect()
+  names.sort()
+  for name in names {
+    sb.write_string("  (\n    \{lit(name)},\n    [\n")
+    for s in items(themes[name]) {
+      let f = items(s)
+      sb.write_string(
+        "      (\{lit(str(f[0]))}, \{lit(str(f[1]))}, \{lit(str(f[2]))}, \{boolean(f[3])}, \{boolean(f[4])}, \{boolean(f[5])}),\n",
+      )
+    }
+    sb.write_string("    ],\n  ),\n")
+  }
+  sb.write_string("]\n")
+  sb.to_string()
+}
+
+///|
+fn gen_unicode(data : Json) -> String {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  sb.write_string(
+    "\n///|\n/// Code point ranges (flattened inclusive lo/hi pairs) of the Unicode\n/// properties the regex engine lacks, by normalized name.\nlet property_table : Array[(String, FixedArray[Int])] = [\n",
+  )
+  guard field(data, "unicode") is Object(props) else { return "" }
+  let names = props.keys().collect()
+  names.sort()
+  for name in names {
+    sb.write_string("  (\n    \{lit(name)},\n    [\n")
+    let ranges = items(props[name]).map(v => match v {
+      Number(n, ..) => "0x" + n.to_int().to_string(radix=16).to_upper()
+      _ => "0"
+    })
+    let mut i = 0
+    while i < ranges.length() {
+      let end = if i + 8 < ranges.length() { i + 8 } else { ranges.length() }
+      sb.write_string("      \{ranges[i:end].to_array().join(", ")},\n")
+      i = end
+    }
+    sb.write_string("    ],\n  ),\n")
+  }
+  sb.write_string("]\n")
+  sb.to_string()
+}
+
+///|
+fn gen_tests(data : Json) -> (String, Int) {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  let seen : Map[String, Int] = Map([])
+  let mut count = 0
+  for c in items(field(data, "cases")) {
+    let f = items(c)
+    let mut name = str(f[0])
+    let n = seen.get(name).unwrap_or(0)
+    seen[name] = n + 1
+    if n > 0 {
+      name = "\{name} (\{n + 1})"
+    }
+    sb.write_string("\n///|\ntest \{lit("rouge: " + name)} {\n")
+    sb.write_string(
+      "  check_lex(\n    \{lit(str(f[1]))},\n    \{lit(str(f[2]))},\n    \{lit(str(f[3]))},\n  )\n}\n",
+    )
+    count += 1
+  }
+  (sb.to_string(), count)
+}
+
+///|
+async fn main {
+  ensure_rouge_repo()
+  ignore(@process.collect_output("mkdir", ["-p", "_build/rouge"]))
+  let gems = spec_gems()
+  let env = { "GEM_HOME": gems, "GEM_PATH": gems }
+  let args = [
+    "scripts/pdf_rouge/harvest.rb",
+    json_out,
+    @fs.realpath(rouge_repo),
+    @fs.realpath(spec_dir),
+    @fs.realpath(pdf_lib),
+    ..lexer_tags(),
+  ]
+  let (code, stdout, stderr) = @process.collect_output(ruby(), args, extra_env=env)
+  if code != 0 {
+    println(stdout.text() + stderr.text())
+    fail("harvest.rb failed (exit \{code})")
+  }
+  let data = @json.parse(@fs.read_file(json_out).text())
+  @fs.write_file(
+    "\{out_dir}/tokens_data.mbt",
+    gen_tokens(data),
+    create_mode=CreateOrTruncate,
+  )
+  @fs.write_file(
+    "\{out_dir}/themes_data.mbt",
+    gen_themes(data),
+    create_mode=CreateOrTruncate,
+  )
+  @fs.write_file(
+    "\{out_dir}/unicode_data.mbt",
+    gen_unicode(data),
+    create_mode=CreateOrTruncate,
+  )
+  let (tests, count) = gen_tests(data)
+  @fs.write_file(
+    "\{out_dir}/harvest_test.mbt",
+    tests,
+    create_mode=CreateOrTruncate,
+  )
+  // the generated files in their formatted form
+  ignore(@process.run("moon", ["-C", "pdf", "fmt"]))
+  println(
+    "wrote \{out_dir}/{tokens,themes,unicode}_data.mbt and \{out_dir}/harvest_test.mbt (\{count} cases)",
+  )
+}

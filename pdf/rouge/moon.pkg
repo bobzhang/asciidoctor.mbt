@@ -1,0 +1,11 @@
+import {
+  "bobzhang/asciidoctor/regex",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "bobzhang/asciidoctor-pdf/rouge",
+  "moonbitlang/core/env",
+} for "test"
+
+supported_targets = "native+wasm"

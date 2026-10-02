@@ -1,0 +1,115 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor-pdf/rouge"
+
+import {
+  "bobzhang/asciidoctor/regex",
+  "moonbitlang/core/set",
+}
+
+// Values
+pub fn alt(Array[String]) -> String
+
+pub fn diff(Map[String, String]) -> Lexer
+
+pub fn find(String) -> ((Map[String, String]) -> Lexer)?
+
+pub fn find_fancy(String) -> Lexer?
+
+pub fn group_text(@regex.MatchData, Int) -> String
+
+pub fn is_token(String) -> Bool
+
+pub fn java(Map[String, String]) -> Lexer
+
+pub fn lexer_tags() -> Array[String]
+
+pub fn lookup_fancy(String) -> (((Map[String, String]) -> Lexer)?, Map[String, String])
+
+pub fn option_bool(String) -> Bool
+
+pub fn plain_text(Map[String, String]) -> Lexer
+
+pub fn ruby(Map[String, String]) -> Lexer
+
+pub fn rx(String, flags? : String) -> String
+
+pub fn rx_escape(String) -> String
+
+pub fn shortname(String) -> String?
+
+pub fn token_parent(String) -> String?
+
+pub fn word_set(String) -> @set.Set[String]
+
+pub fn words(String) -> Array[String]
+
+pub fn xml(Map[String, String]) -> Lexer
+
+// Errors
+
+// Types and methods
+pub struct Lexer {
+  tag : String
+  options : Map[String, String]
+  // private fields
+}
+pub fn Lexer::append(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::bool_option(Self, String, Bool) -> Bool
+pub fn Lexer::continue_lex(Self, String, (String, String) -> Unit) -> Unit
+pub fn Lexer::delegate(Self, Self, text? : String) -> Unit
+pub fn Lexer::delegate_new(Self, () -> Self, text? : String) -> Unit
+pub fn Lexer::goto(Self, String) -> Unit
+pub fn Lexer::groups(Self, Array[String]) -> Unit
+pub fn Lexer::in_state(Self, String) -> Bool
+pub fn Lexer::lex(Self, String, (String, String) -> Unit) -> Unit
+pub fn Lexer::lexer_option(Self, String) -> Self?
+pub fn Lexer::list_option(Self, String) -> Array[String]?
+pub fn Lexer::new(String, options? : Map[String, String]) -> Self
+pub fn Lexer::pop(Self, times? : Int) -> Unit
+pub fn Lexer::prepend(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::push(Self, String) -> Unit
+pub fn Lexer::push_rules(Self, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::push_self(Self) -> Unit
+pub fn Lexer::recurse(Self, text? : String) -> Unit
+pub fn Lexer::reset(Self) -> Unit
+pub fn Lexer::reset_stack(Self) -> Unit
+pub fn Lexer::set_fresh(Self, () -> Self) -> Unit
+pub fn Lexer::set_stream(Self, (Self, String, (String, String) -> Unit) -> Unit) -> Unit
+pub fn Lexer::stack_size(Self) -> Int
+pub fn Lexer::start(Self, (Self) -> Unit) -> Unit
+pub fn Lexer::state(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::state_is(Self, String) -> Bool
+pub fn Lexer::string_option(Self, String) -> String?
+pub fn Lexer::token(Self, String, val? : String) -> Unit
+pub fn Lexer::tokens(Self, String) -> Array[(String, String)]
+
+type State
+
+pub struct StateBuilder {
+  // private fields
+}
+pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String, can_match? : (String, Int) -> Bool) -> Unit
+pub fn StateBuilder::mix_in(Self, String) -> Unit
+pub fn StateBuilder::rule(Self, String, String, flags? : String, next? : String) -> Unit
+
+pub struct Theme {
+  name : String
+  // private fields
+}
+pub fn Theme::default() -> Self
+pub fn Theme::find(String) -> Self?
+pub fn Theme::names() -> Array[String]
+pub fn Theme::style_for(Self, String) -> TokenStyle?
+
+pub(all) struct TokenStyle {
+  fg : String?
+  bg : String?
+  bold : Bool
+  italic : Bool
+  underline : Bool
+}
+
+// Type aliases
+pub type LexerFactory = (Map[String, String]) -> Lexer
+
+// Traits
