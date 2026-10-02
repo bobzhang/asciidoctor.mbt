@@ -30,8 +30,8 @@ moonx bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf-pygments doc.adoc
 
 | Command | wasm | native (macOS arm64) |
 | --- | --- | --- |
-| `cmd/asciidoctor-pdf` (Rouge) | 18.5 MB | 24.8 MB |
-| `cmd/asciidoctor-pdf-pygments` (Rouge and Pygments) | 28.4 MB | 42.3 MB |
+| `cmd/asciidoctor-pdf` (Rouge) | 18.8 MB | 25.4 MB |
+| `cmd/asciidoctor-pdf-pygments` (Rouge and Pygments) | 28.7 MB | 43.7 MB |
 
 or build them natively from a checkout of the repository:
 
@@ -156,7 +156,7 @@ repository, which converts with both and compares page count, text, the position
 (±1pt), rasterized pages and PDF structure:
 
 * the gate (38 documents covering every feature above): 38 / 38 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 2064 / 2415 pass (the rest are listed with
+* the conversions of asciidoctor-pdf's own RSpec suite: 2097 / 2415 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
