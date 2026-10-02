@@ -24,13 +24,17 @@ The first run installs:
 
 - `.repos/gems-pdf`: asciidoctor-pdf 2.3.27 and its runtime dependencies
   (prawn 2.4.0, prawn-svg 0.34.2, ttfunk 1.7.0 and the rest, listed in
-  `runtime_pinned`), each at its pinned version
+  `runtime_pinned`), each at its pinned version, and the syntax
+  highlighters a document can ask for (rouge 3.30.0, pygments.rb 2.4.1,
+  which runs the `python3` on `PATH`)
 - `.repos/asciidoctor-pdf-2.3.27`: a shallow clone of the release tag, for
   its spec suite
 - `.repos/gems-pdf-spec`: the spec dependencies (rspec 3.12 and the rest,
-  listed in `pinned_gems`)
+  listed in `pinned_gems`), and pygments.rb, which asciidoctor-pdf's CI adds
 
-Then it runs the spec suite and writes the reference PDFs to
+Then it runs the spec suite, with rouge, coderay and pygments.rb activated
+as Bundler would (else the highlighting examples are not even defined),
+and writes the reference PDFs to
 `_build/pdf-spec-cache/pdfs`, which `pdf_compare.mbtx --spec-goldens`
 replays against.
 
