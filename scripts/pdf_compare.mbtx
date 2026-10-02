@@ -188,15 +188,19 @@ fn gems() -> String {
 }
 
 ///|
-/// The environment the oracle runs in: its gems only, and CGI.parse
-/// restored for Rouge on Ruby 4.0 (scripts/pdf_harvest/cgi_parse.rb, as the
-/// harvest loads it).
+/// The environment the oracle runs in: its gems only.
 fn gem_env() -> Map[String, String] {
-  {
-    "GEM_HOME": gem_home.val,
-    "GEM_PATH": gem_home.val,
-    "RUBYOPT": "-r\{cgi_parse_shim.val}",
-  }
+  { "GEM_HOME": gem_home.val, "GEM_PATH": gem_home.val }
+}
+
+///|
+/// The arguments of a Ruby run of the oracle: `-r` CGI.parse restored for
+/// Rouge on Ruby 4.0 (scripts/pdf_harvest/cgi_parse.rb, as the harvest
+/// loads it), then `args`. The shim is an argument of its own, not in
+/// RUBYOPT, which Ruby splits at blanks: a checkout path with a space
+/// would break every conversion.
+fn oracle_args(args : Array[String], shim? : String) -> Array[String] {
+  ["-r", shim.unwrap_or(cgi_parse_shim.val), ..args]
 }
 
 ///|
@@ -2170,6 +2174,44 @@ fn coverage_problems(
 }
 
 ///|
+/// Whether the harvest's summary.txt agrees with its records: as many
+/// conversions as records, and the reference PDFs' bytes the sum of the
+/// records' PDF sizes; one line per disagreement.
+async fn summary_problems(dir : String) -> Array[String] {
+  let mut records = 0
+  let mut bytes = 0
+  for file in @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl")) {
+    for raw in @fs.read_file("\{dir}/\{file}").text().split("\n") {
+      if raw.trim() == "" {
+        continue
+      }
+      records += 1
+      let rec = @json.parse(raw.to_owned())
+      bytes += num(field(field(rec, "pdf"), "size")).unwrap_or(0.0).to_int()
+    }
+  }
+  let summary = @fs.read_file("\{dir}/summary.txt").text() catch {
+    _ => return ["\{dir}/summary.txt is missing"]
+  }
+  let problems = []
+  let expect = (prefix : String, value : Int) => {
+    let line = summary
+      .split("\n")
+      .find_first(l => l.has_prefix(prefix))
+      .map(l => l.to_owned())
+    let wanted = "\{prefix}\{value} "
+    match line {
+      Some(l) if l.has_prefix(wanted) => ()
+      Some(l) => problems.push("summary.txt says `\{l}`, the records \{value}")
+      None => problems.push("summary.txt has no `\{prefix}` line")
+    }
+  }
+  expect("conversions recorded: ", records)
+  expect("reference PDFs: ", bytes)
+  problems
+}
+
+///|
 /// The harvested record counts of a spec-golden directory, by file name.
 async fn read_record_counts(dir : String) -> Map[String, Int] {
   let counts : Map[String, Int] = Map([])
@@ -2319,7 +2361,7 @@ async fn run_oracle(
     "{local",
   )
   guard oracle_cache.val is Some(cache) && !shows_time else {
-    return run(ruby(), args, env~, timeout=conversion_timeout_ms)
+    return run(ruby(), oracle_args(args), env~, timeout=conversion_timeout_ms)
   }
   let key = "\{cache}/\{name}-\{input_sha[:16]}"
   if file_exists("\{key}.json") {
@@ -2339,7 +2381,7 @@ async fn run_oracle(
       }
     }
   }
-  let r = run(ruby(), args, env~, timeout=conversion_timeout_ms)
+  let r = run(ruby(), oracle_args(args), env~, timeout=conversion_timeout_ms)
   if !r.timed_out {
     if r.code == 0 {
       ignore(run("cp", [ruby_pdf, "\{key}.pdf"]))
@@ -3285,7 +3327,7 @@ async fn tool_versions() -> Json {
   let dirty = run("git", ["status", "--porcelain", "--", "pdf", "scripts"]).out.trim() != ""
   {
     "ruby": js(version(run(ruby(), ["-v"]))),
-    "asciidoctor_pdf": js(version(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-v"], env~))),
+    "asciidoctor_pdf": js(version(run(ruby(), oracle_args(["\{gems()}/bin/asciidoctor-pdf", "-v"]), env~))),
     "poppler": js(version(run("pdftotext", ["-v"]))),
     "moon": js(version(run("moon", ["version"]))),
     "asciidoctor_mbt_commit": js(run("git", ["rev-parse", "HEAD"]).out.trim().to_owned() + (if dirty { " (modified)" } else { "" })),
@@ -3423,6 +3465,42 @@ async fn self_test(gallery : String) -> Bool {
     results.push((label, ok, detail))
   }
   gate_logic_checks(check)
+  // the committed harvest's summary agrees with its records
+  let problems = summary_problems("tests/pdf_golden")
+  check(
+    "tests/pdf_golden/summary.txt agrees with the records",
+    problems.is_empty(),
+    problems.join("; "),
+  )
+  // the oracle loads its CGI.parse shim from a path with a space (a
+  // checkout under `My Projects`), and Rouge reads cgi-style lexer options
+  {
+    let spaced = "\{dir}/with space"
+    ignore(run("mkdir", ["-p", spaced]))
+    let copy = "\{spaced}/cgi_parse.rb"
+    ignore(run("cp", [cgi_parse_shim.val, copy]))
+    // absolute, as `configure_oracle` makes the shim's path
+    let shim = @fs.realpath(copy) catch { _ => copy }
+    let input = "\{spaced}/options.adoc"
+    @fs.write_file(
+      input,
+      ":source-highlighter: rouge\n\n[source,php?start_inline=1]\n----\necho 1;\n----\n",
+      create_mode=CreateOrTruncate,
+    )
+    let r = run(
+      ruby(),
+      oracle_args(
+        ["\{gems()}/bin/asciidoctor-pdf", "-o", "\{spaced}/options.pdf", input],
+        shim~,
+      ),
+      env=gem_env(),
+    )
+    check(
+      "the oracle loads its shim from a path with a space",
+      r.code == 0 && r.err.trim() == "",
+      r.err,
+    )
+  }
   let good = "\{dir}/good.pdf"
   let r = run(spike_exe.val, ["-o", good, "pdf/tests/sampler.adoc"])
   if r.code != 0 {
@@ -3460,8 +3538,8 @@ async fn self_test(gallery : String) -> Bool {
     let env = gem_env()
     let a = "\{dir}/oracle-a.pdf"
     let b = "\{dir}/oracle-b.pdf"
-    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"], env~))
-    ignore(run(ruby(), ["\{gems()}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"], env~))
+    ignore(run(ruby(), oracle_args(["\{gems()}/bin/asciidoctor-pdf", "-o", a, "pdf/tests/sampler.adoc"]), env~))
+    ignore(run(ruby(), oracle_args(["\{gems()}/bin/asciidoctor-pdf", "-o", b, "pdf/tests/sampler.adoc"]), env~))
     let d = "\{dir}/oracle"
     ignore(run("mkdir", ["-p", d]))
     try {
@@ -3925,7 +4003,10 @@ async fn main {
           None => ()
         }
       }
-      coverage_problems(read_record_counts(dir), loaded, records.length())
+      [
+        ..coverage_problems(read_record_counts(dir), loaded, records.length()),
+        ..summary_problems(dir),
+      ]
     }
     _ => []
   }

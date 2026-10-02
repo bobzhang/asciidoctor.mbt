@@ -4,7 +4,7 @@
 # the rest of the cgi library (only cgi/escape is left). This restores it as
 # the cgi gem defines it, so that those conversions behave as on the Rubies
 # asciidoctor-pdf 2.3.27 supports. Loaded by scripts/pdf_harvest/harvest.rb,
-# scripts/pdf_rouge/harvest.rb and, with RUBYOPT, by the oracle runs of
+# scripts/pdf_rouge/harvest.rb and, with `ruby -r`, by the oracle runs of
 # scripts/pdf_compare.mbtx.
 require 'cgi'
 

@@ -566,6 +566,9 @@ module PdfHarvest
     ENV.fetch('PDF_HARVEST_HIGHLIGHTERS').split(',').each do |pinned|
       name, version = pinned.split '=', 2
       gem name, version
+      # exactly the version pinned, not one an earlier require activated
+      activated = Gem.loaded_specs[name]&.version&.to_s
+      raise %(#{name} #{activated} is active, not the pinned #{version}) unless activated == version
     end
     # CGI.parse for Rouge on Ruby 4.0
     require_relative 'cgi_parse'
