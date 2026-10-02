@@ -56,6 +56,9 @@ priv struct Session {
   mut converting : Bool
   /// the fonts (`family (style)`) reported as unknown
   unknown_fonts : Map[String, Bool]
+  /// the Rouge formatter of the document's source blocks, made for the
+  /// first (asciidoctor-pdf's `@rouge_formatter`)
+  mut rouge_formatter : RougeFormatter?
   /// what `register` was given when the document's converter was created:
   /// a later `register` leaves the documents loaded before it as they were
   registration : Registration
@@ -87,6 +90,7 @@ fn Session::new() -> Session {
     pending_diagnostics: [],
     converting: false,
     unknown_fonts: Map([]),
+    rouge_formatter: None,
     registration,
     page_setup: default_page_setup(),
     font_scope: None,

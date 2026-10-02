@@ -20,6 +20,7 @@ pub using @prawn {
 ///|
 using @prawn {
   type Alignment,
+  type CodeBackground,
   type Face,
   type Fragment,
   type Flow,
@@ -37,6 +38,7 @@ using @prawn {
   pdf_anchor_name,
   rect_item,
   rgb_hex,
+  source_wrap,
   typeset_lines,
   vrule,
 }
