@@ -136,6 +136,15 @@ repository, which converts with both and compares page count, text, the position
   is accepted (it is built in). No `asciidoctor-pdf-optimize`.
 * The PDF's Producer names this port (`Asciidoctor PDF 0.1.0 (MoonBit), based on pagelayout`).
 
+## Changes
+
+### Unreleased (0.2.0)
+
+* The layout moved to its own module, `bobzhang/prawn` (`prawn/` in the repository): the SVG
+  package `bobzhang/asciidoctor-pdf/svg` is now `bobzhang/prawn/svg` (a breaking change for code
+  importing it). `FontCatalog`, `IconSet`, `default_font_files` and `default_icon_font_files` are
+  re-exported, so `register(catalog=...)` and `convert_document` are used as before.
+
 ## License
 
 MIT (see LICENSE). This is a port of Asciidoctor PDF, Copyright (C) 2014-present OpenDevise Inc.

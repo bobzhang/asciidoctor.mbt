@@ -178,3 +178,40 @@ test "a document keeps the icon fonts registered when it was loaded" {
   activate_session(plain)
   inspect(document_catalog(plain).has_icons(), content="false")
 }
+
+///|
+test "a document's flow hooks work in its own session" {
+  register()
+  let a = load_pdf(doc_a)
+  let b = load_pdf(doc_b)
+  // A's hooks, made while A is active
+  activate_session(a)
+  let session_a = session()
+  let hooks_a = document_hooks()
+  // then B becomes the active document
+  activate_session(b)
+  let session_b = session()
+  (hooks_a.unknown_font)("No Such Font (normal)")
+  (hooks_a.unknown_font)("No Such Font (normal)")
+  (hooks_a.anchor_inked)("__indexterm-1", 3)
+  // A's state took the calls, reported once; B is still active and untouched
+  inspect(physical_equal(session(), session_b), content="true")
+  inspect(
+    session_a.unknown_fonts.contains("No Such Font (normal)"),
+    content="true",
+  )
+  inspect(
+    session_b.unknown_fonts.contains("No Such Font (normal)"),
+    content="false",
+  )
+  debug_inspect(
+    session_a.pending_diagnostics
+    .filter(d => d.contains("No Such Font"))
+    .length(),
+    content="1",
+  )
+  debug_inspect(
+    session_b.pending_diagnostics.filter(d => d.contains("No Such Font")),
+    content="[]",
+  )
+}

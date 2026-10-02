@@ -266,9 +266,9 @@ repository, without the workspace file (`pdf/.moonignore` keeps its tests and to
 
 ```
 rsync -a --exclude _build --exclude .mooncakes prawn/ /tmp/prawn/
-cd /tmp/prawn && moon publish
+moon -C /tmp/prawn publish
 rsync -a --exclude _build --exclude .mooncakes --exclude moon.work pdf/ /tmp/asciidoctor-pdf/
-cd /tmp/asciidoctor-pdf && moon publish
+moon -C /tmp/asciidoctor-pdf publish
 ```
 
 Bump `version` in `pdf/moon.mod` and in `pdf/version.mbt` together (`scripts/pdf_smoke.mbtx` checks

@@ -719,3 +719,18 @@ fn convert_inline_menu(node : @core.Node) -> String {
     }
   }
 }
+
+///|
+/// Run `body` with `state` the active session (and its theme), then make
+/// the session that was active before active again: the hooks a document
+/// gives its flows report, look up images and draw SVG in that document's
+/// session whichever is active when they are called.
+fn[T] with_session(state : Session, body : () -> T) -> T {
+  let before = active_session.val
+  let theme = current_theme.val
+  activate(state)
+  let result = body()
+  active_session.val = before
+  current_theme.val = theme
+  result
+}
