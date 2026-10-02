@@ -443,12 +443,12 @@ fn Converter::box_image_items(
     }
     let (iw, ih) = (sizing.output_width, sizing.output_height)
     let (x, y) = place(iw, ih)
-    let env = svg_environment(flow.catalog, flow.model, self.doc, img.path)
+    let env = svg_environment(flow.text(), flow.model, self.doc, img.path)
     let ops = doc.render(
       env,
       origin=(x, y),
       page_height=page_h.unwrap_or(flow.page_h()),
-      stack=flow.svg_stack(),
+      stack=svg_stack(flow),
     )
     report_svg_warnings(doc, img.path, self.doc, flow.scratch)
     Some(([Graphic({ x_pt: x, y_pt: y, ops, })], iw, ih))

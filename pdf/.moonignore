@@ -1,7 +1,7 @@
 # Not packaged by `moon publish`: the local workspace, the test inputs and
 # harvested tests, the audit notes and the PDF inspection tool of the
-# comparison gate (scripts/pdf_compare.mbtx). LICENSE, NOTICE, LICENSES,
-# svg/LICENSE and fonts/LICENSES are packaged.
+# comparison gate (scripts/pdf_compare.mbtx). LICENSE, NOTICE, LICENSES
+# and fonts/LICENSES are packaged.
 moon.work
 tests/
 docs/

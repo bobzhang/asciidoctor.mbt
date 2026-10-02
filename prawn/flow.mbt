@@ -9,14 +9,14 @@
 ///|
 /// Prawn's line metrics for a line height factor (asciidoctor-pdf's
 /// `calc_line_metrics`).
-priv struct LineMetrics {
+pub(all) struct LineMetrics {
   leading : Double
   padding_top : Double
   padding_bottom : Double
 }
 
 ///|
-fn line_metrics(factor : Double, face : Face, size : Double) -> LineMetrics {
+pub fn line_metrics(factor : Double, face : Face, size : Double) -> LineMetrics {
   let leading = factor * size - size
   let half = leading / 2.0
   { leading, padding_top: half + face.line_gap_pt(size), padding_bottom: half, }
@@ -25,7 +25,7 @@ fn line_metrics(factor : Double, face : Face, size : Double) -> LineMetrics {
 ///|
 /// A point in the flow: page, cursor, and how many items the page held,
 /// so backgrounds can be slid underneath content inked after it.
-priv struct Mark {
+pub(all) struct Mark {
   page : Int
   y : Double
   item : Int
@@ -36,7 +36,7 @@ priv struct Mark {
 /// split into `count` columns `gap` apart; running out of room moves to
 /// the next column at the box's top, and past the last one to a new page,
 /// where the box starts at the page's top.
-priv struct Columns {
+pub(all) struct Columns {
   count : Int
   /// the distance between the left edges of adjacent columns
   stride : Double
@@ -44,8 +44,12 @@ priv struct Columns {
 }
 
 ///|
-priv struct Flow {
+pub(all) struct Flow {
   catalog : FontCatalog
+  /// the page setup new pages take their size from, before any page
+  setup : PageSetup
+  /// what the document does at the fragment callbacks, and its font policy
+  hooks : Hooks
   model : @pagelayout.PageModel
   /// a dry run (asciidoctor-pdf's scratch document): destinations and
   /// index pages are not recorded
@@ -85,10 +89,31 @@ priv struct Flow {
 }
 
 ///|
-fn Flow::new(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
-  let setup = page_setup.val
+/// The page size and margins a document starts with (asciidoctor-pdf's
+/// `build_pdf_options`: `page_size`, `page_layout`, `page_margin`), in
+/// points.
+pub(all) struct PageSetup {
+  width : Double
+  height : Double
+  margin_top : Double
+  margin_right : Double
+  margin_bottom : Double
+  margin_left : Double
+}
+
+///|
+/// A flow over pages set up as `setup`, its text set from `catalog`, the
+/// document answering `hooks`; `scratch` for a dry run.
+pub fn Flow::new(
+  catalog : FontCatalog,
+  setup : PageSetup,
+  hooks? : Hooks = Hooks::new(),
+  scratch? : Bool = false,
+) -> Flow {
   {
     catalog,
+    setup,
+    hooks,
     model: @pagelayout.PageModel::new(),
     scratch,
     page_top: setup.margin_top,
@@ -131,12 +156,12 @@ fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
 }
 
 ///|
-fn Flow::start_new_page(self : Flow, layout? : String) -> Unit {
+pub fn Flow::start_new_page(self : Flow, layout? : String) -> Unit {
   // a new page takes the current page's size and layout (Prawn's
   // `start_new_page`), or the layout asked for: landscape swaps the sides
   let (w, h) = match self.model.pages.last() {
     Some(p) => (p.width_pt, p.height_pt)
-    None => (page_width(), page_height())
+    None => (self.setup.width, self.setup.height)
   }
   let (w, h) = match layout {
     Some("landscape") if w < h => (h, w)
@@ -154,10 +179,10 @@ fn Flow::start_new_page(self : Flow, layout? : String) -> Unit {
 ///|
 /// The current page's height (the PDF's y axis is measured up from its
 /// bottom).
-fn Flow::page_h(self : Flow) -> Double {
+pub fn Flow::page_h(self : Flow) -> Double {
   match self.model.pages.get(self.page) {
     Some(p) => p.height_pt
-    None => page_height()
+    None => self.setup.height
   }
 }
 
@@ -182,7 +207,7 @@ fn Flow::fit_page_size(self : Flow) -> Unit {
 /// Move to the next page, creating it unless an earlier pass already did
 /// (a block's background revisits pages its content spilled onto); in a
 /// column box, to the next column first (Prawn's `move_past_bottom`).
-fn Flow::advance_page(self : Flow) -> Unit {
+pub fn Flow::advance_page(self : Flow) -> Unit {
   match self.columns {
     Some(columns) if columns.current < columns.count - 1 => {
       columns.current += 1
@@ -213,14 +238,14 @@ fn Flow::advance_page(self : Flow) -> Unit {
 
 ///|
 /// Whether the current page is a verso page (an even page number).
-fn Flow::on_verso(self : Flow) -> Bool {
+pub fn Flow::on_verso(self : Flow) -> Bool {
   (self.page + 1) % 2 == 0
 }
 
 ///|
 /// Make page `index` the current page (Prawn's `go_to_page`), in its
 /// margins; the cursor is left where it is.
-fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
+pub fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
   self.page = index
   self.fit_page_size()
   self.apply_page_margins(index)
@@ -230,7 +255,7 @@ fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
 /// In a column box, move to its last column (Prawn's
 /// `bounds.current_column = bounds.last_column`), so the next page break
 /// starts a new page.
-fn Flow::to_last_column(self : Flow) -> Unit {
+pub fn Flow::to_last_column(self : Flow) -> Unit {
   match self.columns {
     Some(columns) => {
       let shift = columns.stride *
@@ -248,7 +273,7 @@ fn Flow::to_last_column(self : Flow) -> Unit {
 /// (Prawn's `column_box` with `reflow_margins: true`); the cursor ends
 /// where the first column did, or, when the box went on past it, at the
 /// bottom of the last one.
-fn Flow::column_box(
+pub fn Flow::column_box(
   self : Flow,
   count : Int,
   gap : Double,
@@ -275,12 +300,12 @@ fn Flow::column_box(
 }
 
 ///|
-fn Flow::items(self : Flow) -> Array[@pagelayout.PageItem] {
+pub fn Flow::items(self : Flow) -> Array[@pagelayout.PageItem] {
   self.model.pages[self.page].items
 }
 
 ///|
-fn Flow::push(self : Flow, item : @pagelayout.PageItem) -> Unit {
+pub fn Flow::push(self : Flow, item : @pagelayout.PageItem) -> Unit {
   if !(item is Anchor(_)) {
     self.mark_inked()
   }
@@ -298,7 +323,7 @@ fn Flow::mark_inked(self : Flow) -> Unit {
 ///|
 /// Ink `body` as tared content: captions and backgrounds, which do not
 /// keep a block on a page by themselves.
-fn Flow::tared(self : Flow, body : () -> Unit) -> Unit {
+pub fn Flow::tared(self : Flow, body : () -> Unit) -> Unit {
   self.taring += 1
   body()
   self.taring -= 1
@@ -306,29 +331,29 @@ fn Flow::tared(self : Flow, body : () -> Unit) -> Unit {
 
 ///|
 /// Space left above the bottom margin (Prawn's `cursor`).
-fn Flow::cursor(self : Flow) -> Double {
+pub fn Flow::cursor(self : Flow) -> Double {
   self.bottom - self.y
 }
 
 ///|
-fn Flow::at_page_top(self : Flow) -> Bool {
+pub fn Flow::at_page_top(self : Flow) -> Bool {
   (self.y - self.top).abs() < 0.0001
 }
 
 ///|
-fn Flow::width(self : Flow) -> Double {
+pub fn Flow::width(self : Flow) -> Double {
   self.right - self.left
 }
 
 ///|
-fn Flow::move_down(self : Flow, amount : Double) -> Unit {
+pub fn Flow::move_down(self : Flow, amount : Double) -> Unit {
   self.y += amount
 }
 
 ///|
 /// asciidoctor-pdf's `margin`: nothing at the top of a page, a move down
 /// when it fits, else a new page.
-fn Flow::margin(self : Flow, amount : Double) -> Unit {
+pub fn Flow::margin(self : Flow, amount : Double) -> Unit {
   if amount == 0.0 || self.at_page_top() {
     return
   }
@@ -342,7 +367,7 @@ fn Flow::margin(self : Flow, amount : Double) -> Unit {
 ///|
 /// The bottom padding of a padded box: a move down when it fits, else the
 /// next page (Prawn's `move_past_bottom`).
-fn Flow::pad_bottom(self : Flow, amount : Double) -> Unit {
+pub fn Flow::pad_bottom(self : Flow, amount : Double) -> Unit {
   if self.at_page_top() {
     return
   }
@@ -354,7 +379,7 @@ fn Flow::pad_bottom(self : Flow, amount : Double) -> Unit {
 }
 
 ///|
-fn[T] Flow::indent(
+pub fn[T] Flow::indent(
   self : Flow,
   left : Double,
   right : Double,
@@ -369,21 +394,21 @@ fn[T] Flow::indent(
 }
 
 ///|
-fn Flow::mark(self : Flow) -> Mark {
+pub fn Flow::mark(self : Flow) -> Mark {
   { page: self.page, y: self.y, item: self.items().length(), }
 }
 
 ///|
-fn Flow::font(self : Flow, style : Style) -> Face {
+pub fn Flow::font(self : Flow, style : Style) -> Face {
   let (bold, italic) = style.face_style()
-  self.catalog.face(style.family, bold, italic)
+  self.text().face(style.family, bold, italic)
 }
 
 ///|
 /// Prawn's `width_of` a plain string in `style`'s font, trailing spaces
 /// included (asciidoctor-pdf's `rendered_width_of_string`): the truncated
 /// glyph widths, kerned.
-fn Flow::width_of(self : Flow, text : String, style : Style) -> Double {
+pub fn Flow::width_of(self : Flow, text : String, style : Style) -> Double {
   let face = self.font(style)
   let mut width = 0.0
   let n = text.length()
@@ -398,12 +423,17 @@ fn Flow::width_of(self : Flow, text : String, style : Style) -> Double {
 }
 
 ///|
-fn Flow::add_anchor(self : Flow, name : String, x : Double, y : Double) -> Unit {
+pub fn Flow::add_anchor(
+  self : Flow,
+  name : String,
+  x : Double,
+  y : Double,
+) -> Unit {
   self.push(Anchor({ name: pdf_anchor_name(name), x_pt: x, y_pt: y, }))
 }
 
 ///|
-fn rect_item(
+pub fn rect_item(
   x : Double,
   y : Double,
   w : Double,
@@ -425,7 +455,7 @@ fn rect_item(
 
 ///|
 /// A horizontal rule `width` thick centred on `y`.
-fn hrule(
+pub fn hrule(
   x1 : Double,
   x2 : Double,
   y : Double,
@@ -438,7 +468,7 @@ fn hrule(
 ///|
 /// A dashed horizontal rule (dashes and gaps four times its width, as
 /// Prawn's `dash` in asciidoctor-pdf's dashed style), as filled segments.
-fn dashed_hrule(
+pub fn dashed_hrule(
   x1 : Double,
   x2 : Double,
   y : Double,
@@ -457,7 +487,7 @@ fn dashed_hrule(
 
 ///|
 /// A vertical rule `width` thick centred on `x`.
-fn vrule(
+pub fn vrule(
   x : Double,
   y1 : Double,
   y2 : Double,
@@ -471,7 +501,7 @@ fn vrule(
 /// The items that draw one placed line with its left edge at `x0` and its
 /// baseline at `baseline`: backgrounds, glyph runs, decorations, link
 /// regions and anchors.
-fn Flow::line_items(
+pub fn Flow::line_items(
   self : Flow,
   line : Line,
   x0 : Double,
@@ -483,7 +513,6 @@ fn Flow::line_items(
   // placeholder's box
   for placed in line.images {
     let (x, index, w, h, increased, style, face) = placed
-    let image = session().inline_images[index]
     let a = face.ascender_pt(style.size)
     let d = face.descender_pt(style.size)
     let (top, box_top, box_height) = if increased {
@@ -491,24 +520,7 @@ fn Flow::line_items(
     } else {
       (baseline - a + (a + d - h) / 2.0, baseline - a, a + d)
     }
-    match image.svg {
-      Some(svg) =>
-        match self.inline_svg_item(svg, x0 + x, top, w) {
-          Some(item) => items.push(item)
-          None => ()
-        }
-      None =>
-        items.push(
-          Image({
-            x_pt: x0 + x,
-            y_pt: top,
-            w_pt: w,
-            h_pt: h,
-            data: image.data,
-            mime: image.mime,
-          }),
-        )
-    }
+    items.append((self.hooks.image_items)(self, index, x0 + x, top, w, h))
     match style.link {
       Some(target) =>
         items.push(
@@ -627,7 +639,7 @@ fn Flow::line_items(
 
 ///|
 /// Draw one placed line on the current page.
-fn Flow::ink_line(
+pub fn Flow::ink_line(
   self : Flow,
   line : Line,
   x0 : Double,
@@ -638,12 +650,9 @@ fn Flow::ink_line(
   }
   self.items().append(self.line_items(line, x0, baseline))
   if !self.scratch {
-    // an index term's anchor tells the index its page
-    // (InlineDestinationMarker)
+    // the document learns each anchor's page (InlineDestinationMarker)
     for anchor in line.anchors {
-      if anchor.0.has_prefix("__indexterm-") {
-        session().index.link_dest_to_page(anchor.0, self.page + 1)
-      }
+      (self.hooks.anchor_inked)(anchor.0, self.page + 1)
     }
   }
 }
@@ -655,7 +664,7 @@ fn Flow::ink_line(
 /// asciidoctor-pdf's arranger puts a zero-width space in that font at the
 /// start of each line (so a line of code in a list takes the prose line's
 /// height, not the smaller one of the monospace font).
-fn line_extent(
+pub fn line_extent(
   line : Line,
   base_face : Face,
   size : Double,
@@ -680,7 +689,7 @@ fn line_extent(
 ///|
 /// Ink formatted text at the cursor, flowing onto new pages as needed —
 /// asciidoctor-pdf's `typeset_text` over Prawn's `text`.
-fn Flow::typeset(
+pub fn Flow::typeset(
   self : Flow,
   fragments : Array[Fragment],
   metrics : LineMetrics,
@@ -706,7 +715,7 @@ fn Flow::typeset(
       let (line, rest) = split_first_line(
         restyle_fragments(fragments, first),
         fragments,
-        self.catalog,
+        self.text(),
         self.width() - text_indent,
         align,
       )
@@ -716,13 +725,13 @@ fn Flow::typeset(
       if rest.is_empty() {
         [line]
       } else {
-        [line, ..typeset_lines(rest, self.catalog, self.width(), align)]
+        [line, ..typeset_lines(rest, self.text(), self.width(), align)]
       }
     }
     None if text_indent > 0.0 => {
       let (lines, starts) = typeset_paragraph_lines(
         fragments,
-        self.catalog,
+        self.text(),
         self.width(),
         align,
         first_width=self.width() - text_indent,
@@ -734,7 +743,7 @@ fn Flow::typeset(
     None =>
       typeset_lines(
         fragments,
-        self.catalog,
+        self.text(),
         self.width() - hanging_indent,
         align,
         first_width=self.width(),
@@ -796,14 +805,14 @@ fn Flow::typeset(
 ///|
 /// The height `typeset` would take for `fragments` in the current bounds
 /// (asciidoctor-pdf's `height_of_typeset_text`), ignoring page breaks.
-fn Flow::height_of(
+pub fn Flow::height_of(
   self : Flow,
   fragments : Array[Fragment],
   metrics : LineMetrics,
   base : Style,
   normalize_line_height? : Bool = false,
 ) -> Double {
-  let lines = typeset_lines(fragments, self.catalog, self.width(), Left)
+  let lines = typeset_lines(fragments, self.text(), self.width(), Left)
   let base_face = self.font(base)
   let mut baseline = 0.0
   let mut depth = 0.0
@@ -824,7 +833,7 @@ fn Flow::height_of(
 /// Slide `make(page, top, bottom, first, last)` underneath everything inked
 /// since `start`, on every page from `start` to the cursor: the painter's
 /// order of a background drawn before its content, without a dry run.
-fn Flow::underlay(
+pub fn Flow::underlay(
   self : Flow,
   start : Mark,
   make : (Double, Double, Bool, Bool) -> Array[@pagelayout.PageItem],
@@ -845,4 +854,80 @@ fn Flow::underlay(
       items.insert(at + offset, item)
     }
   }
+}
+
+///|
+/// What the flow sets text with.
+pub fn Flow::text(self : Flow) -> TextContext {
+  { catalog: self.catalog, hooks: self.hooks, }
+}
+
+///|
+/// Whether `height` fits below the cursor (prawn-table's `fits_on_page?`).
+pub fn Flow::fits(self : Flow, height : Double, y? : Double = self.y) -> Bool {
+  height < self.bottom - y + 1.0e-9
+}
+
+///|
+/// A named destination for the block at the cursor (asciidoctor-pdf's
+/// `add_dest_for_block`).
+pub fn Flow::dest_x(self : Flow) -> Double {
+  // `add_dest_for_block`: `bounds.absolute_left.truncate 4`, 0 when at the
+  // margin
+  let left = (self.left * 10000.0).floor() / 10000.0
+  if left <= self.margin_left {
+    0.0
+  } else {
+    left
+  }
+}
+
+///|
+/// Prawn's formatted text box with a height (`text_box`): the lines of
+/// `fragments` set `width` wide from `x` (the first one `text_indent`
+/// further in, Prawn's `indent_paragraphs`), the first hanging from the
+/// cursor plus the line padding, as many as fit in `height`. Returns the
+/// fragments that did not fit and the baseline of the last line inked
+/// (None when none was); the cursor does not move.
+pub fn Flow::typeset_box(
+  self : Flow,
+  fragments : Array[Fragment],
+  metrics : LineMetrics,
+  base : Style,
+  align~ : Alignment,
+  x~ : Double,
+  width~ : Double,
+  height~ : Double,
+  text_indent~ : Double,
+) -> (Array[Fragment], Double?) {
+  self.last_line = None
+  let base_face = self.font(base)
+  let top = self.y + metrics.padding_top
+  let mut remaining = self.text().apply_fallbacks(fragments)
+  let mut baseline = 0.0
+  let mut placed = 0
+  let mut last : Double? = None
+  while !remaining.is_empty() {
+    let indent = if placed == 0 { text_indent } else { 0.0 }
+    let (line, rest) = split_first_line(
+      remaining,
+      remaining,
+      self.text(),
+      width - indent,
+      align,
+    )
+    let (a, d, h) = line_extent(line, base_face, base.size, false)
+    let next = if placed == 0 { a } else { baseline + h + metrics.leading }
+    if next + d > height + 0.0001 {
+      break
+    }
+    baseline = next
+    self.ink_line(line, x + indent, top + baseline)
+    self.last_line = Some((line, self.page, top + baseline))
+    self.last_line_first = placed == 0
+    last = Some(top + baseline)
+    placed += 1
+    remaining = rest
+  }
+  (remaining, last)
 }

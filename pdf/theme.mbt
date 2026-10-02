@@ -182,18 +182,6 @@ fn t_padding(key : String) -> (Double, Double, Double, Double) {
 }
 
 ///|
-/// The page geometry of the conversion: size and margins (top, right,
-/// bottom, left), asciidoctor-pdf's `build_pdf_options`.
-priv struct PageSetup {
-  width : Double
-  height : Double
-  margin_top : Double
-  margin_right : Double
-  margin_bottom : Double
-  margin_left : Double
-}
-
-///|
 let page_setup : Ref[PageSetup] = {
   val: {
     width: 595.28,
@@ -598,7 +586,7 @@ let font_scope : Ref[(Style, Double)?] = { val: None, }
 fn base_style() -> Style {
   match font_scope.val {
     Some((style, _)) => style
-    None => Style::new()
+    None => text_style()
   }
 }
 

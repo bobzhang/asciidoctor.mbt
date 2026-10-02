@@ -6,16 +6,16 @@
 /// asciidoctor-pdf's `resolve_top`: a position down the page from the
 /// cursor: `vh` of the page height (from its top edge), `%` of the content
 /// area's height, or a length.
-fn Flow::resolve_top(self : Flow, value : @theme.Value) -> Double {
+fn resolve_top(flow : Flow, value : @theme.Value) -> Double {
   let s = value.to_ruby_s()
   if s.has_suffix("vh") {
     page_height() * (@theme.ruby_string_to_f(s) / 100.0)
   } else if s.has_suffix("%") {
     let setup = page_setup.val
     let effective = setup.height - setup.margin_top - setup.margin_bottom
-    self.y + effective * (@theme.ruby_string_to_f(s) / 100.0)
+    flow.y + effective * (@theme.ruby_string_to_f(s) / 100.0)
   } else {
-    self.y + @theme.str_to_pt(s)
+    flow.y + @theme.str_to_pt(s)
   }
 }
 
@@ -178,7 +178,7 @@ fn Converter::ink_title_page_logo(
       }
   }
   match top {
-    Some(t) => flow.y = flow.resolve_top(t)
+    Some(t) => flow.y = resolve_top(flow, t)
     None => ()
   }
   let logo = @core.Node::new_block(
@@ -255,7 +255,7 @@ fn Converter::ink_title_page(self : Converter) -> Unit {
   )
   match tv("title_page_title_top") {
     Null => ()
-    top => flow.y = flow.resolve_top(top)
+    top => flow.y = resolve_top(flow, top)
   }
   let (main, subtitle) = match doc.doctitle_partitioned() {
     Some(t) => (t.main, t.subtitle)

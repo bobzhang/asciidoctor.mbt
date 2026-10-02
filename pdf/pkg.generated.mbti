@@ -5,6 +5,7 @@ import {
   "bobzhang/asciidoctor-pdf/fonts",
   "bobzhang/asciidoctor-pdf/theme",
   "bobzhang/asciidoctor/core",
+  "bobzhang/prawn",
 }
 
 // Values
@@ -14,13 +15,13 @@ pub fn conversion_warnings() -> Array[String]
 
 pub fn convert(@core.Node) -> Bytes raise
 
-pub fn convert_document(@core.Node, FontCatalog) -> Bytes raise
+pub fn convert_document(@core.Node, @prawn.FontCatalog) -> Bytes raise
 
 pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
 
 pub fn default_icon_font_files() -> Array[(String, String, String)]
 
-pub fn register(catalog? : FontCatalog, fonts? : Array[@fonts.Bundle], icon_fonts? : @fonts.Bundle, fonts_dir? : String, icon_fonts_dir? : String, pdf_theme? : (@theme.Files) -> @theme.Theme raise) -> Unit
+pub fn register(catalog? : @prawn.FontCatalog, fonts? : Array[@fonts.Bundle], icon_fonts? : @fonts.Bundle, fonts_dir? : String, icon_fonts_dir? : String, pdf_theme? : (@theme.Files) -> @theme.Theme raise) -> Unit
 
 pub let ruby_version : String
 
@@ -29,17 +30,10 @@ pub let version : String
 // Errors
 
 // Types and methods
-pub struct FontCatalog {
-  // private fields
-}
-pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String, fallbacks? : Array[String]) -> Self raise
-
-pub(all) struct IconSet {
-  name : String
-  font : Bytes
-  legend : String
-}
 
 // Type aliases
+pub using @prawn {type FontCatalog}
+
+pub using @prawn {type IconSet}
 
 // Traits

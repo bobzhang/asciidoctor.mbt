@@ -124,7 +124,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       ignore(doc.set_attr(name, value=Str("")))
     }
   }
-  let flow = Flow::new(catalog)
+  let flow = new_flow(catalog)
   let c = Converter::new(doc, flow)
   c.text_align = match doc.attr("text-align") {
     Some("left" | "right" | "center" | "justify" as align) =>

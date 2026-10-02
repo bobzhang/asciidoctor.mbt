@@ -3,11 +3,10 @@ import {
   "bobzhang/asciidoctor-pdf/fonts" @bundled,
   "bobzhang/asciidoctor/core",
   "moonbitlang/pagelayout",
-  "bobzhang/asciidoctor-pdf/svg",
-  "moonbitlang/pagelayout/fonts",
+  "bobzhang/prawn",
+  "bobzhang/prawn/svg",
+  "bobzhang/prawn/table",
   "moonbitlang/pagelayout/pdf",
-  "moonbitlang/pdflite",
-  "moonbitlang/pdflite/font/afm",
   "moonbitlang/core/string",
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",
@@ -19,6 +18,7 @@ supported_targets = "native+wasm"
 import {
   "bobzhang/asciidoctor",
   "moonbitlang/pagelayout/fontoutlines",
+  "moonbitlang/pdflite",
   "bobzhang/asciidoctor-pdf/fonts/icons",
 } for "wbtest"
 

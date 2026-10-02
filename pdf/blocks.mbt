@@ -168,7 +168,7 @@ fn Converter::convert_code(
   let metrics = line_metrics(line_height, face, style.size)
   let text = guard_indentation(node.content())
   let fragments = if plain {
-    [{ text, style, anchor: None, }]
+    [({ text, style, anchor: None, } : Fragment)]
   } else {
     parse_formatted(text, style, normalize=false)
   }
@@ -427,7 +427,7 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
   } else {
     typeset_lines(
       [{ text: label, style: label_style, anchor: None, }],
-      flow.catalog,
+      flow.text(),
       1.0e6,
       Left,
     )
@@ -511,12 +511,12 @@ fn Converter::convert_admonition(self : Converter, node : @core.Node) -> Unit {
             0.0
           }
           let style = {
-            ..Style::new(family=set, size~, color~),
+            ..text_style(family=set, size~, color~),
             font_set: true,
           }
           let lines = typeset_lines(
             [{ text: glyph, style, anchor: None, }],
-            flow.catalog,
+            flow.text(),
             label_width,
             label_align,
           )

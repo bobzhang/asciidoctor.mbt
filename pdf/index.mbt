@@ -58,7 +58,7 @@ fn IndexTerm::new(markup : String, is_term? : Bool = true) -> IndexTerm {
 /// `parse_text ... normalize: true` yields would spell it.
 fn formatted_plain_text(markup : String) -> String {
   let sb = StringBuilder()
-  for fragment in parse_formatted(markup, Style::new()) {
+  for fragment in parse_formatted(markup, text_style()) {
     sb.write_string(fragment.text)
   }
   sb.to_string()
@@ -398,7 +398,7 @@ fn Converter::convert_index_section(self : Converter) -> Unit {
 /// would not fit.
 fn Converter::convert_index_categories(self : Converter) -> Unit {
   let flow = self.flow
-  let base = Style::new()
+  let base = text_style()
   let face = flow.font(base)
   let metrics = line_metrics(base_line_height(), face, base.size)
   let space_needed = description_list_term_spacing() +
@@ -412,9 +412,9 @@ fn Converter::convert_index_categories(self : Converter) -> Unit {
     let style = match t_str("description_list_term_font_style") {
       Some(fs) => {
         let (doc_bold, doc_italic) = font_style_of(fs)
-        { ..Style::new(), doc_bold, doc_italic, }
+        { ..text_style(), doc_bold, doc_italic, }
       }
-      None => Style::new()
+      None => text_style()
     }
     self.ink_prose_fragments(
       [{ text: category.name, style, anchor: None, }],
@@ -514,7 +514,7 @@ fn consolidate_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
 /// hanging indent; then its `see also` lines and its subterms, indented.
 fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
   let flow = self.flow
-  let base = Style::new()
+  let base = text_style()
   // for print (`media` other than screen) nothing is linked, and the pages
   // are consolidated into ranges
   let screen = self.doc.attr("media").unwrap_or("screen") == "screen"
@@ -567,7 +567,9 @@ fn Converter::convert_index_term(self : Converter, term : IndexTerm) -> Unit {
           } else {
             base
           }
-          let item = [{ text: "(see also ", style: base, anchor: None, }]
+          let item : Array[Fragment] = [
+            { text: "(see also ", style: base, anchor: None, },
+          ]
           item.append(parse_formatted(also_term.markup, style))
           item.push({ text: ")", style: base, anchor: None, })
           see_also.push(item)

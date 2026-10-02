@@ -452,3 +452,9 @@ fn content_height() -> Double {
   let setup = page_setup.val
   setup.height - setup.margin_top - setup.margin_bottom
 }
+
+///|
+/// The big-endian 16-bit unsigned integer at `offset`.
+fn read_u16(data : Bytes, offset : Int) -> Int {
+  (data[offset].to_int() << 8) | data[offset + 1].to_int()
+}

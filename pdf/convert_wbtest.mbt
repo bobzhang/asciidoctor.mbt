@@ -49,7 +49,7 @@ test "href is a URI action even for a fragment, anchor a destination" {
   // `<a anchor>` (an xref) jumps to a named destination
   let fragments = parse_formatted(
     "<a href=\"#x\">a</a><a anchor=\"x\">b</a>",
-    Style::new(),
+    text_style(),
   )
   debug_inspect(
     fragments.map(f => f.style.link),
@@ -63,7 +63,7 @@ test "href is a URI action even for a fragment, anchor a destination" {
 test "inline markup becomes styled fragments" {
   let fragments = parse_formatted(
     "a <strong>b</strong> <a href=\"https://x\">c</a>&#8217;s",
-    Style::new(),
+    text_style(),
   )
   let described = fragments.map(fn(f) {
     let link = match f.style.link {
@@ -229,7 +229,7 @@ test "index terms are anchored, stored and sorted as asciidoctor-pdf does" {
 test "a concealed index term swallows the space before it" {
   let fragments = parse_formatted(
     "Lions <a id=\"__indexterm-1\" type=\"indexterm\"></a> live, <a id=\"__indexterm-2\" type=\"indexterm\" visible=\"true\"></a>tigers",
-    Style::new(),
+    text_style(),
   )
   inspect(
     fragments.map(f => f.anchor.unwrap_or(f.text)).join("|"),
@@ -276,7 +276,7 @@ test "a word split across fragments breaks at the last word of the fragment befo
   // "(" + "iss91v2" + ")," is one word to Prawn, but when ")," does not fit
   // only "iss91v2" goes with it to the next line (as in Pro Git's third
   // chapter)
-  let style = Style::new()
+  let style = text_style()
   let code = { ..style, family: "M+ 1mn", font_set: true, }
   let fragments : Array[Fragment] = [
     { text: "handling the same thing (", style, anchor: None, },
@@ -285,7 +285,11 @@ test "a word split across fragments breaks at the last word of the fragment befo
   ]
   let catalog = test_catalog()
   // room for everything up to the code word, not for what follows it
-  let (items, _) = build_items(fragments, catalog)
+  let text = TextContext::{
+    catalog,
+    hooks: Hooks::new(base_family="Noto Serif"),
+  }
+  let (items, _) = @prawn.build_items(fragments, text)
   let mut before = 0.0
   for item in items {
     if item.fragment == 2 {
@@ -293,7 +297,7 @@ test "a word split across fragments breaks at the last word of the fragment befo
     }
     before += item.fit
   }
-  let lines = typeset_lines(fragments, catalog, before + 2.0, Left)
+  let lines = typeset_lines(fragments, text, before + 2.0, Left)
   inspect(
     lines[0].runs.map(r => r.text).join("|"),
     content="handling the same thing (",
