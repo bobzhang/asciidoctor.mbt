@@ -7,7 +7,7 @@ fn cell(
   colspan? : Int = 1,
   master? : Int = -1,
 ) -> @table.WidthCell {
-  { row, column, colspan, master, width, min }
+  { row, column, colspan, master, width, min, }
 }
 
 ///|
