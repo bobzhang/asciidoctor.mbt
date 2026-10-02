@@ -9,7 +9,13 @@ import {
 // Values
 pub fn alt(Array[String]) -> String
 
+pub fn coffeescript(Map[String, String]) -> Lexer
+
+pub fn css(Map[String, String]) -> Lexer
+
 pub fn diff(Map[String, String]) -> Lexer
+
+pub fn erb(Map[String, String]) -> Lexer
 
 pub fn find(String) -> ((Map[String, String]) -> Lexer)?
 
@@ -17,9 +23,19 @@ pub fn find_fancy(String) -> Lexer?
 
 pub fn group_text(@regex.MatchData, Int) -> String
 
+pub fn html(Map[String, String]) -> Lexer
+
 pub fn is_token(String) -> Bool
 
 pub fn java(Map[String, String]) -> Lexer
+
+pub fn javascript(Map[String, String]) -> Lexer
+
+pub fn json(Map[String, String]) -> Lexer
+
+pub fn json_doc(Map[String, String]) -> Lexer
+
+pub fn jsx(Map[String, String]) -> Lexer
 
 pub fn lexer_tags() -> Array[String]
 
@@ -35,9 +51,19 @@ pub fn rx(String, flags? : String) -> String
 
 pub fn rx_escape(String) -> String
 
+pub fn sass(Map[String, String]) -> Lexer
+
+pub fn scss(Map[String, String]) -> Lexer
+
 pub fn shortname(String) -> String?
 
 pub fn token_parent(String) -> String?
+
+pub fn tsx(Map[String, String]) -> Lexer
+
+pub fn typescript(Map[String, String]) -> Lexer
+
+pub fn vue(Map[String, String]) -> Lexer
 
 pub fn word_set(String) -> @set.Set[String]
 
