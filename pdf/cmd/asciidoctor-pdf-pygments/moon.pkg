@@ -1,5 +1,6 @@
 import {
   "bobzhang/asciidoctor-pdf/cli",
+  "bobzhang/asciidoctor-pdf/pygments",
   "moonbitlang/async",
 }
 

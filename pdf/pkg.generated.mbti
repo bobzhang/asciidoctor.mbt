@@ -23,6 +23,8 @@ pub fn default_icon_font_files() -> Array[(String, String, String)]
 
 pub fn register(catalog? : @prawn.FontCatalog, fonts? : Array[@fonts.Bundle], icon_fonts? : @fonts.Bundle, fonts_dir? : String, icon_fonts_dir? : String, pdf_theme? : (@theme.Files) -> @theme.Theme raise) -> Unit
 
+pub fn register_pygments(PygmentsBackend) -> Unit
+
 pub let ruby_version : String
 
 pub let version : String
@@ -33,6 +35,13 @@ pub(all) suberror TemplateError {
 }
 
 // Types and methods
+pub(all) struct PygmentsBackend {
+  find_lexer : (String) -> (String, String)?
+  find_lexer_by_mimetype : (String) -> (String, String)?
+  highlight : (String, String, Map[String, String]) -> String?
+  css : (String, String) -> String
+  styles : () -> Array[String]
+}
 
 // Type aliases
 pub using @prawn {type FontCatalog}

@@ -251,7 +251,7 @@ needs Ruby 3.2 or later and poppler (`pdftotext`, `pdftoppm`, `pdfinfo`); the fi
 ```
 moon run --target native scripts/pdf_harvest.mbtx                    # harvest the spec suite (and set up .repos/)
 moon run --target native scripts/fetch_corpora.mbtx -- asciidoctor-pdf progit2  # documents of the gate
-moon run --target native scripts/pdf_compare.mbtx -- --gate          # 37 documents, must all pass
+moon run --target native scripts/pdf_compare.mbtx -- --gate          # 38 documents, must all pass
 moon run --target native scripts/pdf_compare.mbtx -- --self-test     # the metrics flag corrupted PDFs
 moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens  # replay asciidoctor-pdf's spec suite
 ```
