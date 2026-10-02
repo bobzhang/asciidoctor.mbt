@@ -155,27 +155,33 @@ fn pygments_chunks(
       }
     None => node.apply_subs(source, [SpecialCharacters])
   }
-  let highlight_lines = match node.attr("highlight") {
-    Some(spec) => {
+  // a style with no `.hll` background marks no line
+  let highlight_lines = match (node.attr("highlight"), block.highlight) {
+    (Some(spec), Some(color)) => {
       let lines = @core.resolve_lines_to_highlight(source, spec)
       if lines.is_empty() {
         None
       } else {
         let m : Map[Int, Color] = Map([])
         for l in lines {
-          m[l] = block.highlight.unwrap_or(rgb_hex(0xFFFFCC))
+          m[l] = color
         }
         Some(m)
       }
     }
-    None => None
+    _ => None
   }
   let linenums = if node.has_option("linenums") || node.has_attr("linenums") {
     Some(ruby_to_i(node.attr("start").unwrap_or("1")))
   } else {
     None
   }
-  let fragments = parse_formatted(html, base, normalize=false)
+  // the formatter makes one empty fragment of no text (a block of callouts
+  // alone), which restore_conums puts the callouts after
+  let fragments = match parse_formatted(html, base, normalize=false) {
+    [] => [({ text: "", style: base, anchor: None, } : Fragment)]
+    fragments => fragments
+  }
   let fragments = if linenums is Some(_) ||
     conums is Some(_) ||
     highlight_lines is Some(_) {

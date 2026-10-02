@@ -5,7 +5,8 @@
 // page count) — and, when poppler's pdfinfo is installed, that pdfinfo
 // accepts it. Also checks `--version` against pdf/moon.mod, `-o -`, standard
 // input, the exit code of a bad option, and source highlighting with Rouge
-// (both commands) and Pygments (cmd/asciidoctor-pdf-pygments only).
+// (both commands) and Pygments (cmd/asciidoctor-pdf-pygments only), down to
+// the colour and font of a keyword.
 //
 // Usage (after `moon -C pdf build --release --target native` and
 // `--target wasm`):
@@ -17,6 +18,44 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/core/cmp",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/pdflite@0.3.1",
+}
+
+///|
+/// The PDF with its streams decompressed (the page content readable), or
+/// None when pdflite cannot read it.
+fn decompressed(data : Bytes) -> Bytes? {
+  let document = @pdflite.pdf_read_document_from_bytes(data).decompress() catch {
+    _ => return None
+  }
+  let bytes = @pdflite.pdf_write_document(document) catch {
+    _ => return None
+  }
+  Some(bytes)
+}
+
+///|
+/// Whether the PDF of `file` sets text in `font` (a face it embeds) and
+/// fills with `color` (a page content `r g b rg` operator, decompressed);
+/// the problem, if any.
+async fn token_style_problem(
+  file : String,
+  font : String,
+  color : String,
+) -> String? {
+  let data = @fs.read_file(file).binary() catch {
+    _ => return Some("no output")
+  }
+  guard find(data, "+\{font}") is Some(_) else {
+    return Some("no \{font} font")
+  }
+  guard decompressed(data) is Some(content) else {
+    return Some("pdflite cannot read it")
+  }
+  guard find(content, "\{color} rg") is Some(_) else {
+    return Some("no \{color} rg fill")
+  }
+  None
 }
 
 ///|
@@ -293,6 +332,50 @@ async fn main {
       !err.contains("UNSUPPORTED"),
       detail=err,
     )
+    // a keyword (`def`, `public`) in the friendly style: #007020, bold;
+    // without Pygments, neither
+    let keyword = "0 0.439215686275 0.125490196078"
+    let problem = token_style_problem(
+      "\{out_dir}/\{tag}-pygments.pdf",
+      "mplus1mn-bold",
+      keyword,
+    )
+    check(
+      "\{tag} \{pygments}: keywords bold, in #007020",
+      problem is None,
+      detail=problem.unwrap_or(""),
+    )
+    check(
+      "\{tag} pygments without Pygments: no keyword style",
+      token_style_problem(
+        "\{out_dir}/\{tag}-no-pygments.pdf",
+        "mplus1mn-bold",
+        keyword,
+      )
+      is Some(_),
+    )
+    // Rouge in the command with Pygments: a keyword in asciidoctor-pdf's
+    // Rouge style, #008800, bold
+    convert(
+      "\{tag} \{pygments} rouge",
+      ["pdf/tests/source-rouge.adoc"],
+      "\{out_dir}/\{tag}-pygments-rouge.pdf",
+      wasm~,
+      check_pdfinfo~,
+      command=pygments,
+    )
+    for file in ["\{tag}-rouge.pdf", "\{tag}-pygments-rouge.pdf"] {
+      let problem = token_style_problem(
+        "\{out_dir}/\{file}",
+        "mplus1mn-bold",
+        "0 0.533333333333 0",
+      )
+      check(
+        "\{file}: Rouge keywords bold, in #008800",
+        problem is None,
+        detail=problem.unwrap_or(""),
+      )
+    }
     // standard input to standard output
     let (code, out, err) = run_cli(["-"], wasm~, stdin=small)
     check("\{tag} stdin to stdout: exit 0", code == 0, detail=err)

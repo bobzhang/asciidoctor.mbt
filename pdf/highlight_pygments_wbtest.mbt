@@ -40,3 +40,76 @@ test "replacing the Pygments backend forgets the block colours it gave" {
   pygments_backend.val = None
   pygments_block_styles.clear()
 }
+
+///|
+test "a Pygments style with no .hll background marks no line" {
+  let backend = (css : String) => {
+    (
+      {
+        find_lexer: _ => Some(("Ruby", "rb")),
+        find_lexer_by_mimetype: _ => None,
+        highlight: (source, _, _) => Some(source),
+        css: (_, _) => css,
+        styles: () => ["pastie"],
+      } : PygmentsBackend)
+  }
+  let doc = load_safe(
+    (
+      #|[source,ruby,highlight=1]
+      #|----
+      #|puts 1
+      #|----
+    ),
+  )
+  let marks = (css : String) => {
+    let b = backend(css)
+    register_pygments(b)
+    let (fragments, _, _, _) = pygments_chunks(
+      b,
+      doc.blocks[0],
+      "puts 1",
+      false,
+      None,
+      text_style(),
+    )
+    fragments
+    .filter(f => f.style.line_mark)
+    .map(f => f.style.background.map(hex6).unwrap_or("none"))
+    .join(" ")
+  }
+  inspect(marks(".highlight { background: #f8f8f8; }"), content="")
+  inspect(
+    marks(
+      ".highlight { background: #f8f8f8; }\n.highlight .hll { background-color: #ffffcc }",
+    ),
+    content="ffffcc",
+  )
+  pygments_backend.val = None
+  pygments_block_styles.clear()
+}
+
+///|
+test "a block of callouts alone keeps its callout with Pygments" {
+  // unlike Rouge's, the Pygments branch formats the (empty) HTML into one
+  // empty fragment, so restore_conums has a line to put the callout on
+  let backend : PygmentsBackend = {
+    find_lexer: _ => Some(("Ruby", "rb")),
+    find_lexer_by_mimetype: _ => None,
+    highlight: (source, _, _) => Some(source),
+    css: (_, _) => ".highlight { background: #f8f8f8; }",
+    styles: () => ["pastie"],
+  }
+  register_pygments(backend)
+  let doc = load_safe("[source,ruby]\n----\n<1>\n----\n")
+  let (fragments, _, _, _) = pygments_chunks(
+    backend,
+    doc.blocks[0],
+    "<1>",
+    true,
+    None,
+    text_style(),
+  )
+  inspect(fragments.map(f => f.text).join("|"), content="|①")
+  pygments_backend.val = None
+  pygments_block_styles.clear()
+}
