@@ -223,6 +223,7 @@ module PdfHarvest
       return %(conversion raised #{rec[:error]}) if rec[:error] && !rec[:pdf]
       return 'converter subclass or custom converter' if rec[:converter_class] != 'Asciidoctor::PDF::Converter'
       return 'Ruby extensions registered' if rec[:extensions]
+      return %(a syntax highlighter stubbed by the spec (#{rec[:stubbed].join ', '})) if rec[:stubbed]
       return 'network access (URI read)' if rec[:network]
       return 'model loaded through the API and converted separately' if rec[:via].start_with?('Asciidoctor.load', 'Document.new') && !rec[:via_convert]
       if (bad = (rec[:options] || {}).find {|k, v| Hash === v && v.key?('__unsupported__') })
@@ -329,6 +330,19 @@ module PdfHarvest
       rec[:pdf] = { 'sha256' => (Digest::SHA256.hexdigest pdf_bytes), 'size' => pdf_bytes.bytesize, 'file' => %(#{name}.pdf) }
     end
 
+    # Pygments lexers a spec replaced methods of (`class << lexer; def
+    # highlight...`): what such a conversion shows is not Pygments'
+    def stubbed_highlighters
+      return [] unless defined?(::Pygments::Lexer)
+      ::Pygments::Lexer.all.select {|l|
+        # a method the spec defined (restored afterwards by aliasing the
+        # original back, which is pygments.rb's again)
+        (l.singleton_methods.include? :highlight) && !((l.method :highlight).source_location || [''])[0].include?('/pygments')
+      }.map {|l| %(Pygments lexer #{l.name}#highlight) }
+    rescue StandardError
+      []
+    end
+
     def start_conversion rec, converter, doc
       return if rec[:id]
       ex = @example
@@ -339,6 +353,9 @@ module PdfHarvest
       rec[:name] = safe_name %(#{File.basename ex[:file], '.rb'}-#{ex[:scoped_id].tr ':', '.'}-#{ex[:ordinal]})
       rec[:converter_class] = converter.class.name || converter.class.to_s
       rec[:extensions] = true if doc.extensions? || (defined?(Asciidoctor::Extensions) && !Asciidoctor::Extensions.groups.empty?)
+      if (stubbed = stubbed_highlighters).any?
+        rec[:stubbed] = stubbed
+      end
       @records << rec
     end
   end
@@ -513,9 +530,12 @@ module PdfHarvest
     end
   end
 
+  # the messages of the document's logger (Asciidoctor::LoggerManager);
+  # those of other loggers (pygments.rb's, which logs its process ids) are
+  # not the conversion's
   module LoggerHook
     def add severity, message = nil, progname = nil, &block
-      if (rec = PdfHarvest.current)
+      if (rec = PdfHarvest.current) && (equal? ::Asciidoctor::LoggerManager.logger)
         msg = message || (block ? block.call : progname)
         entry = { 'severity' => (severity || ::Logger::Severity::UNKNOWN) }
         if msg.respond_to?(:[]) && msg.respond_to?(:key?) && !(::String === msg)
@@ -531,7 +551,31 @@ module PdfHarvest
     end
   end
 
+  # The spec suite runs under Bundler, which activates every gem of the
+  # Gemfile up front. The specs guard the syntax highlighter integrations
+  # with `gem_available?` (a lookup in Gem.loaded_specs, which lists only
+  # activated gems) when the spec file is loaded, so without Bundler the
+  # Rouge and Pygments examples of source_spec.rb (and the ones that use
+  # rouge elsewhere) would not even be defined. Activate the highlighters
+  # the way Bundler does, at the versions scripts/pdf_harvest.mbtx pins and
+  # passes as PDF_HARVEST_HIGHLIGHTERS (`name=version,...`): rouge and
+  # coderay from the Gemfile, pygments.rb as asciidoctor-pdf's CI installs it
+  # (PYGMENTS_VERSION '~> 2.0'); another version in the gem homes is not
+  # picked up.
+  def self.activate_highlighters
+    ENV.fetch('PDF_HARVEST_HIGHLIGHTERS').split(',').each do |pinned|
+      name, version = pinned.split '=', 2
+      gem name, version
+      # exactly the version pinned, not one an earlier require activated
+      activated = Gem.loaded_specs[name]&.version&.to_s
+      raise %(#{name} #{activated} is active, not the pinned #{version}) unless activated == version
+    end
+    # CGI.parse for Rouge on Ruby 4.0
+    require_relative 'cgi_parse'
+  end
+
   def self.install
+    activate_highlighters
     require 'asciidoctor'
     require 'asciidoctor/pdf'
     Asciidoctor.singleton_class.prepend ApiHook

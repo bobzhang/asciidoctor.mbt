@@ -268,10 +268,83 @@ section_spec-1.70-1: page break/extra pages, geometry, navigation/metadata, styl
 section_spec-1.71-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 8 spike
 section_spec-1.73-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
 section_spec-1.8-1: styling/assets; raster p1 8.034% of content differs > 1.250%
-source_spec-1.1.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
-source_spec-1.1.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
-source_spec-1.1.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
-source_spec-1.1.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+source_spec-1.1.12-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.12-2: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.13-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.15-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.16-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.17-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.2-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.20-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.21-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.22-1: unsupported feature, styling/assets; raster p1 35.054% of content has flat (fill) differences > 0.500%
+source_spec-1.1.23-1: unsupported feature, styling/assets; raster p1 46.967% of content has flat (fill) differences > 0.500%
+source_spec-1.1.24-1: unsupported feature, styling/assets; raster p1 24.736% of content has flat (fill) differences > 0.500%
+source_spec-1.1.25-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 11 Ruby / 11 spike
+source_spec-1.1.26-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 55 Ruby / 55 spike
+source_spec-1.1.27-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+source_spec-1.1.28-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+source_spec-1.1.29-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.1.3-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.30-1: unsupported feature, missing/extra text, geometry; lines: 0 in order of 4 Ruby / 4 spike
+source_spec-1.1.32-1: unsupported feature, styling/assets; raster p1 96.621% of content differs > 1.250%
+source_spec-1.1.33-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.34-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 9 Ruby / 8 spike
+source_spec-1.1.35-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 6 Ruby / 5 spike
+source_spec-1.1.36-1: unsupported feature, styling/assets; raster p1 17.826% of content has flat (fill) differences > 0.500%
+source_spec-1.1.37-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+source_spec-1.1.38-1: unsupported feature, styling/assets; raster p1 32.817% of content has flat (fill) differences > 0.500%
+source_spec-1.1.38-2: unsupported feature, styling/assets; raster p1 32.817% of content has flat (fill) differences > 0.500%
+source_spec-1.1.39-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.4-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.40-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+source_spec-1.1.41-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+source_spec-1.1.42-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 6 Ruby / 6 spike
+source_spec-1.1.45-1: unsupported feature, missing/extra text, geometry; lines: 0 in order of 2 Ruby / 2 spike
+source_spec-1.1.45-2: unsupported feature, missing/extra text, geometry; lines: 0 in order of 2 Ruby / 2 spike
+source_spec-1.1.46-1: unsupported feature, missing/extra text, geometry; lines: 0 in order of 5 Ruby / 4 spike
+source_spec-1.1.47-1: unsupported feature, missing/extra text, geometry; lines: 0 in order of 5 Ruby / 5 spike
+source_spec-1.1.5-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.50-1: unsupported feature, navigation/metadata, styling/assets; structure: fonts
+source_spec-1.1.51-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.6-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.7-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.1.8-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.2.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.2.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.2.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
+source_spec-1.2.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+source_spec-1.3.1-1: unsupported feature, styling/assets; raster p1 1.310% of content differs > 1.250%
+source_spec-1.3.10-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.11-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.12-1: unsupported feature, styling/assets; raster p1 74.414% of content differs > 1.250%
+source_spec-1.3.13-1: unsupported feature, styling/assets; raster p1 96.623% of content differs > 1.250%
+source_spec-1.3.14-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+source_spec-1.3.15-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.16-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 11 Ruby / 9 spike
+source_spec-1.3.17-1: unsupported feature, styling/assets; raster p1 86.529% of content has flat (fill) differences > 0.500%
+source_spec-1.3.18-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 4 Ruby / 4 spike
+source_spec-1.3.19-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
+source_spec-1.3.2-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.20-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 6 Ruby / 6 spike
+source_spec-1.3.21-1: unsupported feature, styling/assets; raster p1 92.533% of content has flat (fill) differences > 0.500%
+source_spec-1.3.22-1: unsupported feature, styling/assets; raster p1 89.929% of content has flat (fill) differences > 0.500%
+source_spec-1.3.3-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.4-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.5-1: unsupported feature, styling/assets; raster p1 87.421% of content has flat (fill) differences > 0.500%
+source_spec-1.3.6-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.7-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.3.8-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 11 Ruby / 11 spike
+source_spec-1.3.9-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 0 in order of 1 Ruby / 1 spike
+source_spec-1.5.10-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.10-2: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.11-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.12-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.5-1: unsupported feature, missing/extra text, geometry, styling/assets; lines: 3 in order of 5 Ruby / 5 spike
+source_spec-1.5.6-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.7-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.8-1: unsupported feature, styling/assets; structure: fonts
+source_spec-1.5.9-1: unsupported feature, styling/assets; structure: fonts
 table_spec-1.10.1-1: geometry, styling/assets; within 1pt 11/13 (84.615%) < 99.500%
 table_spec-1.11.5-1: geometry; within 1pt 9/13 (69.230%) < 99.500%
 table_spec-1.13.10-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 9 Ruby / 7 spike

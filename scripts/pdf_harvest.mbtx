@@ -31,6 +31,9 @@
 //
 // Usage: moon run --target native scripts/pdf_harvest.mbtx -- [options] [spec/xxx_spec.rb...]
 //   --update-counts   accept the record counts of this harvest
+//   --self-test       check, without running anything, that merging a
+//                     partial harvest keeps summary.txt in agreement with
+//                     the records (what pdf_compare.mbtx checks)
 //   --ruby RUBY       the Ruby to run (default $ASCIIDOCTOR_PDF_RUBY, else
 //                     Homebrew's Ruby on macOS when installed, else `ruby`
 //                     on PATH); gems are installed with the `gem` next to it
@@ -87,7 +90,10 @@ let spec_gems : Ref[String] = { val: ".repos/gems-pdf-spec" }
 ///|
 /// The oracle: asciidoctor-pdf 2.3.27 and its runtime dependencies, at the
 /// versions the gem home the goldens were harvested with has (installed
-/// 2026-09-29).
+/// 2026-09-29), and the syntax highlighters it loads when a document asks
+/// for them (`source-highlighter`): rouge and pygments.rb, at the versions
+/// of the spec gems (added 2026-10-02), so that scripts/pdf_compare.mbtx
+/// can convert highlighted documents with the oracle.
 let runtime_pinned : Array[(String, String)] = [
   ("Ascii85", "2.0.1"),
   ("addressable", "2.9.0"),
@@ -110,7 +116,9 @@ let runtime_pinned : Array[(String, String)] = [
   ("prawn-table", "0.2.2"),
   ("prawn-templates", "0.1.2"),
   ("public_suffix", "7.0.5"),
+  ("pygments.rb", "2.4.1"),
   ("rexml", "3.4.4"),
+  ("rouge", "3.30.0"),
   ("treetop", "1.6.18"),
   ("ttfunk", "1.7.0"),
 ]
@@ -120,8 +128,12 @@ let runtime_pinned : Array[(String, String)] = [
 /// that the specs load (rspec ~> 3.12.0, pdf-inspector ~> 1.3.0,
 /// chunky_png ~> 1.4.0, coderay ~> 1.1.0, rouge ~> 3.0, text-hyphen,
 /// open-uri-cached ~> 1.0.0), pinned to the versions they resolved to on
-/// 2026-10-01, with their dependencies. pdf-reader comes from the runtime
-/// gems (2.16.0, a prawn-templates dependency).
+/// 2026-10-01, with their dependencies, and pygments.rb, which
+/// asciidoctor-pdf's CI adds to the Gemfile (PYGMENTS_VERSION '~> 2.0'; it
+/// bundles Pygments 2.15.1 and runs it with the `python3` on PATH).
+/// pdf-reader comes from the runtime gems (2.16.0, a prawn-templates
+/// dependency). harvest.rb activates rouge, coderay and pygments.rb, as
+/// Bundler would, so that the specs that need them run.
 let pinned_gems : Array[(String, String)] = [
   ("diff-lcs", "1.6.2"),
   ("rspec-support", "3.12.2"),
@@ -133,6 +145,7 @@ let pinned_gems : Array[(String, String)] = [
   ("chunky_png", "1.4.0"),
   ("coderay", "1.1.3"),
   ("rouge", "3.30.0"),
+  ("pygments.rb", "2.4.1"),
   ("text-hyphen", "1.5.0"),
   ("open-uri-cached", "1.0.0"),
 ]
@@ -142,10 +155,12 @@ let pinned_gems : Array[(String, String)] = [
 /// converter: the CLI specs run bin/asciidoctor-pdf in a subprocess and
 /// expect empty stderr, but RubyGems warns there that the bigdecimal in the
 /// runtime gems has no built extension. Their conversions are not recorded
-/// anyway (subprocesses are not harvested).
+/// anyway (subprocesses are not harvested). The example conversions
+/// (cli_spec.rb:93 and :102, defined only when rouge is activated) fail in
+/// that subprocess too, on stderr or (chronicles) on the exit status.
 let known_failures : Array[String] = [
-  "./spec/cli_spec.rb:13", "./spec/cli_spec.rb:57", "./spec/cli_spec.rb:69", "./spec/cli_spec.rb:147",
-  "./spec/cli_spec.rb:162",
+  "./spec/cli_spec.rb:13", "./spec/cli_spec.rb:57", "./spec/cli_spec.rb:69", "./spec/cli_spec.rb:93",
+  "./spec/cli_spec.rb:102", "./spec/cli_spec.rb:147", "./spec/cli_spec.rb:162",
 ]
 
 ///|
@@ -357,6 +372,10 @@ fn sorted_counts(m : Map[String, Int]) -> Array[(String, Int)] {
 
 ///|
 async fn main {
+  if @env.args().contains("--self-test") {
+    self_test()
+    return
+  }
   let root = @fs.realpath(".")
   let args = configure(@env.args()[1:].to_array().filter(a => a != "--"), root)
   let update_counts = args.contains("--update-counts")
@@ -385,6 +404,11 @@ async fn main {
   harvest_env["PDF_HARVEST_OUT"] = out_dir
   harvest_env["PDF_HARVEST_PDFS"] = staged_pdfs
   harvest_env["PDF_HARVEST_GEMS"] = "\{@fs.realpath(runtime_gems.val)}:\{@fs.realpath(spec_gems.val)}"
+  // the highlighters harvest.rb activates, at their pinned versions
+  harvest_env["PDF_HARVEST_HIGHLIGHTERS"] = pinned_gems
+    .filter(g => [ "rouge", "coderay", "pygments.rb" ].contains(g.0))
+    .map(g => "\{g.0}=\{g.1}")
+    .join(",")
   let rspec_args = [
     "\{spec_gems.val}/bin/rspec", "--require", "\{root}/scripts/pdf_harvest/harvest.rb",
     "--format", "progress", ..specs,
@@ -420,47 +444,11 @@ async fn main {
   let files = @fs.readdir(out_dir, sort=true).filter(f => f.has_suffix(".jsonl"))
   let staged : Map[String, String] = Map([])
   let counts : Map[String, Int] = Map([])
-  let skipped : Map[String, Int] = Map([])
-  let vias : Map[String, Int] = Map([])
   let mut records = 0
-  let mut themed = 0
-  let mut replayable = 0
-  let mut pdf_bytes = 0
-  let mut ephemeral = 0
   for f in files {
     let data = @fs.read_file("\{out_dir}/\{f}").text()
     staged[f] = data
-    let mut n = 0
-    for line in data.split("\n") {
-      if line.trim() == "" {
-        continue
-      }
-      n += 1
-      let rec = @json.parse(line.to_owned())
-      let via = text_of(field(rec, "via"))
-      bump(vias, via)
-      match field(rec, "pdf") {
-        Object(_) as p => pdf_bytes += (field(p, "size").as_number().unwrap_or(0.0)).to_int()
-        _ => ()
-      }
-      let attrs = field(field(rec, "options"), "attributes")
-      let theme = field(rec, "pdf_theme") != Json::null() ||
-        field(attrs, "pdf-theme") != Json::null() ||
-        field(attrs, "pdf-themesdir") != Json::null()
-      if field(rec, "files") is Object(fs) &&
-        fs.iter().any(kv => kv.1 is Object(e) && e.contains("content_base64")) {
-        ephemeral += 1
-      }
-      match field(rec, "skip") {
-        String(reason) => bump(skipped, reason)
-        _ =>
-          if theme {
-            themed += 1
-          } else {
-            replayable += 1
-          }
-      }
-    }
+    let n = data.split("\n").filter(line => line.trim() != "").count()
     records += n
     counts["\{golden_dir}/\{f}"] = n
   }
@@ -493,9 +481,7 @@ async fn main {
       }
     }
   }
-  for f, data in staged {
-    @fs.write_file("\{golden_dir}/\{f}", data, create_mode=CreateOrTruncate)
-  }
+  merge_records(golden_dir, staged)
   if specs.is_empty() {
     ignore(@process.run("rm", ["-rf", pdf_cache]))
     ignore(@process.run("mkdir", ["-p", "_build/pdf-spec-cache"]))
@@ -534,33 +520,195 @@ async fn main {
     println("wrote \{record_counts_path}")
   }
   let num = fn(key : String) { field(run_info, key).as_number().unwrap_or(0.0).to_int() }
-  if specs.is_empty() {
-    let lines = [
-      "# PDF golden harvest of asciidoctor-pdf \{spec_tag} (\{spec_commit}) spec suite",
-      "# Generated by scripts/pdf_harvest.mbtx; do not edit.",
-      "",
-      "spec examples run: \{num("examples")} (passed \{num("passed")}, failed \{num("failed")}, pending \{num("pending")})",
-      "conversions recorded: \{records} in \{files.length()} spec files",
-      "  expressible as input + options: \{replayable + themed}",
-      "    of which with a pdf_theme option or pdf-theme/pdf-themesdir attribute: \{themed} (the replay also counts pdf-fontsdir and media=print/prepress as theme-dependent)",
-      "  skipped (cannot be expressed as input + options): \{records - replayable - themed}",
-      "records with spec-created files inlined: \{ephemeral}",
-      "reference PDFs: \{pdf_bytes} bytes in \{pdf_cache} (not committed)",
-      "",
-      "skipped by reason:",
-    ]
-    for e in sorted_counts(skipped) {
-      lines.push("  \{e.1}\t\{e.0}")
-    }
-    lines.push("")
-    lines.push("conversions by entry point:")
-    for e in sorted_counts(vias) {
-      lines.push("  \{e.1}\t\{e.0}")
-    }
-    @fs.write_file("\{golden_dir}/summary.txt", lines.join("\n") + "\n", create_mode=CreateOrTruncate)
-    println(lines.join("\n"))
+  // the summary of every record now committed: a partial harvest's merged
+  // into the others (the RSpec statistics stay those of the last full run)
+  let run_line = if specs.is_empty() {
+    "spec examples run: \{num("examples")} (passed \{num("passed")}, failed \{num("failed")}, pending \{num("pending")})"
   } else {
-    println("\{records} conversions recorded (\{replayable} replayable, \{themed} theme-dependent)")
+    previous_run_line(golden_dir)
+  }
+  let summary = write_summary(golden_dir, run_line)
+  if specs.is_empty() {
+    println(summary)
+  } else {
+    println("\{records} conversions recorded in \{specs.join(" ")}; \{golden_dir}/summary.txt updated")
   }
   ignore(@process.run("rm", ["-rf", "\{root}/\{staging}"]))
+}
+
+///|
+/// Write the records of a harvest (`staged`: file name to its JSON lines)
+/// into `dir`, replacing those files.
+async fn merge_records(dir : String, staged : Map[String, String]) -> Unit {
+  for f, data in staged {
+    @fs.write_file("\{dir}/\{f}", data, create_mode=CreateOrTruncate)
+  }
+}
+
+///|
+/// The RSpec statistics line of `dir`/summary.txt (a partial harvest keeps
+/// that of the last full run).
+async fn previous_run_line(dir : String) -> String {
+  let text = @fs.read_file("\{dir}/summary.txt").text() catch { _ => "" }
+  for line in text.split("\n") {
+    if line.has_prefix("spec examples run:") {
+      return line.to_owned()
+    }
+  }
+  "spec examples run: (no full harvest yet)"
+}
+
+///|
+/// Rewrite `dir`/summary.txt from every record in `dir`, with `run_line`
+/// the RSpec run's statistics; returns it.
+async fn write_summary(dir : String, run_line : String) -> String {
+  let files = @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl"))
+  let skipped : Map[String, Int] = Map([])
+  let vias : Map[String, Int] = Map([])
+  let mut records = 0
+  let mut themed = 0
+  let mut replayable = 0
+  let mut pdf_bytes = 0
+  let mut ephemeral = 0
+  for f in files {
+    for line in @fs.read_file("\{dir}/\{f}").text().split("\n") {
+      if line.trim() == "" {
+        continue
+      }
+      records += 1
+      let rec = @json.parse(line.to_owned())
+      bump(vias, text_of(field(rec, "via")))
+      match field(rec, "pdf") {
+        Object(_) as p => pdf_bytes += (field(p, "size").as_number().unwrap_or(0.0)).to_int()
+        _ => ()
+      }
+      let attrs = field(field(rec, "options"), "attributes")
+      let theme = field(rec, "pdf_theme") != Json::null() ||
+        field(attrs, "pdf-theme") != Json::null() ||
+        field(attrs, "pdf-themesdir") != Json::null()
+      if field(rec, "files") is Object(fs) &&
+        fs.iter().any(kv => kv.1 is Object(e) && e.contains("content_base64")) {
+        ephemeral += 1
+      }
+      match field(rec, "skip") {
+        String(reason) => bump(skipped, reason)
+        _ =>
+          if theme {
+            themed += 1
+          } else {
+            replayable += 1
+          }
+      }
+    }
+  }
+  let lines = [
+    "# PDF golden harvest of asciidoctor-pdf \{spec_tag} (\{spec_commit}) spec suite",
+    "# Generated by scripts/pdf_harvest.mbtx; do not edit.",
+    "",
+    run_line,
+    "conversions recorded: \{records} in \{files.length()} spec files",
+    "  expressible as input + options: \{replayable + themed}",
+    "    of which with a pdf_theme option or pdf-theme/pdf-themesdir attribute: \{themed} (the replay also counts pdf-fontsdir and media=print/prepress as theme-dependent)",
+    "  skipped (cannot be expressed as input + options): \{records - replayable - themed}",
+    "records with spec-created files inlined: \{ephemeral}",
+    "reference PDFs: \{pdf_bytes} bytes in \{pdf_cache} (not committed)",
+    "",
+    "skipped by reason:",
+  ]
+  for e in sorted_counts(skipped) {
+    lines.push("  \{e.1}\t\{e.0}")
+  }
+  lines.push("")
+  lines.push("conversions by entry point:")
+  for e in sorted_counts(vias) {
+    lines.push("  \{e.1}\t\{e.0}")
+  }
+  let text = lines.join("\n") + "\n"
+  @fs.write_file("\{dir}/summary.txt", text, create_mode=CreateOrTruncate)
+  text
+}
+
+///|
+/// Whether `dir`/summary.txt states the records' conversions and PDF
+/// bytes (what scripts/pdf_compare.mbtx checks); the problem, if any.
+async fn summary_problem(dir : String) -> String? {
+  let mut records = 0
+  let mut bytes = 0
+  for f in @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl")) {
+    for line in @fs.read_file("\{dir}/\{f}").text().split("\n") {
+      if line.trim() != "" {
+        records += 1
+        let p = field(@json.parse(line.to_owned()), "pdf")
+        bytes += field(p, "size").as_number().unwrap_or(0.0).to_int()
+      }
+    }
+  }
+  let text = @fs.read_file("\{dir}/summary.txt").text()
+  for wanted in ["conversions recorded: \{records} ", "reference PDFs: \{bytes} "] {
+    if !text.split("\n").any(l => l.has_prefix(wanted)) {
+      return Some("summary.txt does not say `\{wanted}`")
+    }
+  }
+  None
+}
+
+///|
+/// `--self-test`: the partial-harvest workflow on a copy of the committed
+/// records: a refreshed spec file (a record fewer, a PDF of another size)
+/// merged in leaves a summary that agrees with all the records, the RSpec
+/// statistics kept.
+async fn self_test() -> Unit {
+  let dir = "_build/pdf-harvest-self-test"
+  ignore(@process.run("rm", ["-rf", dir]))
+  ignore(@process.run("mkdir", ["-p", dir]))
+  for f in @fs.readdir(golden_dir) {
+    if f.has_suffix(".jsonl") || f == "summary.txt" {
+      ignore(@process.run("cp", ["\{golden_dir}/\{f}", "\{dir}/\{f}"]))
+    }
+  }
+  let run_line = previous_run_line(dir)
+  // the summary is all derived from the records (and the run line)
+  let committed = @fs.read_file("\{dir}/summary.txt").text()
+  if write_summary(dir, run_line) != committed {
+    fail("self-test: \{golden_dir}/summary.txt is not what its records give")
+  }
+  let file = "source_spec.jsonl"
+  let lines = @fs.read_file("\{dir}/\{file}").text()
+    .split("\n")
+    .filter(l => l.trim() != "")
+    .map(l => l.to_owned())
+    .collect()
+  ignore(lines.pop())
+  // a PDF a byte larger
+  let first = @json.parse(lines[0])
+  match first {
+    Object(rec) =>
+      match rec.get("pdf") {
+        Some(Object(p)) => {
+          let size = p.get("size").bind(s => s.as_number()).unwrap_or(0.0)
+          p["size"] = Json::number(size + 1.0)
+          lines[0] = first.stringify()
+        }
+        _ => fail("self-test: \{file} has no pdf size")
+      }
+    _ => fail("self-test: \{file} is not records")
+  }
+  let refreshed : Map[String, String] = Map([])
+  refreshed[file] = lines.join("\n") + "\n"
+  merge_records(dir, refreshed)
+  ignore(write_summary(dir, previous_run_line(dir)))
+  match summary_problem(dir) {
+    Some(problem) => fail("self-test: after a partial harvest, \{problem}")
+    None => ()
+  }
+  if previous_run_line(dir) != run_line {
+    fail("self-test: the RSpec statistics changed")
+  }
+  // and the committed summary agrees with the committed records
+  match summary_problem(golden_dir) {
+    Some(problem) => fail("self-test: \{golden_dir}: \{problem}")
+    None => ()
+  }
+  ignore(@process.run("rm", ["-rf", dir]))
+  println("self-test passed")
 }
