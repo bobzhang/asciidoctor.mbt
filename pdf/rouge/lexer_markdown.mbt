@@ -26,7 +26,15 @@ pub fn markdown(options : Map[String, String]) -> Lexer {
       fn(lx, m) {
         let name = ruby_strip(group_text(m, 3))
         let sublexer = match
-          script_find_fancy(if name == "" { "guess" } else { name }, lx.options) {
+          script_find_fancy(
+            if name == "" {
+              "guess"
+            } else {
+              name
+            },
+            m.group(5),
+            lx.options,
+          ) {
           Some(l) => l
           None => {
             let opts = lx.options.copy()

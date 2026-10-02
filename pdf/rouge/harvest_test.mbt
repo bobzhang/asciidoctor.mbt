@@ -975,6 +975,22 @@ test "rouge: rust: targeted" {
 }
 
 ///|
+test "rouge: markdown: targeted" {
+  check_lex(
+    "markdown", "```\n<?php echo 1; ?>\n```\n```\n#!/usr/bin/env python\nprint(1)\n```\n```\n# vim: ft=ruby\nputs 1\n```\n```\nplain words\n```\n",
+    "p:3 nl:1 cp:5 :1 k:4 :1 mi:1 p:1 :1 cp:2 :1 p:3 :1 p:3 nl:1 c1:22 k:5 p:1 mi:1 p:1 :1 p:3 :1 p:3 nl:1 c1:14 :1 nb:4 :1 mi:1 :1 p:3 :1 p:3 nl:1 :12 p:3 :1",
+  )
+}
+
+///|
+test "rouge: markdown?disabledmodules=String&disabledmodules=Math: targeted" {
+  check_lex(
+    "markdown?disabledmodules=String&disabledmodules=Math", "```php?disabledmodules=Date%2FTime\nstrlen('x'); abs(1); date('Y');\n```\n",
+    "p:3 nl:32 nb:6 p:1 s1:3 p:2 :1 nb:3 p:1 mi:1 p:2 :1 nf:4 p:1 s1:3 p:2 :1 p:3 :1",
+  )
+}
+
+///|
 test "rouge: c: rouge spec #1" {
   check_lex("c", "// comment", "c1:10")
 }
@@ -1837,4 +1853,1764 @@ test "rouge: apache: source_spec #77" {
     "apache", "<Directory /usr/share/httpd/noindex>\n    AllowOverride None <1>\n    Require all granted\n</Directory>",
     "p:1 nl:9 sr:25 p:2 :4 nc:13 :1 ss:4 :9 nc:7 :1 ss:3 :9 p:2 nl:9 p:1",
   )
+}
+
+///|
+test "rouge guess: demo abap" {
+  check_guess(
+    "lo_obj ?= lo_obj->do_nothing( 'Char' && ` String` ).\n\nSELECT SINGLE * FROM mara INTO ls_mara WHERE matkl EQ '1324'.\nLOOP AT lt_mara ASSIGNING <mara>.\n  CHECK <mara>-mtart EQ '0001'.\nENDLOOP.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo actionscript" {
+  check_guess(
+    "function hello(name:String):void\n{\n\ttrace(\"hello \" + name);\n}\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo ada" {
+  check_guess(
+    "with Ada.Directories;\nwith Ada.Direct_IO;\nwith Ada.Text_IO;\n\nprocedure Extra_IO.Read_File (Name : String) is\n\n   package Dirs renames Ada.Directories;\n   package Text_IO renames Ada.Text_IO;\n\n   -- Get the size of the file for a new string.\n   Size : Natural := Natural (Dirs.Size (Name));\n   subtype File_String is String (1 .. Size);\n\n   -- Instantiate Direct_IO for our file type.\n   package FIO is new Ada.Direct_IO (File_String);\n\n   File     : FIO.File_Type;\n   Contents : File_String;\n\nbegin\n   FIO.Open (File, FIO.In_File, Name);\n   FIO.Read (File, Contents);\n   FIO.Close (File);\n\n   Text_IO.Put (Contents);\nend Extra_IO.Read_File;\n",
+    "mosel",
+  )
+}
+
+///|
+test "rouge guess: demo apache" {
+  check_guess(
+    "AddDefaultCharset UTF-8\n\nRewriteEngine On\n\n# Serve gzipped version if available and accepted\nAddEncoding x-gzip .gz\nRewriteCond %{HTTP:Accept-Encoding} gzip\nRewriteCond %{REQUEST_FILENAME}.gz -f\nRewriteRule ^(.*)$ $1.gz [QSA,L]\n<FilesMatch \\.css\\.gz$>\n  ForceType text/css\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.js\\.gz$>\n  ForceType application/javascript\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.html\\.gz$>\n  ForceType text/html\n  Header append Vary Accept-Encoding\n</FilesMatch>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo apex" {
+  check_guess(
+    "public class with sharing Trigger {\n    @Deprecated\n    public void resolveSum(int x, int y) {\n        System.debug('x is ' + x);\n        System.debug('y is ' + y);\n\n        System.debug('x + y = ' + (x+y));\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo apiblueprint" {
+  check_guess(
+    "FORMAT: 1A\nHOST: http://polls.apiblueprint.org/\n\n# Polls\n\nPolls is a simple API allowing consumers to view polls and vote in them.\n\n# Polls API Root [/]\n\n## Group Question\n\nResources related to questions in the API.\n\n## Question [/questions/{question_id}]\n\n+ Parameters\n    + question_id: 1 (number, required) - ID of the Question in form of an integer\n\n+ Attributes\n    + question: `Favourite programming language?` (required)\n    + published_at: `2014-11-11T08:40:51.620Z` - An ISO8601 date when the question was published\n    + choices (array[Choice], required) - An array of Choice objects\n    + url: /questions/1\n\n### View a Questions Detail [GET]\n\n+ Response 200 (application/json)\n    + Attributes (Question)\n\n### Delete a Question [DELETE]\n\n+ Relation: delete\n+ Response 204\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo applescript" {
+  check_guess(
+    "-- AppleScript playing with iTunes\ntell application \"iTunes\" to get current selection\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo armasm" {
+  check_guess(
+    "            GET     common.s\n\nRetVal      *       0x123 :SHL: 4\n\n            AREA    |Area$$Name|, CODE, READONLY\n\nMyFunction  ROUT             ; This is a comment\n            ASSERT  RetVal <> 0\n1           MOVW    r0, #RetVal\n            BX      lr\n\n            END\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo augeas" {
+  check_guess(
+    "(*\n  This is a comment\n*)\nmodule Foo =\nautoload xfm\n\nlet a = b | c . d\n\nlet lns = a*\n\nlet filter = incl \"/path/to/file\"\n           . incl \"/path/to/other_file\"\n           . Util.stdexcl\n\n(* xmf is the transform *)\nlet xmf = transform lns filter\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo awk" {
+  check_guess(
+    "BEGIN     {    # Simulate echo(1)\n     for (i = 1; i < ARGC; i++) printf \"%s \", ARGV[i]\n     printf \"\\n\"\n     exit }\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo batchfile" {
+  check_guess(
+    "@echo off\nsetlocal enableextensions enabledelayedexpansion\nfor /f \"tokens=*\" %%a in (\"hello !username! hi\") do echo %%~a\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo bbcbasic" {
+  check_guess(
+    "REM > DefaultFilename\nREM Ordinary comment\nFOR n=1 TO 10\nPRINTTAB(n)\"Hello there \";FNnumber(n)DIV3+1\nNEXT:END\nDEFFNnumber(x%)=ABS(x%-4)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo bibtex" {
+  check_guess(
+    "@article{Witten:1988hf,\n      author         = \"Witten, Edward\",\n      title          = \"{Quantum Field Theory and the Jones Polynomial}\",\n      journal        = \"Commun. Math. Phys.\",\n      volume         = \"121\",\n      year           = \"1989\",\n      pages          = \"351-399\",\n      doi            = \"10.1007/BF01217730\",\n      note           = \"[,233(1988)]\",\n      reportNumber   = \"IASSNS-HEP-88-33\",\n      SLACcitation   = \"%%CITATION = CMPHA,121,351;%%\"\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo biml" {
+  check_guess(
+    "<#@ template language=\"C#\" #>\n<#@ import namespace=\"System.Data\" #>\n<Biml xmlns=\"http://schemas.varigence.com/biml.xsd\">\n    <Connections>\n        <!-- Creates a connection to the Adventure Works database -->\n        <Connection\n            Name=\"AdventureWorks\"\n            ConnectionString=\"Provider=SQLNCLI10.1;Data Source=Localhost;Persist Security Info=False;Integrated Security=SSPI;Initial Catalog=AdventureWorksDW\" \n            />\n    </Connections>\n    <!-- Packages Collection -->\n    <Packages>\n        <!-- A Package -->\n        <Package\n            Name=\"MyFirstPackage\"\n            ConstraintMode=\"Linear\"\n            >\n            <!-- A Package's Tasks -->\n            <Tasks>\n                <ExecuteSQL Name=\"ExecuteStoredProc\" ConnectionName=\"AdventureWorks\">\n                    <DirectInput>EXEC usp_StoredProc</DirectInput>\n                </ExecuteSQL>\n                <# foreach (var table in RootNode.Tables) { #>\n                    <Dataflow Name=\"Duplicate <#=table.Name#> Data\">\n                        <Transformations>\n                            <OleDbSource Name=\"Retrieve Data\" ConnectionName=\"AdventureWorks\">\n                                <DirectInput>SELECT * FROM <#=table.Name#></DirectInput>\n                            </OleDbSource>\n                            <OleDbDestination Name=\"Insert Data\" ConnectionName=\"AdventureWorks\">\n                                <ExternalTableOutput Table=\"<#=table.Name#>\" />\n                            </OleDbDestination>\n                        </Transformations>\n                    </Dataflow>\n                <# } #>\n            </Tasks>\n        </Package>\n    </Packages>\n</Biml>\n",
+    "biml",
+  )
+}
+
+///|
+test "rouge guess: demo bpf" {
+  check_guess(
+    "r0 = *(u8 *)skb[23]\n*(u32 *)(r10 - 4) = r0\nr1 = *(u32 *)(r6 + 4)\nr1 = 0 ll\ncall 1\t/* lookup */\nif r0 == 0 goto +2 <LBB0_3>\nlock *(u64 *)(r0 + 0) += r1\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo brainfuck" {
+  check_guess("[\n\tThis is a sample\n\tcomment.\n]\n.[>+<-]>,\n", "")
+}
+
+///|
+test "rouge guess: demo brightscript" {
+  check_guess(
+    "function main(args as dynamic) as void\n    screen = CreateObject(\"roSGScreen\")\n    'Create a scene and load /components/helloworld.xml'\n    scene = screen.CreateScene(\"HelloWorld\")\n    screen.show()\nend function\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo bsl" {
+  check_guess(
+    "#Область ПрограммныйИнтерфейс\n\nПроцедура ПриветМир() Экспорт\n    Сообщить(\"Привет мир\");\nКонецПроцедуры\n\n#КонецОбласти\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo c" {
+  check_guess(
+    "#include \"ruby/ruby.h\"\n\nstatic int\nclone_method_i(st_data_t key, st_data_t value, st_data_t data)\n{\n    clone_method((VALUE)data, (ID)key, (const rb_method_entry_t *)value);\n    return ST_CONTINUE;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ceylon" {
+  check_guess(
+    "shared class CeylonClass<Parameter>()\n    given Parameter satisfies Object {\n    \n    shared String name => \"CeylonClass\";\n} \n\nshared void run() => CeylonClass();\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cfscript" {
+  check_guess(
+    "component accessors=\"true\" {\n\n  property type=\"string\" name=\"firstName\" default=\"\";\n  property string username;\n\n  function init(){\n    return this;\n  }\n\n  public any function submitOrder( required product, coupon=\"\", boolean results=true ){\n\n    var foo = function( required string baz, x=true, y=false ){\n      return \"bar!\";\n    };\n\n    return foo;\n  }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo clean" {
+  check_guess(
+    "delete :: !a !.(Set a) -> Set a | < a\ndelete x Tip = Tip\ndelete x (Bin _ y l r)\n  | x < y     = balanceR y (delete x l) r\n  | x > y     = balanceL y l (delete x r)\n  | otherwise = glue l r\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo clojure" {
+  check_guess(
+    "(defn make-adder [x]\n  (let [y x]\n    (fn [z] (+ y z))))\n(def add2 (make-adder 2))\n(add2 4)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cmake" {
+  check_guess(
+    "cmake_minimum_required(VERSION 2.8.3)\n\nproject(foo C)\n\n# some note\nadd_executable(foo utils.c \"foo.c\")\ntarget_link_libraries(foo ${LIBRARIES})\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cmhg" {
+  check_guess(
+    "; Header comments\n\n#include \"definitions.h\"\n\ncommand-keyword-table:  command_handler\n                        foo(min-args:0, max-args:0,; comment\n                            international:,\n                            invalid-syntax: \"syntaxtoken\" help-text: \"helptoken\")\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo coffeescript" {
+  check_guess(
+    "# Objects:\nmath =\n  root:   Math.sqrt\n  square: square\n  cube:   (x) -> x * square x\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo common_lisp" {
+  check_guess("(defun square (x) (* x x))\n", "")
+}
+
+///|
+test "rouge guess: demo conf" {
+  check_guess(
+    "# A generic configuration file\noption1 \"val1\"\noption2 23\noption3 'val3'\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo console" {
+  check_guess(
+    "# prints \"hello, world\" to the screen\n~# echo Hello, World\nHello, World\n\n# don't run this\n~# rm -rf --no-preserve-root /\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo coq" {
+  check_guess(
+    "Require Import Coq.Lists.List.\n\nSection with_T.\n  Context {T : Type}.\n\n  Fixpoint length (ls : list T) : nat :=\n    match ls with\n    | nil => 0\n    | _ :: ls => S (length ls)\n    end.\nEnd with_T.\n\nDefinition a_string := \"hello \\\" world\".\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cpp" {
+  check_guess(
+    "#include<iostream>\n\nusing namespace std;\n\nint main()\n{\n    cout << \"Hello World\" << endl;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo crystal" {
+  check_guess(
+    "lib LibC\n  WNOHANG = 0x00000001\n\n  @[ReturnsTwice]\n  fun fork : PidT\n  fun getpgid(pid : PidT) : PidT\n  fun kill(pid : PidT, signal : Int) : Int\n  fun getpid : PidT\n  fun getppid : PidT\n  fun exit(status : Int) : NoReturn\n\n  ifdef x86_64\n    alias ClockT = UInt64\n  else\n    alias ClockT = UInt32\n  end\n\n  SC_CLK_TCK = 3\n\n  struct Tms\n    utime : ClockT\n    stime : ClockT\n    cutime : ClockT\n    cstime : ClockT\n  end\n\n  fun times(buffer : Tms*) : ClockT\n  fun sysconf(name : Int) : Long\nend\n\nclass Process\n  def self.exit(status = 0)\n    LibC.exit(status)\n  end\n\n  def self.pid\n    LibC.getpid\n  end\n\n  def self.getpgid(pid : Int32)\n    ret = LibC.getpgid(pid)\n    raise Errno.new(ret) if ret < 0\n    ret\n  end\nend\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo csharp" {
+  check_guess(
+    "// reverse byte order (16-bit)\npublic static UInt16 ReverseBytes(UInt16 value)\n{\n  return (UInt16)((value & 0xFFU) << 8 | (value & 0xFF00U) >> 8);\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo css" {
+  check_guess(
+    "body {\n    font-size: 12pt;\n    background: #fff url(temp.png) top left no-repeat;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo csvs" {
+  check_guess(
+    "version 1.1\n@totalColumns 5\n@separator ','\nTransaction_Date: xDate\nTransaction_ID: notEmpty\nOriginator_Name: notEmpty\nOriginator_Address: any(\"yes\",\"no\")\nOriginator_Country: notEmpty\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cuda" {
+  check_guess(
+    "#include <cstdio>\n\n__global__ void helloFromGPU() {\n    std::printf(\"Hello World\\n\");\n    __syncthreads();\n}\n\nint main() {\n    dim3 block(1, 10);\n    helloFromGPU<<<1, block>>>();\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cypher" {
+  check_guess(
+    "// Cypher Mode for Rouge\nCREATE (john:Person {name: 'John'})\nMATCH (user)-[:friend]->(follower)\nWHERE user.name IN ['Joe', 'John', 'Sara', 'Maria', 'Steve'] AND follower.name =~ 'S.*'\nRETURN user.name, follower.name\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo cython" {
+  check_guess(
+    "cdef extern from 'foo.h':\n    int foo_int\n    struct foo_struct:\n        pass\n\nctypedef int word\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo d" {
+  check_guess(
+    "import std.algorithm, std.conv, std.functional,\n    std.math, std.regex, std.stdio;\n\nalias round = pipe!(to!real, std.math.round, to!string);\nstatic reFloatingPoint = ctRegex!`[0-9]+\\.[0-9]+`;\n\nvoid main()\n{\n    // Replace anything that looks like a real\n    // number with the rounded equivalent.\n    stdin\n        .byLine\n        .map!(l => l.replaceAll!(c => c.hit.round)\n                                (reFloatingPoint))\n        .each!writeln;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo dafny" {
+  check_guess(
+    "module A {\n  const i: int := 56_78\n}\n\nmethod m(b: bool, s: string) {\n  var x: string;\n  var i: int;\n  if b then i := 1; else i := 2;\n  i := if b 1 else 2;\n  assert b;\n  assume b;\n  print s;\n  expect b;\n}\n\nfunction f(i: int): int { i + 1 }\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo dart" {
+  check_guess(
+    "void main() {\n  var collection=[1,2,3,4,5];\n  for(var a in collection){\n    print(a);\n  }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo datastudio" {
+  check_guess(
+    "\nGet_Variable(\"EUSER\",\"ENV\",\"USERNAME\");\n\nMessage(\"Le Login Windows est : %EUSER%\");\n\nGet_Variable(\"st\",\"JOB\",\"FOLDER1.date_err.SYSTEM.STATUS\");\n\n\nAFFECT(\"filter1\", '%%/\"t\"');\nAFFECT(\"filter2\", '%%/\"pi\"');\nJSONTOSQL(\"%{jsonpath}%/file.json\", \"\",\n        \" JSONPATH like '%filter1%' \", \"a = JSONVALUE\",\n        \" JSONPATH like '%filter2%' \", \"b = JSONVALUE; output(json_data, a, b)\");\n\n\nAffect(VAR1,'%TEST%'); //Créer et affecter la variable VAR1 avec une chaîne\nselect * from TABLE1 where COL1 like %VAR1%; //utiliser la variable VAR1 dans une requête\n\nselect * from TEST_TABLE; //exécution d'une requête Select pour ramener des valeurs\nAffect_LastColumns(\"TEST1\"); //création du paramètre TEST1\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo diff" {
+  check_guess(
+    "--- file1\t2012-10-16 15:07:58.086886874 +0100\n+++ file2\t2012-10-16 15:08:07.642887236 +0100\n@@ -1,3 +1,3 @@\n a b c\n-d e f\n+D E F\n g h i\n",
+    "diff",
+  )
+}
+
+///|
+test "rouge guess: demo digdag" {
+  check_guess(
+    "# this is digdag task definitions\ntimezone: UTC\n\n+setup:\n  echo>: start ${session_time}\n\n+disp_current_date:\n  echo>: ${moment(session_time).utc().format('YYYY-MM-DD HH:mm:ss Z')}\n\n+repeat:\n  for_each>:\n    order: [first, second, third]\n    animal: [dog, cat]\n  _do:\n    echo>: ${order} ${animal}\n  _parallel: true\n\n+teardown:\n  echo>: finish ${session_time}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo docker" {
+  check_guess(
+    "maintainer First O'Last\n\nrun echo \\\n  123 $bar\n# comment\nonbuild add . /app/src\nonbuild run echo \\\n  123 $bar\nCMD /bin/bash\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo dot" {
+  check_guess(
+    "// The graph name and the semicolons are optional\ngraph G {\n\ta -- b -- c;\n\tb -- d;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ecl" {
+  check_guess(
+    "/*\n    Example code - use without restriction.  \n*/\nLayout_Person := RECORD\n  UNSIGNED1 PersonID;\n  STRING15  FirstName;\n  STRING25  LastName;\nEND;\n\nallPeople := DATASET([ {1,'Fred','Smith'},\n                       {2,'Joe','Blow'},\n                       {3,'Jane','Smith'}],Layout_Person);\n\nsomePeople := allPeople(LastName = 'Smith');\n\n//  Outputs  ---\nsomePeople;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo eex" {
+  check_guess("<title><%= @title %></title>\n", "")
+}
+
+///|
+test "rouge guess: demo eiffel" {
+  check_guess(
+    "note\n  description: \"Represents a person.\"\n\nclass\n  PERSON\n\ncreate\n  make, make_unknown\n\nfeature {NONE} -- Creation\n\n  make (a_name: like name)\n      -- Create a person with `a_name' as `name'.\n    do\n      name := a_name\n    ensure\n      name = a_name\n    end\n\n  make_unknown\n    do ensure\n      name = Void\n    end\n\nfeature -- Access\n\n  name: detachable STRING\n      -- Full name or Void if unknown.\n\nend\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo elixir" {
+  check_guess("Enum.map([1,2,3], fn(x) -> x * 2 end)\n", "")
+}
+
+///|
+test "rouge guess: demo elm" {
+  check_guess(
+    "import Html exposing (text)\n\nmain =\n  text \"Hello, World!\"\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo email" {
+  check_guess(
+    "From: Me <me@example.com>\nTo: You <you@example.com>\nDate: Tue, 21 Jul 2020 15:14:03 +0000\nSubject: A very important message\n\n> Please investigate.  Thank you.\n\nI have investigated.\n\n-- \nThis message is highly confidential and will self-destruct.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo epp" {
+  check_guess(
+    "<%- |\n    Optional[String] $title,\n| -%>\n<title><%= $title %></title>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo erb" {
+  check_guess("<title><%= @title %></title>\n", "")
+}
+
+///|
+test "rouge guess: demo erlang" {
+  check_guess(
+    "%%% Geometry module.\n-module(geometry).\n-export([area/1]).\n\n%% Compute rectangle and circle area.\narea({rectangle, Width, Ht}) -> Width * Ht;\narea({circle, R})            -> 3.14159 * R * R.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo escape" {
+  check_guess(
+    "If Formatter.enable_escape! is called, this allows escaping into html\nor the parent format with a special delimiter. For example:\n<!<span style=\"text-decoration: underline\">!>underlined text!<!</span>!>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo factor" {
+  check_guess(
+    "USING: io kernel sequences ;\n\n4 iota [\n    \"Happy Birthday \" write 2 = \"dear NAME\" \"to You\" ? print\n] each\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo fluent" {
+  check_guess(
+    "# Simple things are simple.\nhello-user = Hello, {$userName}!\n\n# Complex things are possible.\nshared-photos =\n    {$userName} {$photoCount ->\n        [one] added a new photo\n       *[other] added {$photoCount} new photos\n    } to {$userGender ->\n        [male] his stream\n        [female] her stream\n       *[other] their stream\n    }.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo fortran" {
+  check_guess(
+    "program bottles\n\n    implicit none\n    integer :: nbottles\n\n    do nbottles = 99, 1, -1\n        call print_bottles(nbottles)\n    end do\n\ncontains\n\n    subroutine print_bottles(n)\n        implicit none\n        integer, intent(in) :: n\n\n        write(*, \"(I0, 1X, 'bottles of beer on the wall,')\") n\n        write(*, \"(I0, 1X, 'bottles of beer.')\") n\n        write(*, \"('Take one down, pass it around,')\")\n        write(*, \"(I0, 1X, 'bottles of beer on the wall.', /)\") n - 1\n    end subroutine print_bottles\n\nend program bottles\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo freefem" {
+  check_guess(
+    "include \"MUMPS\"\n\n// Parameters\nfunc f = 1.;\n\n// Mesh\nint nn = 25;\t//Mesh quality\nmesh Th = square(nn, nn);\n\n// Fespace\nfunc Pk = P2;\nfespace Uh(Th, Pk);\nUh u;\n\n// Plot\nplot(u, nbiso=30, fill=true, value=true, cmm=\"A\");\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo fsharp" {
+  check_guess(
+    "(* Binary tree with leaves car\u{ad}rying an integer. *)\ntype Tree = Leaf of int | Node of Tree * Tree\n\nlet rec existsLeaf test tree =\n  match tree with\n  | Leaf v -> test v\n  | Node (left, right) ->\n      existsLeaf test left\n      || existsLeaf test right\n\nlet hasEvenLeaf tree =\n  existsLeaf (fun n -> n % 2 = 0) tree\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo gdscript" {
+  check_guess(
+    "extends Node\n\n# Variables & Built-in Types\n\nvar a = 5\nvar b = true\nvar s = \"Hello\"\nvar arr = [1, 2, 3]\n\n# Constants & Enums\n\nconst ANSWER = 42\nenum { UNIT_NEUTRAL, UNIT_ENEMY, UNIT_ALLY }\n\n# Functions\n\nfunc _ready():\n    print(\"Hello, World\")\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ghc-cmm" {
+  check_guess(
+    "[lvl_s4t3_entry() //  [R1]\n         { info_tbls: [(c4uB,\n                        label: lvl_s4t3_info\n                        rep: HeapRep 1 ptrs { Thunk }\n                        srt: Nothing)]\n           stack_info: arg_space: 8 updfr_space: Just 8\n         }\n     {offset\n       c4uB: // global\n           if ((Sp + -32) < SpLim) (likely: False) goto c4uC; else goto c4uD;\n       c4uC: // global\n           R1 = R1;\n           call (stg_gc_enter_1)(R1) args: 8, res: 0, upd: 8;\n       c4uD: // global\n           I64[Sp - 16] = stg_upd_frame_info;\n           P64[Sp - 8] = R1;\n           R2 = P64[R1 + 16];\n           I64[Sp - 32] = stg_ap_p_info;\n           P64[Sp - 24] = Main.fib3_closure+1;\n           Sp = Sp - 32;\n           call GHC.Num.fromInteger_info(R2) args: 40, res: 0, upd: 24;\n     }\n }\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ghc-core" {
+  check_guess(
+    "Rec {\n-- RHS size: {terms: 24, types: 3, coercions: 0, joins: 0/0}\nMain.fib_fib [Occ=LoopBreaker] :: Integer -> Integer\n[GblId, Arity=1, Str=<S,U>, Unf=OtherCon []]\nMain.fib_fib\n  = \\ (ds_d2OU :: Integer) ->\n      case integer-gmp-1.0.2.0:GHC.Integer.Type.eqInteger#\n             ds_d2OU Main.fib1\n      of {\n        __DEFAULT ->\n          case integer-gmp-1.0.2.0:GHC.Integer.Type.eqInteger#\n                 ds_d2OU Main.fib3\n          of {\n            __DEFAULT ->\n              integer-gmp-1.0.2.0:GHC.Integer.Type.plusInteger\n                (Main.fib_fib\n                   (integer-gmp-1.0.2.0:GHC.Integer.Type.minusInteger\n                      ds_d2OU Main.fib3))\n                (Main.fib_fib\n                   (integer-gmp-1.0.2.0:GHC.Integer.Type.minusInteger\n                      ds_d2OU Main.fib2));\n            1# -> Main.fib3\n          };\n        1# -> Main.fib1\n      }\nend Rec }\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo gherkin" {
+  check_guess(
+    "# language: en\nFeature: Addition\n  In order to avoid silly mistakes\n  As someone who has trouble with mental math\n  I want to be told the sum of two numbers\n\n  Scenario Outline: Add two numbers\n    Given I have entered <input_1> into the calculator\n    And I have entered <input_2> into the calculator\n    When I press <button>\n    Then the result should be <output> on the screen\n\n  Examples:\n    | input_1 | input_2 | button | output |\n    | 20      | 30      | add    | 50     |\n    | 2       | 5       | add    | 7      |\n    | 0       | 40      | add    | 40     |\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo glsl" {
+  check_guess(
+    "#version 330 core\n\nuniform mat4 worldMatrix;\n\nlayout(location = 0) in vec2 position;\nlayout(location = 1) in vec4 color;\n\nout vec4 vertexColor;\n\nvoid main()\n{\n    vertexColor = color;\n    gl_Position = vec4(position, 0.0, 1.0);\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo go" {
+  check_guess(
+    "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, 世界\")\n}\n",
+    "mosel",
+  )
+}
+
+///|
+test "rouge guess: demo gradle" {
+  check_guess(
+    "apply plugin: 'java'\n\nrepositories {\n  jcenter()\n}\n\ndependencies {\n  compile 'org.openjdk.jmh:jmh-core:1.12'\n  compile 'org.openjdk.jmh:jmh-generator-annprocess:1.12'\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo graphql" {
+  check_guess(
+    "query myQuery($variable: Boolean) {\n  # Queries can have comments!\n  friends(ids: [\"a1\", \"a2\"]) {\n    id\n    name\n\n    ...someFields\n\n    ... @include(if: $variable) {\n      foo\n    }\n\n    ... @skip(if: true) {\n      bar\n    }\n  }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo groovy" {
+  check_guess(
+    "class Greet {\n  def name\n  Greet(who) { name = who[0].toUpperCase() +\n                      who[1..-1] }\n  def salute() { println \"Hello $name!\" }\n}\n\ng = new Greet('world')  // create object\ng.salute()               // output \"Hello World!\"\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hack" {
+  check_guess(
+    "<?hh // strict\n\nasync function foo(): Awaitable<string> {\n  return await (() ==> 'Hello, world')();\n}\n",
+    "hack",
+  )
+}
+
+///|
+test "rouge guess: demo haml" {
+  check_guess(
+    "%section.container\n  %h1= post.title\n  %h2= post.subtitle\n  .content\n    = post.content\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo handlebars" {
+  check_guess(
+    "<div class=\"entry\">\n  <h1>{{title}}</h1>\n  {{#with story}}\n    <div class=\"intro\">{{{intro}}}</div>\n    <div class=\"body\">{{{body}}}</div>\n  {{/with}}\n</div>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo haskell" {
+  check_guess(
+    "quicksort :: Ord a => [a] -> [a]\nquicksort []     = []\nquicksort (p:xs) = (quicksort lesser) ++ [p] ++ (quicksort greater)\n    where\n        lesser  = filter (< p) xs\n        greater = filter (>= p) xs\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo haxe" {
+  check_guess(
+    "// hello world!\npublic static function hello(arg : String) {\n    return 'Hello $arg';\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hcl" {
+  check_guess(
+    "service {\n    key = \"value\"\n}\n\nvariable \"ami\" {\n    description = \"the AMI to use\"\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hlsl" {
+  check_guess(
+    "struct PSInput\n{\n    float4 position : SV_POSITION;\n    float4 color : COLOR;\n};\n\n// Vertex shader\nPSInput VSMain(float4 position : POSITION, float4 color : COLOR)\n{\n    PSInput result;\n    result.position = position;\n    result.color = color;\n    return result;\n}\n\n// Pixel shader\nfloat4 PSMain(PSInput input) : SV_TARGET\n{\n    return input.color;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hocon" {
+  check_guess(
+    "# These are our own config values defined by the app\nsimple-app {\n    answer = 42\n}\n\n# Here we override some values used by a library\nsimple-lib.foo = \"This value comes from simple-app's application.conf\"\nsimple-lib.whatever = \"This value comes from simple-app's application.conf\"\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hql" {
+  check_guess(
+    "SELECT e.first_name, e.last_name, d.department_name\nFROM   employees e\nJOIN   departments d ON e.department_id = d.department_id;\n\nupdate `table` set name='abc', date=${date}, test_interpolation=\"${var1}.${var2}\" where xyz is null;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo html" {
+  check_guess(
+    "<html>\n  <head><title>Title!</title></head>\n  <body>\n    <p id=\"foo\">Hello, World!</p>\n    <script type=\"text/javascript\">var a = 1;</script>\n    <style type=\"text/css\">#foo { font-weight: bold; }</style>\n  </body>\n</html>\n",
+    "html",
+  )
+}
+
+///|
+test "rouge guess: demo http" {
+  check_guess(
+    "POST /demo/submit/ HTTP/1.1\nHost: rouge.jneen.net\nCache-Control: max-age=0\nOrigin: http://rouge.jayferd.us\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_2)\n    AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7\nContent-Type: application/json\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nReferer: http://pygments.org/\nAccept-Encoding: gzip,deflate,sdch\nAccept-Language: en-US,en;q=0.8\nAccept-Charset: windows-949,utf-8;q=0.7,*;q=0.3\n\n{\"name\":\"test\",\"lang\":\"text\",\"boring\":true}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo hylang" {
+  check_guess(
+    "(defn simple-conversation []\n   (print \"Hello!  I'd like to get to know you.  Tell me about yourself!\")\n   (setv name (input \"What is your name? \"))\n   (let [age (input \"What is your age? \")]\n     (if (and age\n              name)\n       (print (+ \"Hello \" name \"!  I see you are \"\n                 age \" years old.\")))))\n\n(simple-conversation)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo idlang" {
+  check_guess(
+    "for i = 99L, 0, -1 do begin\n\n  print, i, format=\"(I0, 1X, 'bottles of beer on the wall,')\"\n  print, i, format=\"(I0, 1X, 'bottles of beer.')\"\n  print, 'Take one down, pass it around,'\n  print, i, format=\"(I0, 1X, 'bottles of beer on the wall.', /)\"\n\nendfor\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo idris" {
+  check_guess(
+    "import Data.Vect\n\ninsert : Ord elem =>\n         (x : elem) -> (xsSorted : Vect len elem) -> Vect (S len) elem\ninsert x [] = [x]\ninsert x (y :: xs) = case x < y of\n                          True => x :: y :: xs\n                          False => y :: insert x xs\n\ninsSort : Ord elem => Vect n elem -> Vect n elem\ninsSort [] = []\ninsSort (x :: xs) = let xsSorted = insSort xs in\n                        insert x xsSorted\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo igorpro" {
+  check_guess(
+    "#pragma TextEncoding = \"UTF-8\"\n#pragma rtGlobals=3\t\t// Use modern global access method and strict wave access.\n\nFunction/WAVE MakeWave(name)\n\tString name\n\n\tMake/N=(8,8) root:$name/WAVE=wv = p^2 + q^2\n\treturn wv\nEnd\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ini" {
+  check_guess(
+    "; last modified 1 April 2001 by John Doe\n[owner]\nname=John Doe\norganization=Acme Widgets Inc.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo io" {
+  check_guess(
+    "bottle := method(i,\n  if(i==0, return \"no more bottles of beer\")\n  if(i==1, return \"1 bottle of beer\")\n  return i asString .. \" bottles of beer\"\n)\n\nfor(i, 99, 1, -1,\n  write(bottle(i), \" on the wall, \", bottle(i), \",\\n\")\n  write(\"take one down, pass it around,\\n\")\n  write(bottle(i - 1), \" on the wall.\\n\\n\")\n)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo irb" {
+  check_guess(
+    "irb(main):001:0> puts \"Hello, world!\"\nHello, world!\nirb(main):002:0> Object.new\n=> #<Object:0x0056182cb182b8>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo irb_output" {
+  check_guess(
+    "hello world\n=> #<Object:0x0056182cb182b8 @foo=#<Object:0x0056182cb63100 @bar=3>>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo isabelle" {
+  check_guess(
+    "theory demo imports Main begin\n\nsection ‹Inductive predicates for lists›\n\ndatatype 'a list = Nil (\"[]\") | Cons 'a \"'a list\" (\"_ # _\")\n\nfun length :: \"'a list ⇒ nat\" where\n  \"length [] = 0\" | \"length (x # xs) = 1 + length xs\"\n\ninductive ζ :: \"'a list ⇒ nat ⇒ bool\" where\nNil[intro!]:  \"ζ [] 0\" |\nCons[intro]: \"ζ xs l ⟹ ζ (x # xs) (1 + l)\"\n\n(* Not the answer? *)\nlemma \"ζ xs 42\"\n  oops\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo isbl" {
+  check_guess(
+    "NameReq = Object.Requisites(SYSREQ_NAME)\nif Assigned(NameReq.AsString)\n  ShowMessage(\"Привет мир\")\nendif\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo j" {
+  check_guess(
+    "NB. Procedural programming\nfizzbuzz=: monad define\n  for_i. >:i.y do.\n    if.     0 = 15 | i do. echo'FizzBuzz'\n    elseif. 0 =  3 | i do. echo'Fizz'\n    elseif. 0 =  5 | i do. echo'Buzz'\n    else.                  echo i\n    end.\n  end.\n)\nNB. Loopless programming\nfizzbuzz=: echo@(, ::] ('Fizz' ; 'Buzz') ;@#~ 0 = 3 5&|)@>:@i.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo janet" {
+  check_guess("(defn a-fun\n  \"A function\"\n  (do-something))\n", "")
+}
+
+///|
+test "rouge guess: demo java" {
+  check_guess(
+    "public class java {\n    public static void main(String[] args) {\n        System.out.println(\"Hello World\");\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo javascript" {
+  check_guess("$(document).ready(function() { alert('ready!'); });\n", "")
+}
+
+///|
+test "rouge guess: demo jinja" {
+  check_guess(
+    "{% extends \"layout.html\" %}\n\n{% block body %}\n  <ul>\n  {% for user in users %}\n    <li><a href=\"{{ user.url }}\">{{ user.username }}</a></li>\n  {% endfor %}\n  </ul>\n{% endblock %}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo jsl" {
+  check_guess(
+    "// Create Distribution of Big Class\ndt = open( \"$sample_data\\big class.jmp\" );\ndt << Distribution( Column( :age ), Histograms Only( 1 ) );\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo json" {
+  check_guess(
+    "{ \"one\": 1, \"two\": 2, \"null\": null, \"simple\": true }\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo json-doc" {
+  check_guess(
+    "{ \"one\": 1, \"two\": 2, \"null\": null, \"simple\": true } // a simple json object\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo jsonnet" {
+  check_guess(
+    "// Compiler template\nlocal CCompiler = {\n  cFlags: [],\n  out: \"a.out\",\n  local flags_str = std.join(\" \", self.cFlags),\n  local files_str = std.join(\" \", self.files),\n  cmd: \"%s %s %s -o %s\" % [self.compiler, flags_str, files_str, self.out],\n};\n\n// GCC specialization\nlocal Gcc = CCompiler { compiler: \"gcc\" };\n\n// Another specialization\nlocal Clang = CCompiler { compiler: \"clang\" };\n\n// Mixins - append flags\nlocal Opt = { cFlags: super.cFlags + [\"-O3\", \"-DNDEBUG\"] };\nlocal Dbg = { cFlags: super.cFlags + [\"-g\"] };\n\n// Output:\n{\n  targets: [\n    Gcc { files: [\"a.c\", \"b.c\"] },\n    Clang { files: [\"test.c\"], out: \"test\" },\n    Clang + Opt { files: [\"test2.c\"], out: \"test2\" },\n    Gcc + Opt + Dbg { files: [\"foo.c\", \"bar.c\"], out: \"baz\" },\n  ]\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo jsp" {
+  check_guess(
+    "<%@ page contentType=\"text/html;charset=UTF-8\" language=\"java\" %>\r\n<%@ page import=\"java.time.LocalDateTime\" %>\r\n\r\n<%! int day = 3; %> \r\n\r\n<!DOCTYPE html>\r\n<html>\r\n\t<head>\r\n\t\t<title>Simple JSP Application</title>\r\n\t</head>\r\n\t<body>\r\n        <%-- This is a JSP comment --%>\r\n\t\t<h1>Hello world!</h1>\r\n\t\t<h2>Current time is <%= LocalDateTime.now() %></h2>\r\n\r\n        <% if (day == 1 || day == 7) { %>\r\n            <p> Today is weekend</p>\r\n        <% } else { %>\r\n            <p> Today is not weekend</p>\r\n        <% } %>\r\n\r\n        h2>Using JavaBeans in JSP</h2>\r\n        <jsp:useBean id=\"test\" class=\"action.TestBean\" />\r\n        <jsp:setProperty name=\"test\"  property=\"message\"  value=\"Hello JSP...\" />\r\n        \r\n        <p>Got message:</p>\r\n        <jsp:getProperty name=\"test\" property=\"message\" />\r\n\t</body>\r\n</html>",
+    "html",
+  )
+}
+
+///|
+test "rouge guess: demo jsx" {
+  check_guess(
+    "var HelloWorld = React.createClass({\n  render: function() {\n    return (\n      <p>\n        Hello, <input type=\"text\" placeholder=\"Your name here\" />!\n        It is {this.props.date.toTimeString()}\n      </p>\n    );\n  }\n});\n\nsetInterval(function() {\n  ReactDOM.render(\n    <HelloWorld date={new Date()} />,\n    document.getElementById('example')\n  );\n}, 500);\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo julia" {
+  check_guess(
+    "function mandel(z)\n    c = z\n    maxiter = 80\n    for n = 1:maxiter\n        if abs(z) > 2\n            return n-1\n        end\n        z = z^2 + c\n    end\n    return maxiter\nend\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo kotlin" {
+  check_guess(
+    "fun main(args: Array<String>) {\n    println(\"Hello, world!\")\n}\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo lasso" {
+  check_guess(
+    "/**!\n  Inserts all of the elements from #rhs into the array.\n*/\ndefine array->+(rhs::trait_forEach) => { \n  local(a = .asCopy);\n  #rhs->forEach => {\n    #a->insert(#1)\n  }\n  return (#a)\n}\n\ndefine array->onCompare(n::null) => 1\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo lean" {
+  check_guess(
+    "open nat\n\ndef add : nat → nat → nat\n| m zero := m\n| m (succ n) := succ (add m n)\n\n-- encode definition as an axiom\naxiom add_zero (n : nat) : n + 0 = n\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo liquid" {
+  check_guess(
+    "<ul id=\"products\">\n  {% for product in products %}\n    <li>\n      <h2>{{ product.title }}</h2>\n      Only {{ product.price | format_as_money }}\n\n      <p>{{ product.description | prettyprint | truncate: 200  }}</p>\n    </li>\n  {% endfor %}\n</ul>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo literate_coffeescript" {
+  check_guess(
+    "Import the helpers we plan to use.\n\n    {extend, last} = require './helpers'\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo literate_haskell" {
+  check_guess(
+    "In Bird-style you have to leave a blank before the code.\n\n> fact :: Integer -> Integer\n> fact 0 = 1\n> fact n = n * fact (n-1)\n\nAnd you have to leave a blank line after the code as well.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo livescript" {
+  check_guess(
+    "mitch =\n    age:    21\n    height: 180cm\n    pets:   [\\dog, \\goldfish]\n\nphile = {}\nphile{height, pets} = mitch\nphile.height #=> 180\nphile.pets   #=> ['dog', 'goldfish']\n\na = [2 7 1 8]\n    ..push 3\n    ..shift!\n    ..sort!\na #=> [1,3,7,8]\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo llvm" {
+  check_guess(
+    "; copied from http://llvm.org/docs/LangRef.html#module-structure\n; Declare the string constant as a global constant.\n@.str = private unnamed_addr constant [13 x i8] c\"hello world\\0A\\00\"\n\n; External declaration of the puts function\ndeclare i32 @puts(i8* nocapture) nounwind\n\n; Definition of main function\ndefine i32 @main() {   ; i32()*\n  ; Convert [13 x i8]* to i8  *...\n  %cast210 = getelementptr [13 x i8]* @.str, i64 0, i64 0\n\n  ; Call puts function to write out the string to stdout.\n  call i32 @puts(i8* %cast210)\n  ret i32 0\n}\n\n; Named metadata\n!1 = metadata !{i32 42}\n!foo = !{!1, null}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo lua" {
+  check_guess(
+    "-- defines a factorial function\nfunction fact (n)\n  if n == 0 then\n    return 1\n  else\n    return n * fact(n-1)\n  end\nend\n    \nprint(\"enter a number:\")\na = io.read(\"*number\")        -- read a number\nprint(fact(a))\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo lustre" {
+  check_guess(
+    "node count(init: int; reset, event: bool) returns (c: int);\nlet\n\tc = init -> if reset then init\n\t\t\t\t\telse if event then pre(c)+1\n\t\t\t\t\telse pre(c);\ntel;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo lutin" {
+  check_guess(
+    "node gen_x_v1() returns (x:real) = loop 0.0<x and x<42.0\n\nnode gen_x_v2() returns (x:real) = \n  loop { 0.0<x and x<42.0 fby loop [20] x = pre x }\n\nnode gen_x_v3() returns (target:real; x:real=0.0) =\n  run target := gen_x_v2() in\n  loop { x = (pre x + target) / 2.0 }\n\nlet inertia=0.6\n\nnode gen_x_v4()  returns (target:real; x:real=0.0) =\n  run target := gen_x_v2() in\n  exist px,ppx : real = 0.0 in\n  loop { \n      px = pre x and ppx = pre px and\n      x = (px+target) / 2.0+inertia*(px-ppx) \n  }\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo m68k" {
+  check_guess(
+    "initialize:                     ; go into super user mode\n   clr.l -(a7)\n   move.w #32,-(a7)\n   trap #1\n   addq.l #6,a7\n   move.l d0,oldstack\n   rts\n\nrestore:                        ; go back into user mode\n   move.l oldstack,-(a7)\n   move.w #32,-(a7)\n   trap #1\n   addq.l #6,a7\n   rts\n\noldstack dc.l 0\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo magik" {
+  check_guess(
+    "_private _method test_object.init()\n\t## initializer\n\t.slot1 << _self.default_value\n\t_return _self\n_endmethod\n$\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo make" {
+  check_guess(
+    ".PHONY: all\nall: $(OBJ)\n\n$(OBJ): $(SOURCE)\n\t@echo \"compiling...\"\n\t$(GCC) $(CFLAGS) $< > $@\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo markdown" {
+  check_guess(
+    "Markdown has cool [reference links][ref 1]\nand [regular links too](http://example.com)\n\n[ref 1]: http://example.com\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo mason" {
+  check_guess(
+    "<%doc>\r\n    This is a mason component.\r\n    # This is a comment.\r\n</%doc>\r\n\r\n<%args>\r\n    $color         # this argument is required!\r\n    $size => 20    # default size\r\n    $country => undef   # this argument is optional, default value is 'undef'\r\n    @items => (1, 2, 'something else')\r\n    %pairs => (name => \"John\", age => 29)\r\n</%args>\r\n\r\n% # A random block of Perl code\r\n<%perl>\r\n    my @people = ('mary' 'john' 'pete' 'david');\r\n</%perl>\r\n\r\n% # Note how each line of code begins with the mandatory %\r\n% foreach my $person (@people) {\r\n    Name: <% $person %>\r\n% }\r\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo mathematica" {
+  check_guess(
+    "(* Fibonacci numbers with memoization *)\n\nfib::usage = \"f[n] calculates the n'th Fibonacci number.\";\nfib[0] = fib[1] = 1;\nfib[n_Integer?Positive]:= fib[n] = fib[n-1] + fib[n-2];\n\nIn[4]:= fib[42]\nOut[4]= 433494437\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo matlab" {
+  check_guess(
+    "A = cat( 3, [1 2 3; 9 8 7; 4 6 5], [0 3 2; 8 8 4; 5 3 5], ...\n                 [6 4 7; 6 8 5; 5 4 3]);\n% The EIG function is applied to each of the horizontal 'slices' of A.\nfor i = 1:3\n    eig(squeeze(A(i,:,:)))\nend\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo meson" {
+  check_guess(
+    "project('tutorial', 'c', version: '0.2.3')\nexecutable('demo', 'main.c')\n\nversion_array = meson.project_version().split('.')\napi_version = '@0@.@1@'.format(version_array[0], version_array[1])\n\nd = dependency('foo', required : get_option('myfeature'))\nif d.found()\n  app = executable('app', 'app.c', dependencies : [d])\nendif\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo minizinc" {
+  check_guess(
+    "% from MiniZinc Handbook:\n% https://www.minizinc.org/doc-latest/en/modelling.html\n\n% Colouring Australia using nc colours\nint: nc = 3;\n\nvar 1..nc: wa;   var 1..nc: nt;  var 1..nc: sa;   var 1..nc: q;\nvar 1..nc: nsw;  var 1..nc: v;   var 1..nc: t;\n\nconstraint wa != nt;\nconstraint wa != sa;\nconstraint nt != sa;\nconstraint nt != q;\nconstraint sa != q;\nconstraint sa != nsw;\nconstraint sa != v;\nconstraint q != nsw;\nconstraint nsw != v;\nsolve satisfy;\n\noutput [\"wa=\\(wa)\\t nt=\\(nt)\\t sa=\\(sa)\\n\",\n        \"q=\\(q)\\t nsw=\\(nsw)\\t v=\\(v)\\n\",\n         \"t=\", show(t),  \"\\n\"];\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo moonscript" {
+  check_guess(
+    "util = require \"my.module\"\n\na_table = {\n  foo: 'bar'\n  interpolated: \"foo-#{other.stuff 2 + 3}\"\n  \"string\": 2\n  do: 'keyword'\n}\n\nclass MyClass extends SomeClass\n  new: (@init, arg2 = 'default') =>\n    @derived = @init + 2\n    super!\n\n  other: =>\n    @foo + 2\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo mosel" {
+  check_guess(
+    "(!******************************************************\n   Mosel Example Problems\n*******************************************************!)\n\n! Objective function: total daily cost\n Cost:= sum(p in TYPES, t in TIME) (CSTART(p)*start(p,t) +\n          LEN(t)*(CMIN(p)*work(p,t) + CADD(p)*padd(p,t)))\n\n! Limit on power production above minimum level\n forall(p in TYPES, t in TIME) padd(p,t) <= (PMAX(p)-PMIN(p))*work(p,t)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo msgtrans" {
+  check_guess(
+    "# Example MessageTrans file\nToken\nToken0x??:Replacement localised %0 text\nColor/Colour:Colour\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo mxml" {
+  check_guess(
+    "<?xml version=\"1.0\"?>\n<s:ComboBox xmlns:fx=\"http://ns.adobe.com/mxml/2009\"\n    xmlns:s=\"library://ns.adobe.com/flex/spark\"\n    xmlns:mx=\"library://ns.adobe.com/flex/mx\">\n\n    <fx:Script>\n        <![CDATA[\n            [Bindable]\n            private var buttonLabel:String = \"Click me!\";\n            private var clicks:int = 0;\n\n            function button_clicked():void {\n                clicks++;\n                buttonLabel = clicks.toString();\n            }\n        ]]>\n    </fx:Script>\n\n    <s:Button id=\"button\"\n              label=\"{buttonLabel}\"\n              click=\"{button_clicked()}\" />\n</s:ComboBox>\n",
+    "xml",
+  )
+}
+
+///|
+test "rouge guess: demo nasm" {
+  check_guess(
+    "%macro IRQ 2\n    global irq%1\n    irq%1:\n        cli\n        push byte 0     ; push a dummy error code\n        push byte %2    ; push the IRQ number\n        jmp  irq_common_stub\n%endmacro\n\nextern irq_handler\n\nirq_common_stub:\n    pusha             ; push all general-purpose registers\n    mov   ax, ds      ; lower 16-bits of eax = ds\n    push  eax         ; save the data segment descriptor\n    mov   ax, 0x10    ; load the kernel data segment descriptor\n    mov   edx, eax\n    call  irq_handler\n\n%assign i 0\n%rep 8\nISR_NOERRCODE i\n%assign i i+1\n%endrep\n\nISR_NOERRCODE 9\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo nesasm" {
+  check_guess(
+    "  .bank 0\n  .org $C000\nReset:\t\n        jsr WaitSync\t; wait for VSYNC\n        jsr ClearRAM\t; clear RAM\n        jsr WaitSync\t; wait for VSYNC (and PPU warmup)\n\n\tlda #$3f\t; $3F -> A register\n        ldy #$00\t; $00 -> Y register\n        sta PPU_ADDR\t; write #HIGH byte first\n        sty PPU_ADDR    ; $3F00 -> PPU address\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo nginx" {
+  check_guess(
+    "server {\n  listen          80;\n  server_name     example.com *.example.com;\n  rewrite ^       http://www.domain.com$request_uri? permanent;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo nial" {
+  check_guess(
+    "% Functional Recursion: ;\nfact IS RECUR [ 0 =, 1 first, pass, product, -1 +] % from wikipedia; \n \n% Product of a range: ; \nfact IS * count;\n\n% Plain recursion: ;\nfact IS OPERATION x {\n  if x = 0 then 1 else x * fact (x - 1) endif\n  };\n\n% While loop: ;\nfact IS OPERATION x {\nprod := 1;\n  WHILE x > 0 DO\n      prod := prod * x;\n      x := x - 1;\n  ENDWHILE;\n  prod\n}\n\n     % A basic divide by zero error: ;\n     1 / 0\n# OUTPUT:\n?div\n\n     % Errors are also values called faults, giving you their location: ;\n     5 / 5 10 0 8\n# OUTPUT:\n1. 0.5 ?div 0.625\n\n     % You can also define custom faults using 'fault': ;\n     fault 'this is an error'\n# OUTPUT:\nthis is an error\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo nim" {
+  check_guess(
+    "import math,strutils\n\nproc fixedWidth(input: string, minFieldSize: int):string {.inline.} =\n  # Note that field size is a minimum- will expand field if input\n  # string is larger\n  if input.startsWith(\"-\"):\n    return(input & repeatchar(count=(abs(minFieldSize-len(input))),c=' '))\n  else:\n    return(\" \" & input & repeatchar(count=(abs(minFieldSize-len(input))-1),c=' '))\n\ntemplate mathOnInterval(lowbound,highbound:float,counts: int,p:proc) =\n  block:\n    var step:    float = (highbound - lowbound)/(max(counts,1))\n    var current: float = lowbound\n    while current < highbound:\n      echo($fixedWidth($current,25) & \": \" & $fixedWidth($p(current),25))\n      current += step\n\necho \"Sine of theta from 0 to 2*PI by PI/12\"\nmathOnInterval(0.0,2.0*PI,12,sin)\necho(\"\\n\")\necho \"Cosine of theta from 0 to 2*PI by PI/12\"\nmathOnInterval(0.0,2.0*PI,12,cos)\n\n# The first example above is much the same as:\n# for i in 1..100:\n#   echo($sin( (float(i)/100.0) * 2.0*PI ))\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo nix" {
+  check_guess(
+    "# See https://nixos.org/nix/manual/#sec-expression-syntax\n{ stdenv, fetchurl, perl }: # 1\n\nstdenv.mkDerivation { # 2\n  name = \"hello-2.1.1\"; # 3\n  builder = ./builder.sh; # 4\n  meta = rec {\n    name = \"rouge\";\n    version = \"${name}-2.1.1\";\n    number = 55 + 12;\n    isSmaller = number < 42;\n    bool = true;\n  };\n  src = fetchurl { # 5\n    url = ftp://ftp.nluug.nl/pub/gnu/hello/hello-2.1.1.tar.gz; # path\n    md5 = \"70c9ccf9fac07f762c24f2df2290784d\";\n  };\n  inherit perl; # 6\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo objective_c" {
+  check_guess(
+    "@interface Person : NSObject {\n  @public\n  NSString *name;\n  @private\n  int age;\n}\n\n@property(copy) NSString *name;\n@property(readonly) int age;\n\n-(id)initWithAge:(int)age;\n@end\n\nNSArray *arrayLiteral = @[@\"abc\", @1];\nNSDictionary *dictLiteral = @{\n  @\"hello\": @\"world\",\n  @\"goodbye\": @\"cruel world\"\n};\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo objective_cpp" {
+  check_guess(
+    "@import Foundation;\n#import <array>\n#include <vector>\n\n@interface IntegerArray : NSObject {\n    std::vector<NSUInteger> _numbers;\n}\n@property(readonly) NSUInteger count;\n\n- (instancetype)initWithNumbers:(NSUInteger *)numbers count:(NSUInteger)count;\n- (NSUInteger)numberAtIndex:(NSUInteger)index;\n@end\n\nint main(int argc, char **argv) {\n    auto numbers = std::array<NSUInteger, 3>{1, 2, 3};\n    NSLog(@\"%@\", [[IntegerArray alloc] initWithNumbers:numbers.data() count:numbers.size()]);\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ocaml" {
+  check_guess(
+    "(* Binary tree with leaves car\u{ad}rying an integer. *)\ntype tree = Leaf of int | Node of tree * tree\n\nlet rec exists_leaf test tree =\n  match tree with\n  | Leaf v -> test v\n  | Node (left, right) ->\n      exists_leaf test left\n      || exists_leaf test right\n\nlet has_even_leaf tree =\n  exists_leaf (fun n -> n mod 2 = 0) tree\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ocl" {
+  check_guess(
+    "context Compagnie::toEuros() : Collection(Real)\nbody: self.employees->collect(each: Employee| each.salary/ 6.55957)\n-- OR\nbody: self.employees->collect(salary) -> collect(x | x/6.55957)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo openedge" {
+  check_guess(
+    "FORM\n    \"Hello World!\" VIEW-AS TEXT AT COL 20 ROW 2\n    btnOK AT COL 20 ROW 4\n    WITH FRAME f SIZE 50 BY 5 NO-BOX THREE-D.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo opentype_feature_file" {
+  check_guess(
+    "languagesystem DFLT dflt;\n\nfeature liga {\n    sub f i by f_i;\n} liga;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo pascal" {
+  check_guess(
+    "program FizzBuzz(output);\nvar\n  i: Integer;\nbegin\n  for i := 1 to 100 do\n    if i mod 15 = 0 then\n      WriteLn('FizzBuzz')\n    else if i mod 3 = 0 then\n      WriteLn('Fizz')\n    else if i mod 5 = 0 then\n      WriteLn('Buzz')\n    else\n      WriteLn(i)\nend.\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo perl" {
+  check_guess(
+    "#!/usr/bin/env perl\nuse warnings;\nprint \"a: \";\nmy $a = \"foo\";\nprint $a;\n",
+    "perl",
+  )
+}
+
+///|
+test "rouge guess: demo php" {
+  check_guess("<?php\n  print(\"Hello {$world}\");\n?>\n", "php")
+}
+
+///|
+test "rouge guess: demo plaintext" {
+  check_guess("plain text :)\n", "")
+}
+
+///|
+test "rouge guess: demo plist" {
+  check_guess(
+    "// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 46;\n\tobjects = {\n\t/* ... */\n\t};\n\trootObject = B3A67937542EC2041CBF1CA2 /* Project object */;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo plsql" {
+  check_guess(
+    "SELECT q'{a quoted string}' AS s, TO_CHAR(SYSDATE,'MM/DD/YYYY') AS \"Current Date\" FROM DUAL\nWHERE 1=1;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo pony" {
+  check_guess(
+    "use \"ponytest\"\n\nactor Main is TestList\n  new create(env: Env) => PonyTest(env, this)\n  new make() => None\n\n  fun tag tests(test: PonyTest) =>\n    test(_TestAddition)\n\nclass iso _TestAddition is UnitTest\n  \"\"\"\n  Adding 2 numbers\n  \"\"\"\n  fun name(): String => \"u32/add\"\n\n  fun apply(h: TestHelper): TestResult =>\n    h.expect_eq[U32](2 + 2, 4)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo postscript" {
+  check_guess(
+    "%!PS\n/Courier             % name the desired font\n20 selectfont        % choose the size in points and establish\n                     % the font as the current one\n72 500 moveto        % position the current point at\n                     % coordinates 72, 500 (the origin is at the\n                     % lower-left corner of the page)\n(Hello world!) show  % stroke the text in parentheses\nshowpage             % print all on the page\n",
+    "postscript",
+  )
+}
+
+///|
+test "rouge guess: demo powershell" {
+  check_guess(
+    "function Verb-Noun\n{\n    <#\n    .SYNOPSIS\n    Tells you what it does\n\n    .DESCRIPTION\n    Tells you what it does with more detail.\n    #>\n    param ([string]$Name, [string]$Extension = \"txt\", [string]$foo=\"bar\")\n    $name = $name + \".\" + $extension\n    $name\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo praat" {
+  check_guess(
+    "form Copy selected files...\n  word Prefix\n  word Suffix _copy\n  boolean Keep_original 1\nendform\n\ntotal_objects = numberOfSelected()\nfor i to total_objects\n  my_object[i] = selected(i)\nendfor\nfor i to total_objects\n  selectObject: my_object[i]\n  @copy()\n  new[i] = selected()\nendfor\nif total_objects\n  selectObject: new[1]\n  for i from 2 to total_objects\n    plusObject: new[i]\n  endfor\nendif\n\nprocedure copy ()\n  .name$ = extractWord$(selected$(), \" \")\n  Copy: prefix$ + .name$ + suffix$\nendproc\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo prolog" {
+  check_guess(
+    "diff(plus(A,B), X, plus(DA, DB))\n   <= diff(A, X, DA) and diff(B, X, DB).\n\ndiff(times(A,B), X, plus(times(A, DB), times(DA, B)))\n   <= diff(A, X, DA) and diff(B, X, DB).\n\nequal(X, X).\ndiff(X, X, 1).\ndiff(Y, X, 0) <= not equal(Y, X).\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo prometheus" {
+  check_guess(
+    "\"this is a string\"\n'these are unescaped: \\n \\\\ \\t'\n`these are not unescaped: \\n ' \" \\t`\n\nhttp_requests_total{environment=~\"staging|testing|development\", method!=\"GET\"}\n\nhttp_requests_total offset 5m\n\nsum(http_requests_total{method=\"GET\"}[10m] offset 5m)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo properties" {
+  check_guess(
+    "# You are reading the \".properties\" entry.\n! The exclamation mark can also mark text as comments.\nwebsite = http\\://en.wikipedia.org/\nlanguage = English\ncountry : Poland\ncontinent=Europe\nkey.with.dots=This is the value that could be looked up with the key \"key.with.dots\".\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo protobuf" {
+  check_guess(
+    "message Person {\n  required string name = 1;\n  required int32 id = 2;\n  optional string email = 3;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo puppet" {
+  check_guess(
+    "service { 'ntp':\n  name      => $service_name,\n  ensure    => running,\n  enable    => true,\n  subscribe => File['ntp.conf'],\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo python" {
+  check_guess(
+    "def fib(n):    # write Fibonacci series up to n\n    \"\"\"Print a Fibonacci series up to n.\"\"\"\n    a, b = 0, 1\n    while a < n:\n        print a,\n        a, b = b, a+b\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo q" {
+  check_guess(
+    "/ comment\nx: til 10\n\ntab:([]a:1 2 3;b:`a `b `c);\n\nfunction:{[table]\n\tselect from table where b=`c\n\t};\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo qml" {
+  check_guess(
+    "import QtQuick 2.0\nItem {\n    width: 200\n    height: 100\n    MouseArea {\n        anchors.fill: parent\n        onClicked: Qt.quit()\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo r" {
+  check_guess(
+    "dbenford <- function(x){\n    log10(1 + 1/x)\n}\n\npbenford <- function(q){\n    cumprobs <- cumsum(dbenford(1:9))\n    return(cumprobs[q])\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo racket" {
+  check_guess(
+    "#lang racket\n\n;; draw a graph of cos and deriv^3(cos)\n(require plot)\n(define ((deriv f) x)\n  (/ (- (f x) (f (- x 0.001))) 0.001))\n(define (thrice f) (lambda (x) (f (f (f x)))))\n(plot (list (function ((thrice deriv) sin) -5 5)\n            (function cos -5 5 #:color 'blue)))\n\n;; Print the Greek alphabet\n(for ([i (in-range 25)])\n  (displayln\n   (integer->char\n    (+ i (char->integer #\\u3B1)))))\n\n;; An echo server\n(define listener (tcp-listen 12345))\n(let echo-server ()\n  (define-values (in out) (tcp-accept listener))\n  (thread (λ ()\n             (copy-port in out)\n             (close-output-port out)))\n  (echo-server))\n",
+    "racket",
+  )
+}
+
+///|
+test "rouge guess: demo reasonml" {
+  check_guess(
+    "/* I like a teacher who gives you something to take\n   home to think about besides homework. */\nlet gpa_score = 5.0;\ntype schoolPerson = Teacher | Director | Student(string);\n\nlet greeting = person =>\n  switch (person) {\n  | Teacher => \"Hey Professor!\"\n  | Director => \"Hello Director.\"\n  | Student(\"Richard\") => \"Still here Ricky?\"\n  | Student(anyOtherName) => \"Hey, \" ++ anyOtherName ++ \".\"\n  };\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo rego" {
+  check_guess(
+    "package httpapi.authz\n\nsubordinates = {\"alice\": [], \"charlie\": [], \"bob\": [\"alice\"], \"betty\": [\"charlie\"]}\n\n# HTTP API request\nimport input\n\ndefault allow = false\n",
+    "mosel",
+  )
+}
+
+///|
+test "rouge guess: demo rescript" {
+  check_guess(
+    "module Person = {\n  type t = Teacher | Director | Student(string)\n\n  let greeting = person =>\n    switch person {\n    | Teacher => \"Hey Professor!\"\n    | Director => \"Hello Director.\"\n    | Student(\"Richard\") => \"Still here Ricky?\"\n    | Student(other) => \"Hey, \" ++ other ++ \".\"\n    }\n}\n\nmodule Button = {\n  @react.component\n  let make = (~count: int, ~onClick) => {\n    let times = switch count {\n    | 1 => \"once\"\n    | 2 => \"twice\"\n    | n => Belt.Int.toString(n) ++ \" times\"\n    }\n\n    let msg = \"Click me \" ++ times\n\n    <button onClick> {msg->React.string} </button>\n  }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo robot_framework" {
+  check_guess(
+    "*** Settings ***\nDocument\t  Example taken from http://robotframework.org/\nSuite Setup       Open Browser To Login Page\nSuite Teardown    Close Browser\nTest Setup        Go To Login Page\nTest Template     Login With Invalid Credentials Should Fail\nResource          resource.txt\n\n*** Test Cases ***               User Name        Password\nInvalid Username                 invalid          ${VALID PASSWORD}\nInvalid Password                 ${VALID USER}    invalid\nInvalid Username And Password    invalid          whatever\nEmpty Username                   ${EMPTY}         ${VALID PASSWORD}\nEmpty Password                   ${VALID USER}    ${EMPTY}\nEmpty Username And Password      ${EMPTY}         ${EMPTY}\n\n*** Keywords ***\nLogin With Invalid Credentials Should Fail\n    [Arguments]    ${username}    ${password}\n    Input Username    ${username}\n    Input Password    ${password}\n    Submit Credentials\n    Login Should Have Failed\n\nLogin Should Have Failed\n    Location Should Be    ${ERROR URL}\n    Title Should Be    Error Page\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ruby" {
+  check_guess(
+    "class Greeter\n  def initialize(name=\"World\")\n    @name = name\n  end\n\n  def say_hi\n    puts \"Hi #{@name}!\"\n  end\nend\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo rust" {
+  check_guess(
+    "use core::*;\n\nfn main() {\n    for [\"Alice\", \"Bob\", \"Carol\"].each |&name| {\n        do task::spawn {\n            let v = rand::Rng().shuffle([1, 2, 3]);\n            for v.each |&num| {\n                io::print(fmt!(\"%s says: '%d'\\n\", name, num))\n            }\n        }\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sas" {
+  check_guess(
+    "data sim;\n    do i = 1 to 100;\n        x1 = rand(\"Normal\");\n        x2 = rand(\"Binomial\", 0.5, 100);\n        output;\n    end;\nrun;\n\nproc means data=sashelp.class;\n    class sex;\n    var height weight;\n    output out = mean_by_sex;\nrun;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sass" {
+  check_guess(
+    "@for $i from 1 through 3\n  .item-#{$i}\n    width: 2em * $i\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo scala" {
+  check_guess(
+    "class Greeter(name: String = \"World\") {\n  def sayHi() { println(\"Hi \" + name + \"!\") }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo scheme" {
+  check_guess(
+    "(define Y\n  (lambda (m)\n    ((lambda (f) (m (lambda (a) ((f f) a))))\n     (lambda (f) (m (lambda (a) ((f f) a)))))))\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo scss" {
+  check_guess(
+    "@for $i from 1 through 3 {\n  .item-#{$i} {\n    width: 2em * $i;\n  }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sed" {
+  check_guess(
+    "/begin/,/end/ {\n  /begin/n # skip over the line that has \"begin\" on it\n  s/old/new/\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo shell" {
+  check_guess(
+    "# If not running interactively, don't do anything\n[[ -z \"$PS1\" ]] && return\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sieve" {
+  check_guess(
+    "require \"fileinto\";\nrequire \"imap4flags\";\n\nif header :is \"X-Spam\" \"Yes\" {\n    fileinto \"Junk\";\n    setflag \"\\\\seen\";\n    stop;\n}\n\n/* Other messages get filed into Inbox or to user's scripts */\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo slice" {
+  check_guess(
+    "// Printer.ice\nmodule Demo\n{\n    interface Printer\n    {\n        // A client can invoke this operation on a server.\n        // In this example we print the string s\n        void printString(string s);\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo slim" {
+  check_guess(
+    "doctype html\nhtml\n  body\n    h1 Markup examples   \n    #content\n      p \n      | Slim can have #{ruby_code} interpolated!\n      /[if IE]\n        javascript:\n          alert('Slim supports embedded javascript!')\n\n      - unless items.empty?\n        table\n          - for item in items do\n            tr\n              td.name = item.name\n              td.price = item.price\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo smalltalk" {
+  check_guess(
+    "quadMultiply: i1 and: i2 \n    \"This method multiplies the given numbers by each other\n    and the result by 4.\"\n    | mul |\n    mul := i1 * i2.\n    ^mul * 4\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo smarty" {
+  check_guess(
+    "{foo bar='single quotes' baz=\"double quotes\" test3=$test3}\n\n<ul>\n  {foreach from=$myvariable item=data}\n    <li>{$data.field}</li>\n  {foreachelse}\n    <li>No Data</li>\n  {/foreach}\n</ul>\n\n<div class=\"{if $foo}class1{else}class2{/if}\">{$foo.bar.baz}</div>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sml" {
+  check_guess(
+    "datatype shape\n   = Circle   of loc * real      (* center and radius *)\n   | Square   of loc * real      (* upper-left corner and side length; axis-aligned *)\n   | Triangle of loc * loc * loc (* corners *)\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo solidity" {
+  check_guess(
+    "pragma solidity ~0.4.15;\n\ninterface IMirror {\n    function reflect() external payable returns(bool /* ain't I pretty?.. */);\n}\n\ncontract Mirror is IMirror {\n    event logMessage(address indexed sender, uint256 value, uint256 gas, bytes data);\n\n    function () { // no funny stuff\n       revert();\n    }\n}\n",
+    "solidity",
+  )
+}
+
+///|
+test "rouge guess: demo sparql" {
+  check_guess(
+    "SELECT ?item ?itemLabel\nWHERE\n{\n  ?item wdt:P31 wd:Q146.\n  SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE],en\". }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sqf" {
+  check_guess(
+    "// Creates a dot marker at the given position\n#include \"script_component.hpp\"\nparams [\"_pos\", \"_txt\"];\n\nif (isNil QGVAR(markerID)) then {\n    GVAR(markerID) = 0;\n};\n\n_markerstr = createMarker [QGVAR(marker) + str GVAR(markerID), _pos];\n_markerstr setMarkerShape \"ICON\";\n_markerstr setMarkerType \"hd_dot\";\n_markerstr setMarkerText _txt;\n\nGVAR(markerID) = GVAR(markerID) + 1;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo sql" {
+  check_guess("SELECT * FROM `users` WHERE `user`.`id` = 1\n", "")
+}
+
+///|
+test "rouge guess: demo ssh" {
+  check_guess(
+    "Host example\n    Hostname example.com\n    User user\n    Port 1234\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo stan" {
+  check_guess(
+    "data {\n  int<lower=0> N;\n  vector[N] x;\n  vector[N] y;\n}\nparameters {\n  real alpha;\n  real beta;\n  real<lower=0> sigma;\n}\nmodel {\n  y ~ normal(alpha + beta * x, sigma);\n}\n",
+    "mosel",
+  )
+}
+
+///|
+test "rouge guess: demo stata" {
+  check_guess(
+    "* Run a series of linear regressions\nsysuse auto, clear\nforeach v of varlist mpg weight-turn {\n\tregress price `v', robust\n}\n\nregress price i.foreign\nlocal num_obs = e(N)\nglobal myglobal = 4\n\n* Generate and manipulate variables\ngenerate newvar1 = \"string\"\ngenerate newvar2 = 34 - `num_obs'\nreplace newvar2 = $myglobal\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo supercollider" {
+  check_guess(
+    "// modulate a sine frequency and a noise amplitude with another sine\n// whose frequency depends on the horizontal mouse pointer position\n~myFunction = {\n        var x = SinOsc.ar(MouseX.kr(1, 100));\n        SinOsc.ar(300 * x + 800, 0, 0.1)\n        +\n        PinkNoise.ar(0.1 * x + 0.1)\n};\n\n~myFunction.play;\n\"that's all, folks!\".postln;\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo swift" {
+  check_guess(
+    "// Say hello to poeple\nfunc sayHello(personName: String) -> String {\n    let greeting = \"Hello, \" + personName + \"!\"\n    return greeting\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo systemd" {
+  check_guess(
+    "[Unit]\nDescription=Snap Daemon\nRequires=snapd.socket\nOnFailure=snapd.failure.service\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo syzlang" {
+  check_guess(
+    "include <linux/test.h>\n\nresource fd_test[fd]\n\nopenat$test(fd const[AT_FDCWD], file ptr[in, string[\"/dev/test\"]], flags flags[open_flags], mode const[0]) fd_test\n\nioctl$TEST(fd fd_test, cmd const[TEST], arg ptr[in, test])\n\ntest {\n\tnumber\tint32\n\tsize\tlen[data, int32]\n\tdata\tarray[int8]\n}\n\n_ = TEST\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo syzprog" {
+  check_guess(
+    "# Source: https://github.com/google/syzkaller/blob/master/sys/linux/test/vusb_hid\n\nr0 = syz_usb_connect$hid(0x0, 0x36, &(0x7f0000000040)=ANY=[@ANYBLOB=\"12010000000018105e04da07000000000001090224000100000000090400000903000000092100000001222200090581030800000000\"], 0x0)\nsyz_usb_control_io$hid(r0, 0x0, 0x0)\nsyz_usb_control_io$hid(r0, &(0x7f00000001c0)={0x24, 0x0, 0x0, &(0x7f0000000000)={0x0, 0x22, 0x22, {[@global=@item_012={0x2, 0x1, 0x9, \"2313\"}, @global=@item_012={0x2, 0x1, 0x0, \"e53f\"}, @global=@item_4={0x3, 0x1, 0x0, '\\f\\x00'}, @local=@item_012={0x2, 0x2, 0x2, \"9000\"}, @global=@item_4={0x3, 0x1, 0x0, \"0900be00\"}, @main=@item_4={0x3, 0x0, 0x8, '\\x00'}, @local=@item_4={0x3, 0x2, 0x0, \"09007a15\"}, @local=@item_4={0x3, 0x2, 0x0, \"5d8c3dda\"}]}}, 0x0}, 0x0)\nsyz_usb_ep_write(r0, 0x81, 0x7, &(0x7f0000000000)='BBBBBBB')\nsyz_usb_ep_write(r0, 0x81, 0x7, &(0x7f0000000000)='BBBBBBB')\nsyz_usb_ep_write(r0, 0x81, 0x7, &(0x7f0000000000)='BBBBBBB')\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo tap" {
+  check_guess(
+    "ok 1 - Input file opened\nnot ok 2 - First line of the input valid\nok 3 - Read the rest of the file\nnot ok 4 - Summarized correctly # TODO Not written yet\n1..4\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo tcl" {
+  check_guess("proc cross_sum {s} {expr [join [split $s \"\"] +]}\n", "")
+}
+
+///|
+test "rouge guess: demo terraform" {
+  check_guess(
+    "resource \"aws_elb\" \"web\" {\n  name = \"terraform-example-elb\"\n\n  # The same availability zone as our instances\n  availability_zones = [\"${aws_instance.web.*.availability_zone}\"]\n\n  listener {\n    instance_port     = 80\n    instance_protocol = \"http\"\n    lb_port           = 80\n    lb_protocol       = \"http\"\n  }\n\n  # The instances are registered automatically\n  instances = [\"${aws_instance.web.*.id}\"]\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo tex" {
+  check_guess("To write \\LaTeX\\ you would type \\verb:\\LaTeX:.\n", "")
+}
+
+///|
+test "rouge guess: demo toml" {
+  check_guess(
+    "# This is a TOML document. Boom.\n\ntitle = \"TOML Example\"\n\n[owner]\nname = \"Tom Preston-Werner\"\norganization = \"GitHub\"\nbio = \"GitHub Cofounder & CEO\\nLikes tater tots and beer.\"\ndob = 1979-05-27T07:32:00Z # First class dates? Why not?\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo tsx" {
+  check_guess(
+    "class HelloWorld extends React.Component<{date: Date}, void> {\n  render() {\n    return (\n      <p>\n        Hello, <input type=\"text\" placeholder=\"Your name here\" />!\n        It is {this.props.date.toTimeString()}\n      </p>\n    );\n  }\n}\n\nsetInterval(function() {\n  ReactDOM.render(\n    <HelloWorld date={new Date()} />,\n    document.getElementById('example')\n  );\n}, 500);\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo ttcn3" {
+  check_guess(
+    "module DNSTester {\n  type integer Identification( 0..65535 ); // 16-bit integer\n  type enumerated MessageKind {e_Question, e_Answer};\n  type charstring Question;\n  type charstring Answer;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo tulip" {
+  check_guess(
+    "@module ref\n\nref value = Ref (spawn [ ! => loop value ])\n\nloop value = receive [\n  .set new-value => loop new-value\n  p, id, .get => { send p (id, value); loop value }\n]\n\n@object Ref pid [\n  set val = .set val > send pid\n  get! = .get > send-wait pid\n]\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo turtle" {
+  check_guess(
+    "@prefix xsd:          <http://www.w3.org/2001/XMLSchema#>\n@prefix dcat:         <http://www.w3.org/ns/dcat#> .\n@prefix dcterms:      <http://purl.org/dc/terms/> .\n@prefix foaf:         <http://xmlns.com/foaf/0.1/> .\n@base                 <http://base.of.relative.iris> .\n\nPREFIX  test:         <http://example.org>\nPrEfIx  insensitive:  <http://insensitive.example.org>\n\nGRAPH <https://trig.testing.graph> {\n    <https://example.org/resource/dataset> a dcat:Dataset ; \n\n#-----Mandatory-----#\n\n    dcterms:title 'Test title'@cs, \"Test title\"@en ;\n    dcterms:description \"\"\"Multiline\n        string\"\"\"@cs, '''Another\n        multiline string '''@en ;\n\n#-----Recommended-----#\n    dcat:contactPoint [ a foaf:Person ] ;\n    test:list ( <http://ex.org> 1 1.1 +1 -1 1.2E+4 \"Test\" \"\\\"Quote\\\"\" ) ;\n    test:datatype \"2016-07-20\"^^xsd:date ;\n    test:text \"\"\"next multiline\"\"\";\n    .\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo twig" {
+  check_guess(
+    "{% include 'header.html' %}\n\n{% for user in users %}\n  * {{ user.name }}\n{% else %}\n  No users have been found.\n{% endfor %}\n\n{% include 'footer.html' %}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo typescript" {
+  check_guess("$(document).ready(function() { alert('ready!'); });\n", "")
+}
+
+///|
+test "rouge guess: demo vala" {
+  check_guess(
+    "class Demo.HelloWorld : GLib.Object\n{\n    public static int main (String[] args)\n    {\n        stdout.printf(\"Hello World\\n\");\n        return 0;\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo vb" {
+  check_guess(
+    "Private Sub Form_Load()\n    ' Execute a simple message box that says \"Hello, World!\"\n    MsgBox \"Hello, World!\"\nEnd Sub\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo vcl" {
+  check_guess(
+    "vcl 4.0;\n\nbackend server1 {\n      .host = \"server1.example.com\";\n      .probe = {\n              .url = \"/\";\n              .timeout = 1s;\n              .interval = 5s;\n              .window = 5;\n              .threshold = 3;\n      }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo velocity" {
+  check_guess(
+    "#*\n There is multi-line comment.\n see this text because the Velocity Templating Engine will ignore it.\n*#\n<h3>List</h3>\n## This is a single line comment.\n#if( $allProducts )\n<p>not found.</p>\n#end\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo verilog" {
+  check_guess(
+    "/**\n * Verilog Lexer\n */\nmodule Foo(\n  input logic Clk_CI,\n  input logic Rst_RBI,\n  input logic A,\n  input logic B,\n  output logic C\n);\n  logic C_DN, C_DP;\n\n  assign C = C_DP;\n\n  always_comb begin : proc_next_state\n    C_DN = A + B;\n  end\n\n  // Clocked process\n  always_ff @(posedge Clk_CI, negedge Rst_RBI) begin\n    if(~Rst_RBI) begin\n      C_DP <= 1'b0;\n    end else begin\n      C_DP <= C_DN;\n    end\n  end\nendmodule\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo vhdl" {
+  check_guess(
+    "entity toggle_demo is\r\n\tport (\r\n\t\tclk_in : in  std_logic; -- System Clock\r\n\t\tdata_q : out std_logic\t-- Toggling Port\r\n\t);\r\nend entity toggle_demo;\r\n\r\narchitecture RTL of toggle_demo is\r\n\tsignal data : std_logic := '0';\r\nbegin\r\n\r\n\tdata_q <= data;\r\n\r\n\tdata_proc : process (clk_in)\r\n\tbegin\r\n\t\r\n\t\tif (rising_edge(clk_in)) then\r\n\t\t\tdata <= not data;\r\n\t\tend if;\r\n\t\r\n\tend process; \r\n\r\nend architecture RTL;\r\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo viml" {
+  check_guess(
+    "function! s:Make(dir, make, format, name) abort\n  let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'\n  let cwd = getcwd()\n  let [mp, efm, cc] = [&l:mp, &l:efm, get(b:, 'current_compiler', '')]\n  try\n    execute cd fnameescape(dir)\n    let [&l:mp, &l:efm, b:current_compiler] = [a:make, a:format, a:compiler]\n    execute (exists(':Make') == 2 ? 'Make' : 'make')\n  finally\n    let [&l:mp, &l:efm, b:current_compiler] = [mp, efm, cc]\n    if empty(cc) | unlet! b:current_compiler | endif\n    execute cd fnameescape(cwd)\n  endtry\nendfunction\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo vue" {
+  check_guess(
+    "<template>\n  <div id=\"app\">\n    {{ message }}\n  </div>\n</template>\n\n<script lang=coffee>\n  app = new Vue\n    el: '#app'\n    data: { message: 'Hello Vue!' }\n</script>\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo wollok" {
+  check_guess(
+    "object pepita {\n    var energy = 100\n\n    method energy() = energy\n\n    method fly(kilometers) {\n        energy -= kilometers + 10\n    }\n\n    method sayHi() = \"Coo!\"\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo xml" {
+  check_guess(
+    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<xsl:template match=\"/\"></xsl:template>\n",
+    "xml",
+  )
+}
+
+///|
+test "rouge guess: demo xojo" {
+  check_guess(
+    "Dim f As FolderItem\nf = GetOpenFolderItem(FileTypes1.jpeg) // defined in the File Type Set editor\nrem - we should check for nil!\nIf not f.Exists Then\n  Beep 'Just for fun\n  MsgBox(\"The file \" + f.NativePath + \"doesn't \"\"exist.\"\"\")\nElse // document exists\n  ImageWell1.image=Picture.Open(f)\nEnd If\nif f isa folderitem then\n  msgbox(f.name)\nend if\nException err As NilObjectException\n  MsgBox(\"Invalid pathname!\")\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo xpath" {
+  check_guess(
+    "(: Authors named Bob Joe who didn't graduate from Harvard :)\n//author[first-name = \"Joe\" and last-name = \"Bob\"][degree/@from != \"Harvard\"]\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo xquery" {
+  check_guess(
+    "declare namespace html = \"http://www.w3.org/1999/xhtml\";\n\ndeclare function local:test-function($catalog as document-node()) {\n  <html>\n    <head>\n      <title>XQuery example for the Rouge highlighter</title>\n      <link href=\"style.css\"/>\n    </head>\n    <body>\n      <h1>List</h1>\n      <ul>\n        {for $product in $catalog/items/product[@sell-by > current-date()] return\n        <li>\n          <ul>\n            <li>{data($product/name)}</li>\n            <li>{$product/price * (1 + $product/tax)}$</li>\n          </ul>\n        </li>}\n      </ul>\n    </body>\n  </html>\n};\n",
+    "html",
+  )
+}
+
+///|
+test "rouge guess: demo yaml" {
+  check_guess(
+    "---\none: Mark McGwire\ntwo: Sammy Sosa\nthree: Ken Griffey\n", "",
+  )
+}
+
+///|
+test "rouge guess: demo yang" {
+  check_guess(
+    "module petstore {\n    namespace \"http://autlan.dt/gribok/yang/example\";\n    prefix ex;\n\n    revision 2020-04-01 {\n        description \"Example yang\";\n    }\n\n    container pets {\n        list dogs {\n            key name;\n            leaf name {\n                type string;\n            }\n        }\n    }\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: demo zig" {
+  check_guess(
+    "const std = @import(\"std\");\nconst warn = std.debug.warn;\n\nfn add_floats(x: f16, y: f16) f16 {\n    return x + y;\n}\n",
+    "",
+  )
+}
+
+///|
+test "rouge guess: php open tag" {
+  check_guess("<?php echo 1; ?>\n", "php")
+}
+
+///|
+test "rouge guess: hack open tag" {
+  check_guess("<?hh echo 1;\n", "hack")
+}
+
+///|
+test "rouge guess: python shebang" {
+  check_guess("#!/usr/bin/env python3\nprint(1)\n", "python")
+}
+
+///|
+test "rouge guess: shell shebang" {
+  check_guess("#!/bin/bash\necho hi\n", "shell")
+}
+
+///|
+test "rouge guess: vim modeline" {
+  check_guess("x = 1\n# vim: ft=ruby\n", "ruby")
+}
+
+///|
+test "rouge guess: emacs modeline" {
+  check_guess("# -*- mode: python -*-\nx = 1\n", "python")
+}
+
+///|
+test "rouge guess: html doctype" {
+  check_guess("<!DOCTYPE html>\n<html></html>\n", "html")
+}
+
+///|
+test "rouge guess: xml declaration" {
+  check_guess("<?xml version=\"1.0\"?>\n<a/>\n", "xml")
+}
+
+///|
+test "rouge guess: yaml directive" {
+  check_guess("%YAML 1.2\n---\na: 1\n", "yaml")
+}
+
+///|
+test "rouge guess: git diff" {
+  check_guess("diff --git a/x b/x\n--- a/x\n+++ b/x\n", "diff")
+}
+
+///|
+test "rouge guess: postscript and diff" {
+  check_guess("%!PS\n--- a\n+++ b\n", "diff,postscript")
+}
+
+///|
+test "rouge guess: plain words" {
+  check_guess("nothing to see here\n", "")
+}
+
+///|
+test "rouge guess: empty" {
+  check_guess("", "")
+}
+
+///|
+test "rouge guess: bom and crlf" {
+  check_guess("\u{feff}#!/usr/bin/perl\r\nprint 1;\r\n", "perl")
 }

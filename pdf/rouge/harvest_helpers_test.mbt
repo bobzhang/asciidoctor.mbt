@@ -53,3 +53,13 @@ fn check_lex(spec : String, input : String, expected : String) -> Unit raise {
     "\{spec}: Rouge has more tokens: \{want[tokens.length():].to_owned().join(" ")}",
   )
 }
+
+///|
+/// Compare `guess` with Rouge's `Lexer.guess(source:)`: the tags left,
+/// comma-separated (none: plain text, several: ambiguous).
+fn check_guess(source : String, expected : String) -> Unit raise {
+  let got = @rouge.guess(Some(source)).join(",")
+  if got != expected {
+    fail("guess: got [\{got}], Rouge has [\{expected}]")
+  }
+}

@@ -58,15 +58,23 @@ fn script_lexer_or_text(tag : String, options : Map[String, String]) -> Lexer {
 ///|
 /// Rouge's `Lexer.find_fancy(spec, code, default_options)`: the lexer of a
 /// language with cgi-style options, built with `defaults` and the options of
-/// `spec`; None when the language is unknown. Guessing (`guess`) is not
-/// supported: it gives plain text, which is what Rouge guesses for text no
-/// lexer recognizes.
-fn script_find_fancy(spec : String, defaults : Map[String, String]) -> Lexer? {
+/// `spec` (an option of `spec` replaces all the values `defaults` has for
+/// it); None when the language is unknown. `guess` guesses from `code`
+/// (`guess`; an ambiguous guess takes the first lexer, as Markdown does,
+/// and a guessed lexer that is not ported is plain text).
+fn script_find_fancy(
+  spec : String,
+  code : String?,
+  defaults : Map[String, String],
+) -> Lexer? {
   let options = defaults.copy()
   if !spec.contains("?") && spec != "guess" {
     return script_find(spec).map(f => f(options))
   }
   let (factory, opts) = (script_registry.val.1)(spec)
+  for k, _ in opts {
+    options.remove(all_values_key(k))
+  }
   for k, v in opts {
     options[k] = v
   }
@@ -76,7 +84,17 @@ fn script_find_fancy(spec : String, defaults : Map[String, String]) -> Lexer? {
   }
   match factory {
     Some(f) => Some(f(options))
-    None if name == "guess" => Some(plain_text(options))
+    None if name == "guess" =>
+      Some(
+        match guess(code, mimetype?=options.get("mimetype")).get(0) {
+          Some(tag) =>
+            match script_find(tag) {
+              Some(f) => f(options)
+              None => plain_text(options)
+            }
+          None => plain_text(options)
+        },
+      )
     None => None
   }
 }

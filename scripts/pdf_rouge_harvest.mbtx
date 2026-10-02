@@ -287,7 +287,59 @@ fn gen_tests(data : Json) -> (String, Int) {
     )
     count += 1
   }
+  for g in items(field(data, "guesses")) {
+    let f = items(g)
+    let tags = items(f[2]).map(str).join(",")
+    sb.write_string("\n///|\ntest \{lit("rouge guess: " + str(f[0]))} {\n")
+    sb.write_string(
+      "  check_guess(\n    \{lit(str(f[1]))},\n    \{lit(tags)},\n  )\n}\n",
+    )
+    count += 1
+  }
   (sb.to_string(), count)
+}
+
+///|
+/// Every lexer of Rouge, for guessing (lexers_data.mbt).
+fn gen_lexers(data : Json) -> String {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  sb.write_string(
+    "\n///|\n/// Every lexer of Rouge, in its order (`Lexer.all`): tag, aliases,\n/// mimetypes, and whether it has a `detect?` of its own.\nlet lexer_table : Array[(String, Array[String], Array[String], Bool)] = [\n",
+  )
+  for l in items(field(data, "lexers")) {
+    let f = items(l)
+    let strings = (j : Json) => "[\{items(j).map(s => lit(str(s))).join(", ")}]"
+    sb.write_string(
+      "  (\{lit(str(f[0]))}, \{strings(f[1])}, \{strings(f[2])}, \{boolean(f[3])}),\n",
+    )
+  }
+  sb.write_string("]\n")
+  sb.to_string()
+}
+
+///|
+/// The builtin tables of the ported Lua, PHP and MATLAB lexers compared
+/// with Rouge's, in full (keywords_wbtest.mbt).
+fn gen_keywords(data : Json) -> String {
+  let sb = StringBuilder()
+  sb.write_string(header)
+  guard field(data, "keywords") is Object(tables) else { return sb.to_string() }
+  let names = tables.keys().collect()
+  names.sort()
+  for name in names {
+    for entry in items(tables[name]) {
+      let f = items(entry)
+      let module_ = str(f[0])
+      let words = items(f[1]).map(str).join(" ")
+      let label = if module_ == "" { name } else { "\{name} \{module_}" }
+      sb.write_string("\n///|\ntest \{lit("rouge keywords: " + label)} {\n")
+      sb.write_string(
+        "  check_keywords(\{lit(name)}, \{lit(module_)}, \{lit(words)})\n}\n",
+      )
+    }
+  }
+  sb.to_string()
 }
 
 ///|
@@ -325,6 +377,16 @@ async fn main {
     gen_unicode(data),
     create_mode=CreateOrTruncate,
   )
+  @fs.write_file(
+    "\{out_dir}/lexers_data.mbt",
+    gen_lexers(data),
+    create_mode=CreateOrTruncate,
+  )
+  @fs.write_file(
+    "\{out_dir}/keywords_wbtest.mbt",
+    gen_keywords(data),
+    create_mode=CreateOrTruncate,
+  )
   let (tests, count) = gen_tests(data)
   @fs.write_file(
     "\{out_dir}/harvest_test.mbt",
@@ -334,6 +396,6 @@ async fn main {
   // the generated files in their formatted form
   ignore(@process.run("moon", ["-C", "pdf", "fmt"]))
   println(
-    "wrote \{out_dir}/{tokens,themes,unicode}_data.mbt and \{out_dir}/harvest_test.mbt (\{count} cases)",
+    "wrote \{out_dir}/{tokens,themes,unicode,lexers}_data.mbt, keywords_wbtest.mbt and \{out_dir}/harvest_test.mbt (\{count} cases)",
   )
 }

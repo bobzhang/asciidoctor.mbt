@@ -51,6 +51,8 @@ pub fn groovy(Map[String, String]) -> Lexer
 
 pub fn group_text(@regex.MatchData, Int) -> String
 
+pub fn guess(String?, mimetype? : String) -> Array[String]
+
 pub fn haskell(Map[String, String]) -> Lexer
 
 pub fn html(Map[String, String]) -> Lexer
