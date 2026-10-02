@@ -19,7 +19,8 @@ fn pdf_import_empty_source() -> Bytes raise {
 
 ///|
 /// Load `text` with `src.pdf`, `empty.pdf`, `bad.pdf` (not a PDF),
-/// `other.pdf` (one 500 x 50 page) and `indent-theme.yml` (sections
+/// `other.pdf` (one 500 x 50 page), `mixed.pdf` (page 1 without a
+/// usable media box, page 2 300 x 200) and `indent-theme.yml` (sections
 /// indented 36pt) beside it.
 fn pdf_import_load(text : String) -> @core.Node raise {
   register()
@@ -30,6 +31,7 @@ fn pdf_import_load(text : String) -> @core.Node raise {
   let other = @pagelayout.PageModel::new()
   other.pages.push({ width_pt: 500, height_pt: 50, items: [], })
   vfs.add_bytes("/doc/other.pdf", @pdf.render_pdf(other))
+  vfs.add_bytes("/doc/mixed.pdf", pdf_import_mixed_source())
   vfs.add_text(
     "/doc/indent-theme.yml", "extends: default\nsection:\n  indent: 36\n",
   )
@@ -329,4 +331,88 @@ test "documents with different PDF images convert independently" {
       content="[(500, 50, true)]",
     )
   }
+}
+
+///|
+/// A readable PDF whose page 1 has an empty media box and page 2 is
+/// 300 x 200.
+fn pdf_import_mixed_source() -> Bytes raise {
+  let document = @pdflite.pdf_document_empty()
+  let key = (text : String) => @pdfcore.pdf_name_of_bytes(@utf8.encode(text))
+  let root = document.add_object(PdfNull)
+  let page = (w : Int, h : Int) => {
+    document.add_object(
+      PdfDictionary([
+        (key("/Type"), PdfNameObject(key("/Page"))),
+        (key("/Parent"), PdfIndirect(root)),
+        (
+          key("/MediaBox"),
+          PdfArray([PdfInteger(0), PdfInteger(0), PdfInteger(w), PdfInteger(h)]),
+        ),
+      ]),
+    )
+  }
+  let first = page(0, 0)
+  let second = page(300, 200)
+  document.add_object_given_number(
+    root,
+    PdfDictionary([
+      (key("/Type"), PdfNameObject(key("/Pages"))),
+      (key("/Kids"), PdfArray([PdfIndirect(first), PdfIndirect(second)])),
+      (key("/Count"), PdfInteger(2)),
+    ]),
+  )
+  ignore(document.add_root(root, []))
+  @pdflite.pdf_write_document(document)
+}
+
+///|
+test "a background PDF page that fails leaves another page of the PDF alone" {
+  // recto takes page 1, which cannot be imported; verso page 2, which can
+  let pages = pdf_import_convert(
+    ":page-background-image-recto: image:mixed.pdf[page=1]\n:page-background-image-verso: image:mixed.pdf[page=2]\n\none\n\n<<<\n\ntwo\n\n<<<\n\nthree\n",
+  )
+  assert_eq(pages.map(p => p.2), [false, true, false])
+  let warnings = conversion_warnings().filter(w => {
+    w.contains("could not embed page background image: /doc/mixed.pdf;")
+  })
+  assert_eq(warnings.length(), 1)
+}
+
+///|
+test "a page list that selects nothing never reads the file" {
+  for pages in ["", ";", ","] {
+    let text = "image::bad.pdf[format=pdf,pages=\"\{pages}\"]\n\nafter\n"
+    assert_true(pdf_import_failure(text) is None)
+    debug_inspect(
+      pdf_import_convert(text),
+      content=(
+        #|[(595.28, 841.89, false)]
+      ),
+    )
+  }
+}
+
+///|
+test "an inline PDF image in a title that is not laid out does not warn" {
+  ignore(
+    pdf_import_convert(
+      "= Title\n:doctype: book\n\n[%notitle]\n== Hidden image:src.pdf[]\n\ntext\n",
+    ),
+  )
+  assert_true(
+    !conversion_warnings().iter().any(w => w.contains("could not embed image")),
+  )
+  // laid out, it warns once, though its paragraph is measured first
+  ignore(
+    pdf_import_convert(
+      "= Title\n:doctype: book\n\n== Shown\n\n[%unbreakable]\n--\ntext image:src.pdf[] text\n--\n",
+    ),
+  )
+  assert_eq(
+    conversion_warnings()
+    .filter(w => w.contains("could not embed image"))
+    .length(),
+    1,
+  )
 }

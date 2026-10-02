@@ -270,6 +270,15 @@ fn Converter::convert_pdf_image(
   data : Bytes,
 ) -> Unit {
   let flow = self.flow
+  // the pages to import come first: a `pages` list that selects none
+  // imports nothing, and prawn-templates never reads the file
+  let numbers = match node.attr("pages") {
+    Some(pages) => resolve_pagenums(pages)
+    None => [@cmp.maximum(ruby_to_i(node.attr("page").unwrap_or("")), 1)]
+  }
+  if numbers.is_empty() {
+    return
+  }
   // prawn-templates raises a TemplateError, which fails the conversion
   let pdf = read_pdf_pages(data) catch {
     error => {
@@ -283,18 +292,11 @@ fn Converter::convert_pdf_image(
     Some(id) => [id]
     None => []
   }
-  match node.attr("pages") {
-    Some(pages) =>
-      for i, number in resolve_pagenums(pages) {
-        if i == 0 {
-          ignore(self.import_pdf_page(pdf, number, replace~, dests~))
-        } else {
-          ignore(self.import_pdf_page(pdf, number, replace=true))
-        }
-      }
-    None => {
-      let number = @cmp.maximum(ruby_to_i(node.attr("page").unwrap_or("")), 1)
+  for i, number in numbers {
+    if i == 0 {
       ignore(self.import_pdf_page(pdf, number, replace~, dests~))
+    } else {
+      ignore(self.import_pdf_page(pdf, number, replace=true))
     }
   }
 }

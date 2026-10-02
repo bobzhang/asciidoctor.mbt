@@ -620,15 +620,18 @@ fn Converter::ink_page_backgrounds(
         } catch {
           TemplateError(message) => {
             // `init_page` rescues it: a warning, and the image is dropped
-            // for this side (and the facing side when it is the same), so it
-            // is reported once
+            // for this side, and for the facing side when it is the same
+            // image with the same options (the same page), so it is
+            // reported once
             warning(
               "could not embed page background image: \{path}; \{message}",
               self.doc,
             )
             let facing = if side == "recto" { "verso" } else { "recto" }
             for s in [facing, side] {
-              if by_side.get(s) is Some(Some(other)) && other.path == path {
+              if by_side.get(s) is Some(Some(other)) &&
+                other.path == path &&
+                other.pdf_page == Some(number) {
                 by_side[s] = None
               }
             }

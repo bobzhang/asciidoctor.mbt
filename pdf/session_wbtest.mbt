@@ -240,6 +240,8 @@ test "a document's image hooks size images against its own page" {
     width: "100",
     fit: None,
     svg: None,
+    dropped: None,
+    warned: false,
   })
   let hooks_a = document_hooks()
   activate_session(b)

@@ -275,6 +275,11 @@ priv struct InlineImage {
   /// an SVG image: the document (drawn at the size its line gives it), its
   /// path and the image node
   svg : (@svg.SvgDocument, String, @core.Node)?
+  /// an image the arranger drops, with the warning it logs when the line
+  /// holding it is laid out (outside dry runs), and whether it has: a
+  /// placeholder that takes no room beside the alt text
+  dropped : (String, @core.Node)?
+  mut warned : Bool
 }
 
 ///|
@@ -369,34 +374,51 @@ fn convert_inline_image(node : @core.Node) -> String {
         width,
         fit: node.attr("fit"),
         svg: svg_image,
+        dropped: None,
+        warned: false,
       })
       "<img src=\"\{index}\">"
     }
-    None => {
+    None =>
       // a missing image is its alt text in Ruby too; asciidoctor-pdf draws
       // GIF (with prawn-gmagick) images this backend cannot
       if bytes is Some(_) && format == "pdf" {
-        // Prawn cannot draw a PDF in a line either: the arranger drops it
-        // and, prawn-gmagick not being installed and the format being
-        // neither JPEG nor PNG (`recommend_prawn_gmagick?`), suggests it
-        if session().scratch == 0 {
-          warning(
-            "could not embed image: \{path}; image file is an unrecognised format; install prawn-gmagick gem to add support for PDF image format",
-            node,
-          )
+        // Prawn cannot draw a PDF in a line either: the arranger drops it,
+        // leaving the alt text, and (prawn-gmagick not being installed and
+        // the format being neither JPEG nor PNG, `recommend_prawn_gmagick?`)
+        // suggests prawn-gmagick when it lays the line out; an empty
+        // placeholder warns then (see `document_hooks`)
+        let index = session().inline_images.length()
+        session().inline_images.push({
+          data: Bytes::new(0),
+          mime: "application/pdf",
+          px_w: 1,
+          px_h: 1,
+          width: "0",
+          fit: None,
+          svg: None,
+          dropped: Some(
+            (
+              "could not embed image: \{path}; image file is an unrecognised format; install prawn-gmagick gem to add support for PDF image format",
+              node,
+            ),
+          ),
+          warned: false,
+        })
+        "[\{alt}&#93;<img src=\"\{index}\">"
+      } else {
+        if bytes is Some(_) && !svg {
+          unsupported("inline", "image \{target}", node)
         }
-      } else if bytes is Some(_) && !svg {
-        unsupported("inline", "image \{target}", node)
+        "[\{alt}&#93;"
       }
-      "[\{alt}&#93;"
-    }
   }
   match node.attr("link") {
     // Ruby's link annotation over an inline image names only the first
     // character of the anchor as its destination (`/Dest (_)` for
     // `link=#_section`), which this reproduces
     Some(link) if link.has_prefix("#") => {
-      let anchor = if img.has_prefix("<img") {
+      let anchor = if img.contains("<img") {
         String::from_iter(link.iter().drop(1).take(1))
       } else {
         link[1:].to_owned()
