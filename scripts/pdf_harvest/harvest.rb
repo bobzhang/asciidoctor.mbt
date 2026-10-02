@@ -554,34 +554,18 @@ module PdfHarvest
   # activated gems) when the spec file is loaded, so without Bundler the
   # Rouge and Pygments examples of source_spec.rb (and the ones that use
   # rouge elsewhere) would not even be defined. Activate the highlighters
-  # the way Bundler does: rouge and coderay from the Gemfile, pygments.rb as
-  # asciidoctor-pdf's CI installs it (PYGMENTS_VERSION '~> 2.0').
-  HIGHLIGHTER_GEMS = %w(rouge coderay pygments.rb)
-
+  # the way Bundler does, at the versions scripts/pdf_harvest.mbtx pins and
+  # passes as PDF_HARVEST_HIGHLIGHTERS (`name=version,...`): rouge and
+  # coderay from the Gemfile, pygments.rb as asciidoctor-pdf's CI installs it
+  # (PYGMENTS_VERSION '~> 2.0'); another version in the gem homes is not
+  # picked up.
   def self.activate_highlighters
-    HIGHLIGHTER_GEMS.each {|name| gem name }
-    restore_cgi_parse
-  end
-
-  # Rouge 3.30 reads cgi-style lexer options (`[source,php?start_inline=1]`,
-  # Lexer.lookup_fancy) with CGI.parse, which Ruby 4.0 dropped together with
-  # the rest of the cgi library (only cgi/escape is left). Restore it as the
-  # cgi gem defines it, so that those conversions behave as on the Rubies
-  # asciidoctor-pdf 2.3.27 supports.
-  def self.restore_cgi_parse
-    require 'cgi'
-    return if CGI.respond_to? :parse
-    def CGI.parse query
-      params = {}
-      query.split(/[&;]/).each do |pairs|
-        key, value = pairs.split('=', 2).collect {|v| CGI.unescape v }
-        next unless key
-        params[key] ||= []
-        params[key].push value if value
-      end
-      params.default = [].freeze
-      params
+    ENV.fetch('PDF_HARVEST_HIGHLIGHTERS').split(',').each do |pinned|
+      name, version = pinned.split '=', 2
+      gem name, version
     end
+    # CGI.parse for Rouge on Ruby 4.0
+    require_relative 'cgi_parse'
   end
 
   def self.install

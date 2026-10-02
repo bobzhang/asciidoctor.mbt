@@ -172,6 +172,9 @@ async fn configure_oracle(ruby_flag : String?, gems_flag : String?) -> Unit {
   ruby_exe.val = ruby
   let dir = setting(gems_flag, "ASCIIDOCTOR_PDF_GEMS").unwrap_or(".repos/gems-pdf")
   gem_home.val = @fs.realpath(dir) catch { _ => dir }
+  cgi_parse_shim.val = @fs.realpath(cgi_parse_shim.val) catch {
+    _ => cgi_parse_shim.val
+  }
 }
 
 ///|
@@ -185,10 +188,20 @@ fn gems() -> String {
 }
 
 ///|
-/// The environment the oracle runs in: its gems only.
+/// The environment the oracle runs in: its gems only, and CGI.parse
+/// restored for Rouge on Ruby 4.0 (scripts/pdf_harvest/cgi_parse.rb, as the
+/// harvest loads it).
 fn gem_env() -> Map[String, String] {
-  { "GEM_HOME": gem_home.val, "GEM_PATH": gem_home.val }
+  {
+    "GEM_HOME": gem_home.val,
+    "GEM_PATH": gem_home.val,
+    "RUBYOPT": "-r\{cgi_parse_shim.val}",
+  }
 }
+
+///|
+/// scripts/pdf_harvest/cgi_parse.rb, absolute (see `configure_oracle`).
+let cgi_parse_shim : Ref[String] = { val: "scripts/pdf_harvest/cgi_parse.rb" }
 
 ///|
 let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"

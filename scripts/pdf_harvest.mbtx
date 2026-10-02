@@ -397,6 +397,11 @@ async fn main {
   harvest_env["PDF_HARVEST_OUT"] = out_dir
   harvest_env["PDF_HARVEST_PDFS"] = staged_pdfs
   harvest_env["PDF_HARVEST_GEMS"] = "\{@fs.realpath(runtime_gems.val)}:\{@fs.realpath(spec_gems.val)}"
+  // the highlighters harvest.rb activates, at their pinned versions
+  harvest_env["PDF_HARVEST_HIGHLIGHTERS"] = pinned_gems
+    .filter(g => [ "rouge", "coderay", "pygments.rb" ].contains(g.0))
+    .map(g => "\{g.0}=\{g.1}")
+    .join(",")
   let rspec_args = [
     "\{spec_gems.val}/bin/rspec", "--require", "\{root}/scripts/pdf_harvest/harvest.rb",
     "--format", "progress", ..specs,

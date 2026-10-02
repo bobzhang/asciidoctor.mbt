@@ -7,7 +7,7 @@ conversions recorded: 2536 in 45 spec files
     of which with a pdf_theme option or pdf-theme/pdf-themesdir attribute: 1176 (the replay also counts pdf-fontsdir and media=print/prepress as theme-dependent)
   skipped (cannot be expressed as input + options): 115
 records with spec-created files inlined: 66
-reference PDFs: 46636454 bytes in _build/pdf-spec-cache/pdfs (not committed)
+reference PDFs: 46636541 bytes in _build/pdf-spec-cache/pdfs (not committed)
 
 skipped by reason:
   34	converter subclass or custom converter
