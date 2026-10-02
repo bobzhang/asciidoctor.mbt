@@ -34,6 +34,54 @@ test "rouge: erb: visual sample" {
 }
 
 ///|
+test "rouge: ini: demo" {
+  check_lex(
+    "ini", "; last modified 1 April 2001 by John Doe\n[owner]\nname=John Doe\norganization=Acme Widgets Inc.\n",
+    "c:41 nn:7 :1 py:4 p:1 s:8 :1 py:12 p:1 s:17 :1",
+  )
+}
+
+///|
+test "rouge: ini: visual sample" {
+  check_lex(
+    "ini", "##### a gitconfig #####\n[core]\n  editor = gvim -v\n  excludesfile = ~/.gitignore\n  # autocrlf = input\n[user]\n  name = Jeanine Adkisson\n  email = somebody@somewhere.place\n[github]\n  user = jneen\n  token = \"asdfasdfasdf\"\n[color]\n  branch = auto\n  diff = auto\n  interactive = auto\n  status = auto\n[merge]\n  defaultToUpstream = true\n  conflictStyle = diff3\n[push]\n  default = upstream\n[alias]\n  co = checkout\n\n  rs = reset\n\n  ci = commit -v\n  c  = commit -v\n\n  st = status\n  s  = status\n\n  b = branch\n  br = branch\n  d = diff\n  dc = diff --cached\n\n  a  = add\n  ap = add --patch\n  ae = add --edit\n\n  ps = push\n  fe = fetch\n\n  sh = stash\n\n  # fast-forward\n  ff = merge --ff-only\n  # merge-commit\n  mc = merge --no-ff\n\n  rr = rebase origin\n\n  lg = log --decorate --graph --date=local\n\n  root = rev-parse --show-toplevel\n  head = rev-parse HEAD\n\n;;;;;;  SYSTEM.INI ;;;;;;\n; for 16-bit app support\n[drivers]\nwave=mmdrv.dll\ntimer=timer.drv\n[mci]\n[driver32]\n[386enh]\nwoafont=dosapp.FON\nEGA80WOA.FON=EGA80WOA.FON\nEGA40WOA.FON=EGA40WOA.FON\nCGA80WOA.FON=CGA80WOA.FON\nCGA40WOA.FON=CGA40WOA.FON\n\n## Other ##\n[section-name]\nfoo-bar_ = baz\n",
+    "c:24 nn:6 :3 py:6 :1 p:1 :1 s:7 :3 py:12 :1 p:1 :1 s:12 :3 c:19 nn:6 :3 py:4 :1 p:1 :1 s:16 :3 py:5 :1 p:1 :1 s:24 :1 nn:8 :3 py:4 :1 p:1 :1 s:5 :3 py:5 :1 p:1 :1 s:14 :1 nn:7 :3 py:6 :1 p:1 :1 s:4 :3 py:4 :1 p:1 :1 s:4 :3 py:11 :1 p:1 :1 s:4 :3 py:6 :1 p:1 :1 s:4 :1 nn:7 :3 py:17 :1 p:1 :1 s:4 :3 py:13 :1 p:1 :1 s:5 :1 nn:6 :3 py:7 :1 p:1 :1 s:8 :1 nn:7 :3 py:2 :1 p:1 :1 s:8 :4 py:2 :1 p:1 :1 s:5 :4 py:2 :1 p:1 :1 s:9 :3 py:1 :2 p:1 :1 s:9 :4 py:2 :1 p:1 :1 s:6 :3 py:1 :2 p:1 :1 s:6 :4 py:1 :1 p:1 :1 s:6 :3 py:2 :1 p:1 :1 s:6 :3 py:1 :1 p:1 :1 s:4 :3 py:2 :1 p:1 :1 s:13 :4 py:1 :2 p:1 :1 s:3 :3 py:2 :1 p:1 :1 s:11 :3 py:2 :1 p:1 :1 s:10 :4 py:2 :1 p:1 :1 s:4 :3 py:2 :1 p:1 :1 s:5 :4 py:2 :1 p:1 :1 s:5 :4 c:15 :2 py:2 :1 p:1 :1 s:15 :3 c:15 :2 py:2 :1 p:1 :1 s:13 :4 py:2 :1 p:1 :1 s:13 :4 py:2 :1 p:1 :1 s:35 :4 py:4 :1 p:1 :1 s:25 :3 py:4 :1 p:1 :1 s:14 :2 c:51 nn:9 :1 py:4 p:1 s:9 :1 py:5 p:1 s:9 :1 nn:5 :1 nn:10 :1 nn:8 :1 py:7 p:1 s:10 :1 py:12 p:1 s:12 :1 py:12 p:1 s:12 :1 py:12 p:1 s:12 :1 py:12 p:1 s:12 :2 c:12 nn:14 :1 py:8 :1 p:1 :1 s:3 :1",
+  )
+}
+
+///|
+test "rouge: irb: demo" {
+  check_lex(
+    "irb", "irb(main):001:0> puts \"Hello, world!\"\nHello, world!\nirb(main):002:0> Object.new\n=> #<Object:0x0056182cb182b8>\n",
+    "gp:16 w:1 nb:4 :1 s2:15 :1 go:14 gp:16 w:1 no:6 p:1 nf:3 :1 p:2 :1 kt:2 no:6 p:1 mh:16 kt:1 :1",
+  )
+}
+
+///|
+test "rouge: irb: visual sample" {
+  check_lex(
+    "irb", "irb(main):001:0> puts <<XYZ\nirb(main):002:0\" a\nirb(main):003:0\" b\nirb(main):004:0\" XYZ\na\nb\n=> nil\nirb(main):005:0> \n\n\n\n[1] pry(main)> o = Object.new\n=> #<Object:0x0056182cb182b8>\n[2] pry(main)> o.instance_variable_set(:@foo, Object.new); o\n=> #<Object:0x0056182cb182b8 @foo=#<Object:0x0056182cb63100>>\n[3] pry(main)> o.instance_variable_get(:@foo).instance_variable_set(:@bar, 3)\n=> 3\n[4] pry(main)> o\n=> #<Object:0x0056182cb182b8 @foo=#<Object:0x0056182cb63100 @bar=3>>\n[5] pry(main)> \n\nirb(main):001:0> puts \"Hello, world!\"; 3\nHello, world!\n=> 3\n\n[1] pry(main)> User\n=> User(id: integer, email: string, encrypted_password: string, reset_password_token: string, reset_password_sent_at: datetime, remember_created_at: datetime, sign_in_count: integer, current_sign_in_at: datetime, last_sign_in_at: datetime, current_sign_in_ip: string, last_sign_in_ip: string, created_at: datetime, updated_at: datetime, name: string, admin: boolean, projects_limit: integer, skype: string, linkedin: string, twitter: string, authentication_token: string, bio: string, failed_attempts: integer, locked_at: datetime, username: string, can_create_group: boolean, can_create_team: boolean, state: string, color_scheme_id: integer, password_expires_at: datetime, created_by_id: integer, last_credential_check_at: datetime, avatar: string, confirmation_token: string, confirmed_at: datetime, confirmation_sent_at: datetime, unconfirmed_email: string, hide_no_ssh_key: boolean, website_url: string, notification_email: string, hide_no_password: boolean, password_automatically_set: boolean, location: string, encrypted_otp_secret: string, encrypted_otp_secret_iv: string, encrypted_otp_secret_salt: string, otp_required_for_login: boolean, otp_backup_codes: text, public_email: string, dashboard: integer, project_view: integer, consumed_timestep: integer, layout: integer, hide_project_limit: boolean, unlock_token: string, otp_grace_period_started_at: datetime, ldap_email: boolean, external: boolean, incoming_email_token: string, organization: string, authorized_projects_populated: boolean, ghost: boolean, last_activity_on: date, notified_of_own_activity: boolean, require_two_factor_authentication_from_group: boolean, two_factor_grace_period: integer)\n\n[2] pry(main)> User.new\n  ActiveRecord::SchemaMigration Load (0.3ms)  SELECT \"schema_migrations\".* FROM \"schema_migrations\"\n  ActiveRecord::SchemaMigration Load (0.3ms)  SELECT \"schema_migrations\".* FROM \"schema_migrations\"\n=> #<User id: nil, email: \"\", created_at: nil, updated_at: nil, name: nil, admin: false, projects_limit: 100000, skype: \"\", linkedin: \"\", twitter: \"\", authentication_token: nil, bio: nil, username: nil, can_create_group: true, can_create_team: false, state: \"active\", color_scheme_id: 1, password_expires_at: nil, created_by_id: nil, last_credential_check_at: nil, avatar: nil, hide_no_ssh_key: false, website_url: \"\", notification_email: nil, hide_no_password: false, password_automatically_set: false, location: nil, encrypted_otp_secret: nil, encrypted_otp_secret_iv: nil, encrypted_otp_secret_salt: nil, otp_required_for_login: false, otp_backup_codes: nil, public_email: \"\", dashboard: 0, project_view: 2, consumed_timestep: nil, layout: 0, hide_project_limit: false, otp_grace_period_started_at: nil, ldap_email: false, external: false, incoming_email_token: nil, organization: nil, authorized_projects_populated: nil, ghost: nil, last_activity_on: nil, notified_of_own_activity: false, require_two_factor_authentication_from_group: false, two_factor_grace_period: 48>\n\n[5] pry(main)> raise 'hello'\nRuntimeError: hello\nfrom (pry):5:in `__pry__'\n[6] pry(main)> puts 'hello'\nhello\n",
+    "gp:16 w:1 nb:4 :1 o:2 no:3 sh:1 gp:16 w:1 sh:2 gp:16 w:1 sh:2 gp:16 w:1 no:3 :1 go:4 p:2 :1 kp:3 :1 gp:16 w:2 err:3 gp:14 w:1 n:1 :1 o:1 :1 no:6 p:1 nf:3 :1 p:2 :1 kt:2 no:6 p:1 mh:16 kt:1 :1 gp:14 w:1 n:1 p:1 nf:21 p:1 ss:5 p:1 :1 no:6 p:1 nf:3 p:2 :1 n:1 :1 p:2 :1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 kt:2 no:6 p:1 mh:16 kt:2 :1 gp:14 w:1 n:1 p:1 nf:21 p:1 ss:5 p:2 nf:21 p:1 ss:5 p:1 :1 mi:1 p:1 :1 p:2 :1 mi:1 :1 gp:14 w:1 n:1 :1 p:2 :1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 mi:1 kt:2 :1 gp:14 w:2 err:1 gp:16 w:1 nb:4 :1 s2:15 p:1 :1 mi:1 :1 go:14 p:2 :1 mi:1 :2 gp:14 w:1 no:4 :1 p:2 :1 no:4 p:1 ss:4 n:7 p:1 :1 ss:7 n:6 p:1 :1 ss:20 n:6 p:1 :1 ss:22 n:6 p:1 :1 ss:24 n:8 p:1 :1 ss:21 n:8 p:1 :1 ss:15 n:7 p:1 :1 ss:20 n:8 p:1 :1 ss:17 n:8 p:1 :1 ss:20 n:6 p:1 :1 ss:17 n:6 p:1 :1 ss:12 n:8 p:1 :1 ss:12 n:8 p:1 :1 ss:6 n:6 p:1 :1 ss:7 n:7 p:1 :1 ss:16 n:7 p:1 :1 ss:7 n:6 p:1 :1 ss:10 n:6 p:1 :1 ss:9 n:6 p:1 :1 ss:22 n:6 p:1 :1 ss:5 n:6 p:1 :1 ss:17 n:7 p:1 :1 ss:11 n:8 p:1 :1 ss:10 n:6 p:1 :1 ss:18 n:7 p:1 :1 ss:17 n:7 p:1 :1 ss:7 n:6 p:1 :1 ss:17 n:7 p:1 :1 ss:21 n:8 p:1 :1 ss:15 n:7 p:1 :1 ss:26 n:8 p:1 :1 ss:8 n:6 p:1 :1 ss:20 n:6 p:1 :1 ss:14 n:8 p:1 :1 ss:22 n:8 p:1 :1 ss:19 n:6 p:1 :1 ss:17 n:7 p:1 :1 ss:13 n:6 p:1 :1 ss:20 n:6 p:1 :1 ss:18 n:7 p:1 :1 ss:28 n:7 p:1 :1 ss:10 n:6 p:1 :1 ss:22 n:6 p:1 :1 ss:25 n:6 p:1 :1 ss:27 n:6 p:1 :1 ss:24 n:7 p:1 :1 ss:18 n:4 p:1 :1 ss:14 n:6 p:1 :1 ss:11 n:7 p:1 :1 ss:14 n:7 p:1 :1 ss:19 n:7 p:1 :1 ss:8 n:7 p:1 :1 ss:20 n:7 p:1 :1 ss:14 n:6 p:1 :1 ss:29 n:8 p:1 :1 ss:12 n:7 p:1 :1 ss:10 n:7 p:1 :1 ss:22 n:6 p:1 :1 ss:14 n:6 p:1 :1 ss:31 n:7 p:1 :1 ss:7 n:7 p:1 :1 ss:18 n:4 p:1 :1 ss:26 n:7 p:1 :1 ss:46 n:7 p:1 :1 ss:25 n:7 p:1 :2 gp:14 w:1 no:4 p:1 nf:3 :1 go:200 p:2 :1 kt:2 no:4 :1 ss:4 kp:3 p:1 :1 ss:7 s2:2 p:1 :1 ss:12 kp:3 p:1 :1 ss:12 kp:3 p:1 :1 ss:6 kp:3 p:1 :1 ss:7 kp:5 p:1 :1 ss:16 mi:6 p:1 :1 ss:7 s2:2 p:1 :1 ss:10 s2:2 p:1 :1 ss:9 s2:2 p:1 :1 ss:22 kp:3 p:1 :1 ss:5 kp:3 p:1 :1 ss:10 kp:3 p:1 :1 ss:18 kp:4 p:1 :1 ss:17 kp:5 p:1 :1 ss:7 s2:8 p:1 :1 ss:17 mi:1 p:1 :1 ss:21 kp:3 p:1 :1 ss:15 kp:3 p:1 :1 ss:26 kp:3 p:1 :1 ss:8 kp:3 p:1 :1 ss:17 kp:5 p:1 :1 ss:13 s2:2 p:1 :1 ss:20 kp:3 p:1 :1 ss:18 kp:5 p:1 :1 ss:28 kp:5 p:1 :1 ss:10 kp:3 p:1 :1 ss:22 kp:3 p:1 :1 ss:25 kp:3 p:1 :1 ss:27 kp:3 p:1 :1 ss:24 kp:5 p:1 :1 ss:18 kp:3 p:1 :1 ss:14 s2:2 p:1 :1 ss:11 mi:1 p:1 :1 ss:14 mi:1 p:1 :1 ss:19 kp:3 p:1 :1 ss:8 mi:1 p:1 :1 ss:20 kp:5 p:1 :1 ss:29 kp:3 p:1 :1 ss:12 kp:5 p:1 :1 ss:10 kp:5 p:1 :1 ss:22 kp:3 p:1 :1 ss:14 kp:3 p:1 :1 ss:31 kp:3 p:1 :1 ss:7 kp:3 p:1 :1 ss:18 kp:3 p:1 :1 ss:26 kp:5 p:1 :1 ss:46 kp:5 p:1 :1 ss:25 mi:2 kt:1 :2 gp:14 w:1 k:5 :1 s1:7 :1 gr:46 gp:14 w:1 nb:4 :1 s1:7 :1 go:6",
+  )
+}
+
+///|
+test "rouge: irb_output: demo" {
+  check_lex(
+    "irb_output", "hello world\n=> #<Object:0x0056182cb182b8 @foo=#<Object:0x0056182cb63100 @bar=3>>\n",
+    "go:12 p:2 :1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 mi:1 kt:2 :1",
+  )
+}
+
+///|
+test "rouge: irb_output: visual sample" {
+  check_lex(
+    "irb_output", "{ this => is stdout text }\n=> #<Object:0x0056182cb182b8 @foo=#<Object:0x0056182cb63100 @bar=3>>\n",
+    "go:27 p:2 :1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 kt:2 no:6 p:1 mh:16 :1 vi:4 o:1 mi:1 kt:2 :1",
+  )
+}
+
+///|
 test "rouge: jsx: demo" {
   check_lex(
     "jsx", "var HelloWorld = React.createClass({\n  render: function() {\n    return (\n      <p>\n        Hello, <input type=\"text\" placeholder=\"Your name here\" />!\n        It is {this.props.date.toTimeString()}\n      </p>\n    );\n  }\n});\n\nsetInterval(function() {\n  ReactDOM.render(\n    <HelloWorld date={new Date()} />,\n    document.getElementById('example')\n  );\n}, 500);\n",
@@ -46,6 +94,21 @@ test "rouge: jsx: visual sample" {
   check_lex(
     "jsx", "<header className=\"App-header\">\n  Hello React!\n</header>\n\nvar myDivElement = <div className=\"foo\" />;\nReactDOM.render(myDivElement, document.getElementById('example'));\n\nvar MyComponent = React.createClass({/*...*/});\nvar myElement = <MyComponent someProperty={true} />;\nReactDOM.render(myElement, document.getElementById('example'));\n\nvar myElement = <MyComponent someProperty={{a:true}.a} />;\nvar myElement = <MyComponent someProperty={function() {\n  var x = { a: true };\n  return x.a;\n}} />\n\nthing.otherThing<MyComponent.property // comment - this is comparison\nvar myElement = <MyComponent thing={thing.otherThing>2}>\n  hello, world!\n</MyComponent>\n\nvar content = <Container>{window.isLoggedIn ? <Nav /> : <Login />}</Container>;\n\n// These two are equivalent in JSX for disabling a button\n<input type=\"button\" disabled />;\n<input type=\"button\" disabled={true} />;\n\n// And these two are equivalent in JSX for not disabling a button\n<input type=\"button\" />;\n<input type=\"button\" disabled={false} />;\n\nvar App = (\n  <Form>\n    <Form.Row>\n      <Form.Label />\n      <Form.Input />\n    </Form.Row>\n  </Form>\n);\n\nvar content = (\n  <Nav>\n    {/* child comment, put {} around */}\n    a slash-star that isn't a comment because this is html: /*\n    <Person\n      /* multi\n         line\n         comment */\n      name={window.isLoggedIn ? window.name : ''} // end of line comment\n    />\n  </Nav>\n);\n\nvar thing = <A b={function() { var c = <D e={true}>&quot;</D>; }()}/>\n\nclass LikeButton extends React.Component {\n  constructor() {\n    super();\n    this.state = {\n      liked: false\n    };\n    this.handleClick = this.handleClick.bind(this);\n  }\n  handleClick() {\n    this.setState({liked: !this.state.liked});\n  }\n  render() {\n    const text = this.state.liked ? 'liked' : 'haven\\'t liked';\n    return (\n      <div onClick={this.handleClick}>\n        You {text} this. Click to toggle.\n      </div>\n    );\n  }\n}\n\nReactDOM.render(\n  <LikeButton />,\n  document.getElementById('example')\n);\n",
     "p:1 nt:6 :1 na:9 p:1 s:12 p:1 :16 p:2 nt:6 p:1 :2 kd:3 :1 nx:12 :1 o:1 :1 p:1 nt:3 :1 na:9 p:1 s:5 :1 p:3 :1 nx:8 p:1 nx:6 p:1 nx:12 p:1 :1 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:3 :2 kd:3 :1 nx:11 :1 o:1 :1 nx:5 p:1 nx:11 p:2 cm:7 p:3 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 kc:4 si:1 :1 p:3 :1 nx:8 p:1 nx:6 p:1 nx:9 p:1 :1 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:3 :2 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 p:1 na:1 p:1 kc:4 p:2 nx:1 si:1 :1 p:3 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 kd:8 p:2 :1 p:1 :3 kd:3 :1 nx:1 :1 o:1 :1 p:1 :1 na:1 p:1 :1 kc:4 :1 p:2 :3 k:6 :1 nx:1 p:1 nx:1 p:1 :1 p:1 si:1 :1 p:2 :2 nx:5 p:1 nx:10 o:1 nx:11 p:1 nx:8 :1 c1:31 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:5 p:1 si:1 nx:5 p:1 nx:10 o:1 mi:1 si:1 p:1 :17 p:2 nc:11 p:1 :2 kd:3 :1 nx:7 :1 o:1 :1 p:1 nc:9 p:1 si:1 nb:6 p:1 nx:10 :1 p:1 :1 p:1 nc:3 :1 p:2 :1 p:1 :1 p:1 nc:5 :1 p:2 si:1 p:2 nc:9 p:2 :2 c1:57 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 :1 p:3 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 p:1 si:1 kc:4 si:1 :1 p:3 :2 c1:65 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 p:3 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 p:1 si:1 kc:5 si:1 :1 p:3 :2 kd:3 :1 nx:3 :1 o:1 :1 p:1 :3 p:1 nc:4 p:1 :5 p:1 nc:4 p:1 nc:3 p:1 :7 p:1 nc:4 p:1 nc:5 :1 p:2 :7 p:1 nc:4 p:1 nc:5 :1 p:2 :5 p:2 nc:4 p:1 nc:3 p:1 :3 p:2 nc:4 p:1 :1 p:2 :2 kd:3 :1 nx:7 :1 o:1 :1 p:1 :3 p:1 nc:3 p:1 :5 si:1 cm:34 si:1 :68 p:1 nc:6 :7 cm:42 :7 na:4 p:1 si:1 nb:6 p:1 nx:10 :1 p:1 :1 nb:6 p:1 nx:4 :1 p:1 :1 dl:2 si:1 :1 c1:22 :5 p:2 :3 p:2 nc:3 p:1 :1 p:2 :2 kd:3 :1 nx:5 :1 o:1 :1 p:1 nc:1 :1 na:1 p:1 si:1 kd:8 p:2 :1 p:1 :1 kd:3 :1 nx:1 :1 o:1 :1 p:1 nc:1 :1 na:1 p:1 si:1 kc:4 si:1 p:1 ni:6 p:2 nc:1 p:2 :1 p:3 si:1 p:2 :2 kd:5 :1 nx:10 :1 kd:7 :1 nx:5 p:1 nx:9 :1 p:1 :3 kd:11 p:2 :1 p:1 :5 k:5 p:3 :5 k:4 p:1 nx:5 :1 o:1 :1 p:1 :7 na:5 p:1 :1 kc:5 :5 p:2 :5 k:4 p:1 nx:11 :1 o:1 :1 k:4 p:1 nx:11 p:1 nx:4 p:1 k:4 p:2 :3 p:1 :3 nx:11 p:2 :1 p:1 :5 k:4 p:1 nx:8 p:2 na:5 p:1 :1 o:1 k:4 p:1 nx:5 p:1 nx:5 p:3 :3 p:1 :3 nx:6 p:2 :1 p:1 :5 kd:5 :1 nx:4 :1 o:1 :1 k:4 p:1 nx:5 p:1 nx:5 :1 p:1 :1 dl:1 s1:5 dl:1 :1 p:1 :1 dl:1 s1:5 se:2 s1:7 dl:1 p:1 :5 k:6 :1 p:1 :7 p:1 nt:3 :1 na:7 p:1 si:1 k:4 p:1 nx:11 si:1 p:1 :13 si:1 nx:4 si:1 :30 p:2 nt:3 p:1 :5 p:2 :3 p:1 :1 p:1 :2 nx:8 p:1 nx:6 p:1 :3 p:1 nc:10 :1 p:3 :3 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:1 :1 p:2 :1",
+  )
+}
+
+///|
+test "rouge: sql: demo" {
+  check_lex(
+    "sql", "SELECT * FROM `users` WHERE `user`.`id` = 1\n", "k:6 :1 o:1 :1 k:4 :1 nv:7 :1 k:5 :1 nv:6 p:1 nv:4 :1 o:1 :1 mi:1 :1",
+  )
+}
+
+///|
+test "rouge: sql: visual sample" {
+  check_lex(
+    "sql", "SELECT e.first_name, e.last_name, d.department_name\nFROM employees e\nJOIN departments d ON e.department_id = d.department_id;\nWHERE e.first_name = 'Bruce' AND e.last_name = 'Lee'\nORDER BY d.department_name\n\nupdate `table` set name='abc' where xyz is null;\n\n-- DuckDB\nCREATE FUNCTION main.myavg(x) AS SUM(x) / COUNT(x);\nSELECT [['duck', 'goose', 'heron'], NULL, ['frog', 'toad'], []];\n\nSELECT {'birds':\n            {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'},\n        'aliens':\n            NULL,\n        'amphibians':\n            {'yes':'frog', 'maybe': 'salamander', 'huh': 'dragon', 'no':'toad'}\n        };\n\n-- T-SQL\nCREATE FUNCTION [dbo].[Find_Unicode]\n(\n    @in_string nvarchar(max)\n)\nRETURNS @unicode_char TABLE(id INT IDENTITY(1,1), Char_ NVARCHAR(4), position BIGINT)\nAS\nBEGIN\n    DECLARE @character nvarchar(1)\n    DECLARE @index int\n\n    SET @index = 1\n    WHILE @index <= LEN(@in_string)\n    BEGIN\n        SET @character = SUBSTRING(@in_string, @index, 1)\n        IF((UNICODE(@character) NOT BETWEEN 32 AND 127) AND UNICODE(@character) NOT IN (10,11))\n        BEGIN\n      INSERT INTO @unicode_char(Char_, position)\n      VALUES(@character, @index)\n    END\n    SET @index = @index + 1\n    END\n    RETURN\nEND\nGO\n\n-- PL/SQL\nCREATE OR REPLACE TRIGGER EVAL_CHANGE_TRIGGER\n  AFTER INSERT OR UPDATE OR DELETE\n  ON EVALUATIONS\nDECLARE\n  log_action  EVALUATIONS_LOG.action%TYPE;\nBEGIN\n  IF INSERTING THEN\n    log_action := 'Insert';   -- Insert action\n  ELSIF UPDATING THEN\n    log_action := 'Update';   -- Update action\n  ELSIF DELETING THEN\n    log_action := 'Delete';   -- Delete action\n  ELSE\n    DBMS_OUTPUT.PUT_LINE('This code is not reachable.');\n  END IF;\n\n  INSERT INTO EVALUATIONS_LOG (log_date, action)\n    VALUES (SYSDATE, log_action);\nEND;\n",
+    "k:6 :1 n:1 p:1 n:10 p:1 :1 n:1 p:1 n:9 p:1 :1 n:1 p:1 n:15 :1 k:4 :1 n:9 :1 n:1 :1 k:4 :1 n:11 :1 n:1 :1 k:2 :1 n:1 p:1 n:13 :1 o:1 :1 n:1 p:1 n:13 p:1 :1 k:5 :1 n:1 p:1 n:10 :1 o:1 :1 s1:7 :1 k:3 :1 n:1 p:1 n:9 :1 o:1 :1 s1:5 :1 k:5 :1 k:2 :1 n:1 p:1 n:15 :2 k:6 :1 nv:7 :1 k:3 :1 n:4 o:1 s1:5 :1 k:5 :1 n:3 :1 k:2 :1 k:4 p:1 :2 c1:9 :1 k:6 :1 k:8 :1 n:4 p:1 n:5 p:1 n:1 p:1 :1 k:2 :1 k:3 p:1 n:1 p:1 :1 o:1 :1 k:5 p:1 n:1 p:2 :1 k:6 :1 p:2 s1:6 p:1 :1 s1:7 p:1 :1 s1:7 p:2 :1 k:4 p:1 :1 p:1 s1:6 p:1 :1 s1:6 p:2 :1 p:4 :2 k:6 :1 p:1 s1:7 p:1 :13 p:1 s1:5 p:1 :1 s1:6 p:1 :1 s1:7 p:1 :1 s1:7 p:1 :1 s1:5 p:1 :1 k:4 p:1 :1 s1:4 p:1 :1 s1:7 p:2 :9 s1:8 p:1 :13 k:4 p:1 :9 s1:12 p:1 :13 p:1 s1:5 p:1 s1:6 p:1 :1 s1:7 p:1 :1 s1:12 p:1 :1 s1:5 p:1 :1 s1:8 p:1 :1 s1:4 p:1 s1:6 p:1 :9 p:2 :2 c1:8 :1 k:6 :1 k:8 :1 p:1 n:3 p:3 n:12 p:1 :1 p:1 :5 o:1 n:9 :1 n:8 p:1 k:3 p:1 :1 p:1 :1 k:7 :1 o:1 n:12 :1 k:5 p:1 n:2 :1 nb:3 :1 k:8 p:1 mi:1 p:1 mi:1 p:2 :1 n:5 :1 n:8 p:1 mi:1 p:2 :1 k:8 :1 nb:6 p:1 :1 k:2 :1 k:5 :5 k:7 :1 o:1 nb:9 :1 n:8 p:1 mi:1 p:1 :5 k:7 :1 o:1 k:5 :1 nb:3 :6 k:3 :1 o:1 k:5 :1 o:1 :1 mi:1 :5 n:5 :1 o:1 k:5 :1 o:2 :1 n:3 p:1 o:1 n:9 p:1 :5 k:5 :9 k:3 :1 o:1 nb:9 :1 o:1 :1 k:9 p:1 o:1 n:9 p:1 :1 o:1 k:5 p:1 :1 mi:1 p:1 :9 n:2 p:2 n:7 p:1 o:1 nb:9 p:1 :1 k:3 :1 k:7 :1 mi:2 :1 k:3 :1 mi:3 p:1 :1 k:3 :1 n:7 p:1 o:1 nb:9 p:1 :1 k:3 :1 k:2 :1 p:1 mi:2 p:1 mi:2 p:2 :9 k:5 :7 k:6 :1 k:4 :1 o:1 n:12 p:1 n:5 p:1 :1 k:8 p:1 :7 k:6 p:1 o:1 nb:9 p:1 :1 o:1 k:5 p:1 :5 k:3 :5 k:3 :1 o:1 k:5 :1 o:1 :1 o:1 k:5 :1 o:1 :1 mi:1 :5 k:3 :5 k:6 :1 k:3 :1 k:2 :2 c1:9 :1 k:6 :1 k:2 :1 k:7 :1 k:7 :1 n:19 :3 k:5 :1 k:6 :1 k:2 :1 k:6 :1 k:2 :1 k:6 :3 k:2 :1 n:11 :1 k:7 :3 n:10 :2 n:15 p:1 n:6 o:1 k:4 p:1 :1 k:5 :3 n:2 :1 n:9 :1 k:4 :5 n:10 :1 p:1 o:1 :1 s1:8 p:1 :3 c1:16 :3 n:5 :1 n:8 :1 k:4 :5 n:10 :1 p:1 o:1 :1 s1:8 p:1 :3 c1:16 :3 n:5 :1 n:8 :1 k:4 :5 n:10 :1 p:1 o:1 :1 s1:8 p:1 :3 c1:16 :3 k:4 :5 n:11 p:1 n:8 p:1 s1:29 p:2 :3 k:3 :1 n:2 p:1 :4 k:6 :1 k:4 :1 n:15 :1 p:1 n:8 p:1 :1 n:6 p:1 :5 k:6 :1 p:1 n:7 p:1 :1 n:10 p:2 :1 k:3 p:1 :1",
   )
 }
 
@@ -94,6 +157,22 @@ test "rouge: xml: visual sample" {
   check_lex(
     "xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- from test.xsl -->\n<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\n        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n        xsi:schemaLocation=\"\n                http://www.w3.org/1999/XSL/Transform\n                http://www.w3.org/1999/XSL/Transform.xsd\">\n\t<xsl:output method=\"xml\"/>\n\t<xsl:template match=\"/\">\n\t\t<customers>\n\t\t\t<xsl:apply-templates select=\"customers/customer[@Country='Germany']\"/>\n\t\t</customers>\n\t</xsl:template>\n\t<xsl:template match=\"customers\">\n\t\t<xsl:apply-templates/>\n\n\t</xsl:template>\n\t<xsl:template match=\"customer\">\n\t\t<customer>\n\t\t\t<xsl:attribute name=\"CompanyName\"><xsl:value-of select=\"@CompanyName\"/></xsl:attribute>\n\t\t\t<xsl:attribute name=\"CustomerID\"><xsl:value-of select=\"@CustomerID\"/></xsl:attribute>\n\t\t\t<xsl:attribute name=\"Country\"><xsl:value-of select=\"@Country\"/></xsl:attribute>\n\t\t</customer>\n\t\t<xsl:apply-templates/>\n\t</xsl:template>\n\n</xsl:stylesheet>\n\n<!-- Unicode example -->\n<œuvre>\n\t<书名 语言=\"français\">Les Misérables</书名>\n</œuvre>\n",
     "cp:38 :1 c:22 :1 nt:15 :1 na:8 s:5 :1 na:10 s:38 :9 na:10 s:43 :9 na:19 s:112 nt:1 :2 nt:11 :1 na:7 s:5 nt:2 :2 nt:13 :1 na:6 s:3 nt:1 :3 nt:11 :4 nt:20 :1 na:7 s:40 nt:2 :3 nt:12 :2 nt:15 :2 nt:13 :1 na:6 s:11 nt:1 :3 nt:22 :3 nt:15 :2 nt:13 :1 na:6 s:10 nt:1 :3 nt:10 :4 nt:14 :1 na:5 s:13 nt:14 :1 na:7 s:14 nt:18 :4 nt:14 :1 na:5 s:12 nt:14 :1 na:7 s:13 nt:18 :4 nt:14 :1 na:5 s:9 nt:14 :1 na:7 s:10 nt:18 :3 nt:11 :3 nt:22 :2 nt:15 :2 nt:17 :2 c:24 :1 nt:7 :2 nt:3 :1 na:3 s:10 nt:1 :14 nt:5 :1 nt:8 :1",
+  )
+}
+
+///|
+test "rouge: conf: demo" {
+  check_lex(
+    "conf", "# A generic configuration file\noption1 \"val1\"\noption2 23\noption3 'val3'\n",
+    "c:31 n:7 :1 s2:6 :1 n:7 :1 m:2 :1 n:7 :1 s1:6 :1",
+  )
+}
+
+///|
+test "rouge: conf: visual sample" {
+  check_lex(
+    "conf", "# Configuration file for /sbin/dhclient, which is included in Debian's\n#\tdhcp3-client package.\n#\n# This is a sample configuration file for dhclient. See dhclient.conf's\n#\tman page for more information about the syntax of this file\n#\tand a more comprehensive list of the parameters understood by\n#\tdhclient.\n#\n# Normally, if the DHCP server provides reasonable information and does\n#\tnot leave anything out (like the domain name, for example), then\n#\tfew changes must be made to this file, if any.\n#\n\noption rfc3442-classless-static-routes code 121 = array of unsigned integer 8;\n\nsend host-name \"<hostname>\";\n#send dhcp-client-identifier 1:0:a0:24:ab:fb:9c;\n#send dhcp-lease-time 3600;\n#supersede domain-name \"fugue.com home.vix.com\";\n#prepend domain-name-servers 127.0.0.1;\nrequest subnet-mask, broadcast-address, time-offset, routers,\n\tdomain-name, domain-name-servers, domain-search, host-name,\n\tnetbios-name-servers, netbios-scope, interface-mtu,\n\trfc3442-classless-static-routes, ntp-servers,\n\tdhcp6.domain-search, dhcp6.fqdn,\n\tdhcp6.name-servers, dhcp6.sntp-servers;\n#require subnet-mask, domain-name-servers;\n#timeout 60;\n#retry 60;\n#reboot 10;\n#select-timeout 5;\n#initial-interval 2;\n#script \"/etc/dhcp3/dhclient-script\";\n#media \"-link0 -link1 -link2\", \"link0 link1\";\n#reject 192.33.137.209;\n\nalias {\n  interface \"eth0\";\n  fixed-address 192.5.5.213;\n  option subnet-mask 255.255.255.255;\n}\n\n#lease {\n#  interface \"eth0\";\n#  fixed-address 192.33.137.200;\n#  medium \"link0 link1\";\n#  option host-name \"andare.swiftmedia.com\";\n#  option subnet-mask 255.255.255.0;\n#  option broadcast-address 192.33.137.255;\n#  option routers 192.33.137.250;\n#  option domain-name-servers 127.0.0.1;\n#  renew 2 2000/1/12 00:00:01;\n#  rebind 2 2000/1/12 00:00:01;\n#  expire 2 2000/1/12 00:00:01;\n#}\n",
+    "c:499 :1 n:6 :1 n:7 :1 n:9 :1 n:6 :1 n:6 :1 n:4 :1 m:3 :3 n:5 :1 n:2 :1 n:8 :1 n:7 :1 m:1 :3 n:4 :1 n:4 :1 n:4 :1 s2:12 :2 c:166 n:7 :1 n:6 :1 n:4 :2 n:9 :1 n:7 :2 n:4 :1 n:6 :2 n:7 :3 n:6 :1 n:4 :2 n:6 :1 n:4 :1 n:7 :2 n:6 :1 n:6 :2 n:4 :1 n:4 :3 n:7 :1 n:4 :1 n:7 :2 n:7 :1 n:5 :2 n:9 :1 n:3 :3 n:7 :1 n:9 :1 n:6 :1 n:6 :2 n:3 :1 n:7 :3 n:5 :1 n:6 :1 n:6 :2 n:5 :1 n:4 :3 n:5 :1 n:4 :1 n:7 :2 n:5 :1 n:4 :1 n:7 :2 c:227 :1 n:5 :5 n:9 :1 s2:6 :4 n:5 :1 n:7 :1 m:3 :1 m:1 :1 m:1 :1 m:3 :4 n:6 :1 n:6 :1 n:4 :1 m:3 :1 m:3 :1 m:3 :1 m:3 :5 c:387",
   )
 }
 
@@ -161,6 +240,22 @@ test "rouge: json: visual sample" {
 }
 
 ///|
+test "rouge: make: demo" {
+  check_lex(
+    "make", ".PHONY: all\nall: $(OBJ)\n\n$(OBJ): $(SOURCE)\n\t@echo \"compiling...\"\n\t$(GCC) $(CFLAGS) $< > $@\n",
+    "nl:6 o:1 :1 nf:3 :1 nl:3 o:1 :1 nf:6 :2 nl:6 o:1 :1 nf:9 :2 p:1 nb:4 :1 s2:14 :2 nv:6 :1 nv:9 :1 nv:2 :1 o:1 :1 nv:2 :1",
+  )
+}
+
+///|
+test "rouge: make: visual sample" {
+  check_lex(
+    "make", "# A comment\n\nVERSION := 0.1.$(shell git log --oneline | wc -l | sed -e \"s/ //g\")\n\n# Simple assignments\nLIST=\t\t\tParser Grammar Objects Python Modules Mac\nSTRING=\t\t\t'--with-pydebug'\nNUMBER=\t\t\t2.6\nDOT=\t\t\t.\nDIR=\t\t\t/usr/local\nDIR_LIST=\t\tModules/threadmodule.o  Modules/signalmodule.o \nCMD_WITH_SWITCH=\tgcc -pthread\nDIR_WITH_SWITCH=\t/usr/bin/install -c\nALL_SWITCHES=\t\t-g -Wall -Wstrict-prototypes\nEMPTY=\n\n# Interpolation\nSINGLE_PARENS=\t\t$(CC)\nMULTI_PARENS=\t\t$(LOCALMODLIBS) $(BASEMODLIBS)\nCMD_AND_PARENS=\t\tsvnversion $(srcdir)\nDIR_AND_PARENS=\t\t$(srcdir)/Modules/makesetup\nBRACES=\t\t\t${INSTALL}\nDIR_AND_BRACES==\t${prefix}/man\nBRACES_AND_SWITCH=\t${INSTALL} -m 644\n\n# Multiline assignment\nMULTI=\t\\\n\tModules/config.o \\\n\tModules/getpath.o \\\n\tModules/main.o \\\n\tModules/gcmodule.o\n\nMULTI_WITH_PARENS=\t\\\n\tModules/getbuildinfo.o \\\n\t$(PARSER_OBJS) \\\n\t$(OBJECT_OBJS)\n\n# Definition\nsimple:\t\t\t$(BUILDPYTHON) oldsharedmods sharedmods\n$(interpol):\t\tModules/python.o $(LIBRARY) $(LDLIBRARY)\nmulti dir/file.c:\tMakefile.pre \\\n\t\t\tModules/Setup.local\n\n# Commands\ncommands: $(SHELL) $(MAKESETUP) -c $(srcdir)/Modules/config.c.in\n\t@echo \"The Makefile was updated, you may need to re-run make.\"\n\ncommands/complex: $(srcdir)/Modules/Setup.dist\n\t@if test -f Modules/Setup; then \\\n\t\techo \"-----------------------------------------------\"; \\\n\tfi\n\ncommands_switch:\tall platform\n\t\t\t-find $(srcdir)/Lib -name '*.py[co]' -print | xargs rm -f\n\nframeworkaltinstallunixtools:\n\tcd Mac && $(MAKE) altinstallunixtools DESTDIR=\"$(DESTDIR)\"\n\ninclude SubMake.make # Insert lines from another file (which must exist)\n-include Maybe.make  # Next 2 similar, but not an error if they doon't exist\nsinclude DynamicDependencies.make\n\n# Function expansions (including $(shell)) can occur anywhere\n$(shell echo VARIABLE) := $(shell echo value)\n\n$(shell echo $(TARGET1)) $(TARGET2) target3: \\\n\t$(shell echo $(DEPENDENCY1)) $(DEPENDENCY2) dependency3\n\ttouch $(shell echo target{1..3})\n\t@echo $(shell echo 1)\n\t@echo $(shell echo 2 )\n\t@echo ${shell echo 3}\n\t@echo ${shell echo 4 }\n\n# Many other built-in functions exist\nOBJECT_GOALS = $(filter %.o,${MAKECMDGOALS})\n\n# User-defined functions can be used via $(call)\nreverse = $(2) $(1)\nfoo = $(call reverse,a,b) # foo contains 'b a'\n\n# Substitution references can be used when expanding variables\nSOURCE = $(OBJECT:.o=.c)\n\n# Alternative syntax for substitution references\nfoo = input1.txt\nbar = $(foo:input%.txt=output%.bin) # set to 'output1.bin'\n\n# Conditionals\nifdef THING\nTHING2 = $(THING)\nelse\nTHING2 = default\nendif\n\nifeq ($(TARGET),special) # syntax variant: parentheses and separating comma\nTARGET = something_else\nelse\n\tifneq '$(TARGET)' \"don't\" # syntax variant: either argument can be single or double quoted\nTARGET = be_silly\n\tendif # and can be indented, even with tabs (so long as not in a recipe)\nendif\n\ncount:\n\techo one\n\techo two\nifndef QUIET # conditionals can happen within recipes\n\techo miss a few\nendif\n\techo one hundred\n\n# Dollars must be escaped if a literal one is required\n\nprint_path:\n\techo $$PATH\n",
+    "c:12 :1 nv:7 :1 o:2 :5 nf:2 nb:5 :9 nt:9 :3 nb:2 :1 nt:2 :3 nb:3 :1 nt:2 :1 s2:8 nf:1 :2 c:21 nv:4 o:1 :45 nv:6 o:1 :3 s1:16 :1 nv:6 o:1 :7 nv:3 o:1 :5 nv:3 o:1 :14 nv:8 o:1 :50 nv:15 o:1 :5 nt:8 :1 nv:15 o:1 :18 nt:2 :1 nv:12 o:1 :2 nt:2 :1 nt:5 :1 nt:19 :1 nv:5 o:1 :2 c:16 nv:13 o:1 :2 nv:5 :1 nv:12 o:1 :2 nv:15 :1 nv:14 :1 nv:14 o:1 :13 nv:9 :1 nv:14 o:1 :2 nv:9 :19 nv:6 o:1 :3 nv:10 :1 nv:14 o:2 :1 nv:9 :5 nv:17 o:1 :1 nv:10 :1 nt:2 :6 c:23 nv:5 o:1 :1 se:1 :19 se:1 :20 se:1 :17 se:1 :22 nv:17 o:1 :1 se:1 :25 se:1 :2 nv:14 :1 se:1 :2 nv:14 :2 c:13 nl:6 o:1 :3 nf:39 :1 nl:11 o:1 :2 nf:40 :1 nl:16 o:1 :1 nf:13 :2 nf:22 :2 c:11 nl:8 o:1 :1 nf:54 :2 p:1 nb:4 :1 s2:56 :2 nl:16 o:1 :1 nf:28 :2 p:1 k:3 nb:4 :1 nt:2 :14 p:1 :1 k:4 :1 se:1 :3 nb:4 :1 s2:49 p:1 :1 se:1 :2 k:2 :2 nl:15 o:1 :1 nf:12 :4 p:1 :5 nv:9 :5 nt:5 :1 s1:10 :1 nt:6 :9 nb:2 :1 nt:2 :2 nl:28 o:1 :2 nb:3 :4 o:2 :1 nv:7 :21 nv:7 o:1 s2:1 nv:10 s2:1 :2 k:7 sx:13 :1 c:52 k:8 sx:11 :2 c:56 k:8 sx:25 :2 c:62 nl:23 o:1 nf:21 :2 nl:43 o:1 :3 nf:56 :2 nb:5 :1 nf:2 nb:5 :1 nb:5 :6 o:1 :4 nf:1 o:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :1 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :2 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :1 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :2 nf:1 :2 c:38 nv:12 :1 o:1 :1 nf:2 nb:6 :5 nv:15 nf:1 :2 c:49 nv:7 :1 o:1 :1 nv:4 :1 nv:4 :1 nv:3 :1 o:1 :1 nf:2 nb:4 :12 nf:1 :1 c:20 :2 c:63 nv:6 :1 o:1 :1 nv:15 :2 c:49 nv:3 :1 o:1 :12 nv:3 :1 o:1 :1 nv:29 :1 c:22 :2 c:15 k:5 :1 nv:5 :1 nv:6 :1 o:1 :1 nv:8 :1 k:4 :1 nv:6 :1 o:1 :9 k:5 :2 k:4 :1 nv:20 c:51 nv:6 :1 o:1 :16 k:4 :2 k:5 :1 nv:20 c:65 nv:6 :1 o:1 :11 k:6 c:67 k:5 :2 nl:5 o:1 :2 nb:5 :5 nb:5 :4 k:6 :1 nv:6 c:40 :2 nb:5 :11 k:5 :2 nb:5 :13 c:55 :1 nl:10 o:1 :2 nb:4 :1 nv:2 :5",
+  )
+}
+
+///|
 test "rouge: ruby: demo" {
   check_lex(
     "ruby", "class Greeter\n  def initialize(name=\"World\")\n    @name = name\n  end\n\n  def say_hi\n    puts \"Hi #{@name}!\"\n  end\nend\n",
@@ -208,6 +303,109 @@ test "rouge: scss: visual sample" {
 }
 
 ///|
+test "rouge: toml: demo" {
+  check_lex(
+    "toml", "# This is a TOML document. Boom.\n\ntitle = \"TOML Example\"\n\n[owner]\nname = \"Tom Preston-Werner\"\norganization = \"GitHub\"\nbio = \"GitHub Cofounder & CEO\\nLikes tater tots and beer.\"\ndob = 1979-05-27T07:32:00Z # First class dates? Why not?\n",
+    "c:32 :2 py:5 :1 p:1 :1 s:14 :2 nn:7 :1 py:4 :1 p:1 :1 s:20 :1 py:12 :1 p:1 :1 s:8 :1 py:3 :1 p:1 :1 s:23 se:2 s:27 :1 py:3 :1 p:1 :1 ld:20 :1 c:29 :1",
+  )
+}
+
+///|
+test "rouge: toml: visual sample" {
+  check_lex(
+    "toml", "# This is a TOML document. Boom.\n\ntitle = \"TOML Example\"\n\n[owner]\nname = \"Tom Preston-Werner\"\norganization = \"GitHub\"\nbio = \"GitHub Cofounder & CEO\\nLikes tater tots and beer.\"\ndob = 1979-05-27T07:32:00Z # First class dates? Why not?\n\n[database]\nserver = \"192.168.1.1\"\nports = [ 8001, 8001, 8002 ]\nconnection_max = 5000\nenabled = true\n\n[servers]\n\n  # You can indent as you please. Tabs or spaces. TOML don't care.\n  [servers.alpha]\n  ip = \"10.0.0.1\"\n  dc = \"eqdc10\"\n\n  [servers.beta]\n  ip = \"10.0.0.2\"\n  dc = \"eqdc10\"\n\n[clients]\ndata = [ [\"gamma\", \"delta\"], [1, 2] ] # just an update to make sure parsers support it\n\n# Line breaks are OK when inside arrays\nhosts = [\n  \"alpha\",\n  \"omega\"\n]\n\nfunky = \"I'm a string. \\\"You can quote me\\\". Tab \\t newline \\n you get it.\"\nright = \"C:\\\\Users\\\\nodejs\\\\templates\"\nwrong = \"C:\\Users\\nodejs\\templates\" # note: doesn't produce a valid path\n\n# What you see is what you get - no escapes\nwinpath  = 'C:\\Users\\nodejs\\templates'\nwinpath2 = '\\\\ServerX\\admin$\\system32\\'\nquoted   = 'Tom \"Dubs\" Preston-Werner'\nregex    = '<\\i\\c*\\s*>'\nwrong    = 'no multiline - but rest of lex is okay\n\n# multiline\nregex2 = '''I [dw]on't need \\d{2} apples'''\nlines  = '''\nThe first newline is\ntrimmed in raw strings.\n   All other whitespace\n   is preserved.\n'''\n\nstr4 = \"\"\"Here are two quotation marks: \"\". Simple enough.\"\"\"\n# str5 = \"\"\"Here are three quotation marks: \"\"\".\"\"\"  # INVALID\nstr5 = \"\"\"Here are three quotation marks: \"\"\\\".\"\"\"\nstr6 = \"\"\"Here are fifteen quotation marks: \"\"\\\"\"\"\\\"\"\"\\\"\"\"\\\"\"\"\\\".\"\"\"\n\n# \"This,\" she said, \"is just a pointless statement.\"\nstr7 = \"\"\"\"This,\" she said, \"is just a pointless statement.\"\"\"\n# The following strings are byte-for-byte equivalent:\nstr1 = \"The quick brown fox jumps over the lazy dog.\"\n\nstr2 = \"\"\"\nThe quick brown \\\n\n\n  fox jumps over \\\n    the lazy dog.\"\"\"\n\nstr3 = \"\"\"\\\n       The quick brown \\\n       fox jumps over \\\n       the lazy dog.\\\n       \"\"\"\n\n# Test file for TOML\n# Only this one tries to emulate a TOML file written by a user of the kind of parser writers probably hate\n# This part you'll really hate\n\n[the]\ntest_string = \"You'll hate me after this - #\"          # \" Annoying, isn't it?\n\n    [the.hard]\n    test_array = [ \"] \", \" # \"]      # ] There you go, parse this!\n    test_array2 = [ \"Test #11 ]proved that\", \"Experiment #9 was a success\" ]\n    # You didn't think it'd as easy as chucking out the last #, did you?\n    another_test_string = \" Same thing, but with a string #\"\n    harder_test_string = \" And when \\\"'s are in the string, along with # \\\"\"   # \"and comments are there too\"\n    # Things will get harder\n    \n        [the.hard.bit#]\n        what? = \"You don't think some user won't do that?\"\n        multi_line_array = [\n            \"]\",\n            \"Oi!\\n\",\n            # ] Oh yes I did\n            ]\n\n東京都 = 123\n\n# Inline table\nname = { first = \"Tom\", last = \"Preston-Werner\" }\npoint = { x = 1, y = 2 }\n'student names' = { \"first name\" = \"Tom\", \"last name\" = \"Preston-Werner\" }\n\n# Quoted keys\n\"127.0.0.1\" = \"value\"\n\"character encoding\" = \"value\"\n\"ʎǝʞ\" = \"value\"\n'key2' = \"value\"\n'quoted \"value\"' = \"value\"\n\n# Dotted keys\nphysical.color = \"orange\"\nphysical.shape = \"round\"\nsite.\"google.com\" = true\n\n# floating point numbers\nfloat_space1 = 3.141_592_653\nfloat_space2 = 123_456.789_012e+1_000\njust_inf = inf\npos_inf  = +inf\nneg_inf  = -inf\njust_nan = nan\npos_nan  = +nan\nneg_nan  = -nan\n\n# integer formats\ndec         = 123456\ndec_spacing = 123_456\nhex         = 0xdeadBEEF\nhex_spacing = 0xdead_BEEF\noct         = 0o755\noct_spacing = 0o755_777\nbin         = 0b1100\nbin_spacing = 0b0101_1100\n",
+    "c:32 :2 py:5 :1 p:1 :1 s:14 :2 nn:7 :1 py:4 :1 p:1 :1 s:20 :1 py:12 :1 p:1 :1 s:8 :1 py:3 :1 p:1 :1 s:23 se:2 s:27 :1 py:3 :1 p:1 :1 ld:20 :1 c:29 :2 nn:10 :1 py:6 :1 p:1 :1 s:13 :1 py:5 :1 p:1 :1 p:1 :1 mi:4 p:1 :1 mi:4 p:1 :1 mi:4 :1 p:1 :1 py:14 :1 p:1 :1 mi:4 :1 py:7 :1 p:1 :1 kc:4 :2 nn:9 :4 c:64 :3 nn:15 :3 py:2 :1 p:1 :1 s:10 :3 py:2 :1 p:1 :1 s:8 :4 nn:14 :3 py:2 :1 p:1 :1 s:10 :3 py:2 :1 p:1 :1 s:8 :2 nn:9 :1 py:4 :1 p:1 :1 p:1 :1 p:1 s:7 p:1 :1 s:7 p:2 :1 p:1 mi:1 p:1 :1 mi:1 p:1 :1 p:1 :1 c:48 :2 c:39 :1 py:5 :1 p:1 :1 p:1 :3 s:7 p:1 :3 s:7 :1 p:1 :2 py:5 :1 p:1 :1 s:15 se:2 s:16 se:2 s:6 se:2 s:9 se:2 s:13 :1 py:5 :1 p:1 :1 s:3 se:2 s:5 se:2 s:6 se:2 s:10 :1 py:5 :1 p:1 :1 s:3 err:1 s:5 se:2 s:5 se:2 s:9 :1 c:36 :2 c:43 :1 py:7 :2 p:1 :1 s:27 :1 py:8 :1 p:1 :1 s:28 :1 py:6 :3 p:1 :1 s:27 :1 py:5 :4 p:1 :1 s:12 :1 py:5 :4 p:1 :1 s:39 err:1 :1 c:11 :1 py:6 :1 p:1 :1 s:34 :1 py:5 :2 p:1 :1 s:93 :2 py:4 :1 p:1 :1 s:54 :1 c:62 :1 py:4 :1 p:1 :1 s:37 se:2 s:4 :1 py:4 :1 p:1 :1 s:39 se:2 s:2 se:2 s:2 se:2 s:2 se:2 s:2 se:2 s:4 :2 c:52 :1 py:4 :1 p:1 :1 s:55 :1 c:53 :1 py:4 :1 p:1 :1 s:46 :2 py:4 :1 p:1 :1 s:20 se:2 s:19 se:2 s:20 :2 py:4 :1 p:1 :1 s:3 se:2 s:23 se:2 s:22 se:2 s:20 se:2 s:10 :2 c:20 :1 c:106 :1 c:30 :2 nn:5 :1 py:11 :1 p:1 :1 s:31 :10 c:23 :6 nn:10 :5 py:10 :1 p:1 :1 p:1 :1 s:4 p:1 :1 s:5 p:1 :6 c:29 :5 py:11 :1 p:1 :1 p:1 :1 s:23 p:1 :1 s:29 :1 p:1 :5 c:68 :5 py:19 :1 p:1 :1 s:34 :5 py:18 :1 p:1 :1 s:11 se:2 s:35 se:2 s:1 :3 c:30 :5 c:24 :14 nn:15 :9 py:5 :1 p:1 :1 s:42 :9 py:16 :1 p:1 :1 p:1 :13 s:3 p:1 :13 s:4 se:2 s:1 p:1 :13 c:16 :13 p:1 :2 py:3 :1 p:1 :1 mi:3 :2 c:14 :1 nn:4 :1 o:1 :1 p:1 :1 py:5 :1 p:1 :1 s:5 p:1 :1 py:4 :1 p:1 :1 s:16 :1 p:1 :1 nn:5 :1 o:1 :1 p:1 :1 py:1 :1 p:1 :1 mi:1 p:1 :1 py:1 :1 p:1 :1 mi:1 :1 p:1 :1 nn:15 :1 o:1 :1 p:1 :1 py:12 :1 p:1 :1 s:5 p:1 :1 py:11 :1 p:1 :1 s:16 :1 p:1 :2 c:13 :1 py:11 :1 p:1 :1 s:7 :1 py:20 :1 p:1 :1 s:7 :1 py:5 :1 p:1 :1 s:7 :1 py:6 :1 p:1 :1 s:7 :1 py:16 :1 p:1 :1 s:7 :2 c:13 :1 py:14 :1 p:1 :1 s:8 :1 py:14 :1 p:1 :1 s:7 :1 py:17 :1 p:1 :1 kc:4 :2 c:24 :1 py:12 :1 p:1 :1 mf:13 :1 py:12 :1 p:1 :1 mf:22 :1 py:8 :1 p:1 :1 mf:3 :1 py:7 :2 p:1 :1 mf:4 :1 py:7 :2 p:1 :1 mf:4 :1 py:8 :1 p:1 :1 mf:3 :1 py:7 :2 p:1 :1 mf:4 :1 py:7 :2 p:1 :1 mf:4 :2 c:17 :1 py:3 :9 p:1 :1 mi:6 :1 py:11 :1 p:1 :1 mi:7 :1 py:3 :9 p:1 :1 mh:10 :1 py:11 :1 p:1 :1 mh:11 :1 py:3 :9 p:1 :1 mo:5 :1 py:11 :1 p:1 :1 mo:9 :1 py:3 :9 p:1 :1 mb:6 :1 py:11 :1 p:1 :1 mb:11 :1",
+  )
+}
+
+///|
+test "rouge: yaml: demo" {
+  check_lex(
+    "yaml", "---\none: Mark McGwire\ntwo: Sammy Sosa\nthree: Ken Griffey\n", "nn:3 :1 na:3 pi:1 :1 s:12 :1 na:3 pi:1 :1 s:10 :1 na:5 pi:1 :1 s:11 :1",
+  )
+}
+
+///|
+test "rouge: yaml: visual sample" {
+  check_lex(
+    "yaml", "#\n# Examples from the Preview section of the YAML specification\n# (http://yaml.org/spec/1.2/#Preview)\n#\n\n# Sequence of scalars\n---\n- Mark McGwire\n- Sammy Sosa\n- Ken Griffey\n\n# Mapping scalars to scalars\n---\nhr:  65    # Home runs\navg: 0.278 # Batting average\nrbi: 147   # Runs Batted In\n\n# Mapping scalars to sequences\n---\namerican:\n  - Boston Red Sox\n  - Detroit Tigers\n  - New York Yankees\nnational:\n  - New York Mets\n  - Chicago Cubs\n  - Atlanta Braves\n\n# Sequence of mappings\n---\n-\n  name: Mark McGwire\n  hr:   65\n  avg:  0.278\n  addr: B 221 Block\n-\n  name: Sammy Sosa\n  hr:   63\n  avg:  0.288\n\n# Sequence of sequences\n---\n- [name        , hr, avg  ]\n- [Mark McGwire, 65, 0.278]\n- [Sammy Sosa  , 63, 0.288]\n\n# Mapping of mappings\n---\nMark McGwire: {hr: 65, avg: 0.278}\nSammy Sosa: {\n    hr: 63,\n    avg: 0.288\n  }\n\n# Two documents in a stream\n--- # Ranking of 1998 home runs\n- Mark McGwire\n- Sammy Sosa\n- Ken Griffey\n--- # Team ranking\n- Chicago Cubs\n- St Louis Cardinals\n\n# Documents with the end indicator\n---\ntime: 20:03:20\nplayer: Sammy Sosa\naction: strike (miss)\n...\n---\ntime: 20:03:47\nplayer: Sammy Sosa\naction: grand slam\n...\n\n# Comments\n---\nhr: # 1998 hr ranking\n  - Mark McGwire\n  - Sammy Sosa\nrbi:\n  # 1998 rbi ranking\n  - Sammy Sosa\n  - Ken Griffey\n\n# Anchors and aliases\n---\nhr:\n  - Mark McGwire\n  # Following node labeled SS\n  - &SS Sammy Sosa\nrbi:\n  - *SS # Subsequent occurrence\n  - Ken Griffey\n\n# Mapping between sequences\n---\n? - Detroit Tigers\n  - Chicago cubs\n:\n  - 2001-07-23\n? [ New York Yankees,\n    Atlanta Braves ]\n: [ 2001-07-02, 2001-08-12,\n    2001-08-14 ]\n\n# Inline nested mapping\n---\n# products purchased\n- item    : Super Hoop\n  quantity: 1\n- item    : Basketball\n  quantity: 4\n- item    : Big Shoes\n  quantity: 1\n\n# Literal scalars\n--- | # ASCII art\n  \\//||\\/||\n  // ||  ||__\n\n# Folded scalars\n--- >\n  Mark McGwire's\n  year was crippled\n  by a knee injury.\n\n# Preserved indented block in a folded scalar\n---\n>\n Sammy Sosa completed another\n fine season with great stats.\n\n   63 Home Runs\n   0.288 Batting Average\n\n What a year!\n\n# Indentation determines scope\n---\nname: Mark McGwire\naccomplishment: >\n  Mark set a major league\n  home run record in 1998.\nstats: |\n  65 Home Runs\n  0.278 Batting Average\n\n# Multi-line block chomping\n\n## No newlines at end of folded block\n---\ndesc: >-\n  This is just a dummy text intended to\n  test this lexer. The following whitespace\n  until \"label\" is intentional.\n\n\nlabel: lipsum\n\n## Allow all newlines at end of folded block\n---\ndesc: >+\n  This is just a dummy text intended to\n  test this lexer. The following whitespace\n  until \"label\" is intentional.\n\n\nlabel: lipsum\n\n## No newlines at end of literal block\n---\ndesc: |-\n  This is just a dummy text intended to\n  test this lexer. The following whitespace\n  until \"label\" is intentional.\n\n\nlabel: lipsum\n\n## Allow all newlines at end of literal block\n---\ndesc: |+\n  This is just a dummy text intended to\n  test this lexer. The following whitespace\n  until \"label\" is intentional.\n\n\nlabel: lipsum\n...\n\n# Quoted scalars\n---\nunicode: \"Sosa did fine.\\u263A\"\ncontrol: \"\\b1998\\t1999\\t2000\\n\"\nhex esc: \"\\x0d\\x0a is \\r\\n\"\nsingle: '\"Howdy!\" he cried.'\nquoted: ' # not a ''comment''.'\ntie-fighter: '|\\-*-/|'\n\n# Multi-line flow scalars\n---\nplain:\n  This unquoted scalar\n  spans many lines.\nquoted: \"So does this\n  quoted scalar.\\n\"\n\n# Integers\n---\ncanonical: 12345\ndecimal: +12_345\nsexagesimal: 3:25:45\noctal: 014\nhexadecimal: 0xC\n\n# Floating point\n---\ncanonical: 1.23015e+3\nexponential: 12.3015e+02\nsexagesimal: 20:30.15\nfixed: 1_230.15\nnegative infinity: -.inf\nnot a number: .NaN\n\n# Miscellaneous\n---\nnull: ~\nbool_true: true\nstr_true: 'true'\nbool_false: false\nstr_false: \"false\"\nstring: '12345'\nnumber: 12345\n\n# Timestamps\n---\ncanonical: 2001-12-15T02:59:43.1Z\niso8601: 2001-12-14t21:59:43.10-05:00\nspaced: 2001-12-14 21:59:43.10 -5\ndate: 2002-12-14\n\n# Various explicit tags\n---\nnot-date: !!str 2002-04-28\npicture: !!binary |\n R0lGODlhDAAMAIQAAP//9/X\n 17unp5WZmZgAAAOfn515eXv\n Pz7Y6OjuDg4J+fn5OTk6enp\n 56enmleECcgggoBADs=\napplication specific tag: !something |\n The semantics of the tag\n above may be different for\n different documents.\nemail_regex: !ruby/regexp '/^([\\w.%+-]+)@([\\w-]+\\.)+([\\w]{2,})$/i'\n\n# Global tags\n%TAG ! tag:clarkevans.com,2002:\n--- !shape\n  # Use the ! handle for presenting\n  # tag:clarkevans.com,2002:circle\n- !circle\n  center: &ORIGIN {x: 73, y: 129}\n  radius: 7\n- !line\n  start: *ORIGIN\n  finish: { x: 89, y: 102 }\n- !label\n  start: *ORIGIN\n  color: 0xFFEEBB\n  text: Pretty vector drawing.\n\n# Unordered sets\n--- !!set\n# sets are represented as a\n# mapping where each key is\n# associated with the empty string\n? Mark McGwire\n? Sammy Sosa\n? Ken Griff\n\n# Ordered mappings\n--- !!omap\n# ordered maps are represented as\n# a sequence of mappings, with\n# each mapping having one key\n- Mark McGwire: 65\n- Sammy Sosa: 63\n- Ken Griffy: 58\n\n# Full length example\n--- !<tag:clarkevans.com,2002:invoice>\ninvoice: 34843\ndate   : 2001-01-23\nbill-to: &id001\n    given  : Chris\n    family : Dumars\n    address:\n        lines: |\n            458 Walkman Dr.\n            Suite #292\n        city    : Royal Oak\n        state   : MI\n        postal  : 48046\nship-to: *id001\nproduct:\n    - sku         : BL394D\n      quantity    : 4\n      description : Basketball\n      price       : 450.00\n    - sku         : BL4438H\n      quantity    : 1\n      description : Super Hoop\n      price       : 2392.00\ntax  : 251.42\ntotal: 4443.52\ncomments:\n    Late afternoon is best.\n    Backup contact is Nancy\n    Billsmer @ 338-4338.\n\n# Another full-length example\n---\nTime: 2001-11-23 15:01:42 -5\nUser: ed\nWarning:\n  This is an error message\n  for the log file\n---\nTime: 2001-11-23 15:02:31 -5\nUser: ed\nWarning:\n  A slightly different error\n  message.\n---\nDate: 2001-11-23 15:03:17 -5\nUser: ed\nFatal:\n  Unknown variable \"bar\"\nStack:\n  - file: TopClass.py\n    line: 23\n    code: |\n      x = MoreObject(\"345\\n\")\n  - file: MoreClass.py\n    line: 58\n    code: |-\n      foo = bar\n\n# Unicode example\n",
+    "c1:1 :1 c1:61 :1 c1:37 :1 c1:1 :2 c1:21 :1 nn:3 :1 pi:1 :1 s:12 :1 pi:1 :1 s:10 :1 pi:1 :1 s:11 :2 c1:28 :1 nn:3 :1 na:2 pi:1 :2 m:2 :4 c1:11 :1 na:3 pi:1 :1 m:5 :1 c1:17 :1 na:3 pi:1 :1 m:3 :3 c1:16 :2 c1:30 :1 nn:3 :1 na:8 pi:1 :3 pi:1 :1 s:14 :3 pi:1 :1 s:14 :3 pi:1 :1 s:16 :1 na:8 pi:1 :3 pi:1 :1 s:13 :3 pi:1 :1 s:12 :3 pi:1 :1 s:14 :2 c1:22 :1 nn:3 :1 pi:1 :3 na:4 pi:1 :1 s:12 :3 na:2 pi:1 :3 m:2 :3 na:3 pi:1 :2 m:5 :3 na:4 pi:1 :1 s:11 :1 pi:1 :3 na:4 pi:1 :1 s:10 :3 na:2 pi:1 :3 m:2 :3 na:3 pi:1 :2 m:5 :2 c1:23 :1 nn:3 :1 pi:1 :1 pi:1 nv:4 :8 pi:1 :1 nv:2 pi:1 :1 nv:3 :2 pi:1 :1 pi:1 :1 pi:1 nv:12 pi:1 :1 nv:2 pi:1 :1 nv:5 pi:1 :1 pi:1 :1 pi:1 nv:10 :2 pi:1 :1 nv:2 pi:1 :1 nv:5 pi:1 :2 c1:21 :1 nn:3 :1 na:12 pi:1 :1 pi:1 nv:2 pi:1 :1 nv:2 pi:1 :1 nv:3 pi:1 :1 nv:5 pi:1 :1 na:10 pi:1 :1 pi:1 :5 nv:2 pi:1 :1 nv:2 pi:1 :5 nv:3 pi:1 :1 nv:5 :3 pi:1 :2 c1:27 :1 nn:3 :1 c1:27 :1 pi:1 :1 s:12 :1 pi:1 :1 s:10 :1 pi:1 :1 s:11 :1 nn:3 :1 c1:14 :1 pi:1 :1 s:12 :1 pi:1 :1 s:18 :2 c1:34 :1 nn:3 :1 na:4 pi:1 :1 s:8 :1 na:6 pi:1 :1 s:10 :1 na:6 pi:1 :1 s:13 :1 nn:3 :1 nn:3 :1 na:4 pi:1 :1 s:8 :1 na:6 pi:1 :1 s:10 :1 na:6 pi:1 :1 s:10 :1 nn:3 :2 c1:10 :1 nn:3 :1 na:2 pi:1 :1 c1:17 :3 pi:1 :1 s:12 :3 pi:1 :1 s:10 :1 na:3 pi:1 :3 c1:18 :3 pi:1 :1 s:10 :3 pi:1 :1 s:11 :2 c1:21 :1 nn:3 :1 na:2 pi:1 :3 pi:1 :1 s:12 :3 c1:27 :3 pi:1 :1 nl:3 :1 s:10 :1 na:3 pi:1 :3 pi:1 :1 nv:3 :1 c1:23 :3 pi:1 :1 s:11 :2 c1:27 :1 nn:3 :1 pi:1 :1 pi:1 :1 s:14 :3 pi:1 :1 s:12 :1 pi:1 :3 pi:1 :1 s:10 :1 pi:1 :1 pi:1 :1 nv:16 pi:1 :5 nv:14 :1 pi:1 :1 pi:1 :1 pi:1 :1 nv:10 pi:1 :1 nv:10 pi:1 :5 nv:10 :1 pi:1 :2 c1:23 :1 nn:3 :1 c1:20 :1 pi:1 :1 na:8 pi:1 :1 s:10 :3 na:8 pi:1 :1 m:1 :1 pi:1 :1 na:8 pi:1 :1 s:10 :3 na:8 pi:1 :1 m:1 :1 pi:1 :1 na:8 pi:1 :1 s:9 :3 na:8 pi:1 :1 m:1 :2 c1:17 :1 nn:3 :1 pi:1 :1 c1:11 :3 s:9 :3 s:11 :2 c1:16 :1 nn:3 :1 pi:1 :3 s:14 :3 s:17 :3 s:17 :2 c1:45 :1 nn:3 :1 pi:1 :2 s:28 :2 s:29 :5 s:12 :4 s:21 :3 s:12 :2 c1:30 :1 nn:3 :1 na:4 pi:1 :1 s:12 :1 na:14 pi:1 :1 pi:1 :3 s:23 :3 s:24 :1 na:5 pi:1 :1 pi:1 :3 s:12 :3 s:21 :2 c1:27 :2 c1:37 :1 nn:3 :1 na:4 pi:1 :1 pi:2 :3 s:37 :3 s:41 :3 s:29 :3 na:5 pi:1 :1 s:6 :2 c1:44 :1 nn:3 :1 na:4 pi:1 :1 pi:2 :3 s:37 :3 s:41 :3 s:29 :3 na:5 pi:1 :1 s:6 :2 c1:38 :1 nn:3 :1 na:4 pi:1 :1 pi:2 :3 s:37 :3 s:41 :3 s:29 :3 na:5 pi:1 :1 s:6 :2 c1:45 :1 nn:3 :1 na:4 pi:1 :1 pi:2 :3 s:37 :3 s:41 :3 s:29 :3 na:5 pi:1 :1 s:6 :1 nn:3 :2 c1:16 :1 nn:3 :1 na:7 pi:1 :1 s2:1 s:4 nv:1 s:3 nv:1 s:5 se:6 s:1 :1 na:7 pi:1 :1 s2:1 se:2 s:4 se:2 s:4 se:2 s:4 se:2 s:1 :1 na:7 pi:1 :1 s2:1 se:8 nv:1 s:2 nv:1 se:4 s:1 :1 na:6 pi:1 :1 s1:1 s:8 nv:1 s:2 nv:1 s:7 :1 na:6 pi:1 :1 s1:1 nv:1 s:1 nv:1 s:3 nv:1 s:1 nv:1 s:1 s1:1 s:8 s1:1 s:2 :1 na:11 pi:1 :1 s1:1 s:8 :2 c1:25 :1 nn:3 :1 na:5 pi:1 :3 s:20 :3 s:17 :1 na:6 pi:1 :1 s2:1 s:2 nv:1 s:4 nv:1 s:4 :3 s:6 nv:1 s:7 se:2 s:1 :2 c1:10 :1 nn:3 :1 na:9 pi:1 :1 m:5 :1 na:7 pi:1 :1 s:7 :1 na:11 pi:1 :1 s:7 :1 na:5 pi:1 :1 m:3 :1 na:11 pi:1 :1 s:3 :2 c1:16 :1 nn:3 :1 na:9 pi:1 :1 s:10 :1 na:11 pi:1 :1 s:11 :1 na:11 pi:1 :1 s:8 :1 na:5 pi:1 :1 s:8 :1 na:17 pi:1 :1 s:5 :1 na:12 pi:1 :1 s:4 :2 c1:15 :1 nn:3 :1 na:4 pi:1 :1 s:1 :1 na:9 pi:1 :1 no:4 :1 na:8 pi:1 :1 s1:1 s:5 :1 na:10 pi:1 :1 no:5 :1 na:9 pi:1 :1 s2:1 s:6 :1 na:6 pi:1 :1 s1:1 s:6 :1 na:6 pi:1 :1 m:5 :2 c1:12 :1 nn:3 :1 na:9 pi:1 :1 s:22 :1 na:7 pi:1 :1 s:28 :1 na:6 pi:1 :1 s:25 :1 na:4 pi:1 :1 s:10 :2 c1:23 :1 nn:3 :1 na:8 pi:1 :1 kt:5 :1 s:10 :1 na:7 pi:1 :1 kt:8 :1 pi:1 :2 s:23 :2 s:23 :2 s:23 :2 s:19 :1 na:24 pi:1 :1 kt:10 :1 pi:1 :2 s:24 :2 s:26 :2 s:20 :1 na:11 pi:1 :1 kt:12 :1 s1:1 s:39 :2 c1:13 :1 nt:4 :1 kt:1 :1 kt:24 :1 nn:3 :1 kt:6 :3 c1:33 :3 c1:32 :1 pi:1 :1 kt:7 :3 na:6 pi:1 :1 nl:7 :1 pi:1 nv:1 pi:1 :1 nv:2 pi:1 :1 nv:1 pi:1 :1 nv:3 pi:1 :3 na:6 pi:1 :1 m:1 :1 pi:1 :1 kt:5 :3 na:5 pi:1 :1 nv:7 :3 na:6 pi:1 :1 pi:1 :1 nv:1 pi:1 :1 nv:2 pi:1 :1 nv:1 pi:1 :1 nv:3 :1 pi:1 :1 pi:1 :1 kt:6 :3 na:5 pi:1 :1 nv:7 :3 na:5 pi:1 :1 s:8 :3 na:4 pi:1 :1 s:22 :2 c1:16 :1 nn:3 :1 kt:5 :1 c1:27 :1 c1:27 :1 c1:34 :1 pi:1 :1 s:12 :1 pi:1 :1 s:10 :1 pi:1 :1 s:9 :2 c1:18 :1 nn:3 :1 kt:6 :1 c1:33 :1 c1:30 :1 c1:29 :1 pi:1 :1 na:12 pi:1 :1 m:2 :1 pi:1 :1 na:10 pi:1 :1 m:2 :1 pi:1 :1 na:10 pi:1 :1 m:2 :2 c1:21 :1 nn:3 :1 kt:34 :1 na:7 pi:1 :1 m:5 :1 na:7 pi:1 :1 s:10 :1 na:7 pi:1 :1 nl:6 :5 na:7 pi:1 :1 s:5 :5 na:7 pi:1 :1 s:6 :5 na:7 pi:1 :9 na:5 pi:1 :1 pi:1 :13 s:15 :13 s:10 :9 na:8 pi:1 :1 s:9 :9 na:8 pi:1 :1 s:2 :9 na:8 pi:1 :1 m:5 :1 na:7 pi:1 :1 nv:6 :1 na:7 pi:1 :5 pi:1 :1 na:12 pi:1 :1 s:6 :7 na:12 pi:1 :1 m:1 :7 na:12 pi:1 :1 s:10 :7 na:12 pi:1 :1 m:6 :5 pi:1 :1 na:12 pi:1 :1 s:7 :7 na:12 pi:1 :1 m:1 :7 na:12 pi:1 :1 s:10 :7 na:12 pi:1 :1 m:7 :1 na:5 pi:1 :1 m:6 :1 na:5 pi:1 :1 m:7 :1 na:8 pi:1 :5 s:23 :5 s:23 :5 s:20 :2 c1:29 :1 nn:3 :1 na:4 pi:1 :1 s:22 :1 na:4 pi:1 :1 s:2 :1 na:7 pi:1 :3 s:24 :3 s:16 :1 nn:3 :1 na:4 pi:1 :1 s:22 :1 na:4 pi:1 :1 s:2 :1 na:7 pi:1 :3 s:26 :3 s:8 :1 nn:3 :1 na:4 pi:1 :1 s:22 :1 na:4 pi:1 :1 s:2 :1 na:5 pi:1 :3 s:22 :1 na:5 pi:1 :3 pi:1 :1 na:4 pi:1 :1 s:11 :5 na:4 pi:1 :1 m:2 :5 na:4 pi:1 :1 pi:1 :7 s:23 :3 pi:1 :1 na:4 pi:1 :1 s:12 :5 na:4 pi:1 :1 m:2 :5 na:4 pi:1 :1 pi:2 :7 s:9 :2 c1:17 :1",
+  )
+}
+
+///|
+test "rouge: nginx: demo" {
+  check_lex(
+    "nginx", "server {\n  listen          80;\n  server_name     example.com *.example.com;\n  rewrite ^       http://www.domain.com$request_uri? permanent;\n}\n",
+    "k:6 :1 p:1 :3 kn:6 :10 mi:2 p:1 :3 kn:11 :5 s:11 :1 s:13 p:1 :3 kn:7 :1 s:1 :7 s:21 nv:12 s:1 :1 s:9 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: nginx: visual sample" {
+  check_lex(
+    "nginx", "#user  nobody;\nworker_processes  1;\n\n#error_log  logs/error.log;\n#error_log  logs/error.log  notice;\n#error_log  logs/error.log  info;\n\n#pid        logs/nginx.pid;\n\n\nevents {\n    worker_connections  1024;\n}\n\n\nhttp {\n    include       mime.types;\n    default_type  application/octet-stream;\n\n    log_format  main  '$remote_addr - $remote_user [$time_local] $request '\n                      '\"$status\" $body_bytes_sent \"$http_referer\" '\n                      '\"$http_user_agent\" \"$http_x_forwarded_for\"';\n\n    #access_log  logs/access.log  main;\n\n    sendfile        on;\n    #tcp_nopush     on;\n\n    #keepalive_timeout  0;\n    keepalive_timeout  65;\n\n    #gzip  on;\n\n    server {\n        listen       80;\n        server_name  localhost;\n\n        charset koi8-r;\n\n        #access_log  logs/host.access.log  main;\n\n        location / {\n            root   html;\n            index  index.html index.htm;\n        }\n\n        #error_page  404              /404.html;\n\n        # redirect server error pages to the static page /50x.html\n        #\n        error_page   500 502 503 504  /50x.html;\n        location = /50x.html {\n            root   html;\n        }\n\n        # proxy the PHP scripts to Apache listening on 127.0.0.1:80\n        #\n        location ~ \\.php$ {\n            proxy_pass   http://127.0.0.1;\n        }\n\n        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000\n        #\n        location ~ \\.php$ {\n            root           html;\n            fastcgi_pass   127.0.0.1:9000;\n            fastcgi_index  index.php;\n            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;\n            include        fastcgi_params;\n        }\n\n        # deny access to .htaccess files, if Apache's document root\n        # concurs with nginx's one\n        #\n        location ~ /\\.ht {\n            deny  all;\n        }\n    }\n\n\n    # another virtual host using mix of IP-, name-, and port-based configuration\n    #\n    server {\n        listen       8000;\n        listen       somename:8080;\n        server_name  somename  alias  another.alias;\n\n        location / {\n            root   html;\n            index  index.html index.htm;\n        }\n    }\n\n\n    # HTTPS server\n    #\n    server {\n        listen       443;\n        server_name  localhost;\n\n        ssl                  on;\n        ssl_certificate      cert.pem;\n        ssl_certificate_key  cert.key;\n\n        ssl_session_timeout  5m;\n\n        ssl_protocols  SSLv2 SSLv3 TLSv1;\n        ssl_ciphers  ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP;\n        ssl_prefer_server_ciphers   on;\n\n        location / {\n            root   html;\n            index  index.html index.htm;\n        }\n    }\n\n}\n\n# comment at eof\n",
+    "c1:14 :1 k:16 :2 mi:1 p:1 :2 c1:27 :1 c1:35 :1 c1:33 :2 c1:27 :3 k:6 :1 p:1 :5 kn:18 :2 mi:4 p:1 :1 p:1 :3 k:4 :1 p:1 :5 kn:7 :7 s:10 p:1 :5 kn:12 :2 nc:24 p:1 :6 kn:10 :2 s:4 :2 s:1 nv:12 :1 s:1 :1 nv:12 :1 s:1 nv:11 s:1 :1 nv:8 :1 s:1 :23 s:2 nv:7 s:1 :1 nv:16 :1 s:1 nv:13 s:1 :1 s:1 :23 s:2 nv:16 s:1 :1 s:1 nv:21 s:2 p:1 :6 c1:35 :6 kn:8 :8 no:2 p:1 :5 c1:19 :6 c1:22 :5 kn:17 :2 mi:2 p:1 :6 c1:10 :6 kn:6 :1 p:1 :9 kn:6 :7 mi:2 p:1 :9 kn:11 :2 s:9 p:1 :10 kn:7 :1 s:6 p:1 :10 c1:40 :10 kn:8 :1 n:1 :1 p:1 :13 kn:4 :3 s:4 p:1 :13 kn:5 :2 s:10 :1 s:9 p:1 :9 p:1 :10 c1:40 :10 c1:58 :9 c1:1 :9 kn:10 :3 mi:3 :1 mi:3 :1 mi:3 :1 mi:3 :2 n:9 p:1 :9 kn:8 :1 p:1 :1 n:9 :1 p:1 :13 kn:4 :3 s:4 p:1 :9 p:1 :10 c1:59 :9 c1:1 :9 kn:8 :1 p:1 :1 sr:6 :1 p:1 :13 kn:10 :3 s:16 p:1 :9 p:1 :10 c1:68 :9 c1:1 :9 kn:8 :1 p:1 :1 sr:6 :1 p:1 :13 kn:4 :11 s:4 p:1 :13 kn:12 :3 nf:9 p:1 mi:4 p:1 :13 kn:13 :2 s:9 p:1 :13 kn:13 :2 s:15 :2 n:8 nv:20 p:1 :13 kn:7 :8 s:14 p:1 :9 p:1 :10 c1:59 :9 c1:26 :9 c1:1 :9 kn:8 :1 p:1 :1 sr:5 :1 p:1 :13 kn:4 :2 s:3 p:1 :9 p:1 :5 p:1 :7 c1:76 :5 c1:1 :5 kn:6 :1 p:1 :9 kn:6 :7 mi:4 p:1 :9 kn:6 :7 nf:8 p:1 mi:4 p:1 :9 kn:11 :2 s:8 :2 s:5 :2 s:13 p:1 :10 kn:8 :1 n:1 :1 p:1 :13 kn:4 :3 s:4 p:1 :13 kn:5 :2 s:10 :1 s:9 p:1 :9 p:1 :5 p:1 :7 c1:14 :5 c1:1 :5 kn:6 :1 p:1 :9 kn:6 :7 mi:3 p:1 :9 kn:11 :2 s:9 p:1 :10 kn:3 :18 no:2 p:1 :9 kn:15 :6 s:8 p:1 :9 kn:19 :2 s:8 p:1 :10 kn:19 :2 mi:2 p:1 :10 kn:13 :2 s:5 :1 s:5 :1 s:5 p:1 :9 kn:11 :2 s:57 p:1 :9 kn:25 :3 no:2 p:1 :10 kn:8 :1 n:1 :1 p:1 :13 kn:4 :3 s:4 p:1 :13 kn:5 :2 s:10 :1 s:9 p:1 :9 p:1 :5 p:1 :2 p:1 :2 c1:16 :1",
+  )
+}
+
+///|
+test "rouge: shell: demo" {
+  check_lex(
+    "shell", "# If not running interactively, don't do anything\n[[ -z \"$PS1\" ]] && return\n",
+    "c:49 :1 o:2 :1 nt:2 :1 s2:1 nv:4 s2:1 :1 o:2 :1 o:2 :1 k:6 :1",
+  )
+}
+
+///|
+test "rouge: shell: visual sample" {
+  check_lex(
+    "shell", "echo $'ansi\\tstrings'\n\necho <<HERE\n HEREE\n  HERE\n# comment\n\nry::setup() {\ncat <<sh\nexport PATH=\"$(ry fullpath \"$@\")\";\nif [ -n \"\\$BASH_VERSION\" ]; then . \"$RY_PREFIX/lib/ry.bash_completion\"; fi\nsh\n}\n\nexport PATH=\"$(ry fullpath \"$@\")\";\nif [ -n \"$BASH_VERSION\" ]; then . \"$RY_PREFIX/lib/ry.bash_completion\"; fi\n\necho $((16#0F)) # should be 15\n\necho \"Balanced paren interpolation: $( if (( a == b )) ; then echo \"equal\" ; fi )\"\necho \"Balanced paren interpolation: $( ( seq 10; seq 10 ) | grep 0 )\"\n\n# ltmain.sh - Provide generalized library-building support services.\n# NOTE: Changing this file will not affect anything until you rerun configure.\n#\n# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005\n# Free Software Foundation, Inc.\n# Originally by Gordon Matzigkeit <gord@gnu.ai.mit.edu>, 1996\n#\n# This program is free software; you can redistribute it and/or modify\n# it under the terms of the GNU General Public License as published by\n# the Free Software Foundation; either version 2 of the License, or\n# (at your option) any later version.\n#\n# This program is distributed in the hope that it will be useful, but\n# WITHOUT ANY WARRANTY; without even the implied warranty of\n# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n# General Public License for more details.\n#\n# You should have received a copy of the GNU General Public License\n# along with this program; if not, write to the Free Software\n# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.\n#\n# As a special exception to the GNU General Public License, if you\n# distribute this file as part of a program that contains a\n# configuration script generated by Autoconf, you may include it under\n# the same distribution terms that you use for the rest of that program.\n\nbasename=\"s,^.*/,,g\"\n\n# Work around backward compatibility issue on IRIX 6.5. On IRIX 6.4+, sh\n# is ksh but when the shell is invoked as \"sh\" and the current value of\n# the _XPG environment variable is not equal to 1 (one), the special\n# positional parameter $0, within a function call, is the name of the\n# function.\nprogpath=\"$0\"\n\n# define SED for historic ltconfig's generated by Libtool 1.3\ntest -z \"$SED\" && SED=sed\n\n# The name of this program:\nprogname=`echo \"$progpath\" | $SED $basename`\nmodename=\"$progname\"\n\n# Global variables:\nEXIT_SUCCESS=0\nEXIT_FAILURE=1\n\nPROGRAM=ltmain.sh\nPACKAGE=libtool\nVERSION=1.5.22\nTIMESTAMP=\" (1.1220.2.365 2005/12/18 22:14:06)\"\n\n# See if we are running on zsh, and set the options which allow our\n# commands through without removal of \\ escapes.\nif test -n \"${ZSH_VERSION+set}\" ; then\n  setopt NO_GLOB_SUBST\nfi\n# Same for EGREP, and just to be sure, do LTCC as well\nif test \"X$EGREP\" = X ; then\n    EGREP=egrep\nfi\nif test \"X$LTCC\" = X ; then\n    LTCC=${CC-gcc}\nfi\n\n# Check that we have a working $echo.\nif test \"X$1\" = X--no-reexec; then\n  # Discard the --no-reexec flag, and continue.\n  shift\nelif test \"X$1\" = X--fallback-echo; then\n  # Avoid inline document here, it may be left over\n  :\nelif test \"X`($echo '\\t') 2>/dev/null`\" = 'X\\t'; then\n  # Yippee, $echo works!\n  :\nelse\n  # Restart under the correct shell, and then maybe $echo will work.\n  exec $SHELL \"$progpath\" --no-reexec ${1+\"$@\"}\nfi\n\nif test \"X$1\" = X--fallback-echo; then\n  # used as fallback echo\n  shift\n  cat <<EOF\n$*\nEOF\n  exit $EXIT_SUCCESS\nfi\n\ndefault_mode=\nhelp=\"Try \\`$progname --help' for more information.\"\nmagic=\"%%%MAGIC variable%%%\"\nmkdir=\"mkdir\"\nmv=\"mv -f\"\nrm=\"rm -f\"\n\n# Sed substitution that helps us do robust quoting.  It backslashifies\n# metacharacters that are still active within double-quoted strings.\nXsed=\"${SED}\"' -e 1s/^X//'\nsed_quote_subst='s/\\([\\\\`\\\\\"$\\\\\\\\]\\)/\\\\\\1/g'\n# test EBCDIC or ASCII\ncase `echo X|tr X '\\101'` in\n A) # ASCII based system\n    # \\n is not interpreted correctly by Solaris 8 /usr/ucb/tr\n  SP2NL='tr \\040 \\012'\n  NL2SP='tr \\015\\012 \\040\\040'\n  ;;\n *) # EBCDIC based system\n  SP2NL='tr \\100 \\n'\n  NL2SP='tr \\r\\n \\100\\100'\n  ;;\nesac\n\n# NLS nuisances.\n# Only set LANG and LC_ALL to C if already set.\n# These must not be set unconditionally because not all systems understand\n# e.g. LANG=C (notably SCO).\n# We save the old values to restore during execute mode.\nif test \"${LC_ALL+set}\" = set; then\n  save_LC_ALL=\"$LC_ALL\"; LC_ALL=C; export LC_ALL\nfi\nif test \"${LANG+set}\" = set; then\n  save_LANG=\"$LANG\"; LANG=C; export LANG\nfi\n\n# Make sure IFS has a sensible default\nlt_nl='\n'\nIFS=\" \t$lt_nl\"\n\nif test \"$build_libtool_libs\" != yes && test \"$build_old_libs\" != yes; then\n  $echo \"$modename: not configured to build any kind of library\" 1>&2\n  $echo \"Fatal configuration error.  See the $PACKAGE docs for more information.\" 1>&2\n  exit $EXIT_FAILURE\nfi\n\n# Global variables.\nmode=$default_mode\nnonopt=\nprev=\nprevopt=\nrun=\nshow=\"$echo\"\nshow_help=\nexecute_dlfiles=\nduplicate_deps=no\npreserve_args=\nlo2o=\"s/\\\\.lo\\$/.${objext}/\"\no2lo=\"s/\\\\.${objext}\\$/.lo/\"\n\nif test -z \"$max_cmd_len\"; then\n  i=0\n  testring=\"ABCD\"\n  new_result=\n  \n  # If test is not a shell built-in, we'll probably end up computing a\n  # maximum length that is only half of the actual maximum length, but\n  # we can't tell.\n  while (test \"X\"`$SHELL $0 --fallback-echo \"X$testring\" 2>/dev/null` \\\n             = \"XX$testring\") >/dev/null 2>&1 &&\n          new_result=`expr \"X$testring\" : \".*\" 2>&1` &&\n          max_cmd_len=\"$new_result\" &&\n          test \"$i\" != 17 # 1/2 MB should be enough\n  do\n    i=`expr $i + 1`\n    testring=\"$testring$testring\"\n  done\n  testring=\n  # Add a significant safety factor because C++ compilers can tack on massive\n  # amounts of additional arguments before passing them to the linker.\n  # It appears as though 1/2 is a usable value.\n  max_cmd_len=`expr $max_cmd_len \\/ 2`\nfi\n\n#####################################\n# Shell function definitions:\n# This seems to be the best place for them\n\n# func_mktempdir [string]\n# Make a temporary directory that won't clash with other running\n# libtool processes, and avoids race conditions if possible.  If\n",
+    "nb:4 :1 s1:6 se:2 s1:8 :2 nb:4 :1 o:2 no:4 sh:8 no:7 c:9 :11 o:2 :1 o:1 :1 nb:3 :1 o:2 no:2 sh:14 si:2 :12 s2:1 nv:2 s2:1 si:1 sh:12 se:2 sh:25 nv:10 sh:29 no:3 o:1 :2 nb:7 nv:4 o:1 s2:1 si:2 :12 s2:1 nv:2 s2:1 si:1 s2:1 p:1 :1 k:2 :1 o:1 :1 nt:2 :1 s2:1 nv:13 s2:1 :1 o:1 p:1 :1 k:4 :1 nb:1 :1 s2:1 nv:10 s2:24 p:1 :1 k:4 nb:4 :1 k:3 m:5 k:2 :1 c:14 :2 nb:4 :1 s2:31 si:2 :1 k:2 :1 o:2 :3 o:2 :3 o:2 :1 p:1 :1 k:5 nb:4 :1 s2:7 :1 p:1 :1 k:2 :1 si:1 s2:1 :1 nb:4 :1 s2:31 si:2 :1 o:1 :1 nb:4 :2 p:1 :1 nb:4 :3 o:1 :3 nb:5 :2 si:1 s2:1 :2 c:68 :1 c:78 :1 c:1 :1 c:68 :1 c:32 :1 c:61 :1 c:1 :1 c:70 :1 c:70 :1 c:67 :1 c:37 :1 c:1 :1 c:69 :1 c:60 :1 c:67 :1 c:42 :1 c:1 :1 c:67 :1 c:61 :1 c:80 :1 c:1 :1 c:66 :1 c:59 :1 c:70 :1 c:72 :2 nb:8 o:1 s2:11 :2 c:72 :1 c:71 :1 c:68 :1 c:69 :1 c:11 :1 nv:8 o:1 s2:1 nv:2 s2:1 :2 c:61 :1 nb:4 :1 nt:2 :1 s2:1 nv:4 s2:1 :1 o:2 :1 nv:3 o:1 nb:3 :2 c:27 :1 nv:8 o:1 sb:1 nb:4 :1 s2:1 nv:9 s2:1 :3 nv:4 :1 nv:9 sb:1 :1 nv:8 o:1 s2:1 nv:9 s2:1 :2 c:19 :1 nv:12 o:1 :2 nv:12 o:1 :3 nv:7 o:1 :10 nv:7 o:1 :8 nv:7 o:1 :7 nv:9 o:1 s2:37 :2 c:67 :1 c:48 :1 k:3 nb:4 :1 nt:2 :1 s2:1 k:2 nv:11 p:4 k:1 s2:1 :1 p:1 :1 k:7 :21 k:2 :1 c:54 :1 k:3 nb:4 :1 s2:2 nv:6 s2:1 :1 o:1 :3 p:1 :1 k:9 nv:5 o:1 :6 k:6 nb:4 :1 s2:2 nv:5 s2:1 :1 o:1 :3 p:1 :1 k:9 nv:4 o:1 k:2 nv:2 p:4 k:1 :1 k:2 :2 c:37 :1 k:3 nb:4 :1 s2:2 nv:2 s2:1 :1 o:1 :13 p:1 :1 k:4 :3 c:45 :3 nb:6 k:5 nb:4 :1 s2:2 nv:2 s2:1 :1 o:1 :17 p:1 :1 k:4 :3 c:49 :5 k:5 nb:4 :1 s2:2 sb:1 o:1 nv:5 :1 s1:4 o:1 :12 sb:1 s2:1 :1 o:1 :1 s1:5 p:1 :1 k:4 :3 c:22 :5 k:4 :3 c:66 :3 nb:4 :1 nv:6 :1 s2:1 nv:9 s2:1 :1 nt:11 :1 k:2 nv:1 p:1 s2:1 nv:2 s2:1 k:1 :1 k:7 nb:4 :1 s2:2 nv:2 s2:1 :1 o:1 :17 p:1 :1 k:4 :3 c:23 :3 nb:11 :1 o:2 no:3 sh:1 nv:2 sh:1 no:4 :2 nb:4 :1 nv:13 :1 k:4 nv:12 o:1 :1 nb:4 o:1 s2:5 se:2 nv:9 s2:31 :1 nv:5 o:1 s2:22 :1 nb:5 o:1 s2:7 :1 nb:2 o:1 s2:7 :1 nb:2 o:1 s2:7 :2 c:70 :1 c:68 :1 nv:4 o:1 s2:1 k:2 nv:3 k:1 s2:1 s1:13 :1 nv:15 o:1 s1:28 :1 c:22 :1 k:4 :1 sb:1 nb:5 :7 s1:6 sb:1 :1 k:4 :1 p:1 :1 c:20 :5 c:58 :3 nv:5 o:1 s1:14 :3 nv:5 o:1 s1:22 :3 p:2 :2 k:1 p:1 :1 c:21 :3 nv:5 o:1 s1:12 :3 nv:5 o:1 s1:18 :3 p:2 :1 k:4 :2 c:16 :1 c:47 :1 c:74 :1 c:28 :1 c:56 :1 k:3 nb:4 :1 s2:1 k:2 nv:6 p:4 k:1 s2:1 :1 o:1 :1 nb:3 p:1 :1 k:7 nv:11 o:1 s2:1 nv:7 s2:1 p:1 :1 nv:6 o:1 :1 p:1 :1 nb:7 :7 k:6 nb:4 :1 s2:1 k:2 nv:4 p:4 k:1 s2:1 :1 o:1 :1 nb:3 p:1 :1 k:7 nv:9 o:1 s2:1 nv:5 s2:1 p:1 :1 nv:4 o:1 :1 p:1 :1 nb:7 :5 k:2 :2 c:38 :1 nv:5 o:1 s1:3 :1 nv:3 o:1 s2:3 nv:6 s2:1 :2 k:3 nb:4 :1 s2:1 nv:19 s2:1 :1 o:2 :1 nb:3 :1 o:2 :1 nb:4 :1 s2:1 nv:15 s2:1 :1 o:2 :1 nb:3 p:1 :1 k:4 :3 nv:5 :1 s2:1 nv:9 s2:46 :8 nv:5 :1 s2:37 nv:8 s2:28 :8 nb:4 :1 nv:13 :1 k:2 :2 c:19 :1 nv:4 o:1 nv:13 :1 nv:6 o:1 :1 nv:4 o:1 :1 nv:7 o:1 :1 nv:3 o:1 :1 nv:4 o:1 s2:1 nv:5 s2:1 :1 nv:9 o:1 :1 nv:15 o:1 :1 nv:14 o:1 :3 nv:13 o:1 :1 nv:4 o:1 s2:3 se:2 s2:3 se:2 s2:2 k:2 nv:6 k:1 s2:2 :1 nv:4 o:1 s2:3 se:2 s2:1 k:2 nv:6 k:1 se:2 s2:6 :2 k:3 nb:4 :1 nt:2 :1 s2:1 nv:12 s2:1 p:1 :1 k:7 nv:1 o:1 :4 nv:8 o:1 s2:6 :3 nv:10 o:1 :6 c:68 :3 c:68 :3 c:16 :3 k:5 :1 o:1 nb:4 :1 s2:3 sb:1 nv:6 :1 nv:2 :1 nt:15 :1 s2:2 nv:9 s2:1 :12 sb:1 :1 se:1 :14 o:1 :1 s2:3 nv:9 s2:1 o:1 :1 o:1 :15 o:2 :11 nv:10 o:1 sb:1 nb:4 :1 s2:2 nv:9 s2:1 :3 s2:4 :5 sb:1 :1 o:2 :11 nv:11 o:1 s2:1 nv:11 s2:1 :1 o:2 :11 nb:4 :1 s2:1 nv:2 s2:1 :1 o:2 :4 c:25 :3 k:7 nv:1 o:1 sb:1 nb:4 :1 nv:2 :4 sb:1 :5 nv:8 o:1 s2:1 nv:18 s2:1 :3 k:7 nv:8 o:1 :3 c:75 :3 c:68 :3 c:45 :3 nv:11 o:1 sb:1 nb:4 :1 nv:12 :1 se:2 :2 sb:1 :1 k:2 :2 c:37 :1 c:29 :1 c:42 :2 c:25 :1 c:64 :1 c:64 :1",
+  )
+}
+
+///|
+test "rouge: apache: demo" {
+  check_lex(
+    "apache", "AddDefaultCharset UTF-8\n\nRewriteEngine On\n\n# Serve gzipped version if available and accepted\nAddEncoding x-gzip .gz\nRewriteCond %{HTTP:Accept-Encoding} gzip\nRewriteCond %{REQUEST_FILENAME}.gz -f\nRewriteRule ^(.*)$ $1.gz [QSA,L]\n<FilesMatch \\.css\\.gz$>\n  ForceType text/css\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.js\\.gz$>\n  ForceType application/javascript\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.html\\.gz$>\n  ForceType text/html\n  Header append Vary Accept-Encoding\n</FilesMatch>\n",
+    "nc:17 :8 nc:13 :1 ss:2 :2 c:49 :1 nc:11 :12 nc:11 :30 nc:11 :27 nc:11 :22 p:1 nl:10 sr:11 p:2 :2 nc:9 :12 nc:6 :1 ss:6 :22 p:2 nl:10 p:3 nl:10 sr:10 p:2 :2 nc:9 :26 nc:6 :1 ss:6 :22 p:2 nl:10 p:3 nl:10 sr:12 p:2 :2 nc:9 :13 nc:6 :1 ss:6 :22 p:2 nl:10 p:2",
+  )
+}
+
+///|
+test "rouge: docker: demo" {
+  check_lex(
+    "docker", "maintainer First O'Last\n\nrun echo \\\n  123 $bar\n# comment\nonbuild add . /app/src\nonbuild run echo \\\n  123 $bar\nCMD /bin/bash\n",
+    "k:10 s:13 :2 k:4 nb:4 :1 se:2 :6 nv:4 :1 c:9 :1 k:7 w:1 k:3 s:11 :1 k:12 nb:4 :1 se:2 :6 nv:4 :1 k:3 s:10 :1",
+  )
+}
+
+///|
+test "rouge: docker: visual sample" {
+  check_lex(
+    "docker", "FROM golang:1.16 AS builder\nmaintainer First O'Last\n\nrun echo \\\n  123 $bar\n# comment\nonbuild add . /app/src\nonbuild run echo \\\n  123 $bar\nCMD /bin/bash\n",
+    "k:4 w:1 s:11 w:1 k:2 w:1 s:7 :1 k:10 s:13 :2 k:4 nb:4 :1 se:2 :6 nv:4 :1 c:9 :1 k:7 w:1 k:3 s:11 :1 k:12 nb:4 :1 se:2 :6 nv:4 :1 k:3 s:10 :1",
+  )
+}
+
+///|
+test "rouge: console: demo" {
+  check_lex(
+    "console", "# prints \"hello, world\" to the screen\n~# echo Hello, World\nHello, World\n\n# don't run this\n~# rm -rf --no-preserve-root /\n",
+    "gp:1 w:1 :7 s2:14 :15 gp:2 w:1 nb:5 :13 go:14 gp:1 w:1 :3 s1:12 gp:2 w:1 s1:28",
+  )
+}
+
+///|
+test "rouge: console: visual sample" {
+  check_lex(
+    "console", "\nsio4@silver:~$ ls /var\nbackups  crash  local  log   metrics  run    tmp\ncache    lib    lock   mail  opt      spool\n# ...\nsio4@silver:~$ sudo su -\n[sudo] password for sio4:\nroot@silver:~# ls /bin/*sh\n<...>\n/bin/bash\n<...>\nroot@silver:~#\nroot@silver:~#\nroot@silver:~# exit\nlogout\nsio4@silver:~$\n$ ls /var\nbackups  crash  local  log   metrics  run    tmp\ncache    lib    lock   mail  opt      spool\n<...>\n$ sudo su -\n[sudo] password for sio4:\n# ls /bin/*sh\n<...>\n/bin/bash\n<...>\n#\n# exit\nlogout\n$\n\n~$ gpg2 --output private.key.asc \\\n       --armor \\\n       --export-secret-key $KEYID\n\n; cat <<HELLO\n> HELLO0\n> HELLO\nHELLO0\n;\n\n$ foo ; bar\n$ foo --thing > bar.txt\n\n# regression:\n--foo \\\n--bar $\n",
+    "go:1 gp:14 w:1 nb:2 :6 go:93 gp:1 w:1 :4 gp:14 w:1 nb:5 :5 go:26 gp:14 w:1 nb:2 :6 k:1 :3 c:6 go:10 c:6 gp:14 w:1 gp:14 w:1 gp:14 w:1 nb:4 :1 go:7 gp:14 w:1 gp:1 w:1 nb:2 :6 go:93 c:6 gp:1 w:1 nb:5 :5 go:26 gp:1 w:1 nb:2 :6 k:1 :3 c:6 go:10 c:6 gp:1 w:1 gp:1 w:1 nb:4 :1 go:7 gp:1 w:1 go:1 gp:2 w:1 :5 nt:8 :17 se:1 :1 go:17 gp:28 :6 go:1 gp:1 w:1 nb:3 :1 o:2 no:5 sh:1 gp:1 w:1 sh:7 gp:1 w:1 no:6 go:7 gp:1 w:1 go:1 gp:1 w:1 :4 p:1 :5 gp:1 w:1 :4 nt:7 :1 o:1 :9 go:1 gp:1 w:1 :12 go:8 gp:7 w:1",
+  )
+}
+
+///|
 test "rouge: json-doc: demo" {
   check_lex(
     "json-doc", "{ \"one\": 1, \"two\": 2, \"null\": null, \"simple\": true } // a simple json object\n",
@@ -220,6 +418,22 @@ test "rouge: json-doc: visual sample" {
   check_lex(
     "json-doc", "{\n    // bare keys\n    bareKey: \"Hello\",\n    $: \"Dollar\",\n    foo     : \"Foo\",\n    bar\n\n      : { \"bar\": true }\n\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"age\": 25,\n    \"address\": {\n        \"streetAddress\": \"21 2nd Street\",\n        \"city\": \"New York\",\n        \"state\": \"NY\",\n        \"postalCode\": \"10021\",\n        \"country\": \"US\"\n    },\n    \"ellipsis\": {\n        \"object\": { ... },\n        ...\n        \"list\": [ ... ],\n        \"locations\": {\n            ...\n            \"city\": \"New York\",\n            ...\n            \"postalCode\": \"10021\",\n            ...\n        },\n        \"key\": ...,\n        ...\n    },\n    \"comments\": { // comments\n        \"key\": \"value\", // in\n        \"list\": [\n            // most\n        ], // locations\n        \"key\": \"value\",\n        \"emptyObject\": { // comment\n        }\n    },\n    ...\n    \"errors\": {\n        \"object\": { \"a\", \"b\" }\n    },\n    \"emptyObject\": {} // comment\n}\n",
     "p:1 w:5 c1:12 w:5 na:7 p:1 w:1 s2:7 p:1 w:5 na:1 p:1 w:1 s2:8 p:1 w:5 na:3 :5 p:1 w:1 s2:5 p:1 w:5 na:3 :8 p:1 w:1 p:1 w:1 nl:5 p:1 w:1 kc:4 w:1 p:1 w:6 nl:11 p:1 w:1 s2:6 p:1 w:5 nl:10 p:1 w:1 s2:7 p:1 w:5 nl:5 p:1 w:1 mi:2 p:1 w:5 nl:9 p:1 w:1 p:1 w:9 nl:15 p:1 w:1 s2:15 p:1 w:9 nl:6 p:1 w:1 s2:10 p:1 w:9 nl:7 p:1 w:1 s2:4 p:1 w:9 nl:12 p:1 w:1 s2:7 p:1 w:9 nl:9 p:1 w:1 s2:4 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 c1:3 w:9 nl:6 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 nl:11 p:1 w:1 p:1 w:13 c1:3 w:13 nl:6 p:1 w:1 s2:10 p:1 w:13 c1:3 w:13 nl:12 p:1 w:1 s2:7 p:1 w:13 c1:3 w:9 p:2 w:9 nl:5 p:1 w:1 c1:3 p:1 w:9 c1:3 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:1 c1:11 w:9 nl:5 p:1 w:1 s2:7 p:1 w:1 c1:5 w:9 nl:6 p:1 w:1 p:1 w:13 c1:7 w:9 p:2 w:1 c1:12 w:9 nl:5 p:1 w:1 s2:7 p:1 w:9 nl:13 p:1 w:1 p:1 w:1 c1:10 w:9 p:1 w:5 p:2 w:5 c1:3 w:5 nl:8 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 s2:3 p:1 w:1 s2:3 w:1 p:1 w:5 p:2 w:5 nl:13 p:1 w:1 p:2 w:1 c1:10 w:1 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: batchfile: demo" {
+  check_lex(
+    "batchfile", "@echo off\nsetlocal enableextensions enabledelayedexpansion\nfor /f \"tokens=*\" %%a in (\"hello !username! hi\") do echo %%~a\n",
+    ":6 na:3 :1 nb:8 :1 na:16 :1 na:22 :1 k:3 :1 na:3 s2:10 :1 vm:3 :1 k:2 :1 o:1 s2:7 nv:10 s2:4 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1",
+  )
+}
+
+///|
+test "rouge: batchfile: visual sample" {
+  check_lex(
+    "batchfile", "@echo off\nsetlocal enableextensions enabledelayedexpansion\nset result=10\nset /a result +=1\nset /a \"row+=1,moved=1\"\necho Hello >nul\necho %windir%\necho !windir!\nmode con cp /status\nset /a num=0xff\nset /p \"=qwerty.\" < nul\necho %~dp0\nrem all okay\n@rem \"sample\"\n:: this is an empty label\nattrib.exe +r file.txt 2>nul\nfor /f \"tokens=1\" %%a in ('echo hello %username% hi ^'') do echo %%~a\nfor /f \"tokens=*\" %%a in (\"hello !username! hi \"\"\") do echo %%~a\nfor /f \"tokens=* usebackq\" %%a in (`echo hello !username!`) do (\nfor /f %%b in (\"%%~a\") do echo %%~b\n)\nfor /f \"usebackq\" %%a in (`echo world ^``) do echo %%~a\nfor /f %%a in ('echo hi') do echo %%~a\ncall :a || goto :bye\nif 5 equ 5 (\n  echo are equal\n  if \"z\"==\"z\" (\n    echo \"zeta\"\n  )\n) else (\n  echo are different\n)\n:bye\necho ^Hello\necho Bye\ngoto :eof\n:a\nstreamlink --http-header \"User-Agent: test\" \"https://example.com/master.m3u8\" best -o output.ts\n",
+    ":6 na:3 :1 nb:8 :1 na:16 :1 na:22 :1 kd:3 :1 kd:6 o:1 m:2 :1 kd:3 :1 na:3 kd:6 :1 o:2 m:1 :1 kd:3 :1 na:3 s2:16 :1 nb:4 :1 kd:5 :1 o:1 kr:3 :1 nb:4 :1 nv:8 :1 nb:4 :1 nv:8 :1 nb:4 :1 kr:3 :1 kd:2 :1 na:8 kd:3 :1 na:3 kd:3 o:1 mh:4 :1 kd:3 :1 na:3 s2:10 :1 o:1 :1 kr:3 :1 nb:4 :1 vm:5 :1 c:12 :1 c:13 :1 c:25 :1 nb:10 :1 na:3 kd:4 :5 m:1 o:1 kr:3 :1 k:3 :1 na:3 s2:10 :1 vm:3 :1 k:2 :1 o:1 s1:12 nv:10 s1:4 se:2 s1:1 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1 k:3 :1 na:3 s2:10 :1 vm:3 :1 k:2 :1 o:1 s2:7 nv:10 s2:7 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1 k:3 :1 na:3 s2:19 :1 vm:3 :1 k:2 :1 o:1 sb:12 nv:10 sb:1 o:1 :1 k:2 :1 o:1 :1 k:3 :1 na:3 vm:3 :1 k:2 :1 o:1 s2:1 vm:4 s2:1 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1 o:1 :1 k:3 :1 na:3 s2:10 :1 vm:3 :1 k:2 :1 o:1 sb:12 se:2 sb:1 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1 k:3 :1 na:3 vm:3 :1 k:2 :1 o:1 s1:9 o:1 :1 k:2 :1 nb:4 :1 vm:4 :1 k:4 :1 nl:2 :1 o:2 :1 k:4 :1 nl:4 :1 k:2 :1 m:1 :1 ow:3 :1 m:1 :1 o:1 :3 nb:4 :1 kd:3 :1 kd:5 :3 k:2 :1 s2:3 o:2 s2:3 :1 o:1 :5 nb:4 :1 s2:6 :3 o:1 :1 o:1 :1 k:4 :1 o:1 :3 nb:4 :1 kd:3 :1 kd:9 :1 o:1 :1 nl:4 :1 nb:4 :1 se:2 kd:4 :1 nb:4 :1 kd:3 :1 k:4 :1 nl:4 :1 nl:2 :1 kd:10 :1 na:14 s2:18 :1 s2:33 :1 kd:4 :1 na:3 kd:6 :4",
   )
 }
 
@@ -248,6 +462,38 @@ test "rouge: plaintext: visual sample" {
   check_lex(
     "plaintext", "1\n2\n3\n4\n5\n6\n7\n\nLorem Ipsum and et cetera.\n\nThis is just plain text, no highlighting here.\n",
     ":90",
+  )
+}
+
+///|
+test "rouge: powershell: demo" {
+  check_lex(
+    "powershell", "function Verb-Noun\n{\n    <#\n    .SYNOPSIS\n    Tells you what it does\n\n    .DESCRIPTION\n    Tells you what it does with more detail.\n    #>\n    param ([string]$Name, [string]$Extension = \"txt\", [string]$foo=\"bar\")\n    $name = $name + \".\" + $extension\n    $name\n}\n",
+    "kr:8 w:1 nf:9 w:1 p:1 w:5 cm:7 cs:9 cm:33 cs:12 cm:52 w:5 kr:5 w:1 p:2 n:6 p:1 nv:5 p:1 w:1 p:1 n:6 p:1 nv:10 w:1 o:1 w:1 s2:5 p:1 w:1 p:1 n:6 p:1 nv:4 o:1 s2:5 p:1 w:5 nv:5 w:1 o:1 w:1 nv:5 w:1 o:1 w:1 s2:3 w:1 o:1 w:1 nv:10 w:5 nv:5 w:1 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: powershell: visual sample" {
+  check_lex(
+    "powershell", "#requires -version 2.0\n\n###########################\n# Comments\n###########################\n\n# Normal Comment\n\n<#\n    multi\n    line\n    comment\n#>\n\n###########################\n## Strings\n###########################\n\n\"String that accepts $variables, and substitutions\"\n\"String with escaped `$variable\"\n'Literal string $($PSScriptRoot)'\n\n###########################\n# Heredoc strings\n###########################\n\n@\"\nHeredoc with $variables\n\"@\n@'\nHeredoc with $literal strings\n'@\n\n###########################\n# Variables\n###########################\n\n$var1 = 5\n$var2 = $true\n$var3 = get-host | Select-Object -First 1\n${this-is_a%valid*variable@name} = \"OMG\"\nWrite-Output ${this-is_a%valid*variable@name}\n$global:ErrorActionPreference\n\n###########################\n# Collections\n###########################\n\n$my_hash = @{\n    owner = \"my\"\n    type = \"hash\"\n    thing = \"table\"\n}\n\n$my_complex_hash = @{\n  # comment\n  foo = {\n    if ($var1 -eq $var2)\n    {\n        return $true\n    }\n  }\n}\n\n$my_array = @(\"my\" \"array\")\n\n$myobject = [PSCustomObject]@{\n   Name = 'Alice';\n   Age = 42;\n}\n\n$myarray = @(\n    [PSCustomObject]@{\n        Name = 'Bob';\n        Age = 31;\n    },\n    [PSCustomObject]@{\n        Name = 'Charlie';\n        Age = 41;\n    }\n)\n\n###########################\n# Commands\n###########################\n\ntype \"is a reserved word\"\nalias foo bar\nWrite-output \"Hello\" # End-of-line comment\nGet-Process | Tee-Object -FilePath \"C:\\Test1\\testfile2.txt\" # Unapproved verb\ncd C:\\Test1\\\nC:\\Test1\\test2.cmd input.txt\n& \"C:\\Test1\\test2.exe\"\n\\command.exe something\ncommand.exe arg --user \".\\ENTER-YOUR-USERNAME\" --password \"ENTER-YOUR-PASSWORD\"\n\n###########################\n# Declarations\n###########################\n\nfunction Verb-Noun\n{\n    <#\n    .SYNOPSIS\n    Tells you what it does\n\n    .DESCRIPTION\n    Tells you what it does with more detail.\n    #>\n    param ([string]$Name, [string]$Extension = \"txt\", [string]$foo=\"bar\")\n    $name = $name + \".\" + $extension\n    $name\n}\n\nfunction global:Verb-Noun {\n    something\n}\n\nprocess {\n    \"This is a script block\"\n}\n\n###########################\n# Control structures\n###########################\n\nif ($var1 -eq $var2)\n{\n    return $true\n}\n\ntry {\n    write-output \"something\"\n} catch {\n    write-output \"something else\"\n}\n\nForeach ($Thing in $Things ) {\n    Do-Something\n}\n\n###########################\n# Classes\n###########################\n\nclass Child : Parent, Relatives {\n    [int] hidden $var = 8\n\n    Child ([string]$a, [string]$b, [int]$capacity) {\n        $this.var = $a\n    }\n\n    [string]toString() {\n        return \"A string\"\n    }\n}\n\n$my_obj = [Child]::new()\n\n###########################\n# Challenges\n###########################\n\n[System.Collections.Generic.List[string]](1..100)\n[System.Collections.Generic.Dictionary[string, int]](1..100|%{@{N=$_}})\n\nFunction Get-IPv4Scopes\n<#\n\t.SYNOPSIS\n\t\tRead IPv4Scopes from an array of servers\n\t.PARAMETER Servers\n\t\tSpecifies an array of servers\n\t.EXAMPLE\n\t\tGet-IPv4Scopes\n\n\t\tWill prompt for all inputs\n#>\n{\n    [CmdletBinding()]\n    Param(\n    # 1\n    [parameter(\n        Mandatory=$true,\n        Position=0,\n        ValueFromPipelineByPropertyName=$true,\n        HelpMessage=\"Server List\"\n        )]\n    [string[]]$Servers,\n    #2\n    [parameter(Mandatory=$false,ValueFromPipeline=$false)]\n    [bool]$Unique=$false\n    )  #EndParam\n\n    Begin {}\n\n    Process {\n        $arrayJobs=@()\n        foreach ($server in $Servers) {\n            $arrayJobs+=Invoke-Command -ComputerName $server -scriptblock {Get-DhcpServerv4Scope}  -AsJob\n        }\n        $complete=$false\n        while (-not $complete) {\n            $arrayJobsInProgress= $arrayJobs | Where-Object { $_.State -match 'running' }\n            if (-not $arrayJobsInProgress) { $complete=$true }\n        }\n        $Scopes=$arrayJobs|Receive-Job\n        $UniqueScopes=$Scopes|Sort-Object -Property ScopeId -Unique\n    }\n\n    End {\n        if ($Unique) { return $UniqueScopes }\n        else { return $Scopes }\n    }\n\n} #end function\n\nWrite-Output \"Updating: $($file.FullName)\"\n# $content = Get-Content $file.FullName\n\n# Without Error\n$gitUserName = \"$($userAdObject.Properties['sn']), $($userAdObject.Properties['givenName'])\"\n\n# Grave escaping\n$gitExeString = \"$gitExeFolder\\git.exe\" &(\"$gitExeString\") config --add --global user.name `\"$gitUserName`\"\nGet-ChildItem -Include *.txt `\n    -Recurse\nWrite-Output `$hello\n\n# Where-Object alias\nGet-process | ? {$_.workingset -gt 25000*1024}\n",
+    "c:22 w:2 c:27 w:1 c:10 w:1 c:27 w:2 c:16 w:2 cm:36 w:2 c:27 w:1 c:10 w:1 c:27 w:2 s2:21 nv:10 s2:20 w:1 s2:21 se:2 s2:9 w:1 s1:33 w:2 c:27 w:1 c:17 w:1 c:27 w:2 sh:16 nv:10 sh:3 w:1 sh:35 w:2 c:27 w:1 c:11 w:1 c:27 w:2 nv:5 w:1 o:1 w:1 mi:1 w:1 nv:5 w:1 o:1 w:1 bp:5 w:1 nv:5 w:1 o:1 w:1 n:8 w:1 o:1 w:1 n:13 w:1 nt:6 w:1 nx:1 w:1 nv:32 w:1 o:1 w:1 s2:5 w:1 n:12 w:1 nv:32 w:1 nv:1 nn:6 p:1 nv:21 w:2 c:27 w:1 c:13 w:1 c:27 w:2 nv:8 w:1 o:1 w:1 p:2 w:5 nx:5 w:1 o:1 w:1 s2:4 w:5 nx:4 w:1 o:1 w:1 s2:6 w:5 nx:5 w:1 o:1 w:1 s2:7 w:1 p:1 w:2 nv:16 w:1 o:1 w:1 p:2 w:3 c:9 w:3 nx:3 w:1 o:1 w:1 p:1 w:5 kr:2 w:1 p:1 nv:5 w:1 o:3 w:1 nv:5 p:1 w:5 p:1 w:9 kr:6 w:1 bp:5 w:5 p:1 w:3 p:1 w:1 p:1 w:2 nv:9 w:1 o:1 w:1 p:2 s2:4 w:1 s2:7 p:1 w:2 nv:9 w:1 o:1 w:1 p:1 n:14 p:3 w:4 nx:4 w:1 o:1 w:1 s1:7 p:1 w:4 nx:3 w:1 o:1 w:1 mi:2 p:1 w:1 p:1 w:2 nv:8 w:1 o:1 w:1 p:2 w:5 p:1 n:14 p:3 w:9 nx:4 w:1 o:1 w:1 s1:5 p:1 w:9 nx:3 w:1 o:1 w:1 mi:2 p:1 w:5 p:2 w:5 p:1 n:14 p:3 w:9 nx:4 w:1 o:1 w:1 s1:9 p:1 w:9 nx:3 w:1 o:1 w:1 mi:2 p:1 w:5 p:1 w:1 p:1 w:2 c:27 w:1 c:10 w:1 c:27 w:2 kr:4 w:1 s2:20 w:1 n:5 w:1 nx:3 w:1 nx:3 w:1 n:12 w:1 s2:7 w:1 c:21 w:1 n:11 w:1 o:1 w:1 n:10 w:1 nt:9 w:1 s2:24 w:1 c:17 w:1 n:2 w:1 nx:9 w:1 n:18 w:1 nx:9 w:1 o:1 w:1 s2:20 w:1 n:12 w:1 nx:9 w:1 n:11 w:1 nx:3 w:1 nt:6 w:1 s2:23 w:1 nt:10 w:1 s2:21 w:2 c:27 w:1 c:14 w:1 c:27 w:2 kr:8 w:1 nf:9 w:1 p:1 w:5 cm:7 cs:9 cm:33 cs:12 cm:52 w:5 kr:5 w:1 p:2 n:6 p:1 nv:5 p:1 w:1 p:1 n:6 p:1 nv:10 w:1 o:1 w:1 s2:5 p:1 w:1 p:1 n:6 p:1 nv:4 o:1 s2:5 p:1 w:5 nv:5 w:1 o:1 w:1 nv:5 w:1 o:1 w:1 s2:3 w:1 o:1 w:1 nv:10 w:5 nv:5 w:1 p:1 w:2 kr:8 w:1 nn:6 p:1 nf:9 w:1 p:1 w:5 n:9 w:1 p:1 w:2 kr:7 w:1 p:1 w:5 s2:24 w:1 p:1 w:2 c:27 w:1 c:20 w:1 c:27 w:2 kr:2 w:1 p:1 nv:5 w:1 o:3 w:1 nv:5 p:1 w:1 p:1 w:5 kr:6 w:1 bp:5 w:1 p:1 w:2 kr:3 w:1 p:1 w:5 n:12 w:1 s2:11 w:1 p:1 w:1 kr:5 w:1 p:1 w:5 n:12 w:1 s2:16 w:1 p:1 w:2 kr:7 w:1 p:1 nv:6 w:1 kr:2 w:1 nv:7 w:1 p:1 w:1 p:1 w:5 n:12 w:1 p:1 w:2 c:27 w:1 c:9 w:1 c:27 w:2 kr:5 w:1 nc:5 w:1 p:1 w:1 nc:6 p:1 w:1 nc:9 w:1 p:1 w:5 p:1 n:3 p:1 w:1 kr:6 w:1 nv:4 w:1 o:1 w:1 mi:1 w:6 n:5 w:1 p:2 n:6 p:1 nv:2 p:1 w:1 p:1 n:6 p:1 nv:2 p:1 w:1 p:1 n:3 p:1 nv:9 p:1 w:1 p:1 w:9 bp:5 o:1 nf:3 w:1 o:1 w:1 nv:2 w:5 p:1 w:6 p:1 n:6 p:1 n:8 p:2 w:1 p:1 w:9 kr:6 w:1 s2:10 w:5 p:1 w:1 p:1 w:2 nv:7 w:1 o:1 w:1 p:1 n:5 p:3 n:3 p:2 w:2 c:27 w:1 c:12 w:1 c:27 w:2 p:1 n:31 p:1 n:6 p:3 mi:1 o:2 mi:3 p:1 w:1 p:1 n:37 p:1 n:6 p:1 w:1 n:3 p:3 mi:1 o:2 mi:3 o:2 p:3 nx:1 o:1 bp:2 p:3 w:2 kr:8 w:1 nf:14 w:1 cm:4 cs:9 cm:45 cs:10 cm:42 cs:8 cm:50 w:1 p:1 w:5 p:1 n:13 p:3 w:5 kr:5 p:1 w:5 c:3 w:5 p:1 n:9 p:1 w:9 n:9 o:1 bp:5 p:1 w:9 n:8 o:1 mi:1 p:1 w:9 n:31 o:1 bp:5 p:1 w:9 n:11 o:1 s2:13 w:9 p:2 w:5 p:1 n:6 p:3 nv:8 p:1 w:5 c:2 w:5 p:1 n:9 p:1 n:9 o:1 bp:6 p:1 n:17 o:1 bp:6 p:2 w:5 p:1 n:4 p:1 nv:7 o:1 bp:6 w:5 p:1 w:2 c:9 w:6 kr:5 w:1 p:2 w:6 kr:7 w:1 p:1 w:9 nv:10 o:1 p:3 w:9 kr:7 w:1 p:1 nv:7 w:1 kr:2 w:1 nv:8 p:1 w:1 p:1 w:13 nv:10 o:2 n:14 w:1 nt:13 w:1 nv:7 w:1 nt:12 w:1 p:1 n:21 p:1 w:2 nt:6 w:9 p:1 w:9 nv:9 o:1 bp:6 w:9 kr:5 w:1 p:1 o:4 w:1 nv:9 p:1 w:1 p:1 w:13 nv:20 o:1 w:1 nv:10 w:1 o:1 w:1 n:12 w:1 p:1 w:1 bp:2 o:1 nf:5 w:1 o:6 w:1 s1:9 w:1 p:1 w:13 kr:2 w:1 p:1 o:4 w:1 nv:20 p:1 w:1 p:1 w:1 nv:9 o:1 bp:5 w:1 p:1 w:9 p:1 w:9 nv:7 o:1 nv:10 o:1 n:11 w:9 nv:13 o:1 nv:7 o:1 n:11 w:1 nt:9 w:1 nx:7 w:1 nt:7 w:5 p:1 w:6 kr:3 w:1 p:1 w:9 kr:2 w:1 p:1 nv:7 p:1 w:1 p:1 w:1 kr:6 w:1 nv:13 w:1 p:1 w:9 kr:4 w:1 p:1 w:1 kr:6 w:1 nv:7 w:1 p:1 w:5 p:1 w:2 p:1 w:1 c:13 w:2 n:12 w:1 s2:11 si:2 nv:5 o:1 nf:8 si:1 s2:1 w:1 c:39 w:2 c:15 w:1 nv:12 w:1 o:1 w:1 s2:1 si:2 nv:13 o:1 n:10 p:1 s1:4 p:1 si:1 s2:2 si:2 nv:13 o:1 n:10 p:1 s1:11 p:1 si:1 s2:1 w:2 c:16 w:1 nv:13 w:1 o:1 w:1 s2:1 nv:13 s2:9 w:1 o:1 p:1 s2:1 nv:13 s2:1 p:1 w:1 n:6 w:1 nt:5 w:1 nt:8 w:1 nx:9 w:1 se:2 nv:12 se:2 w:1 n:13 w:1 nt:8 w:1 o:2 nf:3 w:1 se:2 w:4 nt:8 w:1 n:12 w:1 se:2 nx:5 w:2 c:20 w:1 n:11 w:1 o:1 w:1 nf:1 w:1 p:1 bp:2 o:1 nf:10 w:1 o:3 w:1 mi:5 o:1 mi:4 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: properties: demo" {
+  check_lex(
+    "properties", "# You are reading the \".properties\" entry.\n! The exclamation mark can also mark text as comments.\nwebsite = http\\://en.wikipedia.org/\nlanguage = English\ncountry : Poland\ncontinent=Europe\nkey.with.dots=This is the value that could be looked up with the key \"key.with.dots\".\n",
+    "c:98 py:7 :1 p:1 :1 s:4 se:2 s:19 :1 py:8 :1 p:1 :1 s:7 :1 py:7 :1 p:1 :1 s:6 :1 py:9 p:1 s:6 :1 py:13 p:1 s:71 :1",
+  )
+}
+
+///|
+test "rouge: properties: visual sample" {
+  check_lex(
+    "properties", "# You are reading the \".properties\" entry.\n! The exclamation mark can also mark text as comments.\n# The key and element characters #, !, =, and : are written with\n# a preceding backslash to ensure that they are properly loaded.\nwebsite = http\\://en.wikipedia.org/\nlanguage = English\n# The backslash below tells the application to continue reading\n# the value onto the next line.\nmessage = Welcome to \\\n          Wikipedia\\!\n# Add spaces to the key\nkey\\ with\\ spaces = This is the value that could be looked up with the key \"key with spaces\".\n# Add dots to the key\nkey.with.dots = This is the value that could be looked up with the key \"key.with.dots\".\n# Unicode\ntab : \\u0009\n",
+    "c:228 py:7 :1 p:1 :1 s:4 se:2 s:19 :1 py:8 :1 p:1 :1 s:7 :1 c:96 py:7 :1 p:1 :1 s:11 se:2 :10 s:9 se:2 :1 c:24 err:4 :1 err:5 :1 py:6 :1 p:1 :1 s:73 :1 c:22 py:13 :1 p:1 :1 s:71 :1 c:10 py:3 :1 p:1 :1 se:6 :1",
   )
 }
 
@@ -283,6 +529,21 @@ test "rouge: coffeescript: visual sample" {
 }
 
 ///|
+test "rouge: console?prompt=%24&prompt=%3E: repeated options" {
+  check_lex(
+    "console?prompt=%24&prompt=%3E", "$ ls\n> echo hi\n% not a prompt\nout\n", "gp:1 w:1 nb:2 :1 gp:1 w:1 nb:5 :3 go:19",
+  )
+}
+
+///|
+test "rouge: console?prompt=%25,%3E&prompt=%24&lang=shell: repeated options" {
+  check_lex(
+    "console?prompt=%25,%3E&prompt=%24&lang=shell", "$ ls\n% echo hi\n> x\nout\n",
+    "gp:1 w:1 nb:2 :1 gp:1 w:1 nb:5 :3 gp:1 w:1 :2 go:4",
+  )
+}
+
+///|
 test "rouge: erb?parent=json: targeted" {
   check_lex(
     "erb?parent=json", "{\"a\": <%= @x %>, \"b\": [1, 2]}\n", "p:1 nl:3 p:1 w:1 cp:3 :1 vi:2 :1 cp:2 p:1 w:1 nl:3 p:1 w:1 p:1 mi:1 p:1 w:1 mi:1 p:2 w:1",
@@ -306,10 +567,44 @@ test "rouge: vue: targeted" {
 }
 
 ///|
+test "rouge: console?comments=true: targeted" {
+  check_lex(
+    "console?comments=true", "# a comment\n$ ls -l\ntotal 0\n", "c:12 gp:1 w:1 nb:2 :1 nt:2 :1 go:8",
+  )
+}
+
+///|
+test "rouge: console?error=error:,fatal:&output=yaml: targeted" {
+  check_lex(
+    "console?error=error:,fatal:&output=yaml", "$ make\nerror: no rule\nkey: value\nfatal: stop\n",
+    "gp:1 w:1 :5 gr:15 na:3 pi:1 :1 s:5 :1 gr:12",
+  )
+}
+
+///|
+test "rouge: console?lang=ruby&prompt=%3E%3E: targeted" {
+  check_lex(
+    "console?lang=ruby&prompt=%3E%3E", ">> puts 1 + 2\n3\n", "gp:2 w:1 nb:4 :1 mi:1 :1 o:1 :1 mi:1 :1 go:2",
+  )
+}
+
+///|
+test "rouge: yaml: targeted" {
+  check_lex(
+    "yaml", "a: &anchör x\nb: *anchör\nc: &é_1 [1, 2]\nd: *é_1\n", "na:1 pi:1 :1 nl:7 :1 s:1 :1 na:1 pi:1 :1 nv:7 :1 na:1 pi:1 :1 nl:4 :1 pi:1 nv:1 pi:1 :1 nv:1 pi:1 :1 na:1 pi:1 :1 nv:4 :1",
+  )
+}
+
+///|
 test "rouge: jsx: rouge spec #1" {
   check_lex(
     "jsx", "<button aria-label=\"hello\"/>", "p:1 nt:6 :1 na:10 p:1 s:7 p:2",
   )
+}
+
+///|
+test "rouge: sql: rouge spec #1" {
+  check_lex("sql", "-- comment", "c1:10")
 }
 
 ///|
@@ -343,6 +638,11 @@ test "rouge: html: rouge spec #5" {
   check_lex(
     "html", "<custom-element (target)=\"expression\"></custom-element>", "nt:15 :1 na:9 s:12 nt:18",
   )
+}
+
+///|
+test "rouge: make: rouge spec #1" {
+  check_lex("make", "hello: \n\techo hello", "nl:5 o:1 :3 nb:5 :5")
 }
 
 ///|
@@ -396,7 +696,82 @@ test "rouge: ruby: rouge spec #10" {
 }
 
 ///|
-test "rouge: js: source_spec #1" {
+test "rouge: nginx: rouge spec #1" {
+  check_lex("nginx", "# comment", "c1:9")
+}
+
+///|
+test "rouge: apache: rouge spec #1" {
+  check_lex("apache", "foo bar", ":7")
+}
+
+///|
+test "rouge: apache: rouge spec #2" {
+  check_lex("apache", "setenv foo bar", "nc:6 :8")
+}
+
+///|
+test "rouge: apache: rouge spec #3" {
+  check_lex("apache", "# comment", "c:9")
+}
+
+///|
+test "rouge: console: rouge spec #1" {
+  check_lex("console", "$ foo", "gp:1 w:1 :3")
+}
+
+///|
+test "rouge: console: rouge spec #2" {
+  check_lex("console", "% foo", "go:5")
+}
+
+///|
+test "rouge: console: rouge spec #3" {
+  check_lex(
+    "console", "$ cd application\\bin\\", "gp:1 w:1 nb:3 :11 se:2 k:2 se:1",
+  )
+}
+
+///|
+test "rouge: console: rouge spec #4" {
+  check_lex("console", "No command 'foo' found, did you mean:", "go:37")
+}
+
+///|
+test "rouge: console: rouge spec #5" {
+  check_lex("console", "Unhandled condition in test.lisp", "go:32")
+}
+
+///|
+test "rouge: console: rouge spec #6" {
+  check_lex("console", "foo", "go:3")
+}
+
+///|
+test "rouge: console: rouge spec #7" {
+  check_lex("console", "# this is a comment", "gp:1 w:1 :17")
+}
+
+///|
+test "rouge: console: rouge spec #8" {
+  check_lex("console", "# this is not a comment", "gp:1 w:1 :21")
+}
+
+///|
+test "rouge: sql: source_spec #1" {
+  check_lex(
+    "sql", "SELECT\n\\tname,\\t firstname,\\t\\tlastname\nFROM\n\\tusers\nWHERE\n\\tusername\\t=\\t'foobar'",
+    "k:6 :1 err:1 n:5 p:1 err:1 n:1 :1 n:9 p:1 err:1 n:1 err:1 n:9 :1 k:4 :1 err:1 n:6 :1 k:5 :1 err:1 n:9 err:1 n:1 o:1 err:1 n:1 s1:8",
+  )
+}
+
+///|
+test "rouge: console?prompt=%: source_spec #2" {
+  check_lex("console?prompt=%", "% bundle", "gp:1 w:1 :6")
+}
+
+///|
+test "rouge: js: source_spec #3" {
   check_lex(
     "js", "'use strict'\nconst TAG_ALL_RX = /<[^>]+>/g\nmodule.exports = (html) => html && html.replace(TAG_ALL_RX, '')",
     "dl:1 s1:10 dl:1 :1 kd:5 :1 nx:10 :1 o:1 :1 sr:2 se:2 sr:1 se:1 sr:4 :1 nx:6 p:1 nx:7 :1 o:1 :1 p:1 nx:4 p:1 :1 o:2 :1 nx:4 :1 o:2 :1 nx:4 p:1 nx:7 p:1 nx:10 p:1 :1 dl:2 p:1",
@@ -404,19 +779,26 @@ test "rouge: js: source_spec #1" {
 }
 
 ///|
-test "rouge: ruby: source_spec #2" {
+test "rouge: console: source_spec #4" {
+  check_lex(
+    "console", "$ cd application-name\\bin\\", "gp:1 w:1 nb:3 :16 se:2 k:2 se:1",
+  )
+}
+
+///|
+test "rouge: ruby: source_spec #5" {
   check_lex("ruby", "puts 'yo, world!'", "nb:4 :1 s1:12")
 }
 
 ///|
-test "rouge: ruby: source_spec #3" {
+test "rouge: ruby: source_spec #6" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\nend", "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :1 k:3",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #4" {
+test "rouge: ruby: source_spec #7" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\n  def drink\n    puts 'aaaaaaaaah'\n  end\nend",
     "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :3 k:3 :1 nf:5 :5 nb:4 :1 s1:12 :3 k:3 :1 k:3",
@@ -424,22 +806,22 @@ test "rouge: ruby: source_spec #4" {
 }
 
 ///|
-test "rouge: ruby: source_spec #5" {
+test "rouge: ruby: source_spec #8" {
   check_lex("ruby", "puts 'string'", "nb:4 :1 s1:8")
 }
 
 ///|
-test "rouge: ruby: source_spec #6" {
+test "rouge: ruby: source_spec #9" {
   check_lex("ruby", "puts \"Hello, World!\"", "nb:4 :1 s2:15")
 }
 
 ///|
-test "rouge: ruby: source_spec #7" {
+test "rouge: ruby: source_spec #10" {
   check_lex("ruby", "class Type; end", "k:5 :1 nc:4 p:1 :1 k:3")
 }
 
 ///|
-test "rouge: diff: source_spec #8" {
+test "rouge: diff: source_spec #11" {
   check_lex(
     "diff", "--- /tmp/list1.txt\n+++ /tmp/list2.txt\n@@ -1,4 +1,4 @@\n apples\n-oranges\n kiwis\n carrots\n+grapefruits",
     "gd:19 gi:19 p:15 :9 gd:9 :16 gi:12",
@@ -447,12 +829,12 @@ test "rouge: diff: source_spec #8" {
 }
 
 ///|
-test "rouge: diff: source_spec #9" {
+test "rouge: diff: source_spec #12" {
   check_lex("diff", "-oranges\n+grapefruits", "gd:9 gi:12")
 }
 
 ///|
-test "rouge: xml: source_spec #11" {
+test "rouge: xml: source_spec #14" {
   check_lex(
     "xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url>\n    <loc>https://example.org/home.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n  <url>\n    <loc>https://example.org/about.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n</urlset>",
     "cp:38 :1 nt:7 :1 na:6 s:45 nt:1 :3 nt:5 :5 nt:5 :29 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :3 nt:5 :5 nt:5 :30 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :1 nt:9",
@@ -460,22 +842,29 @@ test "rouge: xml: source_spec #11" {
 }
 
 ///|
-test "rouge: xml: source_spec #12" {
+test "rouge: xml: source_spec #15" {
   check_lex("xml", "puts 'Hello, World!'", ":20")
 }
 
 ///|
-test "rouge: text: source_spec #14" {
+test "rouge: yaml: source_spec #17" {
+  check_lex(
+    "yaml", "foo: 'bar'\nkey: 'value'\n<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 s:3",
+  )
+}
+
+///|
+test "rouge: text: source_spec #18" {
   check_lex("text", "foo\nbar\nbaz", ":11")
 }
 
 ///|
-test "rouge: text: source_spec #16" {
+test "rouge: text: source_spec #20" {
   check_lex("text", "  indented line", ":15")
 }
 
 ///|
-test "rouge: text: source_spec #17" {
+test "rouge: text: source_spec #21" {
   check_lex(
     "text", "Here we go again here we go again here we go again here we go again here we go again Here we go again",
     ":101",
@@ -483,7 +872,7 @@ test "rouge: text: source_spec #17" {
 }
 
 ///|
-test "rouge: xml: source_spec #18" {
+test "rouge: xml: source_spec #22" {
   check_lex(
     "xml", "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n  <modelVersion>4.0.0</modelVersion>\n</project>",
     "nt:8 :1 na:6 s:35 :1 na:10 s:43 :1 na:19 s:79 nt:1 :3 nt:14 :5 nt:15 :1 nt:10",
@@ -491,12 +880,12 @@ test "rouge: xml: source_spec #18" {
 }
 
 ///|
-test "rouge: ruby: source_spec #22" {
+test "rouge: ruby: source_spec #26" {
   check_lex("ruby", "puts 'Hello, CodeRay!'", "nb:4 :1 s1:17")
 }
 
 ///|
-test "rouge: sass: source_spec #23" {
+test "rouge: sass: source_spec #27" {
   check_lex(
     "sass", "$icon-font-path: \"node_modules/package-name/icon-fonts/\";\nbody {\n  background: #fafafa;\n}",
     "nv:15 p:1 :1 s2:39 err:1 :1 nt:4 :1 err:1 :3 nl:10 p:1 :1 mh:7 err:1 :1 err:1",
@@ -504,29 +893,43 @@ test "rouge: sass: source_spec #23" {
 }
 
 ///|
-test "rouge: xml: source_spec #25" {
+test "rouge: yaml: source_spec #29" {
+  check_lex(
+    "yaml", "category:\n  hash:\n    key: \"value\"", "na:8 pi:1 :3 na:4 pi:1 :5 na:3 pi:1 :1 s2:1 s:6",
+  )
+}
+
+///|
+test "rouge: xml: source_spec #30" {
   check_lex(
     "xml", "<tag <1>\n  attr=\"value\">\n  content\n</tag>", "nt:4 :1 err:2 nt:1 :27 nt:6",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #26" {
+test "rouge: ruby: source_spec #31" {
   check_lex("ruby", "", "")
 }
 
 ///|
-test "rouge: ruby: source_spec #27" {
+test "rouge: ruby: source_spec #32" {
   check_lex("ruby", "puts \"Hello, Pygments!\"", "nb:4 :1 s2:18")
 }
 
 ///|
-test "rouge: xml: source_spec #28" {
+test "rouge: xml: source_spec #33" {
   check_lex("xml", "<payload>&amp;</payload>", "nt:9 ni:5 nt:10")
 }
 
 ///|
-test "rouge: ruby: source_spec #32" {
+test "rouge: yaml: source_spec #38" {
+  check_lex(
+    "yaml", "foo: 'bar'\nkey: 'value' #<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 c1:4",
+  )
+}
+
+///|
+test "rouge: ruby: source_spec #39" {
   check_lex(
     "ruby", "# Matches a hex color value like #FF0000\nif /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend",
     "c1:40 :1 k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
@@ -534,48 +937,48 @@ test "rouge: ruby: source_spec #32" {
 }
 
 ///|
-test "rouge: ruby: source_spec #33" {
+test "rouge: ruby: source_spec #40" {
   check_lex(
     "ruby", "if /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend", "k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
   )
 }
 
 ///|
-test "rouge: text: source_spec #40" {
+test "rouge: text: source_spec #47" {
   check_lex("text", "  lead space\nflush\n  lead space", ":31")
 }
 
 ///|
-test "rouge: ruby: source_spec #41" {
+test "rouge: ruby: source_spec #48" {
   check_lex("ruby", "<1>", "o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: xml: source_spec #42" {
+test "rouge: xml: source_spec #49" {
   check_lex(
     "xml", "<root>\n  <child>content</child>\n</root>", "nt:6 :3 nt:7 :7 nt:8 :1 nt:7",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #44" {
+test "rouge: ruby: source_spec #51" {
   check_lex("ruby", "source = %(before\n\\<1>\nafter)", "n:6 :1 o:1 :1 sx:20")
 }
 
 ///|
-test "rouge: ruby: source_spec #45" {
+test "rouge: ruby: source_spec #52" {
   check_lex(
     "ruby", "source = %(before\nnot a conum <1>\nafter)", "n:6 :1 o:1 :1 sx:31",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #46" {
+test "rouge: ruby: source_spec #53" {
   check_lex("ruby", "puts 'Hello, World' <1>", "nb:4 :1 s1:14 :1 o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: java: source_spec #48" {
+test "rouge: java: source_spec #55" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1><2>\n  String getDob();\n  int getAge(); // <3><4><5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:9 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:12 :1 o:1",
@@ -583,7 +986,7 @@ test "rouge: java: source_spec #48" {
 }
 
 ///|
-test "rouge: java: source_spec #49" {
+test "rouge: java: source_spec #56" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1> <2>\n  String getDob();\n  int getAge(); // <3> <4> <5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:10 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:14 :1 o:1",
@@ -591,7 +994,7 @@ test "rouge: java: source_spec #49" {
 }
 
 ///|
-test "rouge: java: source_spec #50" {
+test "rouge: java: source_spec #57" {
   check_lex(
     "java", "public interface Person {\n  String getName(); <1>\n  String getDob(); <2>\n  int getAge(); <3>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 mi:1 o:1 :3 nc:6 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :3 kt:3 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :1 o:1",
@@ -599,7 +1002,7 @@ test "rouge: java: source_spec #50" {
 }
 
 ///|
-test "rouge: java: source_spec #51" {
+test "rouge: java: source_spec #58" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:6 :1 o:1",
@@ -607,7 +1010,7 @@ test "rouge: java: source_spec #51" {
 }
 
 ///|
-test "rouge: java: source_spec #52" {
+test "rouge: java: source_spec #59" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.> <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:10 :1 o:1",
@@ -615,8 +1018,16 @@ test "rouge: java: source_spec #52" {
 }
 
 ///|
-test "rouge: java: source_spec #53" {
+test "rouge: java: source_spec #60" {
   check_lex(
     "java", "public interface Person {\n  String getName();\n}  <1>", "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 :2 o:1 mi:1 o:1",
+  )
+}
+
+///|
+test "rouge: apache: source_spec #61" {
+  check_lex(
+    "apache", "<Directory /usr/share/httpd/noindex>\n    AllowOverride None <1>\n    Require all granted\n</Directory>",
+    "p:1 nl:9 sr:25 p:2 :4 nc:13 :1 ss:4 :9 nc:7 :1 ss:3 :9 p:2 nl:9 p:1",
   )
 }

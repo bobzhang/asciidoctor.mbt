@@ -1,4 +1,5 @@
 import {
+  "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/regex",
   "moonbitlang/core/encoding/utf8",
 }
