@@ -177,12 +177,29 @@ repository, which converts with both and compares page count, text, the position
 
 ## Changes
 
-### Unreleased (0.2.0)
+### 0.2.0
 
-* The layout moved to its own module, `bobzhang/prawn` (`prawn/` in the repository): the SVG
-  package `bobzhang/asciidoctor-pdf/svg` is now `bobzhang/prawn/svg` (a breaking change for code
-  importing it). `FontCatalog`, `IconSet`, `default_font_files` and `default_icon_font_files` are
-  re-exported, so `register(catalog=...)` and `convert_document` are used as before.
+* **Source highlighting**:
+  * Rouge, through a port of Rouge 3.30 (its lexer engine, themes and 56 lexers, checked token by
+    token against Ruby Rouge), as asciidoctor-pdf's `convert_code` uses it: `linenums`,
+    `highlight` line ranges, callouts, PHP `start_inline`, the highlighter's background and
+    colours, and line numbering that wraps as asciidoctor-pdf's `SourceWrap` does.
+  * Pygments too, through bobzhang/pygments, when registered (`bobzhang/asciidoctor-pdf/pygments`).
+* **Commands**: `cmd/asciidoctor-pdf` highlights with Rouge only. The larger
+  `cmd/asciidoctor-pdf-pygments` registers Pygments as well.
+* **PDF files** as block images (`page=`, `pages=`), front and back covers and page backgrounds,
+  imported as vector graphics (pdflite 0.3.2 / pagelayout 0.7.1). An unreadable PDF fails the
+  conversion with `TemplateError` (a background warns instead).
+* **Layout**: the layout moved to its own module, `bobzhang/prawn`. This breaks code that imports
+  `bobzhang/asciidoctor-pdf/svg`, which is now `bobzhang/prawn/svg`. `FontCatalog`, `IconSet`,
+  `default_font_files` and `default_icon_font_files` are re-exported, so `register(catalog=...)`
+  and `convert_document` are used as before.
+* **Fidelity**: asciidoctor-pdf's spec suite replays 2097 of 2415 records identically (0.1.0:
+  1978 of 2329, before the harvest also recorded the highlighting examples).
+
+### 0.1.0
+
+* First release.
 
 ## License
 
