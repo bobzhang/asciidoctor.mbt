@@ -149,9 +149,9 @@ test "document info, top anchor and outline levels" {
     ("CreationDate", info.creation_date),
     ("ModDate", info.mod_date),
   ].filter_map(entry => entry.1.map(value => "\{entry.0}=\{value}"))
-  inspect(
+  assert_eq(
     entries.join("; "),
-    content="Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=Asciidoctor PDF 0.1.0 (MoonBit), based on pagelayout",
+    "Title=Title; Author=Jane Doe, John Roe; Keywords=a, b; Creator=ACME; Producer=Asciidoctor PDF \{version} (MoonBit), based on pagelayout",
   )
   inspect(top_anchor(doc), content="__anchor-top")
   let (num, expand) = outline_levels(doc, resolve_toclevels(doc))
