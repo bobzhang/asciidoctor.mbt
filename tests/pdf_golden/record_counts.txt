@@ -36,7 +36,7 @@
 190	tests/pdf_golden/running_content_spec.jsonl
 106	tests/pdf_golden/section_spec.jsonl
 27	tests/pdf_golden/sidebar_spec.jsonl
-15	tests/pdf_golden/source_spec.jsonl
+111	tests/pdf_golden/source_spec.jsonl
 4	tests/pdf_golden/stem_spec.jsonl
 194	tests/pdf_golden/table_spec.jsonl
 14	tests/pdf_golden/thematic_break_spec.jsonl

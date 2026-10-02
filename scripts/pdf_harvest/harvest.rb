@@ -531,7 +531,44 @@ module PdfHarvest
     end
   end
 
+  # The spec suite runs under Bundler, which activates every gem of the
+  # Gemfile up front. The specs guard the syntax highlighter integrations
+  # with `gem_available?` (a lookup in Gem.loaded_specs, which lists only
+  # activated gems) when the spec file is loaded, so without Bundler the
+  # Rouge and Pygments examples of source_spec.rb (and the ones that use
+  # rouge elsewhere) would not even be defined. Activate the highlighters
+  # the way Bundler does: rouge and coderay from the Gemfile, pygments.rb as
+  # asciidoctor-pdf's CI installs it (PYGMENTS_VERSION '~> 2.0').
+  HIGHLIGHTER_GEMS = %w(rouge coderay pygments.rb)
+
+  def self.activate_highlighters
+    HIGHLIGHTER_GEMS.each {|name| gem name }
+    restore_cgi_parse
+  end
+
+  # Rouge 3.30 reads cgi-style lexer options (`[source,php?start_inline=1]`,
+  # Lexer.lookup_fancy) with CGI.parse, which Ruby 4.0 dropped together with
+  # the rest of the cgi library (only cgi/escape is left). Restore it as the
+  # cgi gem defines it, so that those conversions behave as on the Rubies
+  # asciidoctor-pdf 2.3.27 supports.
+  def self.restore_cgi_parse
+    require 'cgi'
+    return if CGI.respond_to? :parse
+    def CGI.parse query
+      params = {}
+      query.split(/[&;]/).each do |pairs|
+        key, value = pairs.split('=', 2).collect {|v| CGI.unescape v }
+        next unless key
+        params[key] ||= []
+        params[key].push value if value
+      end
+      params.default = [].freeze
+      params
+    end
+  end
+
   def self.install
+    activate_highlighters
     require 'asciidoctor'
     require 'asciidoctor/pdf'
     Asciidoctor.singleton_class.prepend ApiHook
