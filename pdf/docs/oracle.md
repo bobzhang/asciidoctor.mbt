@@ -9,6 +9,7 @@ all its dependencies. The scripts that run it:
 | `scripts/pdf_harvest.mbtx` | asciidoctor-pdf's RSpec suite, recording the spec goldens in `tests/pdf_golden` |
 | `scripts/pdf_theme_harvest.mbtx` | the theme loader cases of `pdf/theme/harvest_test.mbt` |
 | `scripts/pdf_bundle_themes.mbtx` | reads the bundled themes into `pdf/theme/bundled.mbt` |
+| `scripts/pdf_rouge_harvest.mbtx` | Rouge 3.30.0: the themes, token table and Unicode tables of `pdf/rouge`, and its lexing cases (`pdf/rouge/harvest_test.mbt`); needs the spec gems |
 
 ## Setup
 
