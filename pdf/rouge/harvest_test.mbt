@@ -3,6 +3,70 @@
 // (scripts/pdf_rouge/harvest.rb); do not edit.
 
 ///|
+test "rouge: c: demo" {
+  check_lex(
+    "c", "#include \"ruby/ruby.h\"\n\nstatic int\nclone_method_i(st_data_t key, st_data_t value, st_data_t data)\n{\n    clone_method((VALUE)data, (ID)key, (const rb_method_entry_t *)value);\n    return ST_CONTINUE;\n}\n",
+    "cp:8 :1 cpf:13 cp:1 :1 k:6 :1 kt:3 :1 nf:14 p:1 n:9 :1 n:3 p:1 :1 n:9 :1 n:5 p:1 :1 n:9 :1 n:4 p:1 :1 p:1 :5 n:12 p:2 n:5 p:1 n:4 p:1 :1 p:1 n:2 p:1 n:3 p:1 :1 p:1 k:5 :1 n:17 :1 o:1 p:1 n:5 p:2 :5 k:6 :1 n:11 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: c: visual sample" {
+  check_lex(
+    "c", "/* it shouldn't hang */\t/* trying to lex this */\n/*{\"ahg/awn/xan?\",\tHB_TAG('A','G','W',' ')},*/\t/* Agaw */\n/*{\"gsw?/gsw-FR?\",\tHB_TAG('A','L','S',' ')},*/\t/* Alsatian */\n/*{\"krc\",\tHB_TAG('B','A','L',' ')},*/\t/* Balkar */\n/*{\"??\",\tHB_TAG('B','C','R',' ')},*/\t/* Bible Cree */\n/*{\"sgw?\",\tHB_TAG('C','H','G',' ')},*/\t/* Chaha Gurage */\n/*{\"acf/gcf?\",\tHB_TAG('F','A','N',' ')},*/\t/* French Antillean */\n/*{\"vls/nl-be\",\tHB_TAG('F','L','E',' ')},*/\t/* Flemish */\n/*{\"enf?/yrk?\",\tHB_TAG('F','N','E',' ')},*/\t/* Forest Nenets */\n/*{\"fuf?\",\tHB_TAG('F','T','A',' ')},*/\t/* Futa */\n/*{\"ar-Syrc?\",\tHB_TAG('G','A','R',' ')},*/\t/* Garshuni */\n/*{\"cfm/rnl?\",\tHB_TAG('H','A','L',' ')},*/\t/* Halam */\n/*{\"ga-Latg?/Latg?\",\tHB_TAG('I','R','T',' ')},*/\t/* Irish Traditional */\n/*{\"krc\",\tHB_TAG('K','A','R',' ')},*/\t/* Karachay */\n/*{\"alw?/ktb?\",\tHB_TAG('K','E','B',' ')},*/\t/* Kebena */\n/*{\"Geok\",\tHB_TAG('K','G','E',' ')},*/\t/* Khutsuri Georgian */\n/*{\"kca\",\tHB_TAG('K','H','K',' ')},*/\t/* Khanty-Kazim */\n/*{\"kca\",\tHB_TAG('K','H','S',' ')},*/\t/* Khanty-Shurishkar */\n\n#if 0\nthis should be commented\n#if THING\nthis should also be commented\n#endif\nalso comments\n#else\n#  if thing\nstatic int not_a_comment();\n#  endif\n#endif\n\n#macro\n\nvoid foo() ;\n\nvoid foo() {\n    /* nothing */\n}\n\nvoid foo2(void)\n{\n    /* nothing */\n}\n\n/* Broken declarations should not break subsequent highlighting */\n\nvoid foo() {\n    if(x) {\n    } else if(y) {\n      puts(\"foo\")\n    }\n  }\n\n#include <string.h> /* this is a comment */\n#include <string.h> // this is a comment\n#include \"string.h\" /* this is a comment */\n#include \"string.h\" // this is a comment\n#include<string>/* this is a comment */\n#include<string>// this is a comment\n\n/* Execute compiled code */\n\n/* XXX TO DO:\n   XXX speed up searching for keywords by using a dictionary\n   XXX document it!\n   */\n\n/* enable more aggressive intra-module optimizations, where available */\n#define PY_LOCAL_AGGRESSIVE\n\n#include \"Python.h\"\n\n#include \"code.h\"\n#include \"frameobject.h\"\n#include \"eval.h\"\n#include \"opcode.h\"\n#include \"structmember.h\"\n\n#include <ctype.h>\n\n#ifndef WITH_TSC\n\n#define READ_TIMESTAMP(var)\n\n#else\n\ntypedef unsigned long long uint64;\n\n#if defined(__ppc__) /* <- Don't know if this is the correct symbol; this\n\t\t\t   section should work for GCC on any PowerPC platform,\n\t\t\t   irrespective of OS.  POWER?  Who knows :-) */\n\n#define READ_TIMESTAMP(var) ppc_getcounter(&var)\n\nstatic void\nppc_getcounter(uint64 *v)\n{\n\tregister unsigned long tbu, tb, tbu2;\n\n  loop:\n\tasm volatile (\"mftbu %0\" : \"=r\" (tbu) );\n\tasm volatile (\"mftb  %0\" : \"=r\" (tb)  );\n\tasm volatile (\"mftbu %0\" : \"=r\" (tbu2));\n\tif (__builtin_expect(tbu != tbu2, 0)) goto loop;\n\n\t/* The slightly peculiar way of writing the next lines is\n\t   compiled better by GCC than any other way I tried. */\n\t((long*)(v))[0] = tbu;\n\t((long*)(v))[1] = tb;\n}\n\n#else /* this is for linux/x86 (and probably any other GCC/x86 combo) */\n\n#define READ_TIMESTAMP(val) \\\n     __asm__ __volatile__(\"rdtsc\" : \"=A\" (val))\n\n#endif\n\nvoid dump_tsc(int opcode, int ticked, uint64 inst0, uint64 inst1,\n\t      uint64 loop0, uint64 loop1, uint64 intr0, uint64 intr1)\n{\n\tuint64 intr, inst, loop;\n\tPyThreadState *tstate = PyThreadState_Get();\n\tif (!tstate->interp->tscdump)\n\t\treturn;\n\tintr = intr1 - intr0;\n\tinst = inst1 - inst0 - intr;\n\tloop = loop1 - loop0 - intr;\n\tfprintf(stderr, \"opcode=%03d t=%d inst=%06lld loop=%06lld\\n\",\n\t\topcode, ticked, inst, loop);\n}\n\n#endif\n\n/* Turn this on if your compiler chokes on the big switch: */\n/* #define CASE_TOO_BIG 1 */\n\n#ifdef Py_DEBUG\n/* For debugging the interpreter: */\n#define LLTRACE  1\t/* Low-level trace feature */\n#define CHECKEXC 1\t/* Double-check exception checking */\n#endif\n\ntypedef PyObject *(*callproc)(PyObject *, PyObject *, PyObject *);\n\n/* Forward declarations */\n#ifdef WITH_TSC\nstatic PyObject * call_function(PyObject ***, int, uint64*, uint64*);\n#else\nstatic PyObject * call_function(PyObject ***, int);\n#endif\nstatic PyObject * fast_function(PyObject *, PyObject ***, int, int, int);\nstatic PyObject * do_call(PyObject *, PyObject ***, int, int);\nstatic PyObject * ext_do_call(PyObject *, PyObject ***, int, int, int);\nstatic PyObject * update_keyword_args(PyObject *, int, PyObject ***,PyObject *);\nstatic PyObject * update_star_args(int, int, PyObject *, PyObject ***);\nstatic PyObject * load_args(PyObject ***, int);\n#define CALL_FLAG_VAR 1\n#define CALL_FLAG_KW 2\n\n#ifdef LLTRACE\nstatic int lltrace;\nstatic int prtrace(PyObject *, char *);\n#endif\nstatic int call_trace(Py_tracefunc, PyObject *, PyFrameObject *,\n\t\t      int, PyObject *);\nstatic void call_trace_protected(Py_tracefunc, PyObject *,\n\t\t\t\t PyFrameObject *, int, PyObject *);\nstatic void call_exc_trace(Py_tracefunc, PyObject *, PyFrameObject *);\nstatic int maybe_call_line_trace(Py_tracefunc, PyObject *,\n\t\t\t\t  PyFrameObject *, int *, int *, int *);\n\nstatic PyObject * apply_slice(PyObject *, PyObject *, PyObject *);\nstatic int assign_slice(PyObject *, PyObject *,\n\t\t\tPyObject *, PyObject *);\nstatic PyObject * cmp_outcome(int, PyObject *, PyObject *);\nstatic PyObject * import_from(PyObject *, PyObject *);\nstatic int import_all_from(PyObject *, PyObject *);\nstatic PyObject * build_class(PyObject *, PyObject *, PyObject *);\nstatic int exec_statement(PyFrameObject *,\n\t\t\t  PyObject *, PyObject *, PyObject *);\nstatic void set_exc_info(PyThreadState *, PyObject *, PyObject *, PyObject *);\nstatic void reset_exc_info(PyThreadState *);\nstatic void format_exc_check_arg(PyObject *, char *, PyObject *);\nstatic PyObject * string_concatenate(PyObject *, PyObject *,\n\t\t\t\t    PyFrameObject *, unsigned char *);\n\n#define NAME_ERROR_MSG \\\n\t\"name '%.200s' is not defined\"\n#define GLOBAL_NAME_ERROR_MSG \\\n\t\"global name '%.200s' is not defined\"\n#define UNBOUNDLOCAL_ERROR_MSG \\\n\t\"local variable '%.200s' referenced before assignment\"\n#define UNBOUNDFREE_ERROR_MSG \\\n\t\"free variable '%.200s' referenced before assignment\" \\\n        \" in enclosing scope\"\n\n/* Dynamic execution profile */\n#ifdef DYNAMIC_EXECUTION_PROFILE\n",
+    "cm:23 :1 cm:24 :1 cm:46 :1 cm:10 :1 cm:46 :1 cm:14 :1 cm:37 :1 cm:12 :1 cm:36 :1 cm:16 :1 cm:38 :1 cm:18 :1 cm:42 :1 cm:22 :1 cm:43 :1 cm:13 :1 cm:43 :1 cm:19 :1 cm:38 :1 cm:10 :1 cm:42 :1 cm:14 :1 cm:42 :1 cm:11 :1 cm:48 :1 cm:23 :1 cm:37 :1 cm:14 :1 cm:43 :1 cm:12 :1 cm:38 :1 cm:23 :1 cm:37 :1 cm:18 :1 cm:37 :1 cm:23 :2 c:97 :1 cp:12 k:6 :1 kt:3 :1 nf:13 p:3 :1 cp:16 :1 cp:7 :1 kt:4 :1 nf:3 p:2 :1 p:1 :2 kt:4 :1 nf:3 p:2 :1 p:1 :5 cm:13 :1 p:1 :2 kt:4 :1 nf:4 p:1 kt:4 p:1 :1 p:1 :5 cm:13 :1 p:1 :2 cm:66 :2 kt:4 :1 nf:3 p:2 :1 p:1 :5 k:2 p:1 n:1 p:1 :1 p:1 :5 p:1 :1 k:4 :1 k:2 p:1 n:1 p:1 :1 p:1 :7 n:4 p:1 s:5 p:1 :5 p:1 :3 p:1 :2 cp:8 :1 cpf:10 c1:24 cp:9 :1 cpf:10 c1:21 cp:9 :1 cpf:10 c1:24 cp:9 :1 cpf:10 c1:21 cp:9 cpf:8 c1:23 cp:9 cpf:8 c1:20 cp:1 :1 cm:27 :2 cm:100 :2 cm:72 :1 cp:28 :1 cp:8 :1 cpf:10 cp:1 :1 cp:8 :1 cpf:8 cp:9 :1 cpf:15 cp:9 :1 cpf:8 cp:9 :1 cpf:10 cp:9 :1 cpf:16 cp:1 :1 cp:8 :1 cpf:9 cp:1 :1 cp:17 :1 cp:28 :1 cp:6 :1 k:7 :1 kt:8 :1 kt:4 :1 kt:4 :1 n:6 p:1 :2 cp:21 cm:163 cp:1 :1 cp:49 :1 k:6 :1 kt:4 :1 nf:14 p:1 n:6 :1 o:1 n:1 p:1 :1 p:1 :2 k:8 :1 kt:8 :1 kt:4 :1 n:3 p:1 :1 n:2 p:1 :1 n:4 p:1 :4 nl:5 :2 n:3 :1 k:8 :1 p:1 s:10 :1 o:1 :1 s:4 :1 p:1 n:3 p:1 :1 p:2 :2 n:3 :1 k:8 :1 p:1 s:10 :1 o:1 :1 s:4 :1 p:1 n:2 p:1 :2 p:2 :2 n:3 :1 k:8 :1 p:1 s:10 :1 o:1 :1 s:4 :1 p:1 n:4 p:3 :2 k:2 :1 p:1 n:16 p:1 n:3 :1 o:2 :1 n:4 p:1 :1 mi:1 p:2 :1 k:4 :1 n:4 p:1 :3 cm:115 :2 p:2 kt:4 o:1 p:2 n:1 p:3 mi:1 p:1 :1 o:1 :1 n:3 p:1 :2 p:2 kt:4 o:1 p:2 n:1 p:3 mi:1 p:1 :1 o:1 :1 n:2 p:1 :1 p:1 :2 cp:6 cm:66 cp:1 :1 cp:78 :1 cp:7 :1 kt:4 :1 nf:8 p:1 kt:3 :1 n:6 p:1 :1 kt:3 :1 n:6 p:1 :1 n:6 :1 n:5 p:1 :1 n:6 :1 n:5 p:1 :8 n:6 :1 n:5 p:1 :1 n:6 :1 n:5 p:1 :1 n:6 :1 n:5 p:1 :1 n:6 :1 n:5 p:1 :1 p:1 :2 n:6 :1 n:4 p:1 :1 n:4 p:1 :1 n:4 p:1 :2 n:13 :1 o:1 n:6 :1 o:1 :1 n:17 p:3 :2 k:2 :1 p:1 o:1 n:6 o:2 n:6 o:2 n:7 p:1 :3 k:6 p:1 :2 n:4 :1 o:1 :1 n:5 :1 o:1 :1 n:5 p:1 :2 n:4 :1 o:1 :1 n:5 :1 o:1 :1 n:5 :1 o:1 :1 n:4 p:1 :2 n:4 :1 o:1 :1 n:5 :1 o:1 :1 n:5 :1 o:1 :1 n:4 p:1 :2 n:7 p:1 n:6 p:1 :1 s:41 se:2 s:1 p:1 :3 n:6 p:1 :1 n:6 p:1 :1 n:4 p:1 :1 n:4 p:2 :1 p:1 :2 cp:7 :1 cm:61 :1 cm:28 :2 cp:16 cm:36 :1 cp:19 cm:29 cp:20 cm:37 cp:8 :1 k:7 :1 n:8 :1 o:1 p:1 o:1 n:8 p:2 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :2 cm:26 :1 cp:16 k:6 :1 n:8 :1 o:1 :1 nf:13 p:1 n:8 :1 o:3 p:1 :1 kt:3 p:1 :1 n:6 o:1 p:1 :1 n:6 o:1 p:2 :1 cp:6 k:6 :1 n:8 :1 o:1 :1 nf:13 p:1 n:8 :1 o:3 p:1 :1 kt:3 p:2 :1 cp:7 k:6 :1 n:8 :1 o:1 :1 nf:13 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:3 p:1 :1 kt:3 p:1 :1 kt:3 p:1 :1 kt:3 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:7 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:3 p:1 :1 kt:3 p:1 :1 kt:3 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:11 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:3 p:1 :1 kt:3 p:1 :1 kt:3 p:1 :1 kt:3 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:19 p:1 n:8 :1 o:1 p:1 :1 kt:3 p:1 :1 n:8 :1 o:3 p:1 n:8 :1 o:1 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:16 p:1 kt:3 p:1 :1 kt:3 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:3 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:9 p:1 n:8 :1 o:3 p:1 :1 kt:3 p:2 :1 cp:47 :1 cp:15 k:6 :1 kt:3 :1 n:7 p:1 :1 k:6 :1 kt:3 :1 nf:7 p:1 n:8 :1 o:1 p:1 :1 kt:4 :1 o:1 p:2 :1 cp:7 k:6 :1 kt:3 :1 nf:10 p:1 n:12 p:1 :1 n:8 :1 o:1 p:1 :1 n:13 :1 o:1 p:1 :9 kt:3 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:4 :1 nf:20 p:1 n:12 p:1 :1 n:8 :1 o:1 p:1 :6 n:13 :1 o:1 p:1 :1 kt:3 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:4 :1 nf:14 p:1 n:12 p:1 :1 n:8 :1 o:1 p:1 :1 n:13 :1 o:1 p:2 :1 k:6 :1 kt:3 :1 nf:21 p:1 n:12 p:1 :1 n:8 :1 o:1 p:1 :7 n:13 :1 o:1 p:1 :1 kt:3 :1 o:1 p:1 :1 kt:3 :1 o:1 p:1 :1 kt:3 :1 o:1 p:2 :2 k:6 :1 n:8 :1 o:1 :1 nf:11 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:3 :1 nf:12 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :4 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:11 p:1 kt:3 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:11 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:3 :1 nf:15 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:11 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:3 :1 nf:14 p:1 n:13 :1 o:1 p:1 :6 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:4 :1 nf:12 p:1 n:13 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 kt:4 :1 nf:14 p:1 n:13 :1 o:1 p:2 :1 k:6 :1 kt:4 :1 nf:20 p:1 n:8 :1 o:1 p:1 :1 kt:4 :1 o:1 p:1 :1 n:8 :1 o:1 p:2 :1 k:6 :1 n:8 :1 o:1 :1 nf:18 p:1 n:8 :1 o:1 p:1 :1 n:8 :1 o:1 p:1 :9 n:13 :1 o:1 p:1 :1 kt:8 :1 kt:4 :1 o:1 p:2 :2 cp:336 :1 cm:31 :1 cp:33",
+  )
+}
+
+///|
+test "rouge: d: demo" {
+  check_lex(
+    "d", "import std.algorithm, std.conv, std.functional,\n    std.math, std.regex, std.stdio;\n\nalias round = pipe!(to!real, std.math.round, to!string);\nstatic reFloatingPoint = ctRegex!`[0-9]+\\.[0-9]+`;\n\nvoid main()\n{\n    // Replace anything that looks like a real\n    // number with the rounded equivalent.\n    stdin\n        .byLine\n        .map!(l => l.replaceAll!(c => c.hit.round)\n                                (reFloatingPoint))\n        .each!writeln;\n}\n",
+    "k:6 :1 n:3 p:1 n:9 p:1 :1 n:3 p:1 n:4 p:1 :1 n:3 p:1 n:10 p:1 :5 n:3 p:1 n:4 p:1 :1 n:3 p:1 n:5 p:1 :1 n:3 p:1 n:5 p:1 :2 k:5 :1 n:5 :1 p:1 :1 n:4 p:2 n:2 p:1 kt:4 p:1 :1 n:3 p:1 n:4 p:1 n:5 p:1 :1 n:2 p:1 nb:6 p:2 :1 k:6 :1 n:15 :1 p:1 :1 n:7 p:1 s:16 p:1 :2 kt:4 :1 n:4 p:2 :1 p:1 :5 c1:42 :5 c1:38 :5 n:5 :9 p:1 n:6 :9 p:1 n:3 p:2 n:1 :1 p:2 :1 n:1 p:1 n:10 p:2 n:1 :1 p:2 :1 n:1 p:1 n:3 p:1 n:5 p:1 :33 p:1 n:15 p:2 :9 p:1 n:4 p:1 n:7 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: d: visual sample" {
+  check_lex(
+    "d", "// Written in the D programming language.\n\n/**\nJavaScript Object Notation\n\nSynopsis:\n----\n    //parse a file or string of json into a usable structure\n    string s = \"{ \\\"language\\\": \\\"D\\\", \\\"rating\\\": 3.14, \\\"code\\\": \\\"42\\\" }\";\n    JSONValue j = parseJSON(s);\n    writeln(\"Language: \", j[\"language\"].str(),\n            \" Rating: \", j[\"rating\"].floating()\n    );\n\n    // j and j[\"language\"] return JSONValue,\n    // j[\"language\"].str returns a string\n\n    //check a type\n    long x;\n    if (const(JSONValue)* code = \"code\" in j)\n    {\n        if (code.type() == JSON_TYPE.INTEGER)\n            x = code.integer;\n        else\n            x = to!int(code.str);\n    }\n\n    // create a json struct\n    JSONValue jj = [ \"language\": \"D\" ];\n    // rating doesnt exist yet, so use .object to assign\n    jj.object[\"rating\"] = JSONValue(3.14);\n    // create an array to assign to list\n    jj.object[\"list\"] = JSONValue( [\"a\", \"b\", \"c\"] );\n    // list already exists, so .object optional\n    jj[\"list\"].array ~= JSONValue(\"D\");\n\n    s = j.toString();\n    writeln(s);\n----\n\nCopyright: Copyright Jeremie Pelletier 2008 - 2009.\nLicense:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).\nAuthors:   Jeremie Pelletier, David Herberth\nReferences: $(LINK http://json.org/)\nSource:    $(PHOBOSSRC std/_json.d)\n*/\n/*\n         Copyright Jeremie Pelletier 2008 - 2009.\nDistributed under the Boost Software License, Version 1.0.\n   (See accompanying file LICENSE_1_0.txt or copy at\n         http://www.boost.org/LICENSE_1_0.txt)\n*/\nmodule std.json;\n\nimport std.conv;\nimport std.range.primitives;\nimport std.array;\nimport std.traits;\n\n/**\nString literals used to represent special float values within JSON strings.\n*/\nenum JSONFloatLiteral : string\n{\n    nan         = \"NaN\",       /// string representation of floating-point NaN\n    inf         = \"Infinite\",  /// string representation of floating-point Infinity\n    negativeInf = \"-Infinite\", /// string representation of floating-point negative Infinity\n}\n\n/**\nFlags that control how json is encoded and parsed.\n*/\nenum JSONOptions {\n    none,                       /// standard parsing\n    specialFloatLiterals = 0x1, /// encode NaN and Inf float values as strings\n}\n\n/**\nJSON type enumeration\n*/\nenum JSON_TYPE : byte\n{\n    /// Indicates the type of a $(D JSONValue).\n    NULL,\n    STRING,  /// ditto\n    INTEGER, /// ditto\n    UINTEGER,/// ditto\n    FLOAT,   /// ditto\n    OBJECT,  /// ditto\n    ARRAY,   /// ditto\n    TRUE,    /// ditto\n    FALSE    /// ditto\n}\n\n/**\nJSON value node\n*/\nstruct JSONValue\n{\n    import std.exception : enforceEx, enforce;\n\n    union Store\n    {\n        string                          str;\n        long                            integer;\n        ulong                           uinteger;\n        double                          floating;\n        JSONValue[string]               object;\n        JSONValue[]                     array;\n    }\n    private Store store;\n    private JSON_TYPE type_tag;\n\n    /**\n      Returns the JSON_TYPE of the value stored in this structure.\n    */\n    @property JSON_TYPE type() const pure nothrow @safe @nogc\n    {\n        return type_tag;\n    }\n    ///\n    unittest\n    {\n          string s = \"{ \\\"language\\\": \\\"D\\\" }\";\n          JSONValue j = parseJSON(s);\n          assert(j.type == JSON_TYPE.OBJECT);\n          assert(j[\"language\"].type == JSON_TYPE.STRING);\n    }\n\n    // Explicitly undocumented. It will be removed in June 2016. @@@DEPRECATED_2016-06@@@\n    deprecated(\"Please assign the value with the adequate type to JSONValue directly.\")\n    @property JSON_TYPE type(JSON_TYPE newType)\n    {\n        if (type_tag != newType\n         && ((type_tag != JSON_TYPE.INTEGER && type_tag != JSON_TYPE.UINTEGER)\n          || (newType  != JSON_TYPE.INTEGER && newType  != JSON_TYPE.UINTEGER)))\n        {\n            final switch (newType)\n            {\n                case JSON_TYPE.STRING:\n                    store.str = store.str.init;\n                    break;\n                case JSON_TYPE.INTEGER:\n                    store.integer = store.integer.init;\n                    break;\n                case JSON_TYPE.UINTEGER:\n                    store.uinteger = store.uinteger.init;\n                    break;\n                case JSON_TYPE.FLOAT:\n                    store.floating = store.floating.init;\n                    break;\n                case JSON_TYPE.OBJECT:\n                    store.object = store.object.init;\n                    break;\n                case JSON_TYPE.ARRAY:\n                    store.array = store.array.init;\n                    break;\n                case JSON_TYPE.TRUE:\n                case JSON_TYPE.FALSE:\n                case JSON_TYPE.NULL:\n                    break;\n            }\n        }\n        return type_tag = newType;\n    }\n\n    /// Value getter/setter for $(D JSON_TYPE.STRING).\n    /// Throws: $(D JSONException) for read access if $(D type) is not\n    /// $(D JSON_TYPE.STRING).\n    @property inout(string) str() inout pure\n    {\n        enforce!JSONException(type == JSON_TYPE.STRING,\n                                \"JSONValue is not a string\");\n        return store.str;\n    }\n    /// ditto\n    @property string str(string v) pure nothrow @nogc\n    {\n        assign(v);\n        return store.str;\n    }\n    ///\n    unittest\n    {\n        JSONValue j = [ \"language\": \"D\" ];\n\n        // get value\n        assert(j[\"language\"].str == \"D\");\n\n        // change existing key to new string\n        j[\"language\"].str = \"Perl\";\n        assert(j[\"language\"].str == \"Perl\");\n    }\n\n    /// Value getter/setter for $(D JSON_TYPE.INTEGER).\n    /// Throws: $(D JSONException) for read access if $(D type) is not\n    /// $(D JSON_TYPE.INTEGER).\n    @property inout(long) integer() inout pure @safe\n    {\n        enforce!JSONException(type == JSON_TYPE.INTEGER,\n                                \"JSONValue is not an integer\");\n        return store.integer;\n    }\n    /// ditto\n    @property long integer(long v) pure nothrow @safe @nogc\n    {\n",
+    "c1:41 :2 cm:1258 :1 cm:214 :1 k:6 :1 n:3 p:1 n:4 p:1 :2 k:6 :1 n:3 p:1 n:4 p:1 :1 k:6 :1 n:3 p:1 n:5 p:1 n:10 p:1 :1 k:6 :1 n:3 p:1 n:5 p:1 :1 k:6 :1 n:3 p:1 n:6 p:1 :2 cm:82 :1 k:4 :1 n:16 :1 p:1 :1 nb:6 :1 p:1 :5 n:3 :9 p:1 :1 s:5 p:1 :7 c1:47 :5 n:3 :9 p:1 :1 s:10 p:1 :2 c1:52 :5 n:11 :1 p:1 :1 s:11 p:1 :1 c1:61 :1 p:1 :2 cm:57 :1 k:4 :1 n:11 :1 p:1 :5 n:4 p:1 :23 c1:20 :5 n:20 :1 p:1 :1 mh:3 p:1 :1 c1:46 :1 p:1 :2 cm:28 :1 k:4 :1 n:9 :1 p:1 :1 kt:4 :1 p:1 :5 c1:43 :5 n:4 p:1 :5 n:6 p:1 :2 c1:9 :5 n:7 p:1 :1 c1:9 :5 n:8 p:1 c1:9 :5 n:5 p:1 :3 c1:9 :5 n:6 p:1 :2 c1:9 :5 n:5 p:1 :3 c1:9 :5 n:4 p:1 :4 c1:9 :5 n:5 :4 c1:9 :1 p:1 :2 cm:22 :1 k:6 :1 n:9 :1 p:1 :5 k:6 :1 n:3 p:1 n:9 :1 p:1 :1 n:9 p:1 :1 n:7 p:1 :6 k:5 :1 n:5 :5 p:1 :9 nb:6 :26 n:3 p:1 :9 kt:4 :28 n:7 p:1 :9 kt:5 :27 n:8 p:1 :9 kt:6 :26 n:8 p:1 :9 n:9 p:1 nb:6 p:1 :15 n:6 p:1 :9 n:9 p:2 :21 n:5 p:1 :5 p:1 :5 k:7 :1 n:5 :1 n:5 p:1 :5 k:7 :1 n:9 :1 n:8 p:1 :6 cm:77 :5 nd:9 :1 n:9 :1 n:4 p:2 :1 k:5 :1 k:4 :1 k:7 :1 nd:5 :1 nd:5 :5 p:1 :9 k:6 :1 n:8 p:1 :5 p:1 :5 c1:3 :5 k:8 :5 p:1 :11 nb:6 :1 n:1 :1 p:1 :1 s:25 p:1 :11 n:9 :1 n:1 :1 p:1 :1 n:9 p:1 n:1 p:2 :11 k:6 p:1 n:1 p:1 n:4 :1 p:2 :1 n:9 p:1 n:6 p:2 :11 k:6 p:1 n:1 p:1 s:10 p:2 n:4 :1 p:2 :1 n:9 p:1 n:6 p:2 :5 p:1 :6 c1:85 :5 k:10 p:1 s:71 p:1 :5 nd:9 :1 n:9 :1 n:4 p:1 n:9 :1 n:7 p:1 :5 p:1 :9 k:2 :1 p:1 n:8 :1 p:2 :1 n:7 :10 p:2 :1 p:2 n:8 :1 p:2 :1 n:9 p:1 n:7 :1 p:2 :1 n:8 :1 p:2 :1 n:9 p:1 n:8 p:1 :11 p:2 :1 p:1 n:7 :2 p:2 :1 n:9 p:1 n:7 :1 p:2 :1 n:7 :2 p:2 :1 n:9 p:1 n:8 p:3 :9 p:1 :13 k:5 :1 k:6 :1 p:1 n:7 p:1 :13 p:1 :17 k:4 :1 n:9 p:1 n:6 p:1 :21 n:5 p:1 n:3 :1 p:1 :1 n:5 p:1 n:3 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:7 p:1 :21 n:5 p:1 n:7 :1 p:1 :1 n:5 p:1 n:7 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:8 p:1 :21 n:5 p:1 n:8 :1 p:1 :1 n:5 p:1 n:8 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:5 p:1 :21 n:5 p:1 n:8 :1 p:1 :1 n:5 p:1 n:8 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:6 p:1 :21 n:5 p:1 n:6 :1 p:1 :1 n:5 p:1 n:6 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:5 p:1 :21 n:5 p:1 n:5 :1 p:1 :1 n:5 p:1 n:5 p:1 n:4 p:1 :21 k:5 p:1 :17 k:4 :1 n:9 p:1 n:4 p:1 :17 k:4 :1 n:9 p:1 n:5 p:1 :17 k:4 :1 n:9 p:1 n:4 p:1 :21 k:5 p:1 :13 p:1 :9 p:1 :9 k:6 :1 n:8 :1 p:1 :1 n:7 p:1 :5 p:1 :6 c1:50 :5 c1:66 :5 c1:26 :5 nd:9 :1 k:5 p:1 nb:6 p:1 :1 n:3 p:2 :1 k:5 :1 k:4 :5 p:1 :9 n:7 p:1 n:13 p:1 n:4 :1 p:2 :1 n:9 p:1 n:6 p:1 :33 s:27 p:2 :9 k:6 :1 n:5 p:1 n:3 p:1 :5 p:1 :5 c1:9 :5 nd:9 :1 nb:6 :1 n:3 p:1 nb:6 :1 n:1 p:1 :1 k:4 :1 k:7 :1 nd:5 :5 p:1 :9 n:6 p:1 n:1 p:2 :9 k:6 :1 n:5 p:1 n:3 p:1 :5 p:1 :5 c1:3 :5 k:8 :5 p:1 :9 n:9 :1 n:1 :1 p:1 :1 p:1 :1 s:10 p:1 :1 s:3 :1 p:2 :10 c1:12 :9 k:6 p:1 n:1 p:1 s:10 p:2 n:3 :1 p:2 :1 s:3 p:2 :10 c1:36 :9 n:1 p:1 s:10 p:2 n:3 :1 p:1 :1 s:6 p:1 :9 k:6 p:1 n:1 p:1 s:10 p:2 n:3 :1 p:2 :1 s:6 p:2 :5 p:1 :6 c1:51 :5 c1:66 :5 c1:27 :5 nd:9 :1 k:5 p:1 kt:4 p:1 :1 n:7 p:2 :1 k:5 :1 k:4 :1 nd:5 :5 p:1 :9 n:7 p:1 n:13 p:1 n:4 :1 p:2 :1 n:9 p:1 n:7 p:1 :33 s:29 p:2 :9 k:6 :1 n:5 p:1 n:7 p:1 :5 p:1 :5 c1:9 :5 nd:9 :1 kt:4 :1 n:7 p:1 kt:4 :1 n:1 p:1 :1 k:4 :1 k:7 :1 nd:5 :1 nd:5 :5 p:1 :1",
+  )
+}
+
+///|
+test "rouge: go: demo" {
+  check_lex(
+    "go", "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, 世界\")\n}\n",
+    "k:7 :1 n:4 :2 k:6 :1 s:5 :2 k:4 :1 n:4 p:2 :1 p:1 :2 n:3 o:1 n:7 p:1 s:11 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: go: visual sample" {
+  check_lex(
+    "go", "// A line comment.\n\n/*\nA general comment.\n*/\n\n// Keywords\n\n\tbreak        default      func         interface    select\n\tcase         defer        go           map          struct\n\tchan         else         goto         package      switch\n\tconst        fallthrough  if           range        type\n\tcontinue     for          import       return       var\n\n// Operators, delimiters and special tokens\n\n\t+    &     +=    &=     &&    ==    !=    (    )\n\t-    |     -=    |=     ||    <     <=    [    ]\n\t*    ^     *=    ^=     <-    >     >=    {    }\n\t/    <<    /=    <<=    ++    =     :=    ,    ;\n\t%    >>    %=    >>=    --    !     ...   .    :\n\t     &^          &^=\n\n// Integer literals\n\n\t42\n\t0600\n\t0xBadFace\n\t170141183460469231731687303715884105727\n\n// Floating-point literals\n\n\t0.\n\t72.40\n\t072.40\n\t2.71828\n\t1.e+0\n\t6.67428e-11\n\t1E6\n\t.25\n\t.12345E+5\n\n// Imaginary literals\n\n\t0i\n\t011i\n\t0.i\n\t2.71828i\n\t1.e+0i\n\t6.67428e-11i\n\t1E6i\n\t.25i\n\t.12345E+5i\n\n// Character literals\n\n\t'a'\n\t'ä'\n\t'本'\n\t'\\t'\n\t'\\000'\n\t'\\007'\n\t'\\377'\n\t'\\x07'\n\t'\\xff'\n\t'\\u12e4'\n\t'\\U00101234'\n\n// String literals\n\n\t`abc`\n\t`\\n\n\t\\n`\n\t\"\\n\"\n\t\"\"\n\t\"Hello, world!\\n\"\n\t\"日本語\"\n\t\"\\u65e5本\\U00008a9e\"\n\t\"\\xff\\u00FF\"\n\t\"\\uD800\"       // illegal: surrogate half\n\t\"\\U00110000\"   // illegal: invalid Unicode code point\n\t\"\\z\"           // illegal\n\n// Predeclared identifiers\n\n\t// Types:\n\tbool byte complex64 complex128 error float32 float64\n\tint int8 int16 int32 int64 rune string\n\tuint uint8 uint16 uint32 uint64 uintptr\n\n\t// Constants:\n\ttrue false iota\n\n\t// Zero value:\n\tnil\n\n\t// Functions:\n\tappend cap close complex copy delete imag len\n\tmake new panic print println real recover\n\n// Types\n\n\ttype T1 string\n\ttype T2 T1\n\ttype T3 []T1\n\ttype T4 T3\n\n// Array types\n\n\t[32]byte\n\t[2*N] struct { x, y int32 }\n\t[1000]*float64\n\t[3][5]int\n\t[2][2][2]float64\n\n// Struct types\n\n\tstruct {}\n\n\tstruct {\n\t\tx, y int\n\t\tu float32\n\t\t_ float32\n\t\tA *[]int\n\t\tF func()\n\t}\n\n\tstruct {\n\t\tT1\n\t\t*T2\n\t\tP.T3\n\t\t*P.T4\n\t\tx, y int\n\t}\n\n\tstruct {\n\t\tT\n\t\t*T\n\t\t*P.T\n\t}\n\n\tstruct {\n\t\tmicrosec  uint64 \"field 1\"\n\t\tserverIP6 uint64 \"field 2\"\n\t\tprocess   string \"field 3\"\n\t}\n\n// Function types\n\n\tfunc()\n\tfunc(x int) int\n\tfunc(a, _ int, z float32) bool\n\tfunc(a, b int, z float32) (bool)\n\tfunc(prefix string, values ...int)\n\tfunc(a, b int, z float64, opt ...interface{}) (success bool)\n\tfunc(int, int, float64) (float64, *[]int)\n\tfunc(n int) func(p *T)\n\n// Interface types\n\n\tinterface {\n\t\tRead(b Buffer) bool\n\t\tWrite(b Buffer) bool\n\t\tClose()\n\t}\n\n\ttype Lock interface {\n\t\tLock()\n\t\tUnlock()\n\t}\n\n// Channel types\n\n\tchan T\n\tchan<- float64\n\t<-chan int\n\n\tchan<- chan int\n\tchan<- <-chan int\n\t<-chan <-chan int\n\tchan (<-chan int)\n",
+    "c:18 :2 c:24 :2 c:11 :3 k:5 :8 k:7 :6 k:4 :9 k:9 :4 k:6 :2 k:4 :9 k:5 :8 k:2 :11 k:3 :10 k:6 :2 k:4 :9 k:4 :9 k:4 :9 k:7 :6 k:6 :2 k:5 :8 k:11 :2 k:2 :11 k:5 :8 k:4 :2 k:8 :5 k:3 :10 k:6 :7 k:6 :7 k:3 :2 c:43 :3 o:1 :4 o:1 :5 o:2 :4 o:2 :5 o:2 :4 o:2 :4 o:2 :4 p:1 :4 p:1 :2 o:1 :4 o:1 :5 o:2 :4 o:2 :5 o:2 :4 o:1 :5 o:2 :4 p:1 :4 p:1 :2 o:1 :4 o:1 :5 o:2 :4 o:2 :5 o:2 :4 o:1 :5 o:2 :4 p:1 :4 p:1 :2 o:1 :4 o:2 :4 o:2 :4 o:3 :4 o:2 :4 o:1 :5 o:2 :4 p:1 :4 p:1 :2 o:1 :4 o:2 :4 o:2 :4 o:3 :4 o:2 :4 o:1 :5 o:3 :3 o:1 :4 o:1 :7 o:2 :10 o:3 :2 c:19 :3 m:2 :2 m:4 :2 m:9 :2 m:39 :2 c:26 :3 m:2 :2 m:5 :2 m:6 :2 m:7 :2 m:5 :2 m:11 :2 m:3 :2 m:3 :2 m:9 :2 c:21 :3 m:2 :2 m:4 :2 m:3 :2 m:8 :2 m:6 :2 m:12 :2 m:4 :2 m:4 :2 m:10 :2 c:21 :3 sc:3 :2 sc:3 :2 sc:3 :2 sc:4 :2 sc:6 :2 sc:6 :2 sc:6 :2 sc:6 :2 sc:6 :2 sc:8 :2 sc:12 :2 c:18 :3 s:5 :2 s:8 :2 s:1 se:2 s:1 :2 s:2 :2 s:14 se:2 s:1 :2 s:5 :2 s:1 se:6 s:1 se:10 s:1 :2 s:1 se:10 s:1 :2 s:1 se:6 s:1 :7 c:26 :2 s:1 se:10 s:1 :3 c:38 :2 s:1 err:2 s:1 :11 c:10 :2 c:26 :3 c:9 :2 kt:4 :1 kt:4 :1 kt:9 :1 kt:10 :1 kt:5 :1 kt:7 :1 kt:7 :2 kt:3 :1 kt:4 :1 kt:5 :1 kt:5 :1 kt:5 :1 kt:4 :1 kt:6 :2 kt:4 :1 kt:5 :1 kt:6 :1 kt:6 :1 kt:6 :1 kt:7 :3 c:13 :2 no:4 :1 no:5 :1 no:4 :3 c:14 :2 no:3 :3 c:13 :2 nb:6 :1 nb:3 :1 nb:5 :1 nb:7 :1 nb:4 :1 nb:6 :1 nb:4 :1 nb:3 :2 nb:4 :1 nb:3 :1 nb:5 :1 nb:5 :1 nb:7 :1 nb:4 :1 nb:7 :2 c:8 :3 k:4 :1 n:2 :1 kt:6 :2 k:4 :1 n:2 :1 n:2 :2 k:4 :1 n:2 :1 p:2 n:2 :2 k:4 :1 n:2 :1 n:2 :2 c:14 :3 p:1 m:2 p:1 kt:4 :2 p:1 m:1 o:1 n:1 p:1 :1 k:6 :1 p:1 :1 n:1 p:1 :1 n:1 :1 kt:5 :1 p:1 :2 p:1 m:4 p:1 o:1 kt:7 :2 p:1 m:1 p:2 m:1 p:1 kt:3 :2 p:1 m:1 p:2 m:1 p:2 m:1 p:1 kt:7 :2 c:15 :3 k:6 :1 p:2 :3 k:6 :1 p:1 :3 n:1 p:1 :1 n:1 :1 kt:3 :3 n:1 :1 kt:7 :3 n:1 :1 kt:7 :3 n:1 :1 o:1 p:2 kt:3 :3 n:1 :1 k:4 p:2 :2 p:1 :3 k:6 :1 p:1 :3 n:2 :3 o:1 n:2 :3 n:1 o:1 n:2 :3 o:1 n:1 o:1 n:2 :3 n:1 p:1 :1 n:1 :1 kt:3 :2 p:1 :3 k:6 :1 p:1 :3 n:1 :3 o:1 n:1 :3 o:1 n:1 o:1 n:1 :2 p:1 :3 k:6 :1 p:1 :3 n:8 :2 kt:6 :1 s:9 :3 n:9 :1 kt:6 :1 s:9 :3 n:7 :3 kt:6 :1 s:9 :2 p:1 :2 c:17 :3 k:4 p:2 :2 k:4 p:1 n:1 :1 kt:3 p:1 :1 kt:3 :2 k:4 p:1 n:1 p:1 :1 n:1 :1 kt:3 p:1 :1 n:1 :1 kt:7 p:1 :1 kt:4 :2 k:4 p:1 n:1 p:1 :1 n:1 :1 kt:3 p:1 :1 n:1 :1 kt:7 p:1 :1 p:1 kt:4 p:1 :2 k:4 p:1 n:6 :1 kt:6 p:1 :1 n:6 :1 o:3 kt:3 p:1 :2 k:4 p:1 n:1 p:1 :1 n:1 :1 kt:3 p:1 :1 n:1 :1 kt:7 p:1 :1 n:3 :1 o:3 k:9 p:3 :1 p:1 n:7 :1 kt:4 p:1 :2 k:4 p:1 kt:3 p:1 :1 kt:3 p:1 :1 kt:7 p:1 :1 p:1 kt:7 p:1 :1 o:1 p:2 kt:3 p:1 :2 k:4 p:1 n:1 :1 kt:3 p:1 :1 k:4 p:1 n:1 :1 o:1 n:1 p:1 :2 c:18 :3 k:9 :1 p:1 :3 n:4 p:1 n:1 :1 n:6 p:1 :1 kt:4 :3 n:5 p:1 n:1 :1 n:6 p:1 :1 kt:4 :3 n:5 p:2 :2 p:1 :3 k:4 :1 n:4 :1 k:9 :1 p:1 :3 n:4 p:2 :3 n:6 p:2 :2 p:1 :2 c:16 :3 k:4 :1 n:1 :2 k:4 o:2 :1 kt:7 :2 o:2 k:4 :1 kt:3 :3 k:4 o:2 :1 k:4 :1 kt:3 :2 k:4 o:2 :1 o:2 k:4 :1 kt:3 :2 o:2 k:4 :1 o:2 k:4 :1 kt:3 :2 k:4 :1 p:1 o:2 k:4 :1 kt:3 p:1 :1",
+  )
+}
+
+///|
+test "rouge: cpp: demo" {
+  check_lex(
+    "cpp", "#include<iostream>\n\nusing namespace std;\n\nint main()\n{\n    cout << \"Hello World\" << endl;\n}\n",
+    "cp:8 cpf:10 cp:1 :1 k:5 :1 k:9 :1 n:3 p:1 :2 kt:3 :1 nf:4 p:2 :1 p:1 :5 n:4 :1 o:2 :1 s:13 :1 o:2 :1 n:4 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: cpp: visual sample" {
+  check_lex(
+    "cpp", "int quote_delims = 100'000'000;\nint float_delims = 100.00'00;\nint hex_delims = 0xFF'Fa12;\nint bin_delims = 0b10'1000;\n\n// string literal with encoding-prefix\nchar str1[] = u8\"UTF-8 string\";\nchar16_t str2[] = u\"UTF-16 string\";\nchar32_t str3[] = U\"UTF-32 string\";\n\n// Raw string literal\nchar raw_str1[] = R\"(foo\nbar\nbaz)\";\nchar raw_str2[] = R\"delim(\\w+ \\d+)delim\";\nchar16_t raw_str3[] = uR\"(\\w+ \\d+)\";\n\n// time literal\n#include <chrono>\nusing namespace std::chrono_literals;\nauto oneDecade = 10y;\nauto oneYear = 365.2'425d;\nauto oneDay = 24h;\nauto halfAnHour = 30min;\nauto oneYearInMins = 525'949.2min;\nauto halfAnHour = 0.5h;\nauto oneMin = 60s;\nauto oneSec = 1000ms;\nauto oneMilliSec = 1000us;\nauto oneMicroSec = 1000ns;\n\n// complex literal\n#include <complex>\nusing namespace std::complex_literals;\nauto complexNumber = 1 + 1i;\nauto complexNumberl = 1 + 1il;\nauto complexNumberf = 1 + 1if;\n\n// null pointer\nint *a = nullptr;\n\n// bit field\nstruct S {\n    // will usually occupy 2 bytes:\n    // 3 bits: value of b1\n    // 2 bits: unused\n    // 6 bits: value of b2\n    // 2 bits: value of b3\n    // 3 bits: unused\n    unsigned char b1 : 3, : 2, b2 : 6, b3 : 2;\n};\nstd::cout << sizeof(S) << '\\n'; // usually prints 2\n\n// loops\nint n = 10;\nwhile (n --> 0) {\n  std::cout << n << '\\n';\n}\nfor (int &i : {1, 2, 3, 4}) {\n  std::cout << i << '\\n';\n}\n\n// decltype\nint num = 1;\ndecltype(num) total = num;\nstruct A { double x; };\nconst A *a = A {0};\ndecltype(a->x) ax = a->x;\n\n// strongly typed enums\nenum class Day {\n    Mon, Tue, Wed, Thur, Fri, Sat, Sun\n};\nDay today = Day::Mon;\n\n// lambda function\nauto add = [](int x, int y) { return x + y; };\nauto noParam = [] { return 5; };\nauto invokeNow = [](int x) { return x * 5; }(1);\nint captureMe = 5;\nauto byCopy = [captureMe] { return captureMe; };\nauto byRef = [&captureMe] { return captureMe; };\nauto allByCopy = [=] { return captureMe; };\nauto allByRef = [&] { return captureMe; };\nauto increment = [y = 1](int x) { return x + y; };\ndouble distance = [](double x, double y, double xx, double yy) -> double {\n  return abs(x-xx) + abs(y-yy);\n};\n\n// templates\nnamespace N\n{\n    template<class T>\n    class Y // template definition\n    {\n        void mf() { }\n    };\n}\ntemplate class N::Y<char*>;\ntemplate void N::Y<double>::mf();\ntemplate struct Z<double>;\ntemplate<typename T> concept C1 = sizeof(T) != sizeof(int);\ntemplate<C1 T> struct S1 { };\ntemplate<C1 T> using Ptr = T*;\ntemplate <typename, typename...>\ntemplate<class...> struct Tuple { };\ntemplate<typename ...Ts> void f(Ts...) {}\n\n// variadic template\ntemplate<class F, class... Args>\nvoid forward_args(F f, Args... args) {\n    f(std::forward<Args>(args)...);\n}\n\n// using auto\ntemplate<auto F = requires { foo(); }>\nvoid func();\n\ntemplate<auto F = []{}>\nvoid func();\n\n// namespace\nnamespace printing {\n    inline namespace latest {\n        using std::cout;\n        void print() {\n            cout << \"Latest print\\n\";\n        }\n     }\n     namespace old {\n          void print() {\n              ::printf(\"Old print\\n\");\n          }\n     }\n}\nprinting::print();\nprinting::latest::print();\nprinting::old::print();\nnamespace oldPrint = printing::old;\noldPrint::print();\n\n// attribute\n[[noreturn]] void throwError() { throw \"error\"; }\n[[deprecated(\"useless\")]] void doNothing() {}\n\nnamespace std {\n    class thread {\n    public:\n        // types:\n        class id;\n        typedef void *native_handle_type;\n\n        // construct/copy/destroy:\n        thread() noexcept;\n        template <class F, class ...Args> explicit thread(F&& f, Args&&... args);\n        ~thread();\n        thread(const thread&) = delete;\n        thread(thread&&) noexcept;\n        thread& operator=(const thread&) = delete;\n        thread& operator=(thread&&) noexcept;\n\n        // members:\n        void swap(thread&) noexcept;\n        bool joinable() const noexcept;\n        void join();\n        void detach();\n        id get_id() const noexcept;\n        native_handle_type native_handle();\n\n        // static members:\n        static unsigned hardware_concurrency() noexcept;\n    };\n}\n\n// try-block\ntry {\n    throw std::runtime_error(\"Runtime error!\");\n} catch (std::exception& e) {\n    std::cerr << e.what() << std::endl;\n}\n\nconstexpr int factorial(int n) {\n    return n > 0 ? n * factorial(n - 1) : 1;\n}\n\n/* foo */ #if 0\n    this is commented\n#endif\n\n/* it shouldn't hang */        /* trying to lex this */\n/*{\"ahg/awn/xan?\",     HB_TAG('A','G','W',' ')},*/     /* Agaw */\n/*{\"gsw?/gsw-FR?\",     HB_TAG('A','L','S',' ')},*/     /* Alsatian */\n/*{\"krc\",      HB_TAG('B','A','L',' ')},*/     /* Balkar */\n/*{\"??\",       HB_TAG('B','C','R',' ')},*/     /* Bible Cree */\n/*{\"sgw?\",     HB_TAG('C','H','G',' ')},*/     /* Chaha Gurage */\n/*{\"acf/gcf?\", HB_TAG('F','A','N',' ')},*/     /* French Antillean */\n/*{\"vls/nl-be\",        HB_TAG('F','L','E',' ')},*/     /* Flemish */\n/*{\"enf?/yrk?\",        HB_TAG('F','N','E',' ')},*/     /* Forest Nenets */\n/*{\"fuf?\",     HB_TAG('F','T','A',' ')},*/     /* Futa */\n/*{\"ar-Syrc?\", HB_TAG('G','A','R',' ')},*/     /* Garshuni */\n/*{\"cfm/rnl?\", HB_TAG('H','A','L',' ')},*/     /* Halam */\n/*{\"ga-Latg?/Latg?\",   HB_TAG('I','R','T',' ')},*/     /* Irish Traditional */\n/*{\"krc\",      HB_TAG('K','A','R',' ')},*/     /* Karachay */\n/*{\"alw?/ktb?\",        HB_TAG('K','E','B',' ')},*/     /* Kebena */\n/*{\"Geok\",     HB_TAG('K','G','E',' ')},*/     /* Khutsuri Georgian */\n/*{\"kca\",      HB_TAG('K','H','K',' ')},*/     /* Khanty-Kazim */\n/*{\"kca\",      HB_TAG('K','H','S',' ')},*/     /* Khanty-Shurishkar */\n\nclass Base\n{\npublic:\n    Base () = default;\n    virtual ~Base () = default;\n\n    virtual void foo () = 0;\n};\n\nclass Derived final : public Base\n{\npublic:\n    Derived () = default;\n    virtual ~Derived () = default;\n\n    virtual void foo () override\n    {\n        auto a = 1 + 2;\n    }\n};\n\n#define foo bar\n#define baz zot\n\nclass Highlighter : public QSyntaxHighlighter\n{\n    class InnerClass {}\n\n    Q_OBJECT\n\npublic:\n    Highlighter(QTextDocument *parent = 0);\n\nprotected:\n",
+    "kt:3 :1 n:12 :1 o:1 :1 mi:11 p:1 :1 kt:3 :1 n:12 :1 o:1 :1 mf:9 p:1 :1 kt:3 :1 n:10 :1 o:1 :1 mh:9 p:1 :1 kt:3 :1 n:10 :1 o:1 :1 mb:9 p:1 :2 c1:38 :1 kt:4 :1 n:4 p:2 :1 o:1 :1 s:16 p:1 :1 kt:8 :1 n:4 p:2 :1 o:1 :1 s:16 p:1 :1 kt:8 :1 n:4 p:2 :1 o:1 :1 s:16 p:1 :2 c1:21 :1 kt:4 :1 n:8 p:2 :1 o:1 :1 s:16 p:1 :1 kt:4 :1 n:8 p:2 :1 o:1 :1 s:22 p:1 :1 kt:8 :1 n:8 p:2 :1 o:1 :1 s:13 p:1 :2 c1:15 :1 cp:8 :1 cpf:8 cp:1 k:5 :1 k:9 :1 n:3 o:2 n:15 p:1 :1 k:4 :1 n:9 :1 o:1 :1 mx:3 p:1 :1 k:4 :1 n:7 :1 o:1 :1 mx:10 p:1 :1 k:4 :1 n:6 :1 o:1 :1 mx:3 p:1 :1 k:4 :1 n:10 :1 o:1 :1 mx:5 p:1 :1 k:4 :1 n:13 :1 o:1 :1 mx:12 p:1 :1 k:4 :1 n:10 :1 o:1 :1 mx:4 p:1 :1 k:4 :1 n:6 :1 o:1 :1 mx:3 p:1 :1 k:4 :1 n:6 :1 o:1 :1 mx:6 p:1 :1 k:4 :1 n:11 :1 o:1 :1 mx:6 p:1 :1 k:4 :1 n:11 :1 o:1 :1 mx:6 p:1 :2 c1:18 :1 cp:8 :1 cpf:9 cp:1 k:5 :1 k:9 :1 n:3 o:2 n:16 p:1 :1 k:4 :1 n:13 :1 o:1 :1 mi:1 :1 o:1 :1 mx:2 p:1 :1 k:4 :1 n:14 :1 o:1 :1 mi:1 :1 o:1 :1 mx:3 p:1 :1 k:4 :1 n:14 :1 o:1 :1 mi:1 :1 o:1 :1 mx:3 p:1 :2 c1:15 :1 kt:3 :1 o:1 n:1 :1 o:1 :1 nb:7 p:1 :2 c1:12 :1 k:6 :1 nc:1 :1 p:1 :5 c1:31 :5 c1:22 :5 c1:17 :5 c1:22 :5 c1:22 :5 c1:17 :5 kt:8 :1 kt:4 :1 n:2 :1 o:1 :1 mi:1 p:1 :1 o:1 :1 mi:1 p:1 :1 n:2 :1 o:1 :1 mi:1 p:1 :1 n:2 :1 o:1 :1 mi:1 p:1 :1 p:2 :1 n:3 o:2 n:4 :1 o:2 :1 k:6 p:1 n:1 p:1 :1 o:2 :1 sc:4 p:1 :1 c1:19 :2 c1:8 :1 kt:3 :1 n:1 :1 o:1 :1 mi:2 p:1 :1 k:5 :1 p:1 n:1 :1 o:3 :1 mi:1 p:1 :1 p:1 :3 n:3 o:2 n:4 :1 o:2 :1 n:1 :1 o:2 :1 sc:4 p:1 :1 p:1 :1 k:3 :1 p:1 kt:3 :1 o:1 n:1 :1 o:1 :1 p:1 mi:1 p:1 :1 mi:1 p:1 :1 mi:1 p:1 :1 mi:1 p:2 :1 p:1 :3 n:3 o:2 n:4 :1 o:2 :1 n:1 :1 o:2 :1 sc:4 p:1 :1 p:1 :2 c1:11 :1 kt:3 :1 n:3 :1 o:1 :1 mi:1 p:1 :1 k:8 p:1 n:3 p:1 :1 n:5 :1 o:1 :1 n:3 p:1 :1 k:6 :1 nc:1 :1 p:1 :1 kt:6 :1 n:1 p:1 :1 p:2 :1 k:5 :1 n:1 :1 o:1 n:1 :1 o:1 :1 n:1 :1 p:1 mi:1 p:2 :1 k:8 p:1 n:1 o:2 n:1 p:1 :1 n:2 :1 o:1 :1 n:1 o:2 n:1 p:1 :2 c1:23 :1 k:4 :1 k:5 :1 nc:3 :1 p:1 :5 n:3 p:1 :1 n:3 p:1 :1 n:3 p:1 :1 n:4 p:1 :1 n:3 p:1 :1 n:3 p:1 :1 n:3 :1 p:2 :1 n:3 :1 n:5 :1 o:1 :1 n:3 o:2 n:3 p:1 :2 c1:18 :1 k:4 :1 n:3 :1 o:1 :1 p:3 kt:3 :1 n:1 p:1 :1 kt:3 :1 n:1 p:1 :1 p:1 :1 k:6 :1 n:1 :1 o:1 :1 n:1 p:1 :1 p:2 :1 k:4 :1 n:7 :1 o:1 :1 p:2 :1 p:1 :1 k:6 :1 mi:1 p:1 :1 p:2 :1 k:4 :1 n:9 :1 o:1 :1 p:3 kt:3 :1 n:1 p:1 :1 p:1 :1 k:6 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 p:2 mi:1 p:2 :1 kt:3 :1 n:9 :1 o:1 :1 mi:1 p:1 :1 k:4 :1 n:6 :1 o:1 :1 p:1 n:9 p:1 :1 p:1 :1 k:6 :1 n:9 p:1 :1 p:2 :1 k:4 :1 n:5 :1 o:1 :1 p:1 o:1 n:9 p:1 :1 p:1 :1 k:6 :1 n:9 p:1 :1 p:2 :1 k:4 :1 n:9 :1 o:1 :1 p:1 o:1 p:1 :1 p:1 :1 k:6 :1 n:9 p:1 :1 p:2 :1 k:4 :1 n:8 :1 o:1 :1 p:1 o:1 p:1 :1 p:1 :1 k:6 :1 n:9 p:1 :1 p:2 :1 k:4 :1 n:9 :1 o:1 :1 p:1 n:1 :1 o:1 :1 mi:1 p:2 kt:3 :1 n:1 p:1 :1 p:1 :1 k:6 :1 n:1 :1 o:1 :1 n:1 p:1 :1 p:2 :1 kt:6 :1 n:8 :1 o:1 :1 p:3 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:2 p:1 :1 kt:6 :1 n:2 p:1 :1 o:2 :1 kt:6 :1 p:1 :3 k:6 :1 n:3 p:1 n:1 o:1 n:2 p:1 :1 o:1 :1 n:3 p:1 n:1 o:1 n:2 p:2 :1 p:2 :2 c1:12 :1 k:9 :1 n:1 :1 p:1 :5 k:8 o:1 k:5 :1 nc:1 p:1 :5 k:5 :1 nc:1 :1 c1:22 :5 p:1 :9 kt:4 :1 n:2 p:2 :1 p:1 :1 p:1 :5 p:2 :1 p:1 :1 k:8 :1 k:5 :1 nc:1 o:2 n:1 o:1 kt:4 o:1 p:2 :1 k:8 :1 kt:4 :1 n:1 o:2 n:1 o:1 kt:6 p:1 o:2 n:2 p:3 :1 k:8 :1 k:6 :1 nc:1 o:1 kt:6 p:2 :1 k:8 o:1 k:8 :1 nc:1 p:1 :1 k:7 :1 n:2 :1 o:1 :1 k:6 p:1 n:1 p:1 :1 o:2 :1 k:6 p:1 kt:3 p:2 :1 k:8 o:1 n:2 :1 n:1 p:1 :1 k:6 :1 nc:2 :1 p:1 :1 p:2 :1 k:8 o:1 n:2 :1 n:1 p:1 :1 k:5 :1 n:3 :1 o:1 :1 n:1 o:1 p:1 :1 k:8 :1 o:1 k:8 p:1 :1 k:8 o:3 p:1 :1 k:8 o:1 k:5 o:3 p:1 :1 k:6 :1 nc:5 :1 p:1 :1 p:2 :1 k:8 o:1 k:8 :1 o:3 nc:2 p:1 :1 kt:4 :1 n:1 p:1 n:2 p:4 :1 p:2 :2 c1:20 :1 k:8 o:1 k:5 :1 nc:1 p:1 :1 k:5 o:3 :1 nc:4 p:1 :1 kt:4 :1 n:12 p:1 n:1 :1 n:1 p:1 :1 n:4 p:3 :1 n:4 p:1 :1 p:1 :5 n:1 p:1 n:3 o:2 n:7 o:1 n:4 o:1 p:1 n:4 p:6 :1 p:1 :2 c1:13 :1 k:8 o:1 k:4 :1 n:1 :1 o:1 :1 k:8 :1 p:1 :1 n:3 p:3 :1 p:1 o:1 :1 kt:4 :1 n:4 p:3 :2 k:8 o:1 k:4 :1 n:1 :1 o:1 :1 p:5 :1 kt:4 :1 n:4 p:3 :2 c1:12 :1 k:9 :1 n:8 :1 p:1 :5 kr:6 :1 k:9 :1 n:6 :1 p:1 :9 k:5 :1 n:3 o:2 n:4 p:1 :9 kt:4 :1 n:5 p:2 :1 p:1 :13 n:4 :1 o:2 :1 s:13 se:2 s:1 p:1 :9 p:1 :6 p:1 :6 k:9 :1 n:3 :1 p:1 :11 kt:4 :1 n:5 p:2 :1 p:1 :15 o:2 n:6 p:1 s:10 se:2 s:1 p:2 :11 p:1 :6 p:1 :1 p:1 :1 n:8 o:2 n:5 p:3 :1 n:8 o:2 n:6 o:2 n:5 p:3 :1 n:8 o:2 n:3 o:2 n:5 p:3 :1 k:9 :1 n:8 :1 o:1 :1 n:8 o:2 n:3 p:1 :1 n:8 o:2 n:5 p:3 :2 c1:12 :1 p:2 n:8 p:2 :1 kt:4 :1 n:10 p:2 :1 p:1 :1 k:5 :1 s:7 p:1 :1 p:1 :1 p:2 n:10 p:1 s:9 p:3 :1 kt:4 :1 n:9 p:2 :1 p:2 :2 k:9 :1 n:3 :1 p:1 :5 k:5 :1 nc:6 :1 p:1 :5 nl:7 :9 c1:9 :9 k:5 :1 nc:2 p:1 :9 k:7 :1 kt:4 :1 o:1 n:18 p:1 :10 c1:26 :9 kr:6 p:2 :1 k:8 p:1 :9 k:8 :1 o:1 k:5 :1 nc:1 p:1 :1 k:5 :1 o:3 nc:4 p:1 :1 k:8 :1 kr:6 p:1 n:1 o:2 :1 n:1 p:1 :1 n:4 o:2 p:3 :1 n:4 p:2 :9 o:1 kr:6 p:3 :9 kr:6 p:1 k:5 :1 kr:6 o:1 p:1 :1 o:1 :1 k:6 p:1 :9 kr:6 p:1 kr:6 o:2 p:1 :1 k:8 p:1 :9 kr:6 o:1 :1 k:8 o:1 p:1 k:5 :1 kr:6 o:1 p:1 :1 o:1 :1 k:6 p:1 :9 kr:6 o:1 :1 k:8 o:1 p:1 kr:6 o:2 p:1 :1 k:8 p:1 :10 c1:11 :9 kt:4 :1 n:4 p:1 kr:6 o:1 p:1 :1 k:8 p:1 :9 kt:4 :1 n:8 p:2 :1 k:5 :1 k:8 p:1 :9 kt:4 :1 n:4 p:3 :9 kt:4 :1 n:6 p:3 :9 n:2 :1 n:6 p:2 :1 k:5 :1 k:8 p:1 :9 n:18 :1 n:13 p:3 :10 c1:18 :9 k:6 :1 kt:8 :1 n:20 p:2 :1 k:8 p:1 :5 p:2 :1 p:1 :2 c1:12 :1 k:3 :1 p:1 :5 k:5 :1 n:3 o:2 n:13 p:1 s:16 p:2 :1 p:1 :1 k:5 :1 p:1 n:3 o:2 n:9 o:1 :1 n:1 p:1 :1 p:1 :5 n:3 o:2 n:4 :1 o:2 :1 n:1 p:1 n:4 p:2 :1 o:2 :1 n:3 o:2 n:4 p:1 :1 p:1 :2 k:9 :1 kt:3 :1 n:9 p:1 kt:3 :1 n:1 p:1 :1 p:1 :5 k:6 :1 n:1 :1 o:1 :1 mi:1 :1 o:1 :1 n:1 :1 o:1 :1 n:9 p:1 n:1 :1 o:1 :1 mi:1 p:1 :1 o:1 :1 mi:1 p:1 :1 p:1 :2 cm:9 :1 c:35 :1 cm:23 :8 cm:24 :1 cm:50 :5 cm:10 :1 cm:50 :5 cm:14 :1 cm:42 :5 cm:12 :1 cm:42 :5 cm:16 :1 cm:42 :5 cm:18 :1 cm:42 :5 cm:22 :1 cm:50 :5 cm:13 :1 cm:50 :5 cm:19 :1 cm:42 :5 cm:10 :1 cm:42 :5 cm:14 :1 cm:42 :5 cm:11 :1 cm:50 :5 cm:23 :1 cm:42 :5 cm:14 :1 cm:50 :5 cm:12 :1 cm:42 :5 cm:23 :1 cm:42 :5 cm:18 :1 cm:42 :5 cm:23 :2 k:5 :1 nc:4 :1 p:1 :1 nl:7 :5 n:4 :1 p:2 :1 o:1 :1 k:7 p:1 :5 k:7 :1 o:1 n:4 :1 p:2 :1 o:1 :1 k:7 p:1 :6 k:7 :1 kt:4 :1 n:3 :1 p:2 :1 o:1 :1 mi:1 p:1 :1 p:2 :2 k:5 :1 nc:7 :1 k:5 :1 o:1 :1 k:6 :1 n:4 :1 p:1 :1 nl:7 :5 n:7 :1 p:2 :1 o:1 :1 k:7 p:1 :5 k:7 :1 o:1 n:7 :1 p:2 :1 o:1 :1 k:7 p:1 :6 k:7 :1 kt:4 :1 n:3 :1 p:2 :1 k:8 :5 p:1 :9 k:4 :1 n:1 :1 o:1 :1 mi:1 :1 o:1 :1 mi:1 p:1 :5 p:1 :1 p:2 :2 cp:32 :1 k:5 :1 nc:11 :1 o:1 :1 k:6 :1 n:18 :1 p:1 :5 k:5 :1 nc:10 :1 p:2 :6 n:8 :2 nl:7 :5 n:11 p:1 n:13 :1 o:1 n:6 :1 o:1 :1 mi:1 p:2 :2 nl:10 :1",
+  )
+}
+
+///|
 test "rouge: css: demo" {
   check_lex(
     "css", "body {\n    font-size: 12pt;\n    background: #fff url(temp.png) top left no-repeat;\n}\n",
@@ -177,6 +241,22 @@ test "rouge: conf: visual sample" {
 }
 
 ///|
+test "rouge: dart: demo" {
+  check_lex(
+    "dart", "void main() {\n  var collection=[1,2,3,4,5];\n  for(var a in collection){\n    print(a);\n  }\n}\n",
+    "kt:4 :1 nf:4 p:2 :1 p:1 :3 kd:3 :1 n:10 o:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:2 :3 k:3 p:1 kd:3 :1 n:1 :1 k:2 :1 n:10 p:2 :5 n:5 p:1 n:1 p:2 :3 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: dart: visual sample" {
+  check_lex(
+    "dart", "// comment\n/*\nmultiline\ncomment\n*/\n\n\nlibrary dart_example;\nimport 'package:http/http.dart' as http;\nimport \"dart:io\" show HttpClient, RedirectInfo;\npart 'foo.dart';\npart of bar;\n\nvar str = 'Test';\nString str2 = \"Test\";\nString strWithNewline = \"test\\n\";\nString multiline = '''\nthis\nis\nmultiline string\n''';\nvar rawString = r\"raw string\";\nvar stringWithInterpolation = 'Value: $value';\nvar expressionInString = 'Value: ${value + 1}';\n\nvar symbol = #symbol;\n\nassert(str == str2);\nfinal x = 10;\nconst y = 500 * x;\nvar hex = 0xff;\ndouble z = 1.22e-17;\n\nfun(num x) {\n  print('The argument is x');\n}\n\nclass A {\n  @override\n  void fooMethod {\n  }\n}\n\n\nclass B {\n}\n\nclass C extends A implements B {\n}\n\nvoid main() {\n  var collection=[1,2,3,4,5];\n  for(var a in collection) {\n    if (a != 7) {\n      print(a);\n    } else {\n      print(a + 1);\n    }\n  }\n}\n",
+    "c1:10 :1 cm:23 :3 kn:7 :1 n:12 o:1 :1 kn:6 :1 s:24 :1 k:2 :1 n:4 o:1 :1 kn:6 :1 s:9 :1 kd:4 :1 n:10 p:1 :1 n:12 o:1 :1 kn:4 :1 s:10 o:1 :1 kn:7 :1 n:3 o:1 :2 kd:3 :1 n:3 :1 o:1 :1 s:6 p:1 :1 kt:6 :1 n:4 :1 o:1 :1 s:6 p:1 :1 kt:6 :1 n:14 :1 o:1 :1 s:5 se:2 s:1 p:1 :1 kt:6 :1 n:9 :1 o:1 :1 s:32 p:1 :1 kd:3 :1 n:9 :1 o:1 :1 sx:13 p:1 :1 kd:3 :1 n:23 :1 o:1 :1 s:8 si:6 s:1 p:1 :1 kd:3 :1 n:18 :1 o:1 :1 s:8 si:12 s:1 p:1 :2 kd:3 :1 n:6 :1 o:1 :1 ss:7 p:1 :2 k:6 p:1 n:3 :1 o:2 :1 n:4 p:2 :1 kd:5 :1 n:1 :1 o:1 :1 mi:2 p:1 :1 kd:5 :1 n:1 :1 o:1 :1 mi:3 :1 o:1 :1 n:1 p:1 :1 kd:3 :1 n:3 :1 o:1 :1 mh:4 p:1 :1 kt:6 :1 n:1 :1 o:1 :1 mf:8 p:1 :2 n:3 p:1 kt:3 :1 n:1 p:1 :1 p:1 :3 n:5 p:1 s:19 p:2 :1 p:1 :2 kd:5 :1 nc:1 :1 p:1 :3 nd:9 :3 kt:4 :1 n:9 :1 p:1 :3 p:1 :1 p:1 :3 kd:5 :1 nc:1 :1 p:1 :1 p:1 :2 kd:5 :1 nc:1 :1 kd:7 :1 n:1 :1 kd:10 :1 n:1 :1 p:1 :1 p:1 :2 kt:4 :1 nf:4 p:2 :1 p:1 :3 kd:3 :1 n:10 o:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:2 :3 k:3 p:1 kd:3 :1 n:1 :1 k:2 :1 n:10 p:1 :1 p:1 :5 k:2 :1 p:1 n:1 :1 o:2 :1 mi:1 p:1 :1 p:1 :7 n:5 p:1 n:1 p:2 :5 p:1 :1 k:4 :1 p:1 :7 n:5 p:1 n:1 :1 o:1 :1 mi:1 p:2 :5 p:1 :3 p:1 :1 p:1 :1",
+  )
+}
+
+///|
 test "rouge: diff: demo" {
   check_lex(
     "diff", "--- file1\t2012-10-16 15:07:58.086886874 +0100\n+++ file2\t2012-10-16 15:08:07.642887236 +0100\n@@ -1,3 +1,3 @@\n a b c\n-d e f\n+D E F\n g h i\n",
@@ -272,6 +352,22 @@ test "rouge: ruby: visual sample" {
 }
 
 ///|
+test "rouge: rust: demo" {
+  check_lex(
+    "rust", "use core::*;\n\nfn main() {\n    for [\"Alice\", \"Bob\", \"Carol\"].each |&name| {\n        do task::spawn {\n            let v = rand::Rng().shuffle([1, 2, 3]);\n            for v.each |&num| {\n                io::print(fmt!(\"%s says: '%d'\\n\", name, num))\n            }\n        }\n    }\n}\n",
+    "k:3 :1 nn:4 p:2 o:1 p:1 :2 k:2 :1 nf:4 p:2 :1 p:1 :5 k:3 :1 p:1 s:7 p:1 :1 s:5 p:1 :1 s:7 p:1 py:5 :1 p:1 o:1 n:4 p:1 :1 p:1 :9 k:2 :1 nn:4 p:2 n:5 :1 p:1 :13 k:3 :1 n:1 :1 o:1 :1 nn:4 p:2 nf:3 p:2 nf:8 p:2 mi:1 p:1 :1 mi:1 p:1 :1 mi:1 p:3 :13 k:3 :1 n:1 py:5 :1 p:1 o:1 n:3 p:1 :1 p:1 :17 nn:2 p:2 nf:5 p:1 nd:4 p:1 s:14 se:2 s:1 p:1 :1 n:4 p:1 :1 n:3 p:2 :13 p:1 :9 p:1 :5 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: rust: visual sample" {
+  check_lex(
+    "rust", "#![test(a::b)]\nfn f() {\n    let a = String::new(\"hello\");\n    let b: &str = a;\n    io::println(b);\n}\n\nfn g() {\n    let c = String::new(\"world\");\n    let d: &str;\n    d = c;\n    io::println(d);\n}\n\nfn h(a: i32) -> i32 {\n  let b = (a / 4 + 1_000) * 2 - 3;\n  let c = (a | 0b0100) & 0xF;\n\n  c ^ !b ^ 0o707\n}\n\nfn main() {\n    f();\n    g();\n}\n\nlet mut f = File::open(\"username.txt\")?;\n\nprintln!(\"a\\\\\");\nprintln!(\"a\\n\");\nprintln!(\"a\\\"b\");\nprintln!(\"a\\'\");\nprintln!(r\"\");\nprintln!(r\"\\n\\\");\nprintln!(r#\"a\"b\\\"#);\nprintln!(r##\"r#\"\"#\"##);\nprintln!(r###\"r##\"r#\"\"#\"##\"###);\nprintln!(r#\"\n  \"New line in a raw string\"\n\"#);\n\ntrait iterable<A> {\n    fn iterate(blk: fn(x: &A) -> bool);\n}\n\nimpl<A> &[A]: iterable<A> {\n    fn iterate(f: fn(x: &A) -> bool) {\n        for vec::each(self) |e| {\n            if !f(e) { break; }\n        }\n    }\n}\n\nfn length<A, T>(x: T) -> uint\nwhere\n    T: iterable<A>,\n{\n    let mut len = 0;\n    for x.iterate() |_y| { len += 1 }\n    return len;\n}\n\nfn main() {\n    let x = vec![0,1,2,3];\n    // Call a method\n    for x.iterate() |y| { assert x[*y] == *y; }\n    // Call a parameterized function\n    assert length(x) == vec::len(x);\n    // Call a parameterized function, with type arguments that require\n    // a borrow\n    assert length::<int, &[int]>(x) == vec::len(x);\n\n    // Now try it with a type that *needs* to be borrowed\n    let z = [0,1,2,3];\n    // Call a method\n    for z.iterate() |y| { assert z[*y] == *y; }\n    // Call a parameterized function\n    assert length::<int, &[int]>(z) == vec::len(z);\n}\n\nfn<'a> pointer(&'a u32) {}\n\nfn range() {\n    let a = 1..2;\n    let b = 1..;\n    let c = ..2;\n    let d = ..;\n    let e = 5...6;\n}\n\n#[attr1 = \"val\"];\n#[attr2 = \"val\"];\n#[attr3];\n#[attr4(attr5)];\n\n// Special linkage attributes for the crate\n#[link(name = \"std\",\n       vers = \"0.1\",\n       uuid = \"122bed0b-c19b-4b82-b0b7-7ae8aead7297\",\n       url = \"http://rust-lang.org/src/std\")];\n\n// These are are attributes of the following mod\n#[attr1 = \"val\"]\n#[attr2 = \"val\"]\nmod test_first_item_in_file_mod {\n    #[legacy_exports]; }\n\nmod test_single_attr_outer {\n    #[legacy_exports];\n\n    #[attr = \"val\"]\n    const x: int = 10;\n\n    #[attr = \"val\"]\n    fn f() { }\n\n    #[attr = \"val\"]\n    mod mod1 {\n        #[legacy_exports]; }\n\n    #[attr = \"val\"]\n    #[abi = \"cdecl\"]\n    extern mod rustrt {\n        #[legacy_exports]; }\n}\n\nmod test_multi_attr_outer {\n    #[legacy_exports];\n\n    #[attr1 = \"val\"]\n    #[attr2 = \"val\"]\n    const x: int = 10;\n\n    #[attr1 = \"val\"]\n    #[attr2 = \"val\"]\n    fn f() { }\n\n    #[attr1 = \"val\"]\n    #[attr2 = \"val\"]\n    mod mod1 {\n        #[legacy_exports]; }\n\n    #[attr1 = \"val\"]\n    #[attr2 = \"val\"]\n    #[abi = \"cdecl\"]\n    extern mod rustrt {\n        #[legacy_exports]; }\n\n    #[attr1 = \"val\"]\n    #[attr2 = \"val\"]\n    type t = {x: int};\n}\n\nmod test_stmt_single_attr_outer {\n    #[legacy_exports];\n\n    fn f() {\n\n        #[attr = \"val\"]\n        const x: int = 10;\n\n        #[attr = \"val\"]\n        fn f() { }\n\n        #[attr = \"val\"]\n        mod mod1 {\n            #[legacy_exports];\n        }\n\n        #[attr = \"val\"]\n        #[abi = \"cdecl\"]\n        extern mod rustrt {\n            #[legacy_exports];\n        }\n    }\n}\n\nmod test_stmt_multi_attr_outer {\n    #[legacy_exports];\n\n    fn f() {\n\n        #[attr1 = \"val\"]\n        #[attr2 = \"val\"]\n        const x: int = 10;\n\n        #[attr1 = \"val\"]\n        #[attr2 = \"val\"]\n        fn f() { }\n\n        /* FIXME: Issue #493\n        #[attr1 = \"val\"]\n        #[attr2 = \"val\"]\n        mod mod1 {\n            #[legacy_exports];\n        }\n\n        #[attr1 = \"val\"]\n        #[attr2 = \"val\"]\n        #[abi = \"cdecl\"]\n        extern mod rustrt {\n            #[legacy_exports];\n        }\n        */\n    }\n}\n\nmod test_attr_inner {\n    #[legacy_exports];\n\n    mod m {\n        #[legacy_exports];\n        // This is an attribute of mod m\n        #[attr = \"val\"];\n    }\n}\n\nmod test_attr_inner_then_outer {\n    #[legacy_exports];\n\n    mod m {\n        #[legacy_exports];\n        // This is an attribute of mod m\n        #[attr = \"val\"];\n        // This is an attribute of fn f\n        #[attr = \"val\"]\n        fn f() { }\n    }\n}\n\nmod test_attr_inner_then_outer_multi {\n    #[legacy_exports];\n    mod m {\n        #[legacy_exports];\n        // This is an attribute of mod m\n        #[attr1 = \"val\"];\n        #[attr2 = \"val\"];\n        // This is an attribute of fn f\n        #[attr1 = \"val\"]\n        #[attr2 = \"val\"]\n        fn f() { }\n    }\n}\n\nmod test_distinguish_syntax_ext {\n    #[legacy_exports];\n\n    extern mod std;\n\n    fn f() {\n        fmt!(\"test%s\", String::new(\"s\"));\n        #[attr = \"val\"]\n        fn g() { }\n    }\n}\n\nmod test_other_forms {\n    #[legacy_exports];\n    #[attr]\n    #[attr(word)]\n    #[attr(attr(word))]\n    #[attr(key1 = \"val\", key2 = \"val\", attr)]\n    fn f() { }\n}\n\nmod test_foreign_items {\n    #[legacy_exports];\n    #[abi = \"cdecl\"]\n    extern mod rustrt {\n        #[legacy_exports];\n        #[attr];\n\n        #[attr]\n        fn get_task_id() -> libc::intptr_t;\n    }\n}\n\nmod test_literals {\n    #[legacy_exports];\n    #[str = \"s\"];\n    #[char = 'c'];\n    #[int = 100];\n    #[uint = 100u];\n    #[mach_int = 100u32];\n    #[float = 1.0];\n    #[mach_float = 1.0f32];\n    #[bool = true];\n    mod m {\n        #[legacy_exports]; }\n}\n\nfn test_fn_inner() {\n    #[inner_fn_attr];\n}\n\nfn main() { }\n\n//\n// Local Variables:\n// mode: rust\n// fill-column: 78;\n// indent-tabs-mode: nil\n// c-basic-offset: 4\n// buffer-file-coding-system: utf-8-unix\n// End:\n//\n\n/*\n\nThis is an HTML parser written as a macro. It's all CPS, and we have\nto carry around a bunch of state. The arguments to macros all look like this:\n\n{ tag_stack* # expr* # tokens }\n\nThe stack keeps track of where we are in the tree. The expr is a list\nof children of the current node. The tokens are everything that's\nleft.\n\n*/\n\nmacro_rules! html (\n    ( $($body:tt)* ) => (\n        parse_node!( []; []; $($body)* )\n    )\n)\n\nmacro_rules! parse_node (\n    (\n        [:$head:ident ($(:$head_nodes:expr),*)\n",
+    "nd:14 :1 k:2 :1 nf:1 p:2 :1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 nn:6 p:2 nf:3 p:1 s:7 p:2 :5 k:3 :1 n:1 p:1 :1 o:1 nb:3 :1 o:1 :1 n:1 p:1 :5 nn:2 p:2 nf:7 p:1 n:1 p:2 :1 p:1 :2 k:2 :1 nf:1 p:2 :1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 nn:6 p:2 nf:3 p:1 s:7 p:2 :5 k:3 :1 n:1 p:1 :1 o:1 nb:3 p:1 :5 n:1 :1 o:1 :1 n:1 p:1 :5 nn:2 p:2 nf:7 p:1 n:1 p:2 :1 p:1 :2 k:2 :1 nf:1 p:1 n:1 p:1 :1 nb:3 p:1 :1 k:2 :1 nb:3 :1 p:1 :3 k:3 :1 n:1 :1 o:1 :1 p:1 n:1 :1 o:1 :1 mi:1 :1 o:1 :1 mi:5 p:1 :1 o:1 :1 mi:1 :1 o:1 :1 mi:1 p:1 :3 k:3 :1 n:1 :1 o:1 :1 p:1 n:1 :1 p:1 :1 mi:6 p:1 :1 o:1 :1 mi:3 p:1 :4 n:1 :1 o:1 :1 o:1 n:1 :1 o:1 :1 mi:5 :1 p:1 :2 k:2 :1 nf:4 p:2 :1 p:1 :5 nf:1 p:3 :5 nf:1 p:3 :1 p:1 :2 k:3 :1 k:3 :1 n:1 :1 o:1 :1 nn:4 p:2 nf:4 p:1 s:14 p:1 o:1 p:1 :2 nd:8 p:1 s:2 se:2 s:1 p:2 :1 nd:8 p:1 s:2 se:2 s:1 p:2 :1 nd:8 p:1 s:2 se:2 s:2 p:2 :1 nd:8 p:1 s:2 se:2 s:1 p:2 :1 nd:8 p:1 s:3 p:2 :1 nd:8 p:1 s:6 p:2 :1 nd:8 p:1 s:9 p:2 :1 nd:8 p:1 s:12 p:2 :1 nd:8 p:1 s:21 p:2 :1 nd:8 p:1 s:35 p:2 :2 k:5 :1 n:8 o:1 n:1 o:1 :1 p:1 :5 k:2 :1 nf:7 p:1 n:3 p:1 :1 k:2 p:1 n:1 p:1 :1 o:1 n:1 p:1 :1 k:2 :1 nb:4 p:2 :1 p:1 :2 k:4 o:1 n:1 o:1 :1 o:1 p:1 n:1 p:2 :1 n:8 o:1 n:1 o:1 :1 p:1 :5 k:2 :1 nf:7 p:1 n:1 p:1 :1 k:2 p:1 n:1 p:1 :1 o:1 n:1 p:1 :1 k:2 :1 nb:4 p:1 :1 p:1 :9 k:3 :1 nn:3 p:2 nf:4 p:1 k:4 p:1 :1 p:1 n:1 p:1 :1 p:1 :13 k:2 :1 o:1 nf:1 p:1 n:1 p:1 :1 p:1 :1 k:5 p:1 :1 p:1 :9 p:1 :5 p:1 :1 p:1 :2 k:2 :1 n:6 o:1 n:1 p:1 :1 n:1 o:1 p:1 n:1 p:1 :1 n:1 p:1 :1 k:2 :1 nb:4 :1 k:5 :5 n:1 p:1 :1 n:8 o:1 n:1 o:1 p:1 :1 p:1 :5 k:3 :1 k:3 :1 n:3 :1 o:1 :1 mi:1 p:1 :5 k:3 :1 n:1 nf:8 p:2 :1 p:1 n:2 p:1 :1 p:1 :1 n:3 :1 o:2 :1 mi:1 :1 p:1 :5 k:6 :1 n:3 p:1 :1 p:1 :2 k:2 :1 nf:4 p:2 :1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 nd:4 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:2 :5 c1:16 :5 k:3 :1 n:1 nf:8 p:2 :1 p:1 n:1 p:1 :1 p:1 :1 n:6 :1 n:1 p:1 o:1 n:1 p:1 :1 o:2 :1 o:1 n:1 p:1 :1 p:1 :5 c1:32 :5 n:6 :1 nf:6 p:1 n:1 p:1 :1 o:2 :1 nn:3 p:2 nf:3 p:1 n:1 p:2 :5 c1:66 :5 c1:11 :5 n:6 :1 nn:6 p:2 o:1 nb:3 p:1 :1 o:1 p:1 nb:3 p:1 o:1 p:1 n:1 p:1 :1 o:2 :1 nn:3 p:2 nf:3 p:1 n:1 p:2 :6 c1:53 :5 k:3 :1 n:1 :1 o:1 :1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:1 mi:1 p:2 :5 c1:16 :5 k:3 :1 n:1 nf:8 p:2 :1 p:1 n:1 p:1 :1 p:1 :1 n:6 :1 n:1 p:1 o:1 n:1 p:1 :1 o:2 :1 o:1 n:1 p:1 :1 p:1 :5 c1:32 :5 n:6 :1 nn:6 p:2 o:1 nb:3 p:1 :1 o:1 p:1 nb:3 p:1 o:1 p:1 n:1 p:1 :1 o:2 :1 nn:3 p:2 nf:3 p:1 n:1 p:2 :1 p:1 :2 k:2 o:1 nv:2 o:1 :1 nf:7 p:1 o:1 nv:2 :1 nb:3 p:1 :1 p:2 :2 k:2 :1 nf:5 p:2 :1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 mi:1 o:2 mi:1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 mi:1 o:2 p:1 :5 k:3 :1 n:1 :1 o:1 :1 o:2 mi:1 p:1 :5 k:3 :1 n:1 :1 o:1 :1 o:2 p:1 :5 k:3 :1 n:1 :1 o:1 :1 mi:1 o:3 mi:1 p:1 :1 p:1 :2 nd:7 :1 nd:1 :1 s:5 nd:1 p:1 :1 nd:7 :1 nd:1 :1 s:5 nd:1 p:1 :1 nd:8 p:1 :1 nd:15 p:1 :2 c1:43 :1 nd:11 :1 nd:1 :1 s:5 nd:1 :8 nd:4 :1 nd:1 :1 s:5 nd:1 :8 nd:4 :1 nd:1 :1 s:38 nd:1 :8 nd:3 :1 nd:1 :1 s:30 nd:2 p:1 :2 c1:48 :1 nd:7 :1 nd:1 :1 s:5 nd:1 :1 nd:7 :1 nd:1 :1 s:5 nd:1 :1 k:3 :1 n:27 :1 p:1 :5 nd:17 p:1 :1 p:1 :2 k:3 :1 n:22 :1 p:1 :5 nd:17 p:1 :6 nd:6 :1 nd:1 :1 s:5 nd:1 :5 k:5 :1 n:1 p:1 :1 nb:3 :1 o:1 :1 mi:2 p:1 :6 nd:6 :1 nd:1 :1 s:5 nd:1 :5 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :6 nd:6 :1 nd:1 :1 s:5 nd:1 :5 k:3 :1 n:4 :1 p:1 :9 nd:17 p:1 :1 p:1 :6 nd:6 :1 nd:1 :1 s:5 nd:1 :5 nd:5 :1 nd:1 :1 s:7 nd:1 :5 k:6 :1 k:3 :1 n:6 :1 p:1 :9 nd:17 p:1 :1 p:1 :1 p:1 :2 k:3 :1 n:21 :1 p:1 :5 nd:17 p:1 :6 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:7 :1 nd:1 :1 s:5 nd:1 :5 k:5 :1 n:1 p:1 :1 nb:3 :1 o:1 :1 mi:2 p:1 :6 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:7 :1 nd:1 :1 s:5 nd:1 :5 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :6 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:7 :1 nd:1 :1 s:5 nd:1 :5 k:3 :1 n:4 :1 p:1 :9 nd:17 p:1 :1 p:1 :6 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:5 :1 nd:1 :1 s:7 nd:1 :5 k:6 :1 k:3 :1 n:6 :1 p:1 :9 nd:17 p:1 :1 p:1 :6 nd:7 :1 nd:1 :1 s:5 nd:1 :5 nd:7 :1 nd:1 :1 s:5 nd:1 :5 k:4 :1 n:1 :1 o:1 :1 p:1 n:1 p:1 :1 nb:3 p:2 :1 p:1 :2 k:3 :1 n:27 :1 p:1 :5 nd:17 p:1 :6 k:2 :1 nf:1 p:2 :1 p:1 :10 nd:6 :1 nd:1 :1 s:5 nd:1 :9 k:5 :1 n:1 p:1 :1 nb:3 :1 o:1 :1 mi:2 p:1 :10 nd:6 :1 nd:1 :1 s:5 nd:1 :9 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :10 nd:6 :1 nd:1 :1 s:5 nd:1 :9 k:3 :1 n:4 :1 p:1 :13 nd:17 p:1 :9 p:1 :10 nd:6 :1 nd:1 :1 s:5 nd:1 :9 nd:5 :1 nd:1 :1 s:7 nd:1 :9 k:6 :1 k:3 :1 n:6 :1 p:1 :13 nd:17 p:1 :9 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:26 :1 p:1 :5 nd:17 p:1 :6 k:2 :1 nf:1 p:2 :1 p:1 :10 nd:7 :1 nd:1 :1 s:5 nd:1 :9 nd:7 :1 nd:1 :1 s:5 nd:1 :9 k:5 :1 n:1 p:1 :1 nb:3 :1 o:1 :1 mi:2 p:1 :10 nd:7 :1 nd:1 :1 s:5 nd:1 :9 nd:7 :1 nd:1 :1 s:5 nd:1 :9 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :10 cm:286 :5 p:1 :1 p:1 :2 k:3 :1 n:15 :1 p:1 :5 nd:17 p:1 :6 k:3 :1 n:1 :1 p:1 :9 nd:17 p:1 :9 c1:32 :9 nd:6 :1 nd:1 :1 s:5 nd:1 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:26 :1 p:1 :5 nd:17 p:1 :6 k:3 :1 n:1 :1 p:1 :9 nd:17 p:1 :9 c1:32 :9 nd:6 :1 nd:1 :1 s:5 nd:1 p:1 :9 c1:31 :9 nd:6 :1 nd:1 :1 s:5 nd:1 :9 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:32 :1 p:1 :5 nd:17 p:1 :5 k:3 :1 n:1 :1 p:1 :9 nd:17 p:1 :9 c1:32 :9 nd:7 :1 nd:1 :1 s:5 nd:1 p:1 :9 nd:7 :1 nd:1 :1 s:5 nd:1 p:1 :9 c1:31 :9 nd:7 :1 nd:1 :1 s:5 nd:1 :9 nd:7 :1 nd:1 :1 s:5 nd:1 :9 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:27 :1 p:1 :5 nd:17 p:1 :6 k:6 :1 k:3 :1 n:3 p:1 :6 k:2 :1 nf:1 p:2 :1 p:1 :9 nd:4 p:1 s:8 p:1 :1 nn:6 p:2 nf:3 p:1 s:3 p:3 :9 nd:6 :1 nd:1 :1 s:5 nd:1 :9 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:16 :1 p:1 :5 nd:17 p:1 :5 nd:7 :5 nd:13 :5 nd:19 :5 nd:11 :1 nd:1 :1 s:5 nd:1 :1 nd:4 :1 nd:1 :1 s:5 nd:1 :1 nd:6 :5 k:2 :1 nf:1 p:2 :1 p:1 :1 p:1 :1 p:1 :2 k:3 :1 n:18 :1 p:1 :5 nd:17 p:1 :5 nd:5 :1 nd:1 :1 s:7 nd:1 :5 k:6 :1 k:3 :1 n:6 :1 p:1 :9 nd:17 p:1 :9 nd:7 p:1 :10 nd:7 :9 k:2 :1 nf:11 p:2 :1 k:2 :1 nn:4 p:2 nb:8 p:1 :5 p:1 :1 p:1 :2 k:3 :1 n:13 :1 p:1 :5 nd:17 p:1 :5 nd:5 :1 nd:1 :1 s:3 nd:1 p:1 :5 nd:6 :1 nd:1 :1 sc:3 nd:1 p:1 :5 nd:5 :1 nd:1 :1 mi:3 nd:1 p:1 :5 nd:6 :1 nd:1 :1 mi:4 nd:1 p:1 :5 nd:10 :1 nd:1 :1 mi:6 nd:1 p:1 :5 nd:7 :1 nd:1 :1 mf:3 nd:1 p:1 :5 nd:12 :1 nd:1 :1 mf:6 nd:1 p:1 :5 nd:6 :1 nd:1 :1 kc:4 nd:1 p:1 :5 k:3 :1 n:1 :1 p:1 :9 nd:17 p:1 :1 p:1 :1 p:1 :2 k:2 :1 nf:13 p:2 :1 p:1 :5 nd:16 p:1 :1 p:1 :2 k:2 :1 nf:4 p:2 :1 p:1 :1 p:1 :2 c1:2 :1 c1:19 :1 c1:13 :1 c1:19 :1 c1:24 :1 c1:20 :1 c1:40 :1 c1:7 :1 c1:2 :2 cm:330 :2 nd:12 :1 nf:4 :1 p:1 :5 p:1 :1 nv:1 p:1 nv:8 p:1 o:1 :1 p:1 :1 k:2 :1 p:1 :9 nd:11 p:1 :1 p:3 :1 p:3 :1 nv:1 p:1 nv:5 p:1 o:1 :1 p:1 :5 p:1 :1 p:1 :2 nd:12 :1 nf:10 :1 p:1 :5 p:1 :9 p:2 nv:11 :1 p:1 nv:1 p:2 nv:16 p:2 o:1 p:1 :1",
+  )
+}
+
+///|
 test "rouge: sass: demo" {
   check_lex(
     "sass", "@for $i from 1 through 3\n  .item-#{$i}\n    width: 2em * $i\n", "k:4 :1 nv:2 :1 ow:4 :1 m:1 :1 ow:7 :1 m:1 :3 nc:6 si:2 nv:2 si:1 :5 nl:5 p:1 :1 m:3 :1 o:1 :1 nv:2 :1",
@@ -350,6 +446,22 @@ test "rouge: nginx: visual sample" {
 }
 
 ///|
+test "rouge: scala: demo" {
+  check_lex(
+    "scala", "class Greeter(name: String = \"World\") {\n  def sayHi() { println(\"Hi \" + name + \"!\") }\n}\n",
+    "k:5 :1 nc:7 o:1 n:4 k:1 :1 kt:6 :1 o:1 :1 s:7 o:1 :1 o:1 :3 k:3 :1 nf:5 o:2 :1 o:1 :1 nf:7 o:1 s:5 :1 o:1 :1 n:4 :1 o:1 :1 s:3 o:1 :1 o:1 :1 o:1 :1",
+  )
+}
+
+///|
+test "rouge: scala: visual sample" {
+  check_lex(
+    "scala", "package whatever.mine\n\nimport foo.bar.{Foo, Bar => Baz}\n\n/* This file /* which is totally legal scala */ should be highlighted\n   correcty by rouge */\n\n// Single-line comments too\n\nobject ⌘ {\n  val `interface` = \"\"\"\nA\n\"Multiline\"\nString\n\"\"\"\n\n  val s = 'symbol\n\n  @tailrec\n  val foo_+ = \"foo plus\"\n  val foo_⌬⌬ = \"double benzene\"\n\n  def main(argv: Array[String]) {\n    println(⌘.interface + \" \" + foo_+ + \" \" + foo_⌬⌬ )\n  }\n\n  def noWhitespaceType[Foo](arg:ClassName[Foo])(implicit evidence: Foo =:= Int) {}\n\n  val char = 'a'\n  var unicodeChar = '\\uAB23'\n\n  val constant = true\n\n  import more.stuff._\n\n  def methodChaining(s: String): String = {\n    val n = s.length.toInt\n    s.foreach(print)\n    s\n      .take(n)\n      .toLowerCase\n  }\n}\n\nabstract case class Foo[+A, B <: List[A]](a: A) {\n  type Bar = Baz\n\n  def apply[C >: A](c: Foo[C]): Foo[C]\n}\n\nclass // comment 1\n  Test(a: // comment 2\n    Int) {\n\n}\n\nclass why_would_you_name_a_class_this_way_oh_well_we_need_to_highlight_it(a: Int) extends Foo(a) {\n  def this(b: Float) = this(b.toInt)\n\n  def ints = 4\n  def floats = 4f\n  def doubles = 0.4\n  def longs = 4L\n  def hex = 0x123\n}\n\nStorageState.table(StorageState.NewUsers()).format(\n  keyParams('app_id).asInstanceOf[String]\n)\n\n// Comment at EOF\n",
+    "k:7 :1 nn:13 :2 k:6 :1 nn:8 o:1 nc:3 o:1 :1 nc:3 :1 k:2 :1 nc:3 o:1 :2 cm:93 :2 c1:27 :2 k:6 :1 nc:1 :1 o:1 :3 k:3 :1 nv:1 n:9 o:1 :1 k:1 :1 s:28 :4 k:3 :1 nv:1 :1 k:1 :1 ss:7 :4 nd:8 :3 k:3 :1 nv:5 :1 k:1 :1 s:10 :3 k:3 :1 nv:6 :1 k:1 :1 s:16 :4 k:3 :1 nf:4 o:1 n:4 k:1 :1 kt:5 o:1 kt:6 o:2 :1 o:1 :5 nf:7 o:3 py:9 :1 o:1 :1 s:3 :1 o:1 :1 n:5 :1 o:1 :1 s:3 :1 o:1 :1 n:6 :1 o:1 :3 o:1 :4 k:3 :1 nf:16 o:1 kt:3 o:2 n:3 k:1 kt:9 o:1 kt:3 o:3 k:8 :1 n:8 k:1 :1 kt:3 :1 o:3 :1 nc:3 o:1 :1 o:2 :4 k:3 :1 nv:4 :1 k:1 :1 sc:3 :3 k:3 :1 n:11 :1 k:1 :1 sc:8 :4 k:3 :1 nv:8 :1 k:1 :1 kc:4 :4 k:6 :1 nn:12 :4 k:3 :1 nf:14 o:1 n:1 k:1 :1 kt:6 o:1 k:1 :1 kt:6 :1 o:1 :1 o:1 :5 k:3 :1 nv:1 :1 k:1 :1 nv:1 o:1 py:6 o:1 py:5 :5 nv:1 o:1 py:7 o:1 n:5 o:1 :5 n:1 :7 o:1 py:4 o:1 n:1 o:1 :7 o:1 py:11 :3 o:1 :1 o:1 :2 k:8 :1 k:4 :1 k:5 :1 nc:3 o:1 kt:2 :2 kt:1 :1 k:2 :1 kt:4 o:1 kt:1 o:3 n:1 k:1 :1 kt:1 o:1 :1 o:1 :3 k:4 :1 kt:3 :1 o:1 :1 nc:3 :4 k:3 :1 nf:5 o:1 kt:1 :1 k:2 :1 kt:1 o:2 n:1 k:1 :1 kt:3 o:1 kt:1 o:2 k:1 :1 kt:3 o:1 kt:1 o:1 :1 o:1 :2 k:5 :1 c1:12 :3 nc:4 o:1 n:1 k:1 :1 c1:12 :5 nc:3 o:1 :1 o:1 :2 o:1 :2 k:5 :1 nc:67 o:1 n:1 k:1 :1 kt:3 o:1 :1 k:7 :1 nc:3 o:1 n:1 o:1 :1 o:1 :3 k:3 :1 nf:4 o:1 n:1 k:1 :1 kt:5 o:1 :1 k:1 :1 nf:4 o:1 nv:1 o:1 py:5 o:1 :4 k:3 :1 nf:4 :1 k:1 :1 mi:1 :3 k:3 :1 nf:6 :1 k:1 :1 mf:2 :3 k:3 :1 nf:7 :1 k:1 :1 mf:3 :3 k:3 :1 nf:5 :1 k:1 :1 mi:2 :3 k:3 :1 nf:3 :1 k:1 :1 mh:5 :1 o:1 :2 nv:12 o:1 py:5 o:1 nv:12 o:1 py:8 o:4 py:6 o:1 :3 nf:9 o:1 ss:7 o:2 py:12 o:1 kt:6 o:1 :1 o:1 :2 c1:17 :1",
+  )
+}
+
+///|
 test "rouge: shell: demo" {
   check_lex(
     "shell", "# If not running interactively, don't do anything\n[[ -z \"$PS1\" ]] && return\n",
@@ -366,10 +478,42 @@ test "rouge: shell: visual sample" {
 }
 
 ///|
+test "rouge: swift: demo" {
+  check_lex(
+    "swift", "// Say hello to poeple\nfunc sayHello(personName: String) -> String {\n    let greeting = \"Hello, \" + personName + \"!\"\n    return greeting\n}\n",
+    "c1:22 :1 kd:4 :1 nf:8 p:1 nv:10 p:1 :1 kt:6 p:1 :1 o:2 :1 kt:6 :1 p:1 :5 k:3 :1 nv:8 :1 o:1 :1 s:9 :1 o:1 :1 n:10 :1 o:1 :1 s:3 :5 k:6 :1 n:8 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: swift: visual sample" {
+  check_lex(
+    "swift", "import Foundation\n@testable import MyModule\n\nfunc sayHello(person:String) -> String {\n    return \"Hello, \\(capitalize(word:person)). \\\"How're are you doin\\'?\\\"\"\n}\n\nfunc capitalize(#word:String) -> String {\n    //TODO: test this\n    return word.capitalizedString\n}\n\nsayHello(\"Toto\")\n\nvar pi = 3.1415\n\nvar foo = cast as SomeType\nvar foo = optionalCast as? SomeType\nvar foo = forcedCast as! SomeType\n\nfunc halfOpenRangeLength(start:Int, end:Int) -> Int {\n    return end - start\n}\n\nhalfOpenRangeLength(3, 8)\n\nif let var = option {\n    if more && complex, let optional = binding, example = here where option.foo == example.foo {\n        // things\n    }\n}\n\nfunc count(string:String) -> (vowels:Int, consonants:Int, others:Int) {\n    var vowels = 0, consonants = 0, emoji = 0, whitespace = 0, others = 0\n\n    for character in string {\n\n        switch String(character).lowercaseString {\n        case \"a\",\"o\",\"i\",\"u\",\"e\":\n            ++vowels\n        case \"b\", \"c\", \"d\", \"f\", \"g\", \"h\", \"j\", \"k\", \"l\", \"m\", \"n\", \"p\", \"q\", \"r\", \"s\", \"t\", \"v\", \"w\", \"x\", \"y\", \"z\":\n            ++consonants\n        //TODO: Add more emoji\n        case \"\\u{1F604}\":\n            ++emoji\n        case \"\\n\", \"\\r\", \"\\t\", \"\\0\", \"\\u{A0}\", \"\\u{205F}\":\n            ++whitespace\n        default:\n            ++others\n        }\n    }\n\n    return (vowels,consonants,others)\n}\n\ncount(sayHello(\"John\"))\n\n// Unicode and Emoji support\nlet 😄face = \"Happy Face\"\nlet ქართულადაც = \"This is Georgian\"\nlet こんにちは = \"...and Japanese\"\nlet 𓂀 = \"and hieroglyphs\"\n\n// Integer Literals\nlet decimalInteger = 1234567\nlet decimalIntegerWithGroupings = 1_234_567\nlet hexadecimalInteger = 0xABCDEF\nlet octalInteger = 0o0644\nlet binaryInteger = 0b1010\n\n// Floating-Point Literals\nlet decimalFloatingPoint = 1234567.89\nlet decimalFloatingPointWithGroupings = 1_2345_67.89\nlet hexadecimalFloatingPoint = 0xA.1p-3\n\n// String Literals\nlet string = \"Hello, world!\"\nlet multilineString = \"\"\"\nAll human beings are born free and equal in dignity and rights.\nThey are endowed with reason and conscience\nand should act towards one another in a spirit of brotherhood.\n\"\"\"\n\nfunc join(#firstString:String,#secondString:String,joiner:String = \" & \") -> String {\n    return \"\\(firstString)\\(joiner)\\(secondString)\"\n}\n\njoin(firstString: \"Toto\", secondString: \"Someone Other\", joiner: \" + \")\n\nfunc alignedRight(inout #string:String, count:Int, pad:Character) -> String {\n    let amountToPad = count - countElements(string)\n\n    for _ in 1...amountToPad {\n        string = pad + string\n    }\n\n    return string;\n}\n\n/* This is a multiline comment\n/*\nThis part is nested into the parent comment\n*/\nTrailing part of parent comment\n*/\n\nlet thisIsNotAComment = true\n\n/* Singleline Comment */\n\nvar textToAlign = \"Toto\"\nalignedRight(string: &textToAlign, 10, \"-\")\ntextToAlign\n\n//MARK: Function Types\nfunc addToInts(a:Int,b:Int) -> Int {\n    return a + b\n}\n\nlet addNumbers: (Int,Int)->(Int) = addToInts;\naddNumbers(3,2)\n\nfunc printMathProblem(mathFunction:(Int,Int)->Int,a:Int,b:Int)->String {\n    return \"Result \" + String(mathFunction(a,b))\n}\nprintMathProblem(addNumbers, 5, 10)\n\n// Function return types + Nested Functions\nfunc chooseSteperFunction(backward:Bool) -> (Int) -> Int {\n    func stepForward(input:Int)->Int {\n        return input + 1\n    }\n\n    func stepBackward(input:Int)->Int {\n        return input + 1\n    }\n\n    return backward ? stepBackward : stepForward\n}\nlet currentValue = 5\nchooseSteperFunction(currentValue > 0)(currentValue)\n\n// Closures\nfunc comparator(s1:String,s2:String)->Bool {\n    return s2 > s1\n}\nlet names = [\"Chris\", \"Alex\", \"Ewa\", \"Barry\", \"Daniella\"]\nlet revised = sorted(names, comparator)\n\nlet revised2 = sorted(names, {\n    (s1:String,s2:String)->Bool in\n        return s2 > s1\n    })\n\nlet revised3 = sorted(names, { s1, s2 in s1 > s2 })\nrevised3\n\nlet revised4 = sorted(names) { $0 > $1 } // This is also a trailing closure\nrevised4\n\nlet revised5 = sorted(names, >)\n\n// Long closures\nlet digitNames = [\n    0: \"Zero\", 1: \"One\", 2: \"Two\",   3: \"Three\", 4: \"Four\",\n    5: \"Five\", 6: \"Six\", 7: \"Seven\", 8: \"Eight\", 9: \"Nine\"\n]\nlet numbers = [16, 58, 510]\n\nlet strings = numbers.map {\n    (var number) -> String in\n    var output = \"\"\n    while number > 0 {\n        output = digitNames[number % 10]! + output\n        number /= 10\n    }\n    return output\n}\nstrings\n\n// Closure Value Capturing\nfunc makeIncrementor(firstNumber number:Int) -> () -> Int\n{\n    var runningTotal = 0\n    func incrementor()->Int {\n        runningTotal += number\n        return runningTotal\n    }\n    return incrementor\n}\n\nlet incrementor = makeIncrementor(firstNumber: 4)\nincrementor()\n\n// @autoclosure\nfunc simpleAssert(@autoclosure condition: () -> Bool, message: String = \"Assertion failed\") {\n    if !condition() {\n        println(message)\n    }\n}\n\nfunc lazyAssertion(@autoclosure(escaping) condition: () -> Bool, message: String = \"\") {\n    lazyAssertions.append(condition)\n}\n\nfunc autoreleasepool(@noescape code: () -> ()) {\n    pushAutoreleasePool()\n    code()\n    popAutoreleasePool()\n}\n\n// optional function call\n\nlet maybeFunction: (() -> ())? = nil\nmaybeFunction?()\nmaybeFunction!()\n\n// Swift 2 exceptions\n\nfunc throwingFunction() throws -> String {\n    throw ErrorType.Error\n}\n\ndo {\n    try throwingFunction()\n} catch {\n    println(error)\n}\n\ntry! throwingFunction()\n\nfunc rethrowingFunction(f: T throws -> U) rethrows -> U {}\n\n// other swift 2 stuff\n\nguard let x = optionalValue else {\n   print(\"Fail\")\n   throw NSError(domain: \"\", code: 0, userInfo: nil)\n}\n\ndefer { callback() }\n\nif case let x? = optionalValue {print(\"Unwrapped: \\(x)\")}\n\nrepeat {\n    // loop…\n} while condition\n\nif #available(iOS 8.0, OSX 10.10, *) {\n   // Use Handoff APIs when available.\n   let activity = NSUserActivity(activityType:\"com.example.ShoppingList.view\")\n} else {\n    // Fall back when Handoff APIs not available.\n}\n\n//MARK: Classes\npublic class Person : NSObject {\n    let firstName: String\n\n    private var lastName: String\n\n    private(set) var age: Int {\n    didSet {\n",
+    "kd:6 :1 kt:10 :1 kd:9 :1 kd:6 :1 kt:8 :2 kd:4 :1 nf:8 p:1 nv:6 p:1 kt:6 p:1 :1 o:2 :1 kt:6 :1 p:1 :5 k:6 :1 s:8 se:2 nf:10 p:1 nv:4 p:1 n:6 p:1 se:1 s:2 se:2 s:19 se:2 s:1 se:2 s:1 :1 p:1 :2 kd:4 :1 nf:10 p:1 nv:5 p:1 kt:6 p:1 :1 o:2 :1 kt:6 :1 p:1 :5 c1:17 :5 k:6 :1 n:4 o:1 n:17 :1 p:1 :2 nf:8 p:1 s:6 p:1 :2 k:3 :1 nv:2 :1 o:1 :1 mf:6 :2 k:3 :1 nv:3 :1 o:1 :1 n:4 :1 k:2 :1 kt:8 :1 k:3 :1 nv:3 :1 o:1 :1 n:12 :1 k:3 :1 kt:8 :1 k:3 :1 nv:3 :1 o:1 :1 n:10 :1 k:3 :1 kt:8 :2 kd:4 :1 nf:19 p:1 nv:5 p:1 kt:3 p:1 :1 nv:3 p:1 kt:3 p:1 :1 o:2 :1 kt:3 :1 p:1 :5 k:6 :1 n:3 :1 o:1 :1 n:5 :1 p:1 :2 nf:19 p:1 mi:1 p:1 :1 mi:1 p:1 :2 k:2 :1 k:3 :1 nv:3 :1 o:1 :1 n:6 :1 p:1 :5 k:2 :1 n:4 :1 o:2 :1 n:7 p:1 :1 k:3 :1 nv:8 :1 o:1 :1 n:7 p:1 :1 n:7 :1 o:1 :1 n:4 :1 k:5 :1 n:6 o:1 n:3 :1 o:2 :1 n:7 o:1 n:3 :1 p:1 :9 c1:9 :5 p:1 :1 p:1 :2 kd:4 :1 nf:5 p:1 nv:6 p:1 kt:6 p:1 :1 o:2 :1 p:1 nv:6 p:1 kt:3 p:1 :1 nv:10 p:1 kt:3 p:1 :1 nv:6 p:1 kt:3 p:1 :1 p:1 :5 k:3 :1 nv:6 :1 o:1 :1 mi:1 p:1 :1 n:10 :1 o:1 :1 mi:1 p:1 :1 n:5 :1 o:1 :1 mi:1 p:1 :1 n:10 :1 o:1 :1 mi:1 p:1 :1 n:6 :1 o:1 :1 mi:1 :6 k:3 :1 n:9 :1 k:2 :1 n:6 :1 p:1 :10 k:6 :1 kt:6 p:1 n:9 p:1 o:1 n:15 :1 p:1 :9 k:4 :1 s:3 p:1 s:3 p:1 s:3 p:1 s:3 p:1 s:3 p:1 :13 o:2 n:6 :9 k:4 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :1 s:3 p:1 :13 o:2 n:10 :9 c1:22 :9 k:4 :1 s:1 se:9 s:1 p:1 :13 o:2 n:5 :9 k:4 :1 s:1 se:2 s:1 p:1 :1 s:1 se:2 s:1 p:1 :1 s:1 se:2 s:1 p:1 :1 s:1 se:2 s:1 p:1 :1 s:1 se:6 s:1 p:1 :1 s:1 se:8 s:1 p:1 :13 o:2 n:10 :9 k:7 p:1 :13 o:2 n:6 :9 p:1 :5 p:1 :6 nf:6 :1 p:1 n:6 p:1 n:10 p:1 n:6 p:1 :1 p:1 :2 nf:5 p:1 nf:8 p:1 s:6 p:2 :2 c1:28 :1 k:3 :1 nv:6 :1 o:1 :1 s:12 :1 k:3 :1 nv:10 :1 o:1 :1 s:18 :1 k:3 :1 nv:5 :1 o:1 :1 s:17 :1 k:3 :1 nv:2 :1 o:1 :1 s:17 :2 c1:19 :1 k:3 :1 nv:14 :1 o:1 :1 mi:7 :1 k:3 :1 nv:27 :1 o:1 :1 mi:9 :1 k:3 :1 nv:18 :1 o:1 :1 mh:8 :1 k:3 :1 nv:12 :1 o:1 :1 mo:6 :1 k:3 :1 nv:13 :1 o:1 :1 mb:6 :2 c1:26 :1 k:3 :1 nv:20 :1 o:1 :1 mf:10 :1 k:3 :1 nv:33 :1 o:1 :1 mf:12 :1 k:3 :1 nv:24 :1 o:1 :1 mh:8 :2 c1:18 :1 k:3 :1 nv:6 :1 o:1 :1 s:15 :1 k:3 :1 nv:15 :1 o:1 :1 s:178 :2 kd:4 :1 nf:4 p:1 nv:12 p:1 kt:6 p:1 nv:13 p:1 kt:6 p:1 nv:6 p:1 kt:6 :1 o:1 :1 s:5 p:1 :1 o:2 :1 kt:6 :1 p:1 :5 k:6 :1 s:1 se:2 n:11 se:3 n:6 se:3 n:12 se:1 s:1 :1 p:1 :2 nf:4 p:1 nv:11 p:1 :1 s:6 p:1 :1 nv:12 p:1 :1 s:15 p:1 :1 nv:6 p:1 :1 s:5 p:1 :2 kd:4 :1 nf:12 p:1 k:5 :1 nv:7 p:1 kt:6 p:1 :1 nv:5 p:1 kt:3 p:1 :1 nv:3 p:1 kt:9 p:1 :1 o:2 :1 kt:6 :1 p:1 :5 k:3 :1 nv:11 :1 o:1 :1 n:5 :1 o:1 :1 nf:13 p:1 n:6 p:1 :6 k:3 :1 n:1 :1 k:2 :1 mi:1 o:3 n:11 :1 p:1 :9 n:6 :1 o:1 :1 n:3 :1 o:1 :1 n:6 :5 p:1 :6 k:6 :1 n:6 p:1 :1 p:1 :2 cm:115 :2 k:3 :1 nv:17 :1 o:1 :1 kc:4 :2 cm:24 :2 k:3 :1 nv:11 :1 o:1 :1 s:6 :1 nf:12 p:1 nv:6 p:1 :1 o:1 n:11 p:1 :1 mi:2 p:1 :1 s:3 p:1 :1 n:11 :2 c1:22 :1 kd:4 :1 nf:9 p:1 nv:1 p:1 kt:3 p:1 nv:1 p:1 kt:3 p:1 :1 o:2 :1 kt:3 :1 p:1 :5 k:6 :1 n:1 :1 o:1 :1 n:1 :1 p:1 :2 k:3 :1 nv:10 p:1 :1 p:1 kt:3 p:1 kt:3 p:1 o:2 p:1 kt:3 p:1 :1 o:1 :1 n:9 p:1 :1 nf:10 p:1 mi:1 p:1 mi:1 p:1 :2 kd:4 :1 nf:16 p:1 nv:12 p:2 kt:3 p:1 kt:3 p:1 o:2 kt:3 p:1 nv:1 p:1 kt:3 p:1 nv:1 p:1 kt:3 p:1 o:2 kt:6 :1 p:1 :5 k:6 :1 s:9 :1 o:1 :1 kt:6 p:1 nf:12 p:1 n:1 p:1 n:1 p:2 :1 p:1 :1 nf:16 p:1 n:10 p:1 :1 mi:1 p:1 :1 mi:2 p:1 :2 c1:43 :1 kd:4 :1 nf:20 p:1 nv:8 p:1 kt:4 p:1 :1 o:2 :1 p:1 kt:3 p:1 :1 o:2 :1 kt:3 :1 p:1 :5 kd:4 :1 nf:11 p:1 nv:5 p:1 kt:3 p:1 o:2 kt:3 :1 p:1 :9 k:6 :1 n:5 :1 o:1 :1 mi:1 :5 p:1 :6 kd:4 :1 nf:12 p:1 nv:5 p:1 kt:3 p:1 o:2 kt:3 :1 p:1 :9 k:6 :1 n:5 :1 o:1 :1 mi:1 :5 p:1 :6 k:6 :1 n:8 :1 p:1 :1 nv:12 :1 p:1 :1 n:11 :1 p:1 :1 k:3 :1 nv:12 :1 o:1 :1 mi:1 :1 nf:20 p:1 n:12 :1 o:1 :1 mi:1 p:2 n:12 p:1 :2 c1:11 :1 kd:4 :1 nf:10 p:1 nv:2 p:1 kt:6 p:1 nv:2 p:1 kt:6 p:1 o:2 kt:4 :1 p:1 :5 k:6 :1 n:2 :1 o:1 :1 n:2 :1 p:1 :1 k:3 :1 nv:5 :1 o:1 :1 p:1 s:7 p:1 :1 s:6 p:1 :1 s:5 p:1 :1 s:7 p:1 :1 s:10 p:1 :1 k:3 :1 nv:7 :1 o:1 :1 nf:6 p:1 n:5 p:1 :1 n:10 p:1 :2 k:3 :1 nv:8 :1 o:1 :1 nf:6 p:1 n:5 p:1 :1 p:1 :5 p:1 nv:2 p:1 kt:6 p:1 nv:2 p:1 kt:6 p:1 o:2 kt:4 :1 k:2 :9 k:6 :1 n:2 :1 o:1 :1 n:2 :5 p:2 :2 k:3 :1 nv:8 :1 o:1 :1 nf:6 p:1 n:5 p:1 :1 p:1 :1 n:2 p:1 :1 n:2 :1 k:2 :1 n:2 :1 o:1 :1 n:2 :1 p:2 :1 n:8 :2 k:3 :1 nv:8 :1 o:1 :1 nf:6 p:1 n:5 p:1 :1 p:1 :1 nv:2 :1 o:1 :1 nv:2 :1 p:1 :1 c1:34 :1 n:8 :2 k:3 :1 nv:8 :1 o:1 :1 nf:6 p:1 n:5 p:1 :1 o:1 p:1 :2 c1:16 :1 k:3 :1 nv:10 :1 o:1 :1 p:1 :5 mi:1 p:1 :1 s:6 p:1 :1 mi:1 p:1 :1 s:5 p:1 :1 mi:1 p:1 :1 s:5 p:1 :3 mi:1 p:1 :1 s:7 p:1 :1 mi:1 p:1 :1 s:6 p:1 :5 mi:1 p:1 :1 s:6 p:1 :1 mi:1 p:1 :1 s:5 p:1 :1 mi:1 p:1 :1 s:7 p:1 :1 mi:1 p:1 :1 s:7 p:1 :1 mi:1 p:1 :1 s:6 :1 p:1 :1 k:3 :1 nv:7 :1 o:1 :1 p:1 mi:2 p:1 :1 mi:2 p:1 :1 mi:3 p:1 :2 k:3 :1 nv:7 :1 o:1 :1 n:7 o:1 n:3 :1 p:1 :5 p:1 k:3 :1 nv:6 p:1 :1 o:2 :1 kt:6 :1 k:2 :5 k:3 :1 nv:6 :1 o:1 :1 s:2 :5 k:5 :1 n:6 :1 o:1 :1 mi:1 :1 p:1 :9 n:6 :1 o:1 :1 n:10 p:1 n:6 :1 o:1 :1 mi:2 p:1 o:1 :1 o:1 :1 n:6 :9 n:6 :1 o:2 :1 mi:2 :5 p:1 :5 k:6 :1 n:6 :1 p:1 :1 n:7 :2 c1:26 :1 kd:4 :1 nf:15 p:1 n:11 :1 nv:6 p:1 kt:3 p:1 :1 o:2 :1 p:2 :1 o:2 :1 kt:3 :1 p:1 :5 k:3 :1 nv:12 :1 o:1 :1 mi:1 :5 kd:4 :1 nf:11 p:2 o:2 kt:3 :1 p:1 :9 n:12 :1 o:2 :1 n:6 :9 k:6 :1 n:12 :5 p:1 :5 k:6 :1 n:11 :1 p:1 :2 k:3 :1 nv:11 :1 o:1 :1 nf:15 p:1 nv:11 p:1 :1 mi:1 p:1 :1 nf:11 p:2 :2 c1:15 :1 kd:4 :1 nf:12 p:1 kd:12 :1 nv:9 p:1 :1 p:2 :1 o:2 :1 kt:4 p:1 :1 nv:7 p:1 :1 kt:6 :1 o:1 :1 s:18 p:1 :1 p:1 :5 k:2 :1 o:1 nf:9 p:2 :1 p:1 :9 nf:7 p:1 n:7 p:1 :5 p:1 :1 p:1 :2 kd:4 :1 nf:13 p:1 kd:12 p:1 n:8 p:1 :1 nv:9 p:1 :1 p:2 :1 o:2 :1 kt:4 p:1 :1 nv:7 p:1 :1 kt:6 :1 o:1 :1 s:2 p:1 :1 p:1 :5 n:14 o:1 nf:6 p:1 n:9 p:1 :1 p:1 :2 kd:4 :1 nf:15 p:1 kd:9 :1 nv:4 p:1 :1 p:2 :1 o:2 :1 p:3 :1 p:1 :5 nf:19 p:2 :5 nf:4 p:2 :5 nf:18 p:2 :1 p:1 :2 c1:25 :2 k:3 :1 nv:13 p:1 :1 p:3 :1 o:2 :1 p:4 :1 o:1 :1 kc:3 :1 nf:13 p:3 :1 nf:13 o:1 p:2 :2 c1:21 :2 kd:4 :1 nf:16 p:2 :1 k:6 :1 o:2 :1 kt:6 :1 p:1 :5 k:5 :1 kt:9 o:1 kt:5 :1 p:1 :2 k:2 :1 p:1 :5 k:3 :1 nf:16 p:2 :1 p:1 :1 k:5 :1 p:1 :5 nf:7 p:1 n:5 p:1 :1 p:1 :2 k:4 :1 nf:16 p:2 :2 kd:4 :1 nf:18 p:1 nv:1 p:1 :1 kt:1 :1 k:6 :1 o:2 :1 kt:1 p:1 :1 k:8 :1 o:2 :1 kt:1 :1 p:2 :2 c1:22 :2 k:5 :1 k:3 :1 nv:1 :1 o:1 :1 n:13 :1 k:4 :1 p:1 :4 nf:5 p:1 s:6 p:1 :4 k:5 :1 kt:7 p:1 nv:6 p:1 :1 s:2 p:1 :1 nv:4 p:1 :1 mi:1 p:1 :1 nv:8 p:1 :1 kc:3 p:1 :1 p:1 :2 k:5 :1 p:1 :1 nf:8 p:2 :1 p:1 :2 k:2 :1 k:4 :1 k:3 :1 nv:1 p:1 :1 o:1 :1 n:13 :1 p:1 nf:5 p:1 s:12 se:2 n:1 se:1 s:1 p:2 :2 k:6 :1 p:1 :5 c1:8 :1 p:1 :1 k:5 :1 n:9 :2 k:2 :1 kd:33 :1 p:1 :4 c1:35 :4 k:3 :1 nv:8 :1 o:1 :1 kt:14 p:1 nv:12 p:1 s:31 p:1 :1 p:1 :1 k:4 :1 p:1 :5 c1:45 :1 p:1 :2 c1:15 :1 kd:6 :1 kd:5 :1 kt:6 :1 p:1 :1 kt:8 :1 p:1 :5 k:3 :1 nv:9 p:1 :1 kt:6 :6 kd:7 :1 k:3 :1 nv:8 p:1 :1 kt:6 :6 kd:12 :1 k:3 :1 nv:3 p:1 :1 kt:3 :1 p:1 :5 k:6 :1 p:1 :1",
+  )
+}
+
+///|
 test "rouge: apache: demo" {
   check_lex(
     "apache", "AddDefaultCharset UTF-8\n\nRewriteEngine On\n\n# Serve gzipped version if available and accepted\nAddEncoding x-gzip .gz\nRewriteCond %{HTTP:Accept-Encoding} gzip\nRewriteCond %{REQUEST_FILENAME}.gz -f\nRewriteRule ^(.*)$ $1.gz [QSA,L]\n<FilesMatch \\.css\\.gz$>\n  ForceType text/css\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.js\\.gz$>\n  ForceType application/javascript\n  Header append Vary Accept-Encoding\n</FilesMatch>\n<FilesMatch \\.html\\.gz$>\n  ForceType text/html\n  Header append Vary Accept-Encoding\n</FilesMatch>\n",
     "nc:17 :8 nc:13 :1 ss:2 :2 c:49 :1 nc:11 :12 nc:11 :30 nc:11 :27 nc:11 :22 p:1 nl:10 sr:11 p:2 :2 nc:9 :12 nc:6 :1 ss:6 :22 p:2 nl:10 p:3 nl:10 sr:10 p:2 :2 nc:9 :26 nc:6 :1 ss:6 :22 p:2 nl:10 p:3 nl:10 sr:12 p:2 :2 nc:9 :13 nc:6 :1 ss:6 :22 p:2 nl:10 p:2",
+  )
+}
+
+///|
+test "rouge: csharp: demo" {
+  check_lex(
+    "csharp", "// reverse byte order (16-bit)\npublic static UInt16 ReverseBytes(UInt16 value)\n{\n  return (UInt16)((value & 0xFFU) << 8 | (value & 0xFF00U) >> 8);\n}\n",
+    "c1:30 :1 k:6 :1 k:6 :1 n:6 :1 nf:12 p:1 n:6 :1 k:5 p:1 :1 p:1 :3 k:6 :1 p:1 n:6 p:3 k:5 :1 p:1 :1 m:5 p:1 :1 p:2 :1 m:1 :1 p:1 :1 p:1 k:5 :1 p:1 :1 m:7 p:1 :1 p:2 :1 m:1 p:2 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: csharp: visual sample" {
+  check_lex(
+    "csharp", "interface IFoo {\n  // stuff\n}\n\n[Bar(\"foo/[bar]\")]\nclass Foo {\n  // stuff\n}\n\n////////////////////////////////////////////////////////////////////////////////\n//                                                                            //\n// MIT X11 license, Copyright (c) 2005-2006 by:                               //\n//                                                                            //\n// Authors:                                                                   //\n//      Michael Dominic K. <michaldominik@gmail.com>                          //\n//                                                                            //\n// Permission is hereby granted, free of charge, to any person obtaining a    //\n// copy of this software and associated documentation files (the \"Software\"), //\n// to deal in the Software without restriction, including without limitation  //\n// the rights to use, copy, modify, merge, publish, distribute, sublicense,   //\n// and/or sell copies of the Software, and to permit persons to whom the      //\n// Software is furnished to do so, subject to the following conditions:       //\n//                                                                            //\n// The above copyright notice and this permission notice shall be included    //\n// in all copies or substantial portions of the Software.                     //\n//                                                                            //\n// THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS    //\n// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                 //\n// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN  //\n// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   //\n// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR      //\n// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  //\n// USE OR OTHER DEALINGS IN THE SOFTWARE.                                     //\n//                                                                            //\n////////////////////////////////////////////////////////////////////////////////\n\nnamespace Diva.Core {\n        \n        using System;\n        using Widgets;\n        using System.Xml;\n        using Util;\n        using System.Collections.Generic;\n        using System.Collections;\n        using Basics;\n\n        public class OpenerTask : Task, IBoilProvider {\n\n                // Private structs ////////////////////////////////////////////\n                \n                struct ObjectInfo {\n\n                        public ObjectContainer Container;\n                        public int[] Depends;\n                        public string SystemType;\n                        public int RefId;\n                        \n                        /* CONSTRUCTOR */\n                        public ObjectInfo (ObjectContainer container)\n                        {\n                                Container = container;\n                                Depends = container.Depends.ToArray ();\n                                SystemType = container.SystemType;\n                                RefId = container.RefId;\n                        }\n                        \n                        public override string ToString ()\n                        {\n                                return String.Format (\"Type: {0} Deps count: {1} Id: {2}\",\n                                                      SystemType, Depends.Length, RefId);\n                        }\n                        \n                        public bool IsUnBoilable (IBoilProvider provider)\n                        {\n                                if (Depends.Length == 0)\n                                        return true;\n                                \n                                foreach (int id in Depends)\n                                        if (! (provider.Contains (id)))\n                                                return false;\n                                \n                                return true;\n                        }\n                        \n                }\n                                 \n                // Enums //////////////////////////////////////////////////////\n                \n                enum OpenerTaskStep { Init, Header, ProjectInfoRead, ObjectListRead,\n                                      ObjectListParse, ObjectListUnBoil, FindRoots,\n                                      Finished };\n                \n                // Fields /////////////////////////////////////////////////////\n                \n                string fileName;                         // Filename we're reading\n                XmlDocument xmlDocument;                 // Our document\n                //XmlNode projectInfoNode;               // <projectinfo> node\n                IEnumerator objectsEnumerator;           // Enumerator\n                List <ObjectInfo> objectsList;           // Objects list\n                ObjectListContainer objectListContainer;\n                OpenerTaskStep currentStep;              // Our current step\n                \n                Dictionary <int, object> idToObject;     // Id -> object\n                Dictionary <object, int> objectToId;     // Object -> Id\n\n                string projectName = String.Empty;\n                string projectDirectory = String.Empty;\n                TagList projectTagList;\n                StuffList projectStuffList;\n                TrackList projectTrackList;\n                ClipList projectClipList;\n                MediaItemList projectMediaItemList;\n                Commander projectCommander;\n                Gdv.Pipeline projectPipeline;\n                Gdv.ProjectFormat projectFormat;\n                \n                // Properties /////////////////////////////////////////////////\n                \n                public string ProjectName {\n                        get { return projectName; }\n                }\n",
+    "k:9 :1 nc:4 :1 p:1 :3 c1:8 :1 p:1 :2 p:1 nf:3 p:1 s:11 p:2 :1 k:5 :1 nc:3 :1 p:1 :3 c1:8 :1 p:1 :2 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :1 c1:80 :2 k:9 :1 nn:9 :1 p:1 :18 k:5 :1 nn:6 p:1 :9 k:5 :1 nn:7 p:1 :9 k:5 :1 nn:10 p:1 :9 k:5 :1 nn:4 p:1 :9 k:5 :1 nn:26 p:1 :9 k:5 :1 nn:18 p:1 :9 k:5 :1 nn:6 p:1 :10 k:6 :1 k:5 :1 nc:10 :1 p:1 :1 n:4 p:1 :1 n:13 :1 p:1 :18 c1:63 :34 k:6 :1 nc:10 :1 p:1 :26 k:6 :1 n:15 :1 n:9 p:1 :25 k:6 :1 kt:3 p:2 :1 n:7 p:1 :25 k:6 :1 kt:6 :1 n:10 p:1 :25 k:6 :1 kt:3 :1 n:5 p:1 :50 cm:17 :25 k:6 :1 nf:10 :1 p:1 n:15 :1 n:9 p:1 :25 p:1 :33 n:9 :1 p:1 :1 n:9 p:1 :33 n:7 :1 p:1 :1 n:9 p:1 n:7 p:1 nf:7 :1 p:3 :33 n:10 :1 p:1 :1 n:9 p:1 n:10 p:1 :33 n:5 :1 p:1 :1 n:9 p:1 n:5 p:1 :25 p:1 :50 k:6 :1 k:8 :1 kt:6 :1 nf:8 :1 p:2 :25 p:1 :33 k:6 :1 n:6 p:1 nf:6 :1 p:1 s:35 p:1 :55 n:10 p:1 :1 n:7 p:1 n:6 p:1 :1 n:5 p:2 :25 p:1 :50 k:6 :1 kt:4 :1 nf:12 :1 p:1 n:13 :1 n:8 p:1 :25 p:1 :33 k:2 :1 p:1 n:7 p:1 n:6 :1 p:2 :1 m:1 p:1 :41 k:6 :1 k:4 p:1 :66 k:7 :1 p:1 kt:3 :1 n:2 :1 k:2 :1 n:7 p:1 :41 k:2 :1 p:2 :1 p:1 n:8 p:1 nf:8 :1 p:1 n:2 p:3 :49 k:6 :1 k:5 p:1 :66 k:6 :1 k:4 p:1 :25 p:1 :42 p:1 :51 c1:63 :34 k:4 :1 n:14 :1 p:1 :1 n:4 p:1 :1 n:6 p:1 :1 n:15 p:1 :1 n:14 p:1 :39 n:15 p:1 :1 n:16 p:1 :1 n:9 p:1 :39 n:8 :1 p:2 :34 c1:63 :34 kt:6 :1 n:8 p:1 :25 c1:25 :17 n:11 :1 n:11 p:1 :17 c1:15 :17 c1:62 :17 n:11 :1 n:17 p:1 :11 c1:13 :17 n:4 :1 p:1 n:10 p:1 :1 n:11 p:1 :11 c1:15 :17 n:19 :1 n:19 p:1 :17 n:14 :1 n:11 p:1 :14 c1:19 :34 n:10 :1 p:1 kt:3 p:1 :1 kt:6 p:1 :1 n:10 p:1 :5 c1:15 :17 n:10 :1 p:1 kt:6 p:1 :1 kt:3 p:1 :1 n:10 p:1 :5 c1:15 :18 kt:6 :1 n:11 :1 p:1 :1 n:6 p:1 n:5 p:1 :17 kt:6 :1 n:16 :1 p:1 :1 n:6 p:1 n:5 p:1 :17 n:7 :1 n:14 p:1 :17 n:9 :1 n:16 p:1 :17 n:9 :1 n:16 p:1 :17 n:8 :1 n:15 p:1 :17 n:13 :1 n:20 p:1 :17 n:9 :1 n:16 p:1 :17 n:3 p:1 n:8 :1 n:15 p:1 :17 n:3 p:1 n:13 :1 n:13 p:1 :34 c1:63 :34 k:6 :1 kt:6 :1 n:11 :1 p:1 :25 k:3 :1 p:1 :1 k:6 :1 n:11 p:1 :1 p:1 :17 p:1 :1",
   )
 }
 
@@ -386,6 +530,54 @@ test "rouge: docker: visual sample" {
   check_lex(
     "docker", "FROM golang:1.16 AS builder\nmaintainer First O'Last\n\nrun echo \\\n  123 $bar\n# comment\nonbuild add . /app/src\nonbuild run echo \\\n  123 $bar\nCMD /bin/bash\n",
     "k:4 w:1 s:11 w:1 k:2 w:1 s:7 :1 k:10 s:13 :2 k:4 nb:4 :1 se:2 :6 nv:4 :1 c:9 :1 k:7 w:1 k:3 s:11 :1 k:12 nb:4 :1 se:2 :6 nv:4 :1 k:3 s:10 :1",
+  )
+}
+
+///|
+test "rouge: gradle: demo" {
+  check_lex(
+    "gradle", "apply plugin: 'java'\n\nrepositories {\n  jcenter()\n}\n\ndependencies {\n  compile 'org.openjdk.jmh:jmh-core:1.12'\n  compile 'org.openjdk.jmh:jmh-generator-annprocess:1.12'\n}\n",
+    "n:5 :1 nl:7 :1 s1:6 :2 k:12 :1 o:1 :3 n:7 o:2 :1 o:1 :2 k:12 :1 o:1 :3 n:7 :1 s1:31 :3 n:7 :1 s1:47 :1 o:1 :1",
+  )
+}
+
+///|
+test "rouge: gradle: visual sample" {
+  check_lex(
+    "gradle", "apply plugin: 'java'\napply plugin: 'eclipse'\n\nsourceCompatibility = 1.5\nversion = '1.0'\njar {\n  manifest {\n    attributes 'Implementation-Title': 'Gradle Quickstart',\n               'Implementation-Version': version\n  }\n}\n\nrepositories {\n  mavenCentral()\n}\n\ndependencies {\n  compile group: 'commons-collections', name: 'commons-collections', version: '3.2.2'\n  testCompile group: 'junit', name: 'junit', version: '4.+'\n}\n\ntest {\n  systemProperties 'property': 'value'\n}\n\nuploadArchives {\n  repositories {\n    flatDir {\n      dirs 'repos'\n    }\n  }\n}\n",
+    "n:5 :1 nl:7 :1 s1:6 :1 n:5 :1 nl:7 :1 s1:9 :2 n:19 :1 o:1 :1 mf:3 :1 n:7 :1 o:1 :1 s1:5 :1 n:3 :1 o:1 :3 n:8 :1 o:1 :5 n:10 :1 s1:22 o:1 :1 s1:19 o:1 :16 s1:24 o:1 :1 n:7 :3 o:1 :1 o:1 :2 k:12 :1 o:1 :3 n:12 o:2 :1 o:1 :2 k:12 :1 o:1 :3 n:7 :1 nl:6 :1 s1:21 o:1 :1 nl:5 :1 s1:21 o:1 :1 nl:8 :1 s1:7 :3 n:11 :1 nl:6 :1 s1:7 o:1 :1 nl:5 :1 s1:7 o:1 :1 nl:8 :1 s1:5 :1 o:1 :2 n:4 :1 o:1 :3 n:16 :1 s1:10 o:1 :1 s1:7 :1 o:1 :2 n:14 :1 o:1 :3 k:12 :1 o:1 :5 n:7 :1 o:1 :7 n:4 :1 s1:7 :5 o:1 :3 o:1 :1 o:1 :1",
+  )
+}
+
+///|
+test "rouge: groovy: demo" {
+  check_lex(
+    "groovy", "class Greet {\n  def name\n  Greet(who) { name = who[0].toUpperCase() +\n                      who[1..-1] }\n  def salute() { println \"Hello $name!\" }\n}\n\ng = new Greet('world')  // create object\ng.salute()               // output \"Hello World!\"\n",
+    "kd:5 :1 nc:5 :1 o:1 :3 kt:3 :1 n:4 :3 nf:5 o:1 n:3 o:1 :1 o:1 :1 n:4 :1 o:1 :1 n:3 o:1 mi:1 o:2 na:11 o:2 :1 o:1 :23 n:3 o:1 mi:1 o:3 mi:1 o:1 :1 o:1 :3 kt:3 :1 nf:6 o:2 :1 o:1 :1 n:7 :1 s2:14 :1 o:1 :1 o:1 :2 n:1 :1 o:1 :1 k:3 :1 n:5 o:1 s1:7 o:1 :2 c1:16 :1 n:1 o:1 na:6 o:2 :15 c1:24 :1",
+  )
+}
+
+///|
+test "rouge: groovy: visual sample" {
+  check_lex(
+    "groovy", "String json = \"\"\"\n  {\n    \"formula\": \"(a+b)/2\",\n    \"iid\": \"c-1\"\n  }\n\"\"\"\n\nString json = '''\n  {\n    \"formula\": \"(a+b)/2\",\n    \"iid\": \"c-1\"\n  }\n'''\n\n// This source code comes from http://www.odelia-technologies.com/node/200\n\npackage com.odelia.groovy.simpleworkflow\n\n\nclass SimpleWorkflowEngine {\n    def workflowMap = [:]\n    def context = [:]\n    def beforeActivityName = 'beforeActivity'\n    def afterActivityName = 'afterActivity'\n\n    SimpleWorkflowEngine(workflow, context = [:]) {\n        this.context = context\n        parseWorkflow(workflow)\n    }\n\n    def parseWorkflow(workflow) {\n        workflowMap = new WorkflowParser().parse(workflow)\n    }\n\n    def getActivityValue(activity) {\n        assert activity instanceof String\n        if (!workflowMap[activity])\n            throw new RuntimeException(\"$activity activity doesn't exist\")\n        workflowMap[activity]\n    }\n\n    def execute(activity, pause) {\n        if (workflowMap[beforeActivityName]) {\n            getActivityValue(beforeActivityName)(context, activity)\n        }\n\n        def activityValue = getActivityValue(activity)\n\n        // Determine the next activity to execute\n        def nextActivity\n        switch (activityValue) {\n            case String: nextActivity = activityValue; break\n            case Closure: nextActivity = activityValue(context); break\n            case Class: nextActivity = activityValue.newInstance()(context)\n        }\n\n        if (workflowMap[afterActivityName]) {\n            getActivityValue(afterActivityName)(context, activity, nextActivity)\n        }\n\n        if (!pause && nextActivity)\n            call(nextActivity)\n        else\n            nextActivity\n    }\n\n    def call(activity) {\n        execute(activity, false)\n    }\n\n    def nextActivity(activity) {\n        execute(activity, true)\n    }\n\n    static void main(String[] args) {\n        if (args.size() != 2) {\n            println 'Usage: com.odelia.groovy.simpleworkflow.SimpleWorkflowEngine <dsl_filename> <activity_name>'\n            return\n        }\n        SimpleWorkflowEngine.newInstance(new File(args[0]))(args[1])\n    }\n\n}\n\nprivate class WorkflowParser {\n    def map = [:]\n\n    def methodMissing(String name, args) {\n        map[name] = args[0]\n    }\n\n    def parse(Closure wf) {\n        wf.delegate = this\n        wf.resolveStrategy = Closure.DELEGATE_FIRST\n        wf()\n        map\n    }\n\n    def workflow = { it ->\n        it.delegate = this\n        it.resolveStrategy = Closure.DELEGATE_FIRST\n        it()\n    }\n\n    def parse(File workflowDef) {\n        def binding = new Binding([workflow: workflow])\n        def shell = new GroovyShell(binding)\n        shell.evaluate(workflowDef)\n        map\n    }\n}\n\n// comment at \"EOF\"\n",
+    "n:6 :1 n:4 :1 o:1 :1 s2:58 :2 n:6 :1 n:4 :1 o:1 :1 s1:58 :2 c1:74 :2 kn:7 :1 nn:32 :3 kd:5 :1 nc:20 :1 o:1 :5 kt:3 :1 n:11 :1 o:1 :1 o:3 :5 kt:3 :1 n:7 :1 o:1 :1 o:3 :5 kt:3 :1 n:18 :1 o:1 :1 s1:16 :5 kt:3 :1 n:17 :1 o:1 :1 s1:15 :6 n:20 o:1 n:8 o:1 :1 n:7 :1 o:1 :1 o:4 :1 o:1 :9 k:4 o:1 na:7 :1 o:1 :1 n:7 :9 n:13 o:1 n:8 o:1 :5 o:1 :6 kt:3 :1 nf:13 o:1 n:8 o:1 :1 o:1 :9 n:11 :1 o:1 :1 k:3 :1 n:14 o:3 na:5 o:1 n:8 o:1 :5 o:1 :6 kt:3 :1 nf:16 o:1 n:8 o:1 :1 o:1 :9 k:6 :1 n:8 :1 k:10 :1 n:6 :9 nf:2 :1 o:2 n:11 o:1 n:8 o:2 :13 k:5 :1 k:3 :1 nf:16 o:1 s2:34 o:1 :9 n:11 o:1 n:8 o:1 :5 o:1 :6 kt:3 :1 nf:7 o:1 n:8 o:1 :1 n:5 o:1 :1 o:1 :9 k:2 :1 o:1 n:11 o:1 n:18 o:2 :1 o:1 :13 n:16 o:1 n:18 o:2 n:7 o:1 :1 n:8 o:1 :9 o:1 :10 kt:3 :1 n:13 :1 o:1 :1 n:16 o:1 n:8 o:1 :10 c1:41 :9 kt:3 :1 n:12 :9 nf:6 :1 o:1 n:13 o:1 :1 o:1 :13 k:4 :1 nl:7 :1 n:12 :1 o:1 :1 n:13 o:1 :1 k:5 :13 k:4 :1 nl:8 :1 n:12 :1 o:1 :1 n:13 o:1 n:7 o:2 :1 k:5 :13 k:4 :1 nl:6 :1 n:12 :1 o:1 :1 n:13 o:1 na:11 o:3 n:7 o:1 :9 o:1 :10 k:2 :1 o:1 n:11 o:1 n:17 o:2 :1 o:1 :13 n:16 o:1 n:17 o:2 n:7 o:1 :1 n:8 o:1 :1 n:12 o:1 :9 o:1 :10 k:2 :1 o:2 n:5 :1 o:2 :1 n:12 o:1 :13 n:4 o:1 n:12 o:1 :9 k:4 :13 n:12 :5 o:1 :6 kt:3 :1 nf:4 o:1 n:8 o:1 :1 o:1 :9 n:7 o:1 n:8 o:1 :1 kc:5 o:1 :5 o:1 :6 kt:3 :1 nf:12 o:1 n:8 o:1 :1 o:1 :9 n:7 o:1 n:8 o:1 :1 kc:4 o:1 :5 o:1 :6 kd:6 :1 kt:4 :1 nf:4 o:1 n:6 o:2 :1 n:4 o:1 :1 o:1 :9 k:2 :1 o:1 n:4 o:1 na:4 o:2 :1 o:2 :1 mi:1 o:1 :1 o:1 :13 n:7 :1 s1:93 :13 k:6 :9 o:1 :9 n:20 o:1 na:11 o:1 k:3 :1 n:4 o:1 n:4 o:1 mi:1 o:4 n:4 o:1 mi:1 o:2 :5 o:1 :2 o:1 :2 kd:7 :1 kd:5 :1 nc:14 :1 o:1 :5 kt:3 :1 n:3 :1 o:1 :1 o:3 :6 kt:3 :1 nf:13 o:1 n:6 :1 n:4 o:1 :1 n:4 o:1 :1 o:1 :9 n:3 o:1 n:4 o:1 :1 o:1 :1 n:4 o:1 mi:1 o:1 :5 o:1 :6 kt:3 :1 nf:5 o:1 n:7 :1 n:2 o:1 :1 o:1 :9 n:2 o:1 na:8 :1 o:1 :1 k:4 :9 n:2 o:1 na:15 :1 o:1 :1 n:7 o:1 na:14 :9 n:2 o:2 :9 n:3 :5 o:1 :6 kt:3 :1 n:8 :1 o:1 :1 o:1 :1 n:2 :1 o:2 :9 n:2 o:1 na:8 :1 o:1 :1 k:4 :9 n:2 o:1 na:15 :1 o:1 :1 n:7 o:1 na:14 :9 n:2 o:2 :5 o:1 :6 kt:3 :1 nf:5 o:1 n:4 :1 n:11 o:1 :1 o:1 :9 kt:3 :1 n:7 :1 o:1 :1 k:3 :1 n:7 o:2 nl:9 :1 n:8 o:2 :9 kt:3 :1 n:5 :1 o:1 :1 k:3 :1 n:11 o:1 n:7 o:1 :9 n:5 o:1 na:8 o:1 n:11 o:1 :9 n:3 :5 o:1 :1 o:1 :2 c1:19 :1",
+  )
+}
+
+///|
+test "rouge: kotlin: demo" {
+  check_lex(
+    "kotlin", "fun main(args: Array<String>) {\n    println(\"Hello, world!\")\n}\n",
+    "k:3 :1 nf:4 p:1 n:4 p:1 :1 nc:5 p:1 nc:6 p:2 :1 p:1 :5 nf:7 p:1 s:15 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: kotlin: visual sample" {
+  check_lex(
+    "kotlin", "/**\n * Nested\n /**\n  * Comments\n  */\n*/\n\n/**\n * This is a straightforward implementation of The Game of Life\n * See http://en.wikipedia.org/wiki/Conway's_Game_of_Life\n */\npackage life\n\n/*\n * A field where cells live. Effectively immutable\n */\nclass Field(\n        val width: Int,\n        val height: Int,\n        // This function tells the constructor which cells are alive\n        // if init(i, j) is true, the cell (i, j) is alive\n        init: (Int, Int) -> Boolean\n) {\n    private val live: Array<Array<Boolean>> = Array(height) { i -> Array(width) { j -> init(i, j) } }\n\n    private fun liveCount(i: Int, j: Int)\n            = if (i in 0..height - 1 &&\n            j in 0..width - 1 &&\n            live[i][j]) 1 else 0\n\n    // How many neighbors of (i, j) are alive?\n    fun liveNeighbors(i: Int, j: Int) =\n            liveCount(i - 1, j - 1) +\n                    liveCount(i - 1, j) +\n                    liveCount(i - 1, j + 1) +\n                    liveCount(i, j - 1) +\n                    liveCount(i, j + 1) +\n                    liveCount(i + 1, j - 1) +\n                    liveCount(i + 1, j) +\n                    liveCount(i + 1, j + 1)\n\n    // You can say field[i, j], and this function gets called\n    operator fun get(i: Int, j: Int) = live[i][j]\n}\n\n/**\n * This function takes the present state of the field\n * and returns a new field representing the next moment of time\n */\nfun next(field: Field): Field {\n    return Field(field.width, field.height) { i, j ->\n        val n = field.liveNeighbors(i, j)\n        if (field[i, j])\n        // (i, j) is alive\n            n in 2..3 // It remains alive iff it has 2 or 3 neighbors\n        else\n        // (i, j) is dead\n            n == 3 // A new cell is born if there are 3 neighbors alive\n    }\n}\n\n`maven-publish-plugin`\n\n/** A few colony examples here */\nfun main(args: Array<String>) {\n    // Simplistic demo\n    runGameOfLife(\"***\", 3)\n    // \"Star burst\"\n    runGameOfLife(\"\"\"\n        _______\n        ___*___\n        __***__\n        ___*___\n        _______\n    \"\"\", 10)\n    // Stable colony\n    runGameOfLife(\"\"\"\n        _____\n        __*__\n        _*_*_\n        __*__\n        _____\n    \"\"\", 3)\n    // Stable from the step 2\n    runGameOfLife(\"\"\"\n        __**__\n        __**__\n        __**__\n    \"\"\", 3)\n    // Oscillating colony\n    runGameOfLife(\"\"\"\n        __**____\n        __**____\n        ____**__\n        ____**__\n    \"\"\", 6)\n    // A fancier oscillating colony\n    runGameOfLife(\"\"\"\n        -------------------\n        -------***---***---\n        -------------------\n        -----*----*-*----*-\n        -----*----*-*----*-\n        -----*----*-*----*-\n        -------***---***---\n        -------------------\n        -------***---***---\n        -----*----*-*----*-\n        -----*----*-*----*-\n        -----*----*-*----*-\n        -------------------\n        -------***---***---\n        -------------------\n    \"\"\", 10)\n}\n\ndata class Point(x: Float, y: Float)\n\nclass ExampleChild(x: Int): Parent(x) {\n    fun something(): Thing<MyType> {\n        val thisThing = OtherThing(x)\n        return Thing<MyType>()\n    }\n}\n\n// UTILITIES\n\nfun runGameOfLife(fieldText: String, steps: Int) {\n    var field = makeField(fieldText)\n    for (step in 1..steps) {\n        println(\"Step: $step\")\n        for (i in 0..field.height - 1) {\n            for (j in 0..field.width - 1) {\n                print(if (field[i, j]) \"*\" else \" \")\n            }\n            println(\"\")\n        }\n        field = next(field)\n    }\n}\n\nfun makeField(s: String): Field {\n    val lines = s.replace(\" \", \"\").split('\\n').filter({ it.isNotEmpty() })\n    val longestLine = lines.toList().maxBy { it.length } ?: \"\"\n\n    return Field(longestLine.length, lines.size) { i, j -> lines[i][j] == '*' }\n}\n\nfun `backtickedFunction`() {\n    return\n}\n\nfun <T, V> genericFunction() {\n    return\n}\n\nfun String.extensionFunction() {\n    return\n}\n\nfun `String`.`backTickedExtensionFunction`() {\n    return\n}\n\nfun <T, V : Comparable> String.genericExtensionFunction() {\n    return\n}\n\nfun foo(supersedingStuff: List<String>): List<String> {\n    return supersedingStuff.map { it }\n}\n\ninline fun <reified T> membersOf() = T::class.members\npublic interface List<out E> : Collection<E> {}\npublic interface Comparable<in T> {}\n\n@Deprecated(\"This is an annotation\")\nfun anAnnotatedFunction() = {\n}\n\nval (a, b) = pair\n\nloop@ for (i in 1..100) {\n    for (j in 1..100) {\n        if (...) break@loop\n    }\n}\n\nval ints = listOf(1, 4_20, 100L, 123_345_678U)\nval bins = listOf(0b1, 0B0, 0b10_10_01, 0b10U, 0b10uL)\nval hexes = listOf(0xFF, 0Xa, 0x10L, 0X0UL)\nval exponents = listOf(1e10, -1E10F, 1.5e10, 1e-10)\nval doublesAndFloats = listOf(3.14, .99, 22f, 1_000.000_1, 19.95F)\n\n// The ? is not an error #1760\nfun <T : Any> foo(a: Array<T?>): Int = a.size\n\n// The < is not an error #1760\nval <T> T.exhaustive get() = this\n\n// The . in Map.Entry is not an error #1760\nfun foo(props: Iterable<Map.Entry<String, JsonNode>>) =\n    TODO()\n\n// comment at EOF (#797)\n",
+    "cm:39 :2 cm:129 :1 k:7 :1 nn:4 :2 cm:57 :1 kd:5 :1 nc:5 p:1 :9 kd:3 :1 py:5 p:1 :1 nc:3 p:1 :9 kd:3 :1 py:6 p:1 :1 nc:3 p:1 :9 c1:60 :9 c1:50 :9 n:4 p:1 :1 p:1 nc:3 p:1 :1 nc:3 p:1 :1 p:2 :1 nc:7 :1 p:1 :1 p:1 :5 k:7 :1 kd:3 :1 py:4 p:1 :1 nc:5 p:1 nc:5 p:1 nc:7 p:2 :1 p:1 :1 nc:5 p:1 n:6 p:1 :1 p:1 :1 n:1 :1 p:2 :1 nc:5 p:1 n:5 p:1 :1 p:1 :1 n:1 :1 p:2 :1 nf:4 p:1 n:1 p:1 :1 n:1 p:1 :1 p:1 :1 p:1 :6 k:7 :1 k:3 :1 nf:9 p:1 n:1 p:1 :1 nc:3 p:1 :1 n:1 p:1 :1 nc:3 p:1 :13 p:1 :1 k:2 :1 p:1 n:1 :1 k:2 :1 mi:1 o:2 n:6 :1 p:1 :1 mi:1 :1 p:2 :13 n:1 :1 k:2 :1 mi:1 o:2 n:5 :1 p:1 :1 mi:1 :1 p:2 :13 n:4 p:1 n:1 p:2 n:1 p:2 :1 mi:1 :1 k:4 :1 mi:1 :6 c1:42 :5 k:3 :1 nf:13 p:1 n:1 p:1 :1 nc:3 p:1 :1 n:1 p:1 :1 nc:3 p:1 :1 p:1 :13 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 p:1 :1 p:1 :21 nf:9 p:1 n:1 :1 p:1 :1 mi:1 p:1 :1 n:1 :1 p:1 :1 mi:1 p:1 :6 c1:57 :5 k:8 :1 k:3 :1 nf:3 p:1 n:1 p:1 :1 nc:3 p:1 :1 n:1 p:1 :1 nc:3 p:1 :1 p:1 :1 n:4 p:1 n:1 p:2 n:1 p:1 :1 p:1 :2 cm:125 :1 k:3 :1 nf:4 p:1 n:5 p:1 :1 nc:5 p:2 :1 nc:5 :1 p:1 :5 k:6 :1 nc:5 p:1 n:5 p:1 n:5 p:1 :1 n:5 p:1 n:6 p:1 :1 p:1 :1 n:1 p:1 :1 n:1 :1 p:2 :9 kd:3 :1 py:1 :1 p:1 :1 n:5 p:1 nf:13 p:1 n:1 p:1 :1 n:1 p:1 :9 k:2 :1 p:1 n:5 p:1 n:1 p:1 :1 n:1 p:2 :9 c1:18 :13 n:1 :1 k:2 :1 mi:1 o:2 mi:1 :1 c1:47 :9 k:4 :9 c1:17 :13 n:1 :1 p:2 :1 mi:1 :1 c1:52 :5 p:1 :1 p:1 :2 n:22 :2 cm:33 :1 k:3 :1 nf:4 p:1 n:4 p:1 :1 nc:5 p:1 nc:6 p:2 :1 p:1 :5 c1:18 :5 nf:13 p:1 s:5 p:1 :1 mi:1 p:1 :5 c1:15 :5 nf:13 p:1 s:91 p:1 :1 mi:2 p:1 :5 c1:16 :5 nf:13 p:1 s:81 p:1 :1 mi:1 p:1 :5 c1:25 :5 nf:13 p:1 s:56 p:1 :1 mi:1 p:1 :5 c1:21 :5 nf:13 p:1 s:79 p:1 :1 mi:1 p:1 :5 c1:31 :5 nf:13 p:1 s:431 p:1 :1 mi:2 p:1 :1 p:1 :2 kd:10 :1 nc:5 p:1 n:1 p:1 :1 nc:5 p:1 :1 n:1 p:1 :1 nc:5 p:1 :2 kd:5 :1 nc:12 p:1 n:1 p:1 :1 nc:3 p:2 :1 nc:6 p:1 n:1 p:1 :1 p:1 :5 k:3 :1 nf:9 p:3 :1 nc:5 p:1 nc:6 p:1 :1 p:1 :9 kd:3 :1 py:9 :1 p:1 :1 nc:10 p:1 n:1 p:1 :9 k:6 :1 nc:5 p:1 nc:6 p:3 :5 p:1 :1 p:1 :2 c1:12 :2 k:3 :1 nf:13 p:1 n:9 p:1 :1 nc:6 p:1 :1 n:5 p:1 :1 nc:3 p:1 :1 p:1 :5 kd:3 :1 py:5 :1 p:1 :1 nf:9 p:1 n:9 p:1 :5 k:3 :1 p:1 n:4 :1 k:2 :1 mi:1 o:2 n:5 p:1 :1 p:1 :9 nf:7 p:1 s:13 p:1 :9 k:3 :1 p:1 n:1 :1 k:2 :1 mi:1 o:2 n:5 p:1 n:6 :1 p:1 :1 mi:1 p:1 :1 p:1 :13 k:3 :1 p:1 n:1 :1 k:2 :1 mi:1 o:2 n:5 p:1 n:5 :1 p:1 :1 mi:1 p:1 :1 p:1 :17 nf:5 p:1 k:2 :1 p:1 n:5 p:1 n:1 p:1 :1 n:1 p:2 :1 s:3 :1 k:4 :1 s:3 p:1 :13 p:1 :13 nf:7 p:1 s:2 p:1 :9 p:1 :9 n:5 :1 p:1 :1 nf:4 p:1 n:5 p:1 :5 p:1 :1 p:1 :2 k:3 :1 nf:9 p:1 n:1 p:1 :1 nc:6 p:2 :1 nc:5 :1 p:1 :5 kd:3 :1 py:5 :1 p:1 :1 n:1 p:1 nf:7 p:1 s:3 p:1 :1 s:2 p:2 nf:5 p:1 sc:4 p:2 nf:6 p:2 :1 n:2 p:1 nf:10 p:2 :1 p:2 :5 kd:3 :1 py:11 :1 p:1 :1 n:5 p:1 nf:6 p:3 nf:5 :1 p:1 :1 n:2 p:1 n:6 :1 p:1 :1 o:2 :1 s:2 :6 k:6 :1 nc:5 p:1 n:11 p:1 n:6 p:1 :1 n:5 p:1 n:4 p:1 :1 p:1 :1 n:1 p:1 :1 n:1 :1 p:2 :1 n:5 p:1 n:1 p:2 n:1 p:1 :1 p:2 :1 sc:3 :1 p:1 :1 p:1 :2 k:3 :1 nf:20 p:2 :1 p:1 :5 k:6 :1 p:1 :2 k:3 :1 p:1 nc:1 p:1 :1 nc:1 p:1 :1 nf:15 p:2 :1 p:1 :5 k:6 :1 p:1 :2 k:3 :1 nc:6 p:1 nf:17 p:2 :1 p:1 :5 k:6 :1 p:1 :2 k:3 :1 nc:8 p:1 nf:29 p:2 :1 p:1 :5 k:6 :1 p:1 :2 k:3 :1 p:1 nc:1 p:1 :1 nc:1 :1 p:1 :1 nc:10 p:1 :1 nc:6 p:1 nf:24 p:2 :1 p:1 :5 k:6 :1 p:1 :2 k:3 :1 nf:3 p:1 n:16 p:1 :1 nc:4 p:1 nc:6 p:3 :1 nc:4 p:1 nc:6 p:1 :1 p:1 :5 k:6 :1 n:16 p:1 nf:3 :1 p:1 :1 n:2 :1 p:1 :1 p:1 :2 k:6 :1 k:3 :1 p:1 k:7 :1 nc:1 p:1 :1 nf:9 p:2 :1 p:1 :1 nc:1 o:2 k:5 p:1 n:7 :1 k:6 :1 kd:9 :1 nc:4 p:1 k:3 :1 nc:1 p:1 :1 p:1 :1 nc:10 p:1 nc:1 p:1 :1 p:2 :1 k:6 :1 kd:9 :1 nc:10 p:1 k:2 :1 nc:1 p:1 :1 p:2 :2 nd:11 p:1 s:23 p:1 :1 k:3 :1 nf:19 p:2 :1 p:1 :1 p:1 :1 p:1 :2 kd:3 :1 p:1 py:1 p:1 :1 py:1 p:1 :1 p:1 :1 n:4 :2 nd:5 :1 k:3 :1 p:1 n:1 :1 k:2 :1 mi:1 o:2 mi:3 p:1 :1 p:1 :5 k:3 :1 p:1 n:1 :1 k:2 :1 mi:1 o:2 mi:3 p:1 :1 p:1 :9 k:2 :1 p:1 o:2 p:2 :1 k:5 nd:5 :5 p:1 :1 p:1 :2 kd:3 :1 py:4 :1 p:1 :1 nf:6 p:1 mi:1 p:1 :1 mi:4 p:1 :1 mi:4 p:1 :1 mi:12 p:1 :1 kd:3 :1 py:4 :1 p:1 :1 nf:6 p:1 mb:3 p:1 :1 mb:3 p:1 :1 mb:10 p:1 :1 mb:5 p:1 :1 mb:6 p:1 :1 kd:3 :1 py:5 :1 p:1 :1 nf:6 p:1 mh:4 p:1 :1 mh:3 p:1 :1 mh:5 p:1 :1 mh:5 p:1 :1 kd:3 :1 py:9 :1 p:1 :1 nf:6 p:1 mf:4 p:1 :1 p:1 mf:5 p:1 :1 mf:6 p:1 :1 mf:5 p:1 :1 kd:3 :1 py:16 :1 p:1 :1 nf:6 p:1 mf:4 p:1 :1 mf:3 p:1 :1 mf:3 p:1 :1 mf:11 p:1 :1 mf:6 p:1 :2 c1:30 :1 k:3 :1 p:1 nc:1 :1 p:1 :1 nc:3 p:1 :1 nf:3 p:1 n:1 p:1 :1 nc:5 p:1 nc:1 p:4 :1 nc:3 :1 p:1 :1 n:1 p:1 n:4 :2 c1:30 :1 kd:3 :1 p:1 nc:1 p:1 :1 py:1 p:1 n:10 :1 k:3 p:2 :1 p:1 :1 k:4 :2 c1:43 :1 k:3 :1 nf:3 p:1 n:5 p:1 :1 nc:8 p:1 nc:3 p:1 nc:5 p:1 nc:6 p:1 :1 nc:8 p:3 :1 p:1 :5 nc:4 p:2 :2 c1:24 :1",
   )
 }
 
@@ -418,6 +610,22 @@ test "rouge: json-doc: visual sample" {
   check_lex(
     "json-doc", "{\n    // bare keys\n    bareKey: \"Hello\",\n    $: \"Dollar\",\n    foo     : \"Foo\",\n    bar\n\n      : { \"bar\": true }\n\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"age\": 25,\n    \"address\": {\n        \"streetAddress\": \"21 2nd Street\",\n        \"city\": \"New York\",\n        \"state\": \"NY\",\n        \"postalCode\": \"10021\",\n        \"country\": \"US\"\n    },\n    \"ellipsis\": {\n        \"object\": { ... },\n        ...\n        \"list\": [ ... ],\n        \"locations\": {\n            ...\n            \"city\": \"New York\",\n            ...\n            \"postalCode\": \"10021\",\n            ...\n        },\n        \"key\": ...,\n        ...\n    },\n    \"comments\": { // comments\n        \"key\": \"value\", // in\n        \"list\": [\n            // most\n        ], // locations\n        \"key\": \"value\",\n        \"emptyObject\": { // comment\n        }\n    },\n    ...\n    \"errors\": {\n        \"object\": { \"a\", \"b\" }\n    },\n    \"emptyObject\": {} // comment\n}\n",
     "p:1 w:5 c1:12 w:5 na:7 p:1 w:1 s2:7 p:1 w:5 na:1 p:1 w:1 s2:8 p:1 w:5 na:3 :5 p:1 w:1 s2:5 p:1 w:5 na:3 :8 p:1 w:1 p:1 w:1 nl:5 p:1 w:1 kc:4 w:1 p:1 w:6 nl:11 p:1 w:1 s2:6 p:1 w:5 nl:10 p:1 w:1 s2:7 p:1 w:5 nl:5 p:1 w:1 mi:2 p:1 w:5 nl:9 p:1 w:1 p:1 w:9 nl:15 p:1 w:1 s2:15 p:1 w:9 nl:6 p:1 w:1 s2:10 p:1 w:9 nl:7 p:1 w:1 s2:4 p:1 w:9 nl:12 p:1 w:1 s2:7 p:1 w:9 nl:9 p:1 w:1 s2:4 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 c1:3 w:9 nl:6 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 nl:11 p:1 w:1 p:1 w:13 c1:3 w:13 nl:6 p:1 w:1 s2:10 p:1 w:13 c1:3 w:13 nl:12 p:1 w:1 s2:7 p:1 w:13 c1:3 w:9 p:2 w:9 nl:5 p:1 w:1 c1:3 p:1 w:9 c1:3 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:1 c1:11 w:9 nl:5 p:1 w:1 s2:7 p:1 w:1 c1:5 w:9 nl:6 p:1 w:1 p:1 w:13 c1:7 w:9 p:2 w:1 c1:12 w:9 nl:5 p:1 w:1 s2:7 p:1 w:9 nl:13 p:1 w:1 p:1 w:1 c1:10 w:9 p:1 w:5 p:2 w:5 c1:3 w:5 nl:8 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 s2:3 p:1 w:1 s2:3 w:1 p:1 w:5 p:2 w:5 nl:13 p:1 w:1 p:2 w:1 c1:10 w:1 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: protobuf: demo" {
+  check_lex(
+    "protobuf", "message Person {\n  required string name = 1;\n  required int32 id = 2;\n  optional string email = 3;\n}\n",
+    "kd:7 :1 nc:6 :1 p:1 :3 k:8 :1 kt:6 :1 na:4 :1 o:1 :1 mi:1 p:1 :3 k:8 :1 kt:5 :1 na:2 :1 o:1 :1 mi:1 p:1 :3 k:8 :1 kt:6 :1 na:5 :1 o:1 :1 mi:1 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: protobuf: visual sample" {
+  check_lex(
+    "protobuf", "// See README.txt for information and build instructions.\n\npackage tutorial;\n\noption java_package = \"com.example.tutorial\";\noption java_outer_classname = \"AddressBookProtos\";\n\nmessage Person {\n  required string name = 1;\n  required int32 id = 2;        // Unique ID number for this person.\n  optional string email = 3;\n\n  enum PhoneType {\n    MOBILE = 0;\n    HOME = 1;\n    WORK = 2;\n  }\n\n  message PhoneNumber {\n    required string number = 1;\n    optional PhoneType type = 2 [default = HOME];\n  }\n\n  repeated PhoneNumber phone = 4;\n}\n\n// Our address book file is just one of these.\nmessage AddressBook {\n  repeated Person person = 1;\n}\n\n// \n",
+    "c1:57 :2 kn:7 :1 nn:8 p:1 :2 k:6 :1 na:12 :1 o:1 :1 s:22 p:1 :1 k:6 :1 na:20 :1 o:1 :1 s:19 p:1 :2 kd:7 :1 nc:6 :1 p:1 :3 k:8 :1 kt:6 :1 na:4 :1 o:1 :1 mi:1 p:1 :3 k:8 :1 kt:5 :1 na:2 :1 o:1 :1 mi:1 p:1 :8 c1:36 :3 k:8 :1 kt:6 :1 na:5 :1 o:1 :1 mi:1 p:1 :4 kd:4 :1 n:9 :1 p:1 :5 na:6 :1 o:1 :1 mi:1 p:1 :5 na:4 :1 o:1 :1 mi:1 p:1 :5 na:4 :1 o:1 :1 mi:1 p:1 :3 p:1 :4 kd:7 :1 nc:11 :1 p:1 :5 k:8 :1 kt:6 :1 na:6 :1 o:1 :1 mi:1 p:1 :5 k:8 :1 n:9 :1 na:4 :1 o:1 :1 mi:1 :1 p:1 k:7 :1 o:1 :1 n:4 p:2 :3 p:1 :4 k:8 :1 n:11 :1 na:5 :1 o:1 :1 mi:1 p:1 :1 p:1 :2 c1:46 :1 kd:7 :1 nc:11 :1 p:1 :3 k:8 :1 n:6 :1 na:6 :1 o:1 :1 mi:1 p:1 :1 p:1 :2 c1:3 :1",
   )
 }
 
@@ -596,6 +804,38 @@ test "rouge: yaml: targeted" {
 }
 
 ///|
+test "rouge: d: targeted" {
+  check_lex(
+    "d", "auto s = q\"[a[b]c]\";\nauto t = q{ int x = 1; };\n/+ outer /+ inner +/ still +/\nauto u = q\"EOS\nline\nEOS\";\n",
+    "k:4 :1 n:1 :1 p:1 :1 s:10 p:1 :1 k:4 :1 n:1 :1 p:1 :1 s:2 :1 kt:3 :1 n:1 :1 p:1 :1 mi:1 p:1 :1 s:1 p:1 :1 cm:29 :1 k:4 :1 n:1 :1 p:1 :1 s:15 p:1 :1",
+  )
+}
+
+///|
+test "rouge: csharp: targeted" {
+  check_lex(
+    "csharp", "var s = $\"x {1} y {name,10:F2}\";\nvar v = $@\"c:\\{dir}\";\n", "kt:3 :1 n:1 :1 p:1 :1 s:4 p:1 m:1 p:1 s:3 p:1 n:4 p:1 m:2 p:1 n:2 p:1 s:1 p:1 :1 kt:3 :1 n:1 :1 p:1 :1 s:6 p:1 n:3 p:1 s:1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: rust: targeted" {
+  check_lex(
+    "rust", "/** /* nested */ */\nfn main() { let r = r#\"raw \"str\"\"#; }\n", "cd:19 :1 k:2 :1 nf:4 p:2 :1 p:1 :1 k:3 :1 n:1 :1 o:1 :1 s:14 p:1 :1 p:1 :1",
+  )
+}
+
+///|
+test "rouge: c: rouge spec #1" {
+  check_lex("c", "// comment", "c1:10")
+}
+
+///|
+test "rouge: d: rouge spec #1" {
+  check_lex("d", "// comment", "c1:10")
+}
+
+///|
 test "rouge: jsx: rouge spec #1" {
   check_lex(
     "jsx", "<button aria-label=\"hello\"/>", "p:1 nt:6 :1 na:10 p:1 s:7 p:2",
@@ -605,6 +845,16 @@ test "rouge: jsx: rouge spec #1" {
 ///|
 test "rouge: sql: rouge spec #1" {
   check_lex("sql", "-- comment", "c1:10")
+}
+
+///|
+test "rouge: dart: rouge spec #1" {
+  check_lex("dart", "34.3e-7", "mf:7")
+}
+
+///|
+test "rouge: dart: rouge spec #2" {
+  check_lex("dart", "'Line1\\nLine2'", "s:6 se:2 s:6")
 }
 
 ///|
@@ -696,8 +946,226 @@ test "rouge: ruby: rouge spec #10" {
 }
 
 ///|
+test "rouge: rust: rouge spec #1" {
+  check_lex("rust", "123usize", "mi:8")
+}
+
+///|
+test "rouge: rust: rouge spec #2" {
+  check_lex("rust", "1_2_3_isize", "mi:11")
+}
+
+///|
+test "rouge: rust: rouge spec #3" {
+  check_lex("rust", "30_000i128", "mi:10")
+}
+
+///|
+test "rouge: rust: rouge spec #4" {
+  check_lex("rust", "0u128", "mi:5")
+}
+
+///|
+test "rouge: rust: rouge spec #5" {
+  check_lex("rust", "0o5_0_0", "mi:7")
+}
+
+///|
+test "rouge: rust: rouge spec #6" {
+  check_lex("rust", "0.1E4", "mf:5")
+}
+
+///|
+test "rouge: rust: rouge spec #7" {
+  check_lex("rust", "0._1", "mi:1 py:3")
+}
+
+///|
+test "rouge: rust: rouge spec #8" {
+  check_lex("rust", "1.", "mf:2")
+}
+
+///|
+test "rouge: rust: rouge spec #9" {
+  check_lex("rust", "102. ", "mf:4 :1")
+}
+
+///|
+test "rouge: rust: rouge spec #10" {
+  check_lex("rust", "5_000._", "mi:5 py:2")
+}
+
+///|
+test "rouge: rust: rouge spec #11" {
+  check_lex("rust", "_", "n:1")
+}
+
+///|
+test "rouge: rust: rouge spec #12" {
+  check_lex("rust", "_0", "n:2")
+}
+
+///|
+test "rouge: rust: rouge spec #13" {
+  check_lex("rust", "garçon", "n:6")
+}
+
+///|
+test "rouge: rust: rouge spec #14" {
+  check_lex("rust", "Москва.東京", "n:6 py:3")
+}
+
+///|
+test "rouge: rust: rouge spec #15" {
+  check_lex("rust", "東京", "n:2")
+}
+
+///|
+test "rouge: rust: rouge spec #16" {
+  check_lex("rust", "b'1'", "sc:4")
+}
+
+///|
+test "rouge: rust: rouge spec #17" {
+  check_lex("rust", "b'\\xff'", "sc:7")
+}
+
+///|
+test "rouge: rust: rouge spec #18" {
+  check_lex("rust", "b\"abc\\xffdef\"", "s:5 se:4 s:4")
+}
+
+///|
+test "rouge: rust: rouge spec #19" {
+  check_lex("rust", "br##\"ab\"c\\xffd\"#ef\"##", "s:21")
+}
+
+///|
+test "rouge: rust: rouge spec #20" {
+  check_lex("rust", "// single line", "c1:14")
+}
+
+///|
+test "rouge: rust: rouge spec #21" {
+  check_lex("rust", "/// line-style docs (outer)", "cd:27")
+}
+
+///|
+test "rouge: rust: rouge spec #22" {
+  check_lex("rust", "//! line-style docs (inner)", "cd:27")
+}
+
+///|
+test "rouge: rust: rouge spec #23" {
+  check_lex("rust", "//// not a doc anymore", "c1:22")
+}
+
+///|
+test "rouge: rust: rouge spec #24" {
+  check_lex("rust", "///! still doc (but not inner, not that we care)", "cd:48")
+}
+
+///|
+test "rouge: rust: rouge spec #25" {
+  check_lex("rust", "////! plain again", "c1:17")
+}
+
+///|
+test "rouge: rust: rouge spec #26" {
+  check_lex("rust", "1 /**/ 2", "mi:1 :1 cm:4 :1 mi:1")
+}
+
+///|
+test "rouge: rust: rouge spec #27" {
+  check_lex("rust", "1 /***/ 2", "mi:1 :1 cm:5 :1 mi:1")
+}
+
+///|
+test "rouge: rust: rouge spec #28" {
+  check_lex("rust", "/** outer docs */", "cd:17")
+}
+
+///|
+test "rouge: rust: rouge spec #29" {
+  check_lex("rust", "/*! inner docs */", "cd:17")
+}
+
+///|
+test "rouge: rust: rouge spec #30" {
+  check_lex("rust", "/*** not docs */", "cm:16")
+}
+
+///|
+test "rouge: rust: rouge spec #31" {
+  check_lex("rust", "1 /* /* /* nested */ */ */ 2", "mi:1 :1 cm:24 :1 mi:1")
+}
+
+///|
+test "rouge: rust: rouge spec #32" {
+  check_lex(
+    "rust", "1 /** /* /* doc nested */ */ */ 2", "mi:1 :1 cd:29 :1 mi:1",
+  )
+}
+
+///|
+test "rouge: rust: rouge spec #33" {
+  check_lex(
+    "rust", "1 /* /** /* not doc, still nested */ */ */ 2", "mi:1 :1 cm:40 :1 mi:1",
+  )
+}
+
+///|
+test "rouge: rust: rouge spec #34" {
+  check_lex(
+    "rust", "/**/// this is still commented\n\"this is not\"", "cm:4 c1:26 :1 s:13",
+  )
+}
+
+///|
+test "rouge: rust: rouge spec #35" {
+  check_lex("rust", "/* /*/ / * // */ */ \"tricky\"", "cm:19 :1 s:8")
+}
+
+///|
+test "rouge: rust: rouge spec #36" {
+  check_lex(
+    "rust", "/*! abcd /* ef */\n/**/ //! /***/ // */ \"uncommented\"", "cd:38 :1 s:13",
+  )
+}
+
+///|
+test "rouge: rust: rouge spec #37" {
+  check_lex("rust", "8/**//4", "mi:1 cm:4 o:1 mi:1")
+}
+
+///|
+test "rouge: rust: rouge spec #38" {
+  check_lex("rust", "\"abc\\u{0}def\"", "s:4 se:5 s:4")
+}
+
+///|
+test "rouge: rust: rouge spec #39" {
+  check_lex("rust", "\"abc\\u{FDFD}def\"", "s:4 se:8 s:4")
+}
+
+///|
+test "rouge: rust: rouge spec #40" {
+  check_lex("rust", "'\\u{10ffff}'", "sc:12")
+}
+
+///|
+test "rouge: rust: rouge spec #41" {
+  check_lex("rust", "'\\u{f_f___f_f}'", "sc:15")
+}
+
+///|
 test "rouge: nginx: rouge spec #1" {
   check_lex("nginx", "# comment", "c1:9")
+}
+
+///|
+test "rouge: scala: rouge spec #1" {
+  check_lex("scala", "// comment", "c1:10")
 }
 
 ///|
@@ -713,6 +1181,21 @@ test "rouge: apache: rouge spec #2" {
 ///|
 test "rouge: apache: rouge spec #3" {
   check_lex("apache", "# comment", "c:9")
+}
+
+///|
+test "rouge: kotlin: rouge spec #1" {
+  check_lex("kotlin", "// comment", "c1:10")
+}
+
+///|
+test "rouge: kotlin: rouge spec #2" {
+  check_lex("kotlin", "label@", "nd:6")
+}
+
+///|
+test "rouge: kotlin: rouge spec #3" {
+  check_lex("kotlin", "break@label", "k:5 nd:6")
 }
 
 ///|
@@ -758,7 +1241,19 @@ test "rouge: console: rouge spec #8" {
 }
 
 ///|
-test "rouge: sql: source_spec #1" {
+test "rouge: protobuf: rouge spec #1" {
+  check_lex("protobuf", "// comment", "c1:10")
+}
+
+///|
+test "rouge: c: source_spec #1" {
+  check_lex(
+    "c", "int main() {\n\\tevent_loop();\n\\treturn 0;\n}", "kt:3 :1 nf:4 p:2 :1 p:1 :1 err:1 n:11 p:3 :1 err:1 n:7 :1 mi:1 p:1 :1 p:1",
+  )
+}
+
+///|
+test "rouge: sql: source_spec #2" {
   check_lex(
     "sql", "SELECT\n\\tname,\\t firstname,\\t\\tlastname\nFROM\n\\tusers\nWHERE\n\\tusername\\t=\\t'foobar'",
     "k:6 :1 err:1 n:5 p:1 err:1 n:1 :1 n:9 p:1 err:1 n:1 err:1 n:9 :1 k:4 :1 err:1 n:6 :1 k:5 :1 err:1 n:9 err:1 n:1 o:1 err:1 n:1 s1:8",
@@ -766,12 +1261,12 @@ test "rouge: sql: source_spec #1" {
 }
 
 ///|
-test "rouge: console?prompt=%: source_spec #2" {
+test "rouge: console?prompt=%: source_spec #3" {
   check_lex("console?prompt=%", "% bundle", "gp:1 w:1 :6")
 }
 
 ///|
-test "rouge: js: source_spec #3" {
+test "rouge: js: source_spec #4" {
   check_lex(
     "js", "'use strict'\nconst TAG_ALL_RX = /<[^>]+>/g\nmodule.exports = (html) => html && html.replace(TAG_ALL_RX, '')",
     "dl:1 s1:10 dl:1 :1 kd:5 :1 nx:10 :1 o:1 :1 sr:2 se:2 sr:1 se:1 sr:4 :1 nx:6 p:1 nx:7 :1 o:1 :1 p:1 nx:4 p:1 :1 o:2 :1 nx:4 :1 o:2 :1 nx:4 p:1 nx:7 p:1 nx:10 p:1 :1 dl:2 p:1",
@@ -779,26 +1274,34 @@ test "rouge: js: source_spec #3" {
 }
 
 ///|
-test "rouge: console: source_spec #4" {
+test "rouge: console: source_spec #5" {
   check_lex(
     "console", "$ cd application-name\\bin\\", "gp:1 w:1 nb:3 :16 se:2 k:2 se:1",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #5" {
+test "rouge: ruby: source_spec #6" {
   check_lex("ruby", "puts 'yo, world!'", "nb:4 :1 s1:12")
 }
 
 ///|
-test "rouge: ruby: source_spec #6" {
+test "rouge: ruby: source_spec #7" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\nend", "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :1 k:3",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #7" {
+test "rouge: d: source_spec #8" {
+  check_lex(
+    "d", "int #line 6 \"pkg/mod.d\"\nx; // this is now line 6 of file pkg/mod.d",
+    "kt:3 :1 cs:20 n:1 p:1 :1 c1:39",
+  )
+}
+
+///|
+test "rouge: ruby: source_spec #9" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\n  def drink\n    puts 'aaaaaaaaah'\n  end\nend",
     "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :3 k:3 :1 nf:5 :5 nb:4 :1 s1:12 :3 k:3 :1 k:3",
@@ -806,22 +1309,22 @@ test "rouge: ruby: source_spec #7" {
 }
 
 ///|
-test "rouge: ruby: source_spec #8" {
+test "rouge: ruby: source_spec #10" {
   check_lex("ruby", "puts 'string'", "nb:4 :1 s1:8")
 }
 
 ///|
-test "rouge: ruby: source_spec #9" {
+test "rouge: ruby: source_spec #11" {
   check_lex("ruby", "puts \"Hello, World!\"", "nb:4 :1 s2:15")
 }
 
 ///|
-test "rouge: ruby: source_spec #10" {
+test "rouge: ruby: source_spec #12" {
   check_lex("ruby", "class Type; end", "k:5 :1 nc:4 p:1 :1 k:3")
 }
 
 ///|
-test "rouge: diff: source_spec #11" {
+test "rouge: diff: source_spec #13" {
   check_lex(
     "diff", "--- /tmp/list1.txt\n+++ /tmp/list2.txt\n@@ -1,4 +1,4 @@\n apples\n-oranges\n kiwis\n carrots\n+grapefruits",
     "gd:19 gi:19 p:15 :9 gd:9 :16 gi:12",
@@ -829,12 +1332,12 @@ test "rouge: diff: source_spec #11" {
 }
 
 ///|
-test "rouge: diff: source_spec #12" {
+test "rouge: diff: source_spec #14" {
   check_lex("diff", "-oranges\n+grapefruits", "gd:9 gi:12")
 }
 
 ///|
-test "rouge: xml: source_spec #14" {
+test "rouge: xml: source_spec #16" {
   check_lex(
     "xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url>\n    <loc>https://example.org/home.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n  <url>\n    <loc>https://example.org/about.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n</urlset>",
     "cp:38 :1 nt:7 :1 na:6 s:45 nt:1 :3 nt:5 :5 nt:5 :29 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :3 nt:5 :5 nt:5 :30 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :1 nt:9",
@@ -842,29 +1345,53 @@ test "rouge: xml: source_spec #14" {
 }
 
 ///|
-test "rouge: xml: source_spec #15" {
+test "rouge: xml: source_spec #17" {
   check_lex("xml", "puts 'Hello, World!'", ":20")
 }
 
 ///|
-test "rouge: yaml: source_spec #17" {
+test "rouge: yaml: source_spec #19" {
   check_lex(
     "yaml", "foo: 'bar'\nkey: 'value'\n<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 s:3",
   )
 }
 
 ///|
-test "rouge: text: source_spec #18" {
+test "rouge: text: source_spec #20" {
   check_lex("text", "foo\nbar\nbaz", ":11")
 }
 
 ///|
-test "rouge: text: source_spec #20" {
+test "rouge: c: source_spec #21" {
+  check_lex(
+    "c", "/**\n * A program that prints \"Hello, World!\"\n **/\n#include <stdio.h>\nint main(void) {\n  printf(\"Hello, World!\\n\");\n  return 0;\n}",
+    "cm:49 :1 cp:8 :1 cpf:9 cp:1 kt:3 :1 nf:4 p:1 kt:4 p:1 :1 p:1 :3 n:6 p:1 s:14 se:2 s:1 p:2 :3 k:6 :1 mi:1 p:1 :1 p:1",
+  )
+}
+
+///|
+test "rouge: c: source_spec #23" {
+  check_lex(
+    "c", "#include <stdio.h>\nint main(void) {\n  printf(\"Hello, World!\\n\");\n  return 0;\n}",
+    "cp:8 :1 cpf:9 cp:1 kt:3 :1 nf:4 p:1 kt:4 p:1 :1 p:1 :3 n:6 p:1 s:14 se:2 s:1 p:2 :3 k:6 :1 mi:1 p:1 :1 p:1",
+  )
+}
+
+///|
+test "rouge: groovy: source_spec #24" {
+  check_lex(
+    "groovy", "ratpack {\n    handlers {\n        get {\n            render '''|Hello,\n                      |World!'''.stripMargin()\n        }\n    }\n}",
+    "n:7 :1 o:1 :5 n:8 :1 o:1 :9 n:3 :1 o:1 :13 n:6 :1 s1:43 o:1 na:11 o:2 :9 o:1 :5 o:1 :1 o:1",
+  )
+}
+
+///|
+test "rouge: text: source_spec #26" {
   check_lex("text", "  indented line", ":15")
 }
 
 ///|
-test "rouge: text: source_spec #21" {
+test "rouge: text: source_spec #28" {
   check_lex(
     "text", "Here we go again here we go again here we go again here we go again here we go again Here we go again",
     ":101",
@@ -872,7 +1399,7 @@ test "rouge: text: source_spec #21" {
 }
 
 ///|
-test "rouge: xml: source_spec #22" {
+test "rouge: xml: source_spec #29" {
   check_lex(
     "xml", "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n  <modelVersion>4.0.0</modelVersion>\n</project>",
     "nt:8 :1 na:6 s:35 :1 na:10 s:43 :1 na:19 s:79 nt:1 :3 nt:14 :5 nt:15 :1 nt:10",
@@ -880,12 +1407,12 @@ test "rouge: xml: source_spec #22" {
 }
 
 ///|
-test "rouge: ruby: source_spec #26" {
+test "rouge: ruby: source_spec #33" {
   check_lex("ruby", "puts 'Hello, CodeRay!'", "nb:4 :1 s1:17")
 }
 
 ///|
-test "rouge: sass: source_spec #27" {
+test "rouge: sass: source_spec #34" {
   check_lex(
     "sass", "$icon-font-path: \"node_modules/package-name/icon-fonts/\";\nbody {\n  background: #fafafa;\n}",
     "nv:15 p:1 :1 s2:39 err:1 :1 nt:4 :1 err:1 :3 nl:10 p:1 :1 mh:7 err:1 :1 err:1",
@@ -893,43 +1420,43 @@ test "rouge: sass: source_spec #27" {
 }
 
 ///|
-test "rouge: yaml: source_spec #29" {
+test "rouge: yaml: source_spec #36" {
   check_lex(
     "yaml", "category:\n  hash:\n    key: \"value\"", "na:8 pi:1 :3 na:4 pi:1 :5 na:3 pi:1 :1 s2:1 s:6",
   )
 }
 
 ///|
-test "rouge: xml: source_spec #30" {
+test "rouge: xml: source_spec #38" {
   check_lex(
     "xml", "<tag <1>\n  attr=\"value\">\n  content\n</tag>", "nt:4 :1 err:2 nt:1 :27 nt:6",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #31" {
+test "rouge: ruby: source_spec #39" {
   check_lex("ruby", "", "")
 }
 
 ///|
-test "rouge: ruby: source_spec #32" {
+test "rouge: ruby: source_spec #40" {
   check_lex("ruby", "puts \"Hello, Pygments!\"", "nb:4 :1 s2:18")
 }
 
 ///|
-test "rouge: xml: source_spec #33" {
+test "rouge: xml: source_spec #41" {
   check_lex("xml", "<payload>&amp;</payload>", "nt:9 ni:5 nt:10")
 }
 
 ///|
-test "rouge: yaml: source_spec #38" {
+test "rouge: yaml: source_spec #47" {
   check_lex(
     "yaml", "foo: 'bar'\nkey: 'value' #<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 c1:4",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #39" {
+test "rouge: ruby: source_spec #48" {
   check_lex(
     "ruby", "# Matches a hex color value like #FF0000\nif /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend",
     "c1:40 :1 k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
@@ -937,48 +1464,56 @@ test "rouge: ruby: source_spec #39" {
 }
 
 ///|
-test "rouge: ruby: source_spec #40" {
+test "rouge: ruby: source_spec #49" {
   check_lex(
     "ruby", "if /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend", "k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
   )
 }
 
 ///|
-test "rouge: text: source_spec #47" {
+test "rouge: groovy: source_spec #54" {
+  check_lex(
+    "groovy", "package com.example\nimport static ratpack.groovy.Groovy.ratpack\nratpack {\n    handlers {\n        get {\n            render \"Hello, World!\"\n        }\n    }\n}",
+    "kn:7 :1 nn:11 :1 kn:6 :1 nn:6 :1 n:7 o:1 na:6 o:1 na:6 o:1 na:7 :1 n:7 :1 o:1 :5 n:8 :1 o:1 :9 n:3 :1 o:1 :13 n:6 :1 s2:15 :9 o:1 :5 o:1 :1 o:1",
+  )
+}
+
+///|
+test "rouge: text: source_spec #57" {
   check_lex("text", "  lead space\nflush\n  lead space", ":31")
 }
 
 ///|
-test "rouge: ruby: source_spec #48" {
+test "rouge: ruby: source_spec #58" {
   check_lex("ruby", "<1>", "o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: xml: source_spec #49" {
+test "rouge: xml: source_spec #59" {
   check_lex(
     "xml", "<root>\n  <child>content</child>\n</root>", "nt:6 :3 nt:7 :7 nt:8 :1 nt:7",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #51" {
+test "rouge: ruby: source_spec #61" {
   check_lex("ruby", "source = %(before\n\\<1>\nafter)", "n:6 :1 o:1 :1 sx:20")
 }
 
 ///|
-test "rouge: ruby: source_spec #52" {
+test "rouge: ruby: source_spec #62" {
   check_lex(
     "ruby", "source = %(before\nnot a conum <1>\nafter)", "n:6 :1 o:1 :1 sx:31",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #53" {
+test "rouge: ruby: source_spec #63" {
   check_lex("ruby", "puts 'Hello, World' <1>", "nb:4 :1 s1:14 :1 o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: java: source_spec #55" {
+test "rouge: java: source_spec #65" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1><2>\n  String getDob();\n  int getAge(); // <3><4><5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:9 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:12 :1 o:1",
@@ -986,7 +1521,7 @@ test "rouge: java: source_spec #55" {
 }
 
 ///|
-test "rouge: java: source_spec #56" {
+test "rouge: java: source_spec #66" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1> <2>\n  String getDob();\n  int getAge(); // <3> <4> <5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:10 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:14 :1 o:1",
@@ -994,7 +1529,7 @@ test "rouge: java: source_spec #56" {
 }
 
 ///|
-test "rouge: java: source_spec #57" {
+test "rouge: java: source_spec #67" {
   check_lex(
     "java", "public interface Person {\n  String getName(); <1>\n  String getDob(); <2>\n  int getAge(); <3>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 mi:1 o:1 :3 nc:6 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :3 kt:3 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :1 o:1",
@@ -1002,7 +1537,7 @@ test "rouge: java: source_spec #57" {
 }
 
 ///|
-test "rouge: java: source_spec #58" {
+test "rouge: java: source_spec #68" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:6 :1 o:1",
@@ -1010,7 +1545,7 @@ test "rouge: java: source_spec #58" {
 }
 
 ///|
-test "rouge: java: source_spec #59" {
+test "rouge: java: source_spec #69" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.> <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:10 :1 o:1",
@@ -1018,14 +1553,14 @@ test "rouge: java: source_spec #59" {
 }
 
 ///|
-test "rouge: java: source_spec #60" {
+test "rouge: java: source_spec #70" {
   check_lex(
     "java", "public interface Person {\n  String getName();\n}  <1>", "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 :2 o:1 mi:1 o:1",
   )
 }
 
 ///|
-test "rouge: apache: source_spec #61" {
+test "rouge: apache: source_spec #71" {
   check_lex(
     "apache", "<Directory /usr/share/httpd/noindex>\n    AllowOverride None <1>\n    Require all granted\n</Directory>",
     "p:1 nl:9 sr:25 p:2 :4 nc:13 :1 ss:4 :9 nc:7 :1 ss:3 :9 p:2 nl:9 p:1",

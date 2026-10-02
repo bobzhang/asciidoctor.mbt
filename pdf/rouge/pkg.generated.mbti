@@ -13,13 +13,23 @@ pub fn apache(Map[String, String]) -> Lexer
 
 pub fn batchfile(Map[String, String]) -> Lexer
 
+pub fn c(Map[String, String]) -> Lexer
+
 pub fn coffeescript(Map[String, String]) -> Lexer
 
 pub fn conf(Map[String, String]) -> Lexer
 
 pub fn console(Map[String, String]) -> Lexer
 
+pub fn cpp(Map[String, String]) -> Lexer
+
+pub fn csharp(Map[String, String]) -> Lexer
+
 pub fn css(Map[String, String]) -> Lexer
+
+pub fn d(Map[String, String]) -> Lexer
+
+pub fn dart(Map[String, String]) -> Lexer
 
 pub fn diff(Map[String, String]) -> Lexer
 
@@ -30,6 +40,12 @@ pub fn erb(Map[String, String]) -> Lexer
 pub fn find(String) -> ((Map[String, String]) -> Lexer)?
 
 pub fn find_fancy(String) -> Lexer?
+
+pub fn go(Map[String, String]) -> Lexer
+
+pub fn gradle(Map[String, String]) -> Lexer
+
+pub fn groovy(Map[String, String]) -> Lexer
 
 pub fn group_text(@regex.MatchData, Int) -> String
 
@@ -53,6 +69,8 @@ pub fn json_doc(Map[String, String]) -> Lexer
 
 pub fn jsx(Map[String, String]) -> Lexer
 
+pub fn kotlin(Map[String, String]) -> Lexer
+
 pub fn lexer_tags() -> Array[String]
 
 pub fn lookup_fancy(String) -> (((Map[String, String]) -> Lexer)?, Map[String, String])
@@ -69,13 +87,19 @@ pub fn powershell(Map[String, String]) -> Lexer
 
 pub fn properties(Map[String, String]) -> Lexer
 
+pub fn protobuf(Map[String, String]) -> Lexer
+
 pub fn ruby(Map[String, String]) -> Lexer
+
+pub fn rust(Map[String, String]) -> Lexer
 
 pub fn rx(String, flags? : String) -> String
 
 pub fn rx_escape(String) -> String
 
 pub fn sass(Map[String, String]) -> Lexer
+
+pub fn scala(Map[String, String]) -> Lexer
 
 pub fn scss(Map[String, String]) -> Lexer
 
@@ -84,6 +108,8 @@ pub fn shell(Map[String, String]) -> Lexer
 pub fn shortname(String) -> String?
 
 pub fn sql(Map[String, String]) -> Lexer
+
+pub fn swift(Map[String, String]) -> Lexer
 
 pub fn token_parent(String) -> String?
 
