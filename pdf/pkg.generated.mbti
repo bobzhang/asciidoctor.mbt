@@ -28,6 +28,9 @@ pub let ruby_version : String
 pub let version : String
 
 // Errors
+pub(all) suberror TemplateError {
+  TemplateError(String)
+}
 
 // Types and methods
 

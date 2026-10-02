@@ -89,6 +89,21 @@ fn document_hooks() -> Hooks {
         }
       })
     },
+    // the alt text of an inline image the arranger drops was inked: it
+    // warns, once (InlineImageArranger logs it as it arranges the line)
+    fragment_inked: index => {
+      with_session(session, () => {
+        match session.inline_images.get(index) {
+          Some(
+            { dropped: Some((_, message, node)), warned: false, .. } as image
+          ) => {
+            image.warned = true
+            warning(message, node)
+          }
+          _ => ()
+        }
+      })
+    },
     anchor_inked: (name, page) => {
       with_session(session, () => {
         if name.has_prefix("__indexterm-") {

@@ -398,7 +398,16 @@ fn Converter::ink_running_content(
   let flow = self.flow
   let pages = flow.model.pages
   let num_pages = pages.length()
-  if skip_pages >= num_pages {
+  // nothing when every page from there on is imported (the first page that
+  // is not is the model page)
+  let content_pages = for i in skip_pages..<num_pages {
+    if !self.imported_pages.contains(i) {
+      break true
+    }
+  } nobreak {
+    false
+  }
+  if !content_pages {
     return
   }
   let by_page = self.sections_by_page(periphery, num_pages, body_start)
@@ -457,7 +466,8 @@ fn Converter::ink_running_content(
     .unwrap_or([])
   for index in skip_pages..<num_pages {
     let pgnum = index + 1
-    if disable_on_pages.contains(pgnum) {
+    // nothing goes on an imported page
+    if disable_on_pages.contains(pgnum) || self.imported_pages.contains(index) {
       continue
     }
     let virtual_pgnum = pgnum - skip_pagenums

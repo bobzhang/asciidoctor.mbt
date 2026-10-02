@@ -381,6 +381,7 @@ fn Converter::admonition_icon_image(
         vposition: "center",
         link: None,
         alt: None,
+        pdf_page: None,
       })
     None => {
       warning(

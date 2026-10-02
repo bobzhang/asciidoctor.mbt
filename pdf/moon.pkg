@@ -7,6 +7,7 @@ import {
   "bobzhang/prawn/svg",
   "bobzhang/prawn/table",
   "moonbitlang/pagelayout/pdf",
+  "moonbitlang/pdflite",
   "moonbitlang/core/string",
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",
@@ -20,6 +21,7 @@ import {
   "moonbitlang/pagelayout/fontoutlines",
   "moonbitlang/pdflite",
   "bobzhang/asciidoctor-pdf/fonts/icons",
+  "moonbitlang/pdflite/core" @pdfcore,
 } for "wbtest"
 
 import {

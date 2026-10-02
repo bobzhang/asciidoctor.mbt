@@ -109,17 +109,18 @@ The converter follows asciidoctor-pdf 2.3.27's converter and theme loader: every
 custom YAML themes (`extends`, variables, math, colors, `pdf-themesdir`, `pdf-fontsdir`), title
 page, table of contents, sections and parts, running headers and footers, paragraphs and inline
 formatting, lists (including checklists and callouts), tables, admonitions, quotes, verses,
-sidebars, examples, listings and literals, images (PNG, JPEG, SVG), font icons, footnotes, index,
-links and cross references, outline (bookmarks), page backgrounds and watermarks, page breaks,
-`media=print`/`prepress`, manpage and book doctypes, and the PDF info (title, author, dates,
-`SOURCE_DATE_EPOCH`).
+sidebars, examples, listings and literals, images (PNG, JPEG, SVG, and PDF: `image::x.pdf[page=2]`
+imports the page on a page of its own, as do PDF covers and page backgrounds), font icons,
+footnotes, index, links and cross references, outline (bookmarks), page backgrounds and
+watermarks, page breaks, `media=print`/`prepress`, manpage and book doctypes, and the PDF info
+(title, author, dates, `SOURCE_DATE_EPOCH`).
 
 It is measured against Ruby asciidoctor-pdf 2.3.27 by `scripts/pdf_compare.mbtx` in the
 repository, which converts with both and compares page count, text, the position of every word
 (±1pt), rasterized pages and PDF structure:
 
 * the gate (36 documents covering every feature above): 36 / 36 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 1978 / 2329 pass (the rest are listed with
+* the conversions of asciidoctor-pdf's own RSpec suite: 2011 / 2329 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
@@ -127,8 +128,11 @@ repository, which converts with both and compares page count, text, the position
 
 * No source highlighting: `source-highlighter` (Rouge, Pygments, CodeRay) is ignored and listings
   are set in plain text.
-* AsciiDoc table cells (`a|`), video poster images, GIF/BMP/TIFF and PDF images (`image::x.pdf[]`)
-  are not rendered; image icons (`icons` other than `font`) show their alt text.
+* AsciiDoc table cells (`a|`), video poster images and GIF/BMP/TIFF images are not rendered;
+  image icons (`icons` other than `font`) show their alt text.
+* A PDF page imported as an image keeps its drawing but not its links or other annotations.
+  Ruby gives the pages after a PDF front cover that cannot be imported, or after a PDF background
+  on the first page, Prawn's default 36pt margins; this port keeps the theme's.
 * A few theme keys are ignored: `abstract_padding`, caption backgrounds,
   `heading_min_height_after: auto`, `footnotes-title`.
 * SVG text in a font the theme's catalog does not have is set in the base font.
