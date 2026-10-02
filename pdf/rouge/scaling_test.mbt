@@ -1,8 +1,7 @@
 ///|
-/// The milliseconds lexing `unit` repeated to `kb` kilobytes takes with the
-/// lexer of `lang`, checking that the tokens add up to the input.
-fn lex_time(lang : String, unit : String, kb : Int) -> Int raise {
-  let text = unit.repeat(kb * 1024 / unit.length())
+/// The milliseconds lexing `text` takes with the lexer of `lang`, checking
+/// that the tokens add up to the input.
+fn lex_time(lang : String, text : String) -> Int raise {
   let lexer = @rouge.find(lang).unwrap()(Map([]))
   let start = @env.now()
   let tokens = lexer.tokens(text)
@@ -12,15 +11,21 @@ fn lex_time(lang : String, unit : String, kb : Int) -> Int raise {
 }
 
 ///|
-/// Whether lexing grows linearly: four times the input takes at most eight
-/// times as long, give or take 50 ms of noise. A quadratic lexer takes
-/// sixteen times as long.
-fn assert_linear(lang : String, unit : String) -> Unit raise {
-  let small = lex_time(lang, unit, 16)
-  let large = lex_time(lang, unit, 64)
+/// Whether lexing grows linearly: the input `make` builds for 64 KB takes
+/// at most eight times as long as the one for 16 KB, give or take 50 ms of
+/// noise. A quadratic lexer takes sixteen times as long.
+fn assert_linear_with(lang : String, make : (Int) -> String) -> Unit raise {
+  let small = lex_time(lang, make(16 * 1024))
+  let large = lex_time(lang, make(64 * 1024))
   if large > 8 * small + 50 {
     fail("\{lang}: 16 KB in \{small} ms, 64 KB in \{large} ms: not linear")
   }
+}
+
+///|
+/// `assert_linear_with` for `unit` repeated.
+fn assert_linear(lang : String, unit : String) -> Unit raise {
+  assert_linear_with(lang, size => unit.repeat(size / unit.length()))
 }
 
 ///|
@@ -36,11 +41,22 @@ test "lexing takes linear time" {
 /// identifier.
 test "Java identifiers without a signature take linear time" {
   assert_linear("java", "a ")
+  assert_linear("java", "\n")
+  // the run ends in `(`, but no signature matches: a number before it
+  assert_linear_with("java", size => "a ".repeat(size / 2) + "1(")
+  // a signature at the end of a long run
+  assert_linear_with("java", size => "a ".repeat(size / 2) + "f(")
 }
 
 ///|
 /// Ruby's heredoc queue is shifted by moving its head, not by removing its
-/// first element.
+/// first element: many heredocs opened on one line, then their bodies.
 test "many heredocs take linear time" {
   assert_linear("ruby", "f(<<A, <<B)\nx\nA\ny\nB\n")
+  assert_linear_with("ruby", size => {
+    let n = size / 16
+    let heads = Array::makei(n, i => "<<H\{i}").join(", ")
+    let bodies = Array::makei(n, i => "x\nH\{i}\n").join("")
+    "f(\{heads})\n\{bodies}"
+  })
 }

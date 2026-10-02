@@ -145,17 +145,42 @@ end
 
 # the source blocks of asciidoctor-pdf's specs whose language is a lexer of
 # TAG... (with their cgi-style options)
+#
+# The source blocks of a spec file: [language, body] pairs, the body without
+# the block's indentation. The first closing fence ends a block, an empty
+# one too.
+def source_blocks src
+  blocks = []
+  src.scan(/^( *)\[source,([^\]\n,]+)[^\]\n]*\]\n\1(-{4,})\n(?:(.*?)\n)??\1\3$/m) do |indent, lang, _, body|
+    body = (body || '').lines.map {|l| l.start_with?(indent) ? l[indent.length..] : l.lstrip }.join
+    blocks << [lang, body]
+  end
+  blocks
+end
+
+# checked on every run: an empty block ends at its own closing fence, and
+# leaves the block next to it whole
+extractor_sample = <<~'EOS'
+  [source,ruby]
+  ----
+  ----
+
+    [source,yaml]
+    ----
+    a: 1
+    ----
+EOS
+unless (got = source_blocks extractor_sample) == [['ruby', ''], ['yaml', 'a: 1']]
+  abort %(harvest.rb: the source block extractor is broken: #{got.inspect})
+end
+
 wanted = tags.map {|t| Rouge::Lexer.find(t) }.to_set
 Dir[File.join(spec_dir, '*_spec.rb')].sort.each do |file|
-  src = File.read file, mode: 'r:UTF-8'
   n = 0
-  # the first closing fence ends a block, an empty one too
-  src.scan(/^( *)\[source,([^\]\n,]+)[^\]\n]*\]\n\1(-{4,})\n(?:(.*?)\n)??\1\3$/m) do |indent, lang, _, body|
-    body ||= ''
+  (source_blocks File.read file, mode: 'r:UTF-8').each do |lang, body|
     lexer_class = (Rouge::Lexer.lookup_fancy lang)[0] rescue nil
     next unless wanted.include? lexer_class
     next if body.include? '#{'
-    body = body.lines.map {|l| l.start_with?(indent) ? l[indent.length..] : l.lstrip }.join
     add.call %(#{lang}: #{File.basename file, '.rb'} ##{n += 1}), lang, body
   end
 end

@@ -130,3 +130,65 @@ test "delegating to an instance keeps its state, to a class does not" {
     ),
   )
 }
+
+///|
+test "a start block may pop the root state and push another" {
+  // Rouge's `stack` makes `[:root]` before the start block pops it
+  let lx = @rouge.Lexer::new("test")
+  lx.state("root", s => s.rule("a", "Keyword"))
+  lx.state("other", s => s.rule("a", "Name"))
+  let depths = []
+  lx.start(lx => {
+    lx.pop()
+    depths.push(lx.stack_size())
+    lx.push("other")
+  })
+  inspect(show(lx.tokens("a")), content="Name:\"a\"")
+  inspect(depths.map(d => d.to_string()).join(","), content="0")
+  inspect(lx.stack_size(), content="1")
+}
+
+///|
+/// A lexer whose `)` pops five states, more than there are.
+fn pops_too_many() -> @rouge.Lexer {
+  let lx = @rouge.Lexer::new("test")
+  lx.state("root", s => {
+    s.rule("\\(", "Punctuation", next="inner")
+    s.rule("a", "Name")
+  })
+  lx.state("inner", s => {
+    s.call("\\)", (lx, _) => {
+      lx.token("Punctuation")
+      lx.pop(times=5)
+    })
+  })
+  lx
+}
+
+///|
+test "popping more states than there are empties the stack" {
+  // Ruby's Array#pop(n) takes what there is: no error until a state is
+  // needed again, here never, as the text ends
+  let lx = pops_too_many()
+  inspect(
+    show(lx.tokens("a()")),
+    content=(
+      #|Name:"a"
+      #|Punctuation:"()"
+    ),
+  )
+  inspect(lx.stack_size(), content="0")
+}
+
+///|
+test "panic lexing on with an emptied stack fails, as Rouge's empty stack!" {
+  ignore(pops_too_many().tokens("()a"))
+}
+
+///|
+test "panic a start block that pops the root state leaves nothing to lex with" {
+  let lx = @rouge.Lexer::new("test")
+  lx.state("root", s => s.rule("a", "Keyword"))
+  lx.start(lx => lx.pop())
+  ignore(lx.tokens("a"))
+}
