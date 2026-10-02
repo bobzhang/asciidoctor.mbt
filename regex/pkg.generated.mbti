@@ -59,6 +59,7 @@ pub fn Regex::try_find(Self, String, start? : Int) -> MatchData? raise RegexTime
 pub fn Regex::try_find_all(Self, String) -> Array[MatchData] raise RegexTimeout
 pub fn Regex::try_match_at(Self, String, Int) -> MatchData? raise RegexTimeout
 pub fn Regex::try_replace(Self, String, (MatchData) -> String, once? : Bool) -> String raise RegexTimeout
+pub fn Regex::try_scan_at(Self, String, Int) -> MatchData? raise RegexTimeout
 pub fn Regex::try_split(Self, String, limit? : Int) -> Array[String] raise RegexTimeout
 
 // Type aliases

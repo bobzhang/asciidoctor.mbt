@@ -11,6 +11,9 @@ priv struct Vm {
   sub_starts : FixedArray[Int]
   mut input : String
   mut len : Int
+  // where the text begins for anchors, word boundaries and lookbehind: 0,
+  // or the scan position of `Regex::try_scan_at`
+  mut base : Int
   caps : FixedArray[Int]
   regs : FixedArray[Int]
   // backtrack stack of triples (kind, a, b); `sp` is its logical length
@@ -44,6 +47,7 @@ fn Vm::new(re : Regex) -> Vm {
     sub_starts: re.sub_starts,
     input: "",
     len: 0,
+    base: 0,
     caps: FixedArray::make(2 * (re.ncaps + 1), -1),
     regs: FixedArray::make(re.nregs, -1),
     stack: FixedArray::make(STACK_INIT, 0),
@@ -65,6 +69,7 @@ fn Vm::reset(self : Vm, re : Regex, input : String) -> Unit {
   let limit = re.step_limit_for(len)
   self.input = input
   self.len = len
+  self.base = 0
   // `caps` and `regs` are all -1 already: see `Regex::try_at`
   self.sp = 0
   self.search_start = 0
@@ -215,7 +220,7 @@ fn cp_width_of(cp : Int) -> Int {
 /// Decodes the code point ending just before `pos` (pos > 0).
 fn Vm::cp_before(self : Vm, pos : Int) -> Int {
   let d = self.input[pos - 1].to_int()
-  if d >= 0xDC00 && d <= 0xDFFF && pos >= 2 {
+  if d >= 0xDC00 && d <= 0xDFFF && pos >= self.base + 2 {
     let c = self.input[pos - 2].to_int()
     if c >= 0xD800 && c <= 0xDBFF {
       return 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00)
@@ -227,14 +232,15 @@ fn Vm::cp_before(self : Vm, pos : Int) -> Int {
 ///|
 fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
   match kind {
-    BeginLine => pos == 0 || (self.input[pos - 1] == '\n' && pos < self.len)
+    BeginLine =>
+      pos == self.base || (self.input[pos - 1] == '\n' && pos < self.len)
     EndLine => pos == self.len || self.input[pos] == '\n'
-    BeginText => pos == 0
+    BeginText => pos == self.base
     EndText => pos == self.len
     EndTextOptNewline =>
       pos == self.len || (pos == self.len - 1 && self.input[pos] == '\n')
     WordBoundary | NotWordBoundary => {
-      let before = pos > 0 && is_unicode_word(self.cp_before(pos))
+      let before = pos > self.base && is_unicode_word(self.cp_before(pos))
       let after = pos < self.len && is_unicode_word(self.cp_at(pos))
       (before != after) == (kind == WordBoundary)
     }
@@ -507,11 +513,11 @@ fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
           }
         } else {
           let lowest = if maxw < 0 {
-            0
-          } else if pos - maxw > 0 {
+            self.base
+          } else if pos - maxw > self.base {
             pos - maxw
           } else {
-            0
+            self.base
           }
           let mut found = false
           let mut start = pos - minw
