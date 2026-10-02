@@ -63,25 +63,12 @@ fn document_hooks() -> Hooks {
     },
     image_size: (index, available, font_height) => {
       with_session(session, () => {
-        let image = session.inline_images[index]
-        if image.dropped is Some(_) {
-          (0.0, 0.0, false)
-        } else {
-          inline_image_size(image, available, font_height)
-        }
+        inline_image_size(session.inline_images[index], available, font_height)
       })
     },
     image_items: (flow, index, x, top, w, h) => {
       with_session(session, () => {
         let image = session.inline_images[index]
-        // an image the arranger drops warns once it is laid out for good
-        if image.dropped is Some((message, node)) {
-          if !flow.scratch && !image.warned {
-            image.warned = true
-            warning(message, node)
-          }
-          return []
-        }
         match image.svg {
           Some(svg) =>
             match inline_svg_item(flow, svg, x, top, w) {
@@ -99,6 +86,21 @@ fn document_hooks() -> Hooks {
                 mime: image.mime,
               }),
             ]
+        }
+      })
+    },
+    // the alt text of an inline image the arranger drops was inked: it
+    // warns, once (InlineImageArranger logs it as it arranges the line)
+    fragment_inked: index => {
+      with_session(session, () => {
+        match session.inline_images.get(index) {
+          Some(
+            { dropped: Some((_, message, node)), warned: false, .. } as image
+          ) => {
+            image.warned = true
+            warning(message, node)
+          }
+          _ => ()
         }
       })
     },

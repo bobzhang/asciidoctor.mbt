@@ -566,6 +566,11 @@ pub fn Flow::line_items(
   }
   for run in line.runs {
     let style = run.style
+    // the fragment's callback (Prawn's fragment `callback`), when inked
+    // for good
+    if style.callback >= 0 && !self.scratch {
+      (self.hooks.fragment_inked)(style.callback)
+    }
     let x = x0 + run.x
     let a = run.face.ascender_pt(style.size)
     let d = run.face.descender_pt(style.size)

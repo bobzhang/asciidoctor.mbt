@@ -20,8 +20,9 @@ fn pdf_import_empty_source() -> Bytes raise {
 ///|
 /// Load `text` with `src.pdf`, `empty.pdf`, `bad.pdf` (not a PDF),
 /// `other.pdf` (one 500 x 50 page), `mixed.pdf` (page 1 without a
-/// usable media box, page 2 300 x 200) and `indent-theme.yml` (sections
-/// indented 36pt) beside it.
+/// usable media box, page 2 300 x 200), `indent-theme.yml` (sections
+/// indented 36pt) and `header-theme.yml` (a one-line header holding an
+/// inline PDF) beside it.
 fn pdf_import_load(text : String) -> @core.Node raise {
   register()
   let vfs = @core.MemoryVfs::new(cwd="/doc")
@@ -34,6 +35,13 @@ fn pdf_import_load(text : String) -> @core.Node raise {
   vfs.add_bytes("/doc/mixed.pdf", pdf_import_mixed_source())
   vfs.add_text(
     "/doc/indent-theme.yml", "extends: default\nsection:\n  indent: 36\n",
+  )
+  // a header one line high whose content is two lines long, the inline
+  // PDF's alt text on the first
+  let header = "'image:src.pdf[longalternative] and then many more words than one line of the header holds'"
+  vfs.add_text(
+    "/doc/header-theme.yml",
+    "extends: default\nheader:\n  height: 20\n  font_size: 10.5\n  recto:\n    center:\n      content: \{header}\n  verso:\n    center:\n      content: \{header}\n",
   )
   @asciidoctor.load(
     text,
@@ -415,4 +423,87 @@ test "an inline PDF image in a title that is not laid out does not warn" {
     .length(),
     1,
   )
+}
+
+///|
+/// The text shown on page 1 of `bytes`, line by line: the bytes of every
+/// text-showing operator, joined per baseline in the order drawn.
+fn pdf_import_text_lines(bytes : Bytes) -> Array[(Double, Bytes)] raise {
+  let document = @pdflite.pdf_read_document_from_bytes(bytes)
+  let page = document.pages_of_pagetree()[0]
+  let lines : Array[(Double, Array[Byte])] = []
+  let mut baseline = 0.0
+  let show = (text : Bytes) => {
+    match lines.last() {
+      Some((y, line)) if y == baseline => line.append(text.to_array())
+      _ => lines.push((baseline, text.to_array()))
+    }
+  }
+  for op in document.parse_content_ops(page.content) {
+    match op {
+      Op_Tm(m) => baseline = m.f
+      Op_Tj(text) => show(text)
+      Op_TJ(PdfArray(parts)) =>
+        for part in parts {
+          if part is PdfString(text) {
+            show(text)
+          }
+        }
+      _ => ()
+    }
+  }
+  lines.map(line => (line.0, Bytes::from_array(line.1)))
+}
+
+///|
+test "an inline PDF's alt text wraps as the alt text of a missing image" {
+  let text = (target : String) => {
+    ":pdf-page-size: [220, 220]\n\nbefore image:\{target}[longalternative]suffixword after\n"
+  }
+  let with_pdf = pdf_import_text_lines(
+    convert_document(pdf_import_load(text("src.pdf")), test_catalog()),
+  )
+  let missing = pdf_import_text_lines(
+    convert_document(pdf_import_load(text("missing.png")), test_catalog()),
+  )
+  // `before` / `[longalternative]suffixw` / `ord after`, as Ruby wraps the
+  // alt text, a fragment of its own
+  assert_eq(with_pdf.length(), 3)
+  assert_eq(with_pdf, missing)
+}
+
+///|
+test "an inline PDF in a truncated running header warns once a page" {
+  // the alt text is on the header's first line, the only one that fits
+  for pages in [1, 2] {
+    let breaks = "\n\n<<<\n\nmore".repeat(pages - 1)
+    ignore(
+      pdf_import_convert(":pdf-theme: /doc/header-theme.yml\n\none\{breaks}\n"),
+    )
+    // as Ruby, which arranges (and warns about) each page's header anew
+    assert_eq(
+      conversion_warnings()
+      .filter(w => w.contains("could not embed image"))
+      .length(),
+      pages,
+    )
+  }
+}
+
+///|
+test "a linked inline PDF has one link annotation" {
+  let doc = pdf_import_load(
+    "text image:src.pdf[alt,link=https://example.com] text\n",
+  )
+  let bytes = convert_document(doc, test_catalog())
+  let document = @pdflite.pdf_read_document_from_bytes(bytes)
+  let page = document.pages_of_pagetree()[0]
+  guard document.lookup_direct(
+      @pdfcore.pdf_name_of_bytes(b"/Annots"),
+      page.rest,
+    )
+    is Some(PdfArray(annots)) else {
+    fail("no annotations")
+  }
+  assert_eq(annots.length(), 1)
 }

@@ -146,6 +146,7 @@ pub(all) struct Hooks {
   image_size : (Int, Double, Double) -> (Double, Double, Bool)
   image_items : (Flow, Int, Double, Double, Double, Double) -> Array[@pagelayout.PageItem]
   anchor_inked : (String, Int) -> Unit
+  fragment_inked : (Int) -> Unit
 }
 pub fn Hooks::new(base_family? : String) -> Self
 
@@ -222,6 +223,7 @@ pub(all) struct Style {
   strike : Bool
   wj : Bool
   image : Int
+  callback : Int
   doc_bold : Bool
   doc_italic : Bool
   font_set : Bool

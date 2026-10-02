@@ -33,6 +33,7 @@ fn text_style(
     strike: false,
     wj: false,
     image: -1,
+    callback: -1,
   }
 }
 
@@ -495,11 +496,22 @@ fn parse_formatted(
           }
           if index >= 0 && index < session().inline_images.length() {
             flush()
-            fragments.push({
-              text: "\u{2063}",
-              style: { ..style, image: index, },
-              anchor: None,
-            })
+            match session().inline_images[index].dropped {
+              // an image the arranger drops: its alt text, a fragment of its
+              // own (the img element's), whose callback warns when inked
+              Some((alt, _, _)) =>
+                fragments.push({
+                  text: alt,
+                  style: { ..style, callback: index, },
+                  anchor: None,
+                })
+              None =>
+                fragments.push({
+                  text: "\u{2063}",
+                  style: { ..style, image: index, },
+                  anchor: None,
+                })
+            }
           }
         }
         _ =>

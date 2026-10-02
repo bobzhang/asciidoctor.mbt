@@ -275,10 +275,10 @@ priv struct InlineImage {
   /// an SVG image: the document (drawn at the size its line gives it), its
   /// path and the image node
   svg : (@svg.SvgDocument, String, @core.Node)?
-  /// an image the arranger drops, with the warning it logs when the line
-  /// holding it is laid out (outside dry runs), and whether it has: a
-  /// placeholder that takes no room beside the alt text
-  dropped : (String, @core.Node)?
+  /// an image the arranger drops: its alt text, set in its place as text,
+  /// and the warning logged when that text is inked outside dry runs
+  /// (the fragment's callback, see `document_hooks`), and whether it has
+  dropped : (String, String, @core.Node)?
   mut warned : Bool
 }
 
@@ -386,8 +386,9 @@ fn convert_inline_image(node : @core.Node) -> String {
         // Prawn cannot draw a PDF in a line either: the arranger drops it,
         // leaving the alt text, and (prawn-gmagick not being installed and
         // the format being neither JPEG nor PNG, `recommend_prawn_gmagick?`)
-        // suggests prawn-gmagick when it lays the line out; an empty
-        // placeholder warns then (see `document_hooks`)
+        // suggests prawn-gmagick when it lays the line out: the alt text is
+        // a fragment of its own whose callback warns when it is inked (see
+        // `parse_formatted` and `document_hooks`)
         let index = session().inline_images.length()
         session().inline_images.push({
           data: Bytes::new(0),
@@ -399,13 +400,14 @@ fn convert_inline_image(node : @core.Node) -> String {
           svg: None,
           dropped: Some(
             (
+              "[\{alt}]",
               "could not embed image: \{path}; image file is an unrecognised format; install prawn-gmagick gem to add support for PDF image format",
               node,
             ),
           ),
           warned: false,
         })
-        "[\{alt}&#93;<img src=\"\{index}\">"
+        "<img src=\"\{index}\">"
       } else {
         if bytes is Some(_) && !svg {
           unsupported("inline", "image \{target}", node)
