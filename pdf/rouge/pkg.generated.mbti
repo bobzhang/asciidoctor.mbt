@@ -1,0 +1,216 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/asciidoctor-pdf/rouge"
+
+import {
+  "bobzhang/asciidoctor/regex",
+  "moonbitlang/core/set",
+}
+
+// Values
+pub fn alt(Array[String]) -> String
+
+pub fn apache(Map[String, String]) -> Lexer
+
+pub fn batchfile(Map[String, String]) -> Lexer
+
+pub fn c(Map[String, String]) -> Lexer
+
+pub fn coffeescript(Map[String, String]) -> Lexer
+
+pub fn conf(Map[String, String]) -> Lexer
+
+pub fn console(Map[String, String]) -> Lexer
+
+pub fn cpp(Map[String, String]) -> Lexer
+
+pub fn csharp(Map[String, String]) -> Lexer
+
+pub fn css(Map[String, String]) -> Lexer
+
+pub fn d(Map[String, String]) -> Lexer
+
+pub fn dart(Map[String, String]) -> Lexer
+
+pub fn diff(Map[String, String]) -> Lexer
+
+pub fn docker(Map[String, String]) -> Lexer
+
+pub fn elixir(Map[String, String]) -> Lexer
+
+pub fn erb(Map[String, String]) -> Lexer
+
+pub fn find(String) -> ((Map[String, String]) -> Lexer)?
+
+pub fn find_fancy(String) -> Lexer?
+
+pub fn go(Map[String, String]) -> Lexer
+
+pub fn gradle(Map[String, String]) -> Lexer
+
+pub fn groovy(Map[String, String]) -> Lexer
+
+pub fn group_text(@regex.MatchData, Int) -> String
+
+pub fn haskell(Map[String, String]) -> Lexer
+
+pub fn html(Map[String, String]) -> Lexer
+
+pub fn ini(Map[String, String]) -> Lexer
+
+pub fn irb(Map[String, String]) -> Lexer
+
+pub fn irb_output(Map[String, String]) -> Lexer
+
+pub fn is_token(String) -> Bool
+
+pub fn java(Map[String, String]) -> Lexer
+
+pub fn javascript(Map[String, String]) -> Lexer
+
+pub fn json(Map[String, String]) -> Lexer
+
+pub fn json_doc(Map[String, String]) -> Lexer
+
+pub fn jsx(Map[String, String]) -> Lexer
+
+pub fn kotlin(Map[String, String]) -> Lexer
+
+pub fn lexer_tags() -> Array[String]
+
+pub fn lookup_fancy(String) -> (((Map[String, String]) -> Lexer)?, Map[String, String])
+
+pub fn lua(Map[String, String]) -> Lexer
+
+pub fn make(Map[String, String]) -> Lexer
+
+pub fn markdown(Map[String, String]) -> Lexer
+
+pub fn matlab(Map[String, String]) -> Lexer
+
+pub fn nginx(Map[String, String]) -> Lexer
+
+pub fn option_bool(String) -> Bool
+
+pub fn perl(Map[String, String]) -> Lexer
+
+pub fn php(Map[String, String]) -> Lexer
+
+pub fn plain_text(Map[String, String]) -> Lexer
+
+pub fn powershell(Map[String, String]) -> Lexer
+
+pub fn properties(Map[String, String]) -> Lexer
+
+pub fn protobuf(Map[String, String]) -> Lexer
+
+pub fn python(Map[String, String]) -> Lexer
+
+pub fn r(Map[String, String]) -> Lexer
+
+pub fn ruby(Map[String, String]) -> Lexer
+
+pub fn rust(Map[String, String]) -> Lexer
+
+pub fn rx(String, flags? : String) -> String
+
+pub fn rx_escape(String) -> String
+
+pub fn sass(Map[String, String]) -> Lexer
+
+pub fn scala(Map[String, String]) -> Lexer
+
+pub fn scss(Map[String, String]) -> Lexer
+
+pub fn shell(Map[String, String]) -> Lexer
+
+pub fn shortname(String) -> String?
+
+pub fn sql(Map[String, String]) -> Lexer
+
+pub fn swift(Map[String, String]) -> Lexer
+
+pub fn token_parent(String) -> String?
+
+pub fn toml(Map[String, String]) -> Lexer
+
+pub fn tsx(Map[String, String]) -> Lexer
+
+pub fn typescript(Map[String, String]) -> Lexer
+
+pub fn vue(Map[String, String]) -> Lexer
+
+pub fn word_set(String) -> @set.Set[String]
+
+pub fn words(String) -> Array[String]
+
+pub fn xml(Map[String, String]) -> Lexer
+
+pub fn yaml(Map[String, String]) -> Lexer
+
+// Errors
+
+// Types and methods
+pub struct Lexer {
+  tag : String
+  options : Map[String, String]
+  // private fields
+}
+pub fn Lexer::append(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::bool_option(Self, String, Bool) -> Bool
+pub fn Lexer::continue_lex(Self, String, (String, String) -> Unit) -> Unit
+pub fn Lexer::delegate(Self, Self, text? : String) -> Unit
+pub fn Lexer::delegate_new(Self, () -> Self, text? : String) -> Unit
+pub fn Lexer::goto(Self, String) -> Unit
+pub fn Lexer::groups(Self, Array[String]) -> Unit
+pub fn Lexer::in_state(Self, String) -> Bool
+pub fn Lexer::lex(Self, String, (String, String) -> Unit) -> Unit
+pub fn Lexer::list_option(Self, String) -> Array[String]?
+pub fn Lexer::new(String, options? : Map[String, String]) -> Self
+pub fn Lexer::pop(Self, times? : Int) -> Unit
+pub fn Lexer::prepend(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::push(Self, String) -> Unit
+pub fn Lexer::push_rules(Self, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::push_self(Self) -> Unit
+pub fn Lexer::recurse(Self, text? : String) -> Unit
+pub fn Lexer::reset(Self) -> Unit
+pub fn Lexer::reset_stack(Self) -> Unit
+pub fn Lexer::set_fresh(Self, () -> Self) -> Unit
+pub fn Lexer::set_stream(Self, (Self, String, (String, String) -> Unit) -> Unit) -> Unit
+pub fn Lexer::stack_size(Self) -> Int
+pub fn Lexer::start(Self, (Self) -> Unit) -> Unit
+pub fn Lexer::state(Self, String, (StateBuilder) -> Unit) -> Unit
+pub fn Lexer::state_is(Self, String) -> Bool
+pub fn Lexer::string_option(Self, String) -> String?
+pub fn Lexer::token(Self, String, val? : String) -> Unit
+pub fn Lexer::tokens(Self, String) -> Array[(String, String)]
+
+type State
+
+pub struct StateBuilder {
+  // private fields
+}
+pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String) -> Unit
+pub fn StateBuilder::mix_in(Self, String) -> Unit
+pub fn StateBuilder::rule(Self, String, String, flags? : String, next? : String) -> Unit
+
+pub struct Theme {
+  name : String
+  // private fields
+}
+pub fn Theme::default() -> Self
+pub fn Theme::find(String) -> Self?
+pub fn Theme::names() -> Array[String]
+pub fn Theme::style_for(Self, String) -> TokenStyle?
+
+pub(all) struct TokenStyle {
+  fg : String?
+  bg : String?
+  bold : Bool
+  italic : Bool
+  underline : Bool
+}
+
+// Type aliases
+pub type LexerFactory = (Map[String, String]) -> Lexer
+
+// Traits

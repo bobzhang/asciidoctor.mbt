@@ -4,8 +4,8 @@ Licensed under the MIT License (see LICENSE), except for the third-party
 material listed below, which is under its own license.
 
 This module contains third-party material, listed below with its license.
-The license texts are in LICENSE (MIT), LICENSES/LICENSE-prawn
-(prawn-table) and fonts/LICENSES.
+The license texts are in LICENSE (MIT), rouge/LICENSE (Rouge, MIT, and
+Pygments), LICENSES/LICENSE-prawn (prawn-table) and fonts/LICENSES.
 
 == Asciidoctor PDF 2.3.27 (MIT)
 
@@ -44,6 +44,24 @@ software in other software (clause 4), and the modified source is freely
 available in this module and at https://github.com/bobzhang/asciidoctor.mbt.
 The GPLv2 and GPLv3 files LICENSE-prawn mentions are not included, as the
 adapted parts are not used under those licenses.
+
+== Rouge 3.30.0 (MIT; lexers adapted from Pygments, BSD-2-Clause)
+
+Copyright (c) 2012 Jeanine Adkisson; Pygments: Copyright (c) 2006-2012 by
+the respective authors.
+https://github.com/rouge-ruby/rouge
+
+* rouge/ (the package bobzhang/asciidoctor-pdf/rouge), with which source
+  blocks are highlighted for `source-highlighter: rouge`, is a port of
+  Rouge's lexer core (lexer.rb, regex_lexer.rb), of the lexers it lists in
+  rouge/lexers_*.mbt (their regular expressions and keyword lists) and of
+  its themes (rouge/themes_data.mbt, generated from Rouge).
+* rouge/harvest_test.mbt holds Rouge's demos and parts of its visual
+  samples (lib/rouge/demos, spec/visual/samples) with the tokens Rouge
+  makes of them.
+
+The license text, with the Pygments license it includes, is in
+rouge/LICENSE.
 
 == Asciidoctor (MIT)
 
