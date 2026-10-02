@@ -494,9 +494,6 @@ fn report_document_features(doc : @core.Node, catalog : FontCatalog) -> Unit {
   if doc.attr("icons") == Some("font") && !catalog.has_icons() {
     unsupported("attribute", "icons=font (no icon fonts)", doc)
   }
-  if doc.has_attr("source-highlighter") {
-    unsupported("attribute", "source-highlighter", doc)
-  }
 }
 
 ///|

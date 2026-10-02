@@ -2,6 +2,8 @@ import {
   "bobzhang/asciidoctor-pdf/theme",
   "bobzhang/asciidoctor-pdf/fonts" @bundled,
   "bobzhang/asciidoctor/core",
+  "bobzhang/asciidoctor/regex",
+  "bobzhang/asciidoctor-pdf/rouge",
   "moonbitlang/pagelayout",
   "bobzhang/prawn",
   "bobzhang/prawn/svg",

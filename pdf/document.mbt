@@ -109,6 +109,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   diagnostics.append(state.pending_diagnostics)
   state.converting = true
   state.template_error = None
+  state.failure = None
   defer {
     state.converting = false
   }
@@ -400,6 +401,12 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // prawn-templates' TemplateError does
   match state.template_error {
     Some(message) => raise TemplateError(message)
+    None => ()
+  }
+  // as does a failure Ruby raises during the conversion (Prawn's
+  // CannotFit, say)
+  match state.failure {
+    Some(message) => raise Failure(message)
     None => ()
   }
   @pdf.render_pdf(

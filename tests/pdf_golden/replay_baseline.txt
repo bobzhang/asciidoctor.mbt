@@ -3,10 +3,10 @@
 
 records: 2536
 replayed: 2415 / 2536
-  pass: 2024 / 2415
-  fail: 391 / 2415 (391 listed as known, 0 new)
-  theme-dependent: 1237 / 2415 (pass 1040)
-  default theme: 1178 / 2415 (pass 984)
+  pass: 2041 / 2415
+  fail: 374 / 2415 (374 listed as known, 0 new)
+  theme-dependent: 1237 / 2415 (pass 1039)
+  default theme: 1178 / 2415 (pass 1002)
 not replayed, skipped: 121 / 2536
 
 skipped by reason:
@@ -36,60 +36,67 @@ replayed by status:
 failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): 0 / 2415
 
 failing records by category (a record can be in several):
-  300	styling/assets
-  195	geometry
-  103	missing/extra text
-  96	unsupported feature
-  81	navigation/metadata
+  289	styling/assets
+  200	geometry
+  112	navigation/metadata
+  110	missing/extra text
+  84	unsupported feature
+  44	page break/extra pages
   22	reading order
-  14	page break/extra pages
   8	line-wrap change
 
 failing records by first gate failure:
-  116	lines
-  90	raster
-  59	geometry (within 1pt)
-  39	structure: fonts
-  21	raster (flat fills)
+  107	lines
+  89	raster
+  58	geometry (within 1pt)
+  35	pages
   14	structure: outline
-  12	indentation
+  13	raster (flat fills)
+  13	structure: fonts
   11	coverage
+  11	indentation
   7	structure: links
-  6	pages
   6	structure: destinations
   5	structure: document info
   3	words
   2	structure: page boxes
 
 failing records by gate failure (any):
-  252	raster
-  160	raster (flat fills)
+  259	raster
+  175	raster (flat fills)
   154	geometry (within 1pt)
-  122	lines
-  113	coverage
-  103	words
-  72	structure: fonts
-  41	structure: outline
-  38	structure: destinations
-  25	structure: links
+  141	lines
+  119	coverage
+  110	words
+  63	structure: fonts
+  58	structure: outline
+  52	structure: destinations
+  36	structure: page labels
+  35	pages
+  27	structure: links
   23	indentation
-  7	structure: page labels
-  6	pages
+  20	structure: page boxes
+  15	structure: viewer settings
   6	structure: document info
-  6	structure: page boxes
-  3	structure: viewer settings
 
 failing records reporting unsupported content (kind, what):
-  77	attribute source-highlighter
+  23	attribute source-highlighter=pygments
+  15	image format of red-green-blue.pdf
+  14	image format of blue-letter.pdf
+  5	image format of spec/fixtures/blue-letter.pdf
+  4	attribute source-highlighter=coderay
   4	theme caption background
   3	theme abstract_padding
   3	theme footer_column_rule
   3	theme heading_min_height_after: auto
   2	attribute footnotes-title
+  2	image format of no-pages.pdf
   2	theme header_column_rule
   1	block video poster image
   1	image PNG this backend cannot read (1x)
+  1	image format of $SPEC_ROOT/spec/fixtures/red-green-blue.pdf
   1	image format of $SPEC_ROOT/spec/output/replay/image_spec-1.14.7-1/tmp-1.png
+  1	image format of tux-bg.pdf
   1	inline image icon
 
 by spec file: pass / replayed (records, theme-dependent)
@@ -100,7 +107,7 @@ by spec file: pass / replayed (records, theme-dependent)
   audio_spec: 4 / 4 (4, themes 0)
   break_spec: 25 / 29 (29, themes 12)
   converter_spec: 23 / 26 (42, themes 25)
-  cover_page_spec: 35 / 43 (43, themes 6)
+  cover_page_spec: 28 / 43 (43, themes 6)
   dest_spec: 40 / 40 (40, themes 2)
   document_title_spec: 5 / 5 (5, themes 1)
   example_spec: 25 / 26 (26, themes 13)
@@ -110,30 +117,30 @@ by spec file: pass / replayed (records, theme-dependent)
   formatted_text_formatter_spec: 73 / 101 (101, themes 71)
   icon_spec: 19 / 26 (26, themes 1)
   image_float_spec: 90 / 90 (92, themes 88)
-  image_spec: 179 / 223 (240, themes 76)
+  image_spec: 165 / 223 (240, themes 76)
   index_spec: 64 / 65 (65, themes 17)
   link_spec: 43 / 51 (54, themes 33)
   list_spec: 128 / 148 (148, themes 53)
   listing_spec: 47 / 55 (55, themes 37)
   manpage_spec: 4 / 5 (5, themes 1)
-  media_spec: 12 / 12 (12, themes 12)
+  media_spec: 11 / 12 (12, themes 12)
   open_spec: 4 / 5 (13, themes 0)
   outline_spec: 40 / 47 (47, themes 0)
-  page_spec: 122 / 141 (153, themes 66)
+  page_spec: 119 / 141 (153, themes 66)
   paragraph_spec: 24 / 27 (27, themes 17)
   pass_spec: 2 / 2 (2, themes 1)
-  pdf_info_spec: 32 / 38 (38, themes 0)
+  pdf_info_spec: 31 / 38 (38, themes 0)
   pdfmark_spec: 2 / 2 (2, themes 0)
   preamble_spec: 10 / 11 (12, themes 1)
   quote_spec: 24 / 26 (26, themes 13)
-  running_content_spec: 166 / 188 (190, themes 176)
+  running_content_spec: 164 / 188 (190, themes 176)
   section_spec: 92 / 105 (106, themes 60)
   sidebar_spec: 27 / 27 (27, themes 18)
-  source_spec: 22 / 99 (111, themes 9)
+  source_spec: 72 / 99 (111, themes 9)
   stem_spec: 4 / 4 (4, themes 1)
   table_spec: 158 / 190 (194, themes 98)
   thematic_break_spec: 12 / 14 (14, themes 13)
-  title_page_spec: 74 / 78 (82, themes 53)
+  title_page_spec: 69 / 78 (82, themes 53)
   toc_spec: 76 / 83 (89, themes 30)
   verse_spec: 18 / 19 (19, themes 12)
   video_spec: 7 / 8 (12, themes 0)
