@@ -135,7 +135,7 @@ repository, which converts with both and compares page count, text, the position
 (±1pt), rasterized pages and PDF structure:
 
 * the gate (37 documents covering every feature above): 37 / 37 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 2041 / 2415 pass (the rest are listed with
+* the conversions of asciidoctor-pdf's own RSpec suite: 2074 / 2415 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
