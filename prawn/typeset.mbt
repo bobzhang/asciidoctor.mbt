@@ -18,7 +18,7 @@
 // moves a glyph.
 
 ///|
-priv enum Alignment {
+pub(all) enum Alignment {
   Left
   Center
   Right
@@ -26,7 +26,10 @@ priv enum Alignment {
 } derive(Eq)
 
 ///|
-priv struct Item {
+pub extend Alignment with Eq::{not_equal, equal}
+
+///|
+pub(all) struct Item {
   unit : Int
   fragment : Int
   mut fit : Double
@@ -42,7 +45,7 @@ priv struct Item {
 
 ///|
 /// One placed run of a line; `x` is relative to the line's left edge.
-priv struct LineRun {
+pub(all) struct LineRun {
   /// the index of the fragment it is part of
   fragment : Int
   text : String
@@ -54,7 +57,7 @@ priv struct LineRun {
 }
 
 ///|
-priv struct Line {
+pub(all) struct Line {
   runs : Array[LineRun]
   anchors : Array[(String, Double)]
   /// the width Prawn measures (truncated glyph widths)
@@ -163,9 +166,9 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
 }
 
 ///|
-fn build_items(
+pub fn build_items(
   fragments : Array[Fragment],
-  catalog : FontCatalog,
+  ctx : TextContext,
   available? : Double = 1.0e9,
 ) -> (Array[Item], Array[Face]) {
   let items : Array[Item] = []
@@ -173,7 +176,7 @@ fn build_items(
   for index, fragment in fragments {
     let style = fragment.style
     let (bold, italic) = style.face_style()
-    let face = catalog.face(style.family, bold, italic)
+    let face = ctx.face(style.family, bold, italic)
     faces.push(face)
     let blank : Item = {
       unit: 0,
@@ -194,8 +197,8 @@ fn build_items(
     }
     if style.image >= 0 {
       // an inline image: one placeholder as wide as the image
-      let (width, _, _) = inline_image_size(
-        session().inline_images[style.image],
+      let (width, _, _) = (ctx.hooks.image_size)(
+        style.image,
         available,
         face.height_pt(style.size),
       )
@@ -257,9 +260,9 @@ fn build_items(
 /// `first_width`, and with `indent_paragraphs` also each line after a hard
 /// break: Prawn's `indent_paragraphs` starts a paragraph there) and place
 /// them.
-fn typeset_lines(
+pub fn typeset_lines(
   fragments : Array[Fragment],
-  catalog : FontCatalog,
+  ctx : TextContext,
   width : Double,
   align : Alignment,
   first_width? : Double = width,
@@ -267,7 +270,7 @@ fn typeset_lines(
 ) -> Array[Line] {
   typeset_paragraph_lines(
     fragments,
-    catalog,
+    ctx,
     width,
     align,
     first_width~,
@@ -280,16 +283,16 @@ fn typeset_lines(
 /// line, and with `indent_paragraphs` each line after a hard break).
 fn typeset_paragraph_lines(
   fragments : Array[Fragment],
-  catalog : FontCatalog,
+  ctx : TextContext,
   width : Double,
   align : Alignment,
   first_width? : Double = width,
   indent_paragraphs? : Bool = false,
 ) -> (Array[Line], Array[Bool]) {
-  let fragments = catalog.apply_fallbacks(fragments)
+  let fragments = ctx.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
     fragments,
-    catalog,
+    ctx,
     width,
     first_width,
     indent_paragraphs~,
@@ -303,6 +306,7 @@ fn typeset_paragraph_lines(
     let limit = if start { first_width } else { width }
     lines.push(
       place_line(
+        ctx,
         fragments,
         faces,
         items,
@@ -324,12 +328,12 @@ fn typeset_paragraph_lines(
 /// and each line's item range (start, end, whether a hard break ends it).
 fn break_lines(
   fragments : Array[Fragment],
-  catalog : FontCatalog,
+  ctx : TextContext,
   width : Double,
   first_width : Double,
   indent_paragraphs? : Bool = false,
 ) -> (Array[Item], Array[Face], Array[(Int, Int, Bool)]) {
-  let (items, faces) = build_items(fragments, catalog, available=width)
+  let (items, faces) = build_items(fragments, ctx, available=width)
   let n = items.length()
   let starts = token_starts(items)
   // kerning counts towards fitting only inside a token
@@ -428,11 +432,11 @@ fn break_lines(
 fn split_first_line(
   first : Array[Fragment],
   rest : Array[Fragment],
-  catalog : FontCatalog,
+  ctx : TextContext,
   width : Double,
   align : Alignment,
 ) -> (Line, Array[Fragment]) {
-  let (items, faces, ranges) = break_lines(first, catalog, width, width)
+  let (items, faces, ranges) = break_lines(first, ctx, width, width)
   let (from, to, hard) = ranges[0]
   let next = if hard { to + 1 } else { to }
   let remaining : Array[Fragment] = []
@@ -456,7 +460,7 @@ fn split_first_line(
   }
   let justify = align == Justify && !hard && !remaining.is_empty()
   let line = place_line(
-    first, faces, items, from, to, width, align, justify, hard,
+    ctx, first, faces, items, from, to, width, align, justify, hard,
   )
   (line, remaining)
 }
@@ -615,6 +619,7 @@ fn pull_back_limit(
 
 ///|
 fn place_line(
+  ctx : TextContext,
   fragments : Array[Fragment],
   faces : Array[Face],
   items : Array[Item],
@@ -674,8 +679,8 @@ fn place_line(
     if style.image >= 0 {
       // an image more than one and a half lines tall makes the line as
       // tall as the image, over the text's descender
-      let (_, image_h, increased) = inline_image_size(
-        session().inline_images[style.image],
+      let (_, image_h, increased) = (ctx.hooks.image_size)(
+        style.image,
         limit,
         h,
       )
@@ -713,8 +718,8 @@ fn place_line(
     let style = fragments[fragment].style
     if style.image >= 0 {
       let face = faces[fragment]
-      let (w, h, increased) = inline_image_size(
-        session().inline_images[style.image],
+      let (w, h, increased) = (ctx.hooks.image_size)(
+        style.image,
         limit,
         face.height_pt(style.size),
       )

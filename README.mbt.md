@@ -212,6 +212,7 @@ where Ruby itself crashes (manpage).
 | `cmd/asciidoctor` | CLI |
 | `cmd/golden`, `scripts/` | golden harvesting/replay, regex oracle, corpus comparison |
 | `pdf/` | the PDF backend, a module of its own (`bobzhang/asciidoctor-pdf`) |
+| `prawn/` | the Prawn layout the PDF backend uses, a module of its own (`bobzhang/prawn`): Prawn's cursor, text and fonts, prawn-svg, prawn-table sizing |
 | `tests/pdf_golden/` | conversions harvested from asciidoctor-pdf's RSpec suite (`scripts/pdf_harvest.mbtx`) |
 
 ## Development
@@ -258,14 +259,16 @@ moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens  # replay as
 ### Releasing
 
 `bobzhang/asciidoctor` is published from the repository root (`moon publish`; `.moonignore` leaves
-`pdf/` and `docs/` out). `bobzhang/asciidoctor-pdf` depends on the core
-release named in `pdf/moon.mod`, so publish the core first. moon applies the root `.moonignore` to
-`pdf/` as well, so publish the PDF module from a copy outside the repository, without the workspace
-file (`pdf/.moonignore` keeps its tests and tools out):
+`pdf/`, `prawn/` and `docs/` out). `bobzhang/asciidoctor-pdf` depends on the core and
+`bobzhang/prawn` releases named in `pdf/moon.mod`, so publish those first. moon applies the root
+`.moonignore` to `pdf/` and `prawn/` as well, so publish those modules from copies outside the
+repository, without the workspace file (`pdf/.moonignore` keeps its tests and tools out):
 
 ```
+rsync -a --exclude _build --exclude .mooncakes prawn/ /tmp/prawn/
+moon -C /tmp/prawn publish
 rsync -a --exclude _build --exclude .mooncakes --exclude moon.work pdf/ /tmp/asciidoctor-pdf/
-cd /tmp/asciidoctor-pdf && moon publish
+moon -C /tmp/asciidoctor-pdf publish
 ```
 
 Bump `version` in `pdf/moon.mod` and in `pdf/version.mbt` together (`scripts/pdf_smoke.mbtx` checks

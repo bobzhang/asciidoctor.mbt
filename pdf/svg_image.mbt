@@ -8,41 +8,8 @@
 /// The transformation stack of the Prawn document asciidoctor-pdf draws
 /// SVG images into: the document's, or the scratch document's in dry runs
 /// (see `@svg.TransformationStack`); each document has its own.
-fn Flow::svg_stack(self : Flow) -> @svg.TransformationStack {
-  session().svg_stacks[if self.scratch { 1 } else { 0 }]
-}
-
-///|
-/// The families Prawn knows (`font_families`), with their styles: the
-/// catalog's (not the icon sets'), and Prawn's built-in AFM families.
-fn FontCatalog::svg_families(
-  self : FontCatalog,
-) -> Array[(String, Array[String])] {
-  let families : Array[(String, Array[String])] = []
-  for key, _ in self.faces {
-    let parts = key.split("|").map(p => p.to_owned()).collect()
-    guard parts.length() == 3 else { continue }
-    let family = parts[0]
-    if self.icons.contains(family) {
-      continue
-    }
-    let style = match (parts[1] == "true", parts[2] == "true") {
-      (false, false) => "normal"
-      (true, false) => "bold"
-      (false, true) => "italic"
-      (true, true) => "bold_italic"
-    }
-    match families.iter().find_first(f => f.0 == family) {
-      Some(f) => f.1.push(style)
-      None => families.push((family, [style]))
-    }
-  }
-  for afm in ["Courier", "Times-Roman", "Helvetica"] {
-    if !families.iter().any(f => f.0 == afm) {
-      families.push((afm, ["normal", "bold", "italic", "bold_italic"]))
-    }
-  }
-  families
+fn svg_stack(flow : Flow) -> @svg.TransformationStack {
+  session().svg_stacks[if flow.scratch { 1 } else { 0 }]
 }
 
 ///|
@@ -56,7 +23,7 @@ fn fallback_svg_font_name() -> String {
 /// The width of a page's content area: the bounds an inline SVG image is
 /// sized in.
 fn content_width() -> Double {
-  let setup = page_setup.val
+  let setup = session().page_setup
   setup.width - setup.margin_left - setup.margin_right
 }
 
@@ -65,7 +32,7 @@ fn content_width() -> Double {
 /// fonts (added to `model` as text uses them) and files relative to
 /// `svg_path`'s directory.
 fn svg_environment(
-  catalog : FontCatalog,
+  text : TextContext,
   model : @pagelayout.PageModel,
   node : @core.Node,
   svg_path : String,
@@ -74,7 +41,7 @@ fn svg_environment(
     Some(i) => svg_path[:i].to_owned()
     None => "."
   }
-  let families = catalog.svg_families()
+  let families = text.catalog.svg_families()
   let load_font = fn(family : String, subfamily : String) -> @svg.SvgFont? {
     guard families.iter().any(f => f.0 == family) else { return None }
     let (bold, italic) = (
@@ -84,13 +51,13 @@ fn svg_environment(
     // the catalog holds the PDF standard fonts Prawn knows (its AFM fonts)
     // unless a theme family takes their name; one it lacks altogether is
     // drawn in the base font
-    let family = if catalog.faces.contains(face_key(family, false, false)) {
+    let family = if text.catalog.faces.contains(face_key(family, false, false)) {
       family
     } else {
       unsupported("image", "SVG text in the \{family} font", node)
       base_font_family()
     }
-    let face = catalog.face(family, bold, italic)
+    let face = text.face(family, bold, italic)
     let index = model.add_font({ family, bold, italic, })
     Some({
       index,
@@ -166,8 +133,8 @@ fn inline_svg(
 ///|
 /// The graphic of an inline SVG image drawn `w` wide with its top-left
 /// corner at `(x, y)`.
-fn Flow::inline_svg_item(
-  self : Flow,
+fn inline_svg_item(
+  flow : Flow,
   image : (@svg.SvgDocument, String, @core.Node),
   x : Double,
   y : Double,
@@ -175,14 +142,14 @@ fn Flow::inline_svg_item(
 ) -> @pagelayout.PageItem? {
   let (doc, path, node) = image
   doc.sizing.resize(width=w)
-  let env = svg_environment(self.catalog, self.model, node, path)
+  let env = svg_environment(flow.text(), flow.model, node, path)
   let ops = doc.render(
     env,
     origin=(x, y),
-    page_height=self.page_h(),
-    stack=self.svg_stack(),
+    page_height=flow.page_h(),
+    stack=svg_stack(flow),
   )
-  report_svg_warnings(doc, path, node, self.scratch)
+  report_svg_warnings(doc, path, node, flow.scratch)
   if ops.is_empty() {
     None
   } else {
@@ -306,13 +273,13 @@ fn Converter::convert_svg_image(
     "right" => flow.left + available_w - rendered_w
     _ => flow.left
   }
-  let env = svg_environment(flow.catalog, flow.model, node, path)
+  let env = svg_environment(flow.text(), flow.model, node, path)
   let top = flow.y
   let ops = doc.render(
     env,
     origin=(left, top),
     page_height=flow.page_h(),
-    stack=flow.svg_stack(),
+    stack=svg_stack(flow),
   )
   report_svg_warnings(doc, path, node, flow.scratch)
   if !ops.is_empty() {

@@ -115,8 +115,8 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   trace_depth.val = 0
   let theme = document_theme(doc)
   current_theme.val = theme
-  font_scope.val = None
-  page_setup.val = resolve_page_setup(doc)
+  session().font_scope = None
+  session().page_setup = resolve_page_setup(doc)
   report_document_features(doc, catalog)
   // `outline`, `outline-title` and `pagenums` are on unless specified
   for name in ["outline", "outline-title", "pagenums"] {
@@ -124,7 +124,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       ignore(doc.set_attr(name, value=Str("")))
     }
   }
-  let flow = Flow::new(catalog)
+  let flow = new_flow(catalog)
   let c = Converter::new(doc, flow)
   c.text_align = match doc.attr("text-align") {
     Some("left" | "right" | "center" | "justify" as align) =>
@@ -144,7 +144,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   // the recto margins); a book's chapters start on recto pages
   if doc.attr("media") == Some("prepress") {
     c.ppbook = is_book
-    let setup = page_setup.val
+    let setup = session().page_setup
     let outer = t_num("page_margin_outer")
     let inner = t_num("page_margin_inner")
     let recto = (

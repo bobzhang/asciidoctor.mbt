@@ -182,37 +182,27 @@ fn t_padding(key : String) -> (Double, Double, Double, Double) {
 }
 
 ///|
-/// The page geometry of the conversion: size and margins (top, right,
-/// bottom, left), asciidoctor-pdf's `build_pdf_options`.
-priv struct PageSetup {
-  width : Double
-  height : Double
-  margin_top : Double
-  margin_right : Double
-  margin_bottom : Double
-  margin_left : Double
-}
-
-///|
-let page_setup : Ref[PageSetup] = {
-  val: {
+/// The page setup of a document before its own is resolved: A4 with
+/// asciidoctor-pdf's default margins.
+fn default_page_setup() -> PageSetup {
+  {
     width: 595.28,
     height: 841.89,
     margin_top: 36.0,
     margin_right: 48.24,
     margin_bottom: 48.24,
     margin_left: 48.24,
-  },
+  }
 }
 
 ///|
 fn page_width() -> Double {
-  page_setup.val.width
+  session().page_setup.width
 }
 
 ///|
 fn page_height() -> Double {
-  page_setup.val.height
+  session().page_setup.height
 }
 
 ///|
@@ -587,25 +577,19 @@ fn base_font_style() -> (Bool, Bool) {
 }
 
 ///|
-/// The font blocks are set in while a category's `theme_font` is in force
-/// (the admonition, example, sidebar or quote content), with its base line
-/// height; None outside them.
-let font_scope : Ref[(Style, Double)?] = { val: None, }
-
-///|
 /// The current font (asciidoctor-pdf's current font and `@font_color`):
 /// the base font, or the enclosing category's.
 fn base_style() -> Style {
-  match font_scope.val {
+  match session().font_scope {
     Some((style, _)) => style
-    None => Style::new()
+    None => text_style()
   }
 }
 
 ///|
 /// The current base line height (`@base_line_height`).
 fn base_line_height() -> Double {
-  match font_scope.val {
+  match session().font_scope {
     Some((_, line_height)) => line_height
     None => t_num_or("base_line_height", 1.0)
   }
@@ -615,10 +599,10 @@ fn base_line_height() -> Double {
 /// Run `body` in the font `style` with the base line height `line_height`
 /// (`theme_font` around a block's content).
 fn with_font(style : Style, line_height : Double, body : () -> Unit) -> Unit {
-  let saved = font_scope.val
-  font_scope.val = Some((style, line_height))
+  let saved = session().font_scope
+  session().font_scope = Some((style, line_height))
   body()
-  font_scope.val = saved
+  session().font_scope = saved
 }
 
 ///|

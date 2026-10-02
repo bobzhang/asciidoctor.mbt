@@ -46,7 +46,7 @@ fn periphery_trim(
   side : String,
   page_size? : (Double, Double),
 ) -> Trim {
-  let setup = page_setup.val
+  let setup = session().page_setup
   let (page_w, page_h) = page_size.unwrap_or((setup.width, setup.height))
   let (margin_left, margin_right) = match side_margins.val {
     Some((recto, verso)) => if side == "verso" { verso } else { recto }
@@ -136,12 +136,12 @@ fn periphery_columns(
       let parse = (s : String) => {
         let first = s.get_char(0).unwrap_or('0')
         if first >= '0' && first <= '9' {
-          (Left, @theme.ruby_string_to_f(s))
+          (Alignment::Left, @theme.ruby_string_to_f(s))
         } else {
           let align = match first {
-            '=' => Center
-            '>' => Right
-            _ => Left
+            '=' => Alignment::Center
+            '>' => Alignment::Right
+            _ => Alignment::Left
           }
           (align, @theme.ruby_string_to_f(s[1:].to_owned()))
         }
@@ -666,7 +666,7 @@ fn Converter::ink_running_content(
       let style = { ..style, text_transform: None, }
       let lines = typeset_lines(
         parse_formatted(content, style),
-        flow.catalog,
+        flow.text(),
         width,
         align,
       )

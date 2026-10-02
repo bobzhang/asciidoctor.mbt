@@ -1,9 +1,10 @@
-# Not packaged with bobzhang/asciidoctor: the PDF backend is a module of its
-# own (bobzhang/asciidoctor-pdf), and the development notes.
+# Not packaged with bobzhang/asciidoctor: the PDF backend and the Prawn layout
+# it uses are modules of their own (bobzhang/asciidoctor-pdf, bobzhang/prawn),
+# and the development notes.
 #
-# moon applies this file to every module in the repository, the one in pdf/
-# too (`moon package --list` in pdf/ lists nothing): publish
-# bobzhang/asciidoctor-pdf from a copy of pdf/ outside the repository (see
-# "Releasing" in README.mbt.md).
+# moon applies this file to every module in the repository, the ones in pdf/
+# and prawn/ too (`moon package --list` there lists nothing): publish them
+# from copies outside the repository (see "Releasing" in README.mbt.md).
 pdf/
 docs/
+prawn/

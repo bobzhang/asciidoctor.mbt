@@ -218,7 +218,7 @@ fn Converter::convert_colist(self : Converter, node : @core.Node) -> Unit {
       let marker = conum_glyph((index + 1).to_string())
       let marker_width = typeset_lines(
           [{ text: marker + "x", style: conum, anchor: None, }],
-          flow.catalog,
+          flow.text(),
           1.0e6,
           Left,
         )[0].fit_width
@@ -472,7 +472,7 @@ fn Converter::ink_list_marker(self : Converter, marker : Marker) -> Unit {
     let mmetrics = line_metrics(mline_height, mface, mstyle.size)
     let lines = typeset_lines(
       [{ text: marker.text, style: mstyle, anchor: None, }],
-      flow.catalog,
+      flow.text(),
       1000.0,
       Left,
     )
@@ -753,7 +753,7 @@ fn Converter::convert_horizontal_dlist(
     for term in entry.terms {
       let lines = typeset_lines(
         parse_formatted(term.text().unwrap_or(""), term_style),
-        flow.catalog,
+        flow.text(),
         1.0e6,
         Left,
       )

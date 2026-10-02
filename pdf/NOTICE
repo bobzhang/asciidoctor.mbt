@@ -4,8 +4,8 @@ Licensed under the MIT License (see LICENSE), except for the third-party
 material listed below, which is under its own license.
 
 This module contains third-party material, listed below with its license.
-The license texts are in LICENSE (MIT), svg/LICENSE (prawn-svg, MIT),
-LICENSES/LICENSE-prawn (Prawn and prawn-table) and fonts/LICENSES.
+The license texts are in LICENSE (MIT), LICENSES/LICENSE-prawn
+(prawn-table) and fonts/LICENSES.
 
 == Asciidoctor PDF 2.3.27 (MIT)
 
@@ -22,48 +22,28 @@ https://github.com/asciidoctor/asciidoctor-pdf
 
 The MIT license text is in LICENSE.
 
-== prawn-svg 0.34.2 (MIT)
+== bobzhang/prawn
 
-Copyright 2010-2019 Roger Nesbitt.
-https://github.com/mogest/prawn-svg
+The layout is bobzhang/prawn's (a separate module, from the same
+repository), with its own LICENSE and NOTICE: its prawn-svg port (MIT) and
+the parts adapted from Prawn and prawn-table.
 
-* svg/ (the package bobzhang/asciidoctor-pdf/svg) is a port of prawn-svg,
-  with which Asciidoctor PDF draws SVG images: its element processing,
-  attribute and CSS handling, and the calls it makes on the Prawn document
-  (except the parts adapted from Prawn itself, listed below).
+== prawn-table 0.2.2 (Ruby's license terms, or GPLv2/GPLv3)
 
-The MIT license text is in svg/LICENSE.
+Copyright December 2009, Brad Ediger; prawn-table is copyrighted free
+software produced by Gregory Brown along with community contributions.
+https://github.com/prawnpdf/prawn-table
 
-== Prawn 2.4.0 and prawn-table 0.2.2 (Ruby's license terms, or GPLv2/GPLv3)
+* table.mbt: the row stripes and the cell borders, adapted from prawn-table
+  (partly through Asciidoctor PDF's prawn-table extensions).
 
-Prawn and prawn-table are copyrighted free software produced by Gregory
-Brown along with community contributions; graphics.rb: Copyright April 2008,
-Gregory Brown; transformation_stack.rb: Copyright 2015, Roger Nesbitt;
-prawn-table: Copyright December 2009, Brad Ediger.
-https://github.com/prawnpdf/prawn, https://github.com/prawnpdf/prawn-table
-
-Asciidoctor PDF lays documents out with Prawn and prawn-table. To reproduce
-its output, parts of this module are adapted from them:
-
-* table.mbt: the column widths (prawn-table's ColumnWidthCalculator and
-  Table#column_widths), the heights of rows a cell spans, the row stripes
-  and the cell borders (partly through Asciidoctor PDF's prawn-table
-  extensions).
-* svg/lower.mbt: rounded rectangles (Prawn's Graphics#rounded_polygon and
-  #rounded_vertex).
-* svg/prawn_stack.mbt: Prawn's TransformationStack.
-
-These releases may be used under Matz's original licensing terms for Ruby,
-or the GPLv2 or GPLv3. The adapted parts are used under Matz's terms, whose
-text is in LICENSES/LICENSE-prawn; they allow including part of the software
-in other software (clause 4), and the modified source is freely available in
-this module and at https://github.com/bobzhang/asciidoctor.mbt. The GPLv2
-and GPLv3 files LICENSE-prawn mentions are not included, as the adapted parts
-are not used under those licenses.
-
-Elsewhere the module reproduces the observable behaviour of Prawn's text
-layout, TTFunk 1.7.0's font metrics and pdf-core 0.9.0's graphics state
-(same licensing as Prawn) with implementations of its own.
+prawn-table 0.2.2 may be used under Matz's original licensing terms for
+Ruby, or the GPLv2 or GPLv3. The adapted parts are used under Matz's terms,
+whose text is in LICENSES/LICENSE-prawn; they allow including part of the
+software in other software (clause 4), and the modified source is freely
+available in this module and at https://github.com/bobzhang/asciidoctor.mbt.
+The GPLv2 and GPLv3 files LICENSE-prawn mentions are not included, as the
+adapted parts are not used under those licenses.
 
 == Asciidoctor (MIT)
 

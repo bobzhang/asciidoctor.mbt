@@ -343,17 +343,13 @@ fn load_standard_face(
       _ => ()
     }
   }
-  let ascender = afm_header(data, "Ascender")
-    .map(s => @theme.ruby_string_to_i(s).to_int())
-    .unwrap_or(718)
-  let descender = afm_header(data, "Descender")
-    .map(s => @theme.ruby_string_to_i(s).to_int())
-    .unwrap_or(-207)
+  let ascender = afm_header(data, "Ascender").map(afm_int).unwrap_or(718)
+  let descender = afm_header(data, "Descender").map(afm_int).unwrap_or(-207)
   let bbox = afm_header(data, "FontBBox")
     .unwrap_or("0 0 0 0")
     .split(" ")
     .filter(s => s != "")
-    .map(s => @theme.ruby_string_to_i(s.to_owned()).to_int())
+    .map(s => afm_int(s.to_owned()))
     .collect()
   let line_gap = if bbox.length() == 4 {
     bbox[3] - bbox[1] - (ascender - descender)
@@ -407,4 +403,28 @@ fn winansi_text(text : String) -> String {
     }
   }
   sb.to_string()
+}
+
+///|
+/// An AFM header's integer, as Ruby's `String#to_i` reads it: the leading
+/// decimal integer after any whitespace, else 0.
+fn afm_int(s : String) -> Int {
+  let mut i = 0
+  while i < s.length() && (s[i] == ' ' || s[i] == '\t') {
+    i += 1
+  }
+  let negative = i < s.length() && s[i] == '-'
+  if i < s.length() && (s[i] == '-' || s[i] == '+') {
+    i += 1
+  }
+  let mut v = 0
+  while i < s.length() && s[i] >= '0' && s[i] <= '9' {
+    v = v * 10 + (s[i].to_int() - '0'.to_int())
+    i += 1
+  }
+  if negative {
+    -v
+  } else {
+    v
+  }
 }

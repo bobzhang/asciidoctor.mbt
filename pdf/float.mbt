@@ -70,56 +70,6 @@ fn Converter::init_float_box(
 }
 
 ///|
-/// Prawn's formatted text box with a height (`text_box`): the lines of
-/// `fragments` set `width` wide from `x` (the first one `text_indent`
-/// further in, Prawn's `indent_paragraphs`), the first hanging from the
-/// cursor plus the line padding, as many as fit in `height`. Returns the
-/// fragments that did not fit and the baseline of the last line inked
-/// (None when none was); the cursor does not move.
-fn Flow::typeset_box(
-  self : Flow,
-  fragments : Array[Fragment],
-  metrics : LineMetrics,
-  base : Style,
-  align~ : Alignment,
-  x~ : Double,
-  width~ : Double,
-  height~ : Double,
-  text_indent~ : Double,
-) -> (Array[Fragment], Double?) {
-  self.last_line = None
-  let base_face = self.font(base)
-  let top = self.y + metrics.padding_top
-  let mut remaining = self.catalog.apply_fallbacks(fragments)
-  let mut baseline = 0.0
-  let mut placed = 0
-  let mut last : Double? = None
-  while !remaining.is_empty() {
-    let indent = if placed == 0 { text_indent } else { 0.0 }
-    let (line, rest) = split_first_line(
-      remaining,
-      remaining,
-      self.catalog,
-      width - indent,
-      align,
-    )
-    let (a, d, h) = line_extent(line, base_face, base.size, false)
-    let next = if placed == 0 { a } else { baseline + h + metrics.leading }
-    if next + d > height + 0.0001 {
-      break
-    }
-    baseline = next
-    self.ink_line(line, x + indent, top + baseline)
-    self.last_line = Some((line, self.page, top + baseline))
-    self.last_line_first = placed == 0
-    last = Some(top + baseline)
-    placed += 1
-    remaining = rest
-  }
-  (remaining, last)
-}
-
-///|
 /// `ink_paragraph_in_float_box`: `node`'s text set in the float box from
 /// the cursor down; what does not fit continues below at the full width.
 /// The box stays for the next paragraph while there is room left in it.
@@ -259,7 +209,7 @@ fn Converter::image_caption_height(
     return 0.0
   }
   let flow = self.flow
-  let style = Style::new(size=caption_font_size(), doc_italic=true)
+  let style = text_style(size=caption_font_size(), doc_italic=true)
   let block_align = alignment_of(alignment)
   let (left, right) = caption_indents(
     flow.width(),

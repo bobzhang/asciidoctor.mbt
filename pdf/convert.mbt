@@ -75,7 +75,7 @@ fn Converter::dry_run(
   bottom? : Double,
   body : (Converter) -> Unit,
 ) -> Flow {
-  let flow = Flow::new(self.flow.catalog, scratch=true)
+  let flow = new_flow(self.flow.catalog, scratch=true)
   flow.start_new_page()
   flow.left = left
   flow.right = right
@@ -354,24 +354,6 @@ fn top_anchor(doc : @core.Node) -> String {
     Some(id) => pdf_anchor_name(id)
     None => "__anchor-top"
   }
-}
-
-///|
-/// The PDF destination name for an id (asciidoctor-pdf's
-/// `derive_anchor_from_id`): the id itself when it is ASCII, else `0x` and
-/// the hex of its UTF-8 bytes.
-fn pdf_anchor_name(id : String) -> String {
-  if id.iter().all(c => c.to_int() < 0x80) {
-    return id
-  }
-  let sb = StringBuilder()
-  sb.write_string("0x")
-  for byte in @utf8.encode(id) {
-    let v = byte.to_int()
-    sb.write_char("0123456789abcdef"[v >> 4].unsafe_to_char())
-    sb.write_char("0123456789abcdef"[v & 15].unsafe_to_char())
-  }
-  sb.to_string()
 }
 
 ///|
@@ -784,20 +766,6 @@ fn Converter::convert_page_break(self : Converter, node : @core.Node) -> Unit {
     Some(l) if flow.page + 1 >= flow.model.pages.length() &&
       flow.columns is None => flow.start_new_page(layout=l)
     _ => flow.advance_page()
-  }
-}
-
-///|
-/// A named destination for the block at the cursor (asciidoctor-pdf's
-/// `add_dest_for_block`).
-fn Flow::dest_x(self : Flow) -> Double {
-  // `add_dest_for_block`: `bounds.absolute_left.truncate 4`, 0 when at the
-  // margin
-  let left = (self.left * 10000.0).floor() / 10000.0
-  if left <= self.margin_left {
-    0.0
-  } else {
-    left
   }
 }
 

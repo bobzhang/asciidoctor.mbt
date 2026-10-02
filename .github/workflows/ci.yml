@@ -40,17 +40,22 @@ jobs:
           moon info
           moon -C pdf fmt
           moon -C pdf info
+          moon -C prawn fmt
+          moon -C prawn info
           git diff --exit-code
 
       # type-check all targets, unit tests on wasm-gc/native/js, golden parity
       - name: Check
         run: moon run --target native scripts/check.mbtx
 
-      # the PDF backend is a separate module (pdf/), built on moonbitlang/pagelayout
+      # the PDF backend is a separate module (pdf/), laid out by the prawn/
+      # module on moonbitlang/pagelayout
       - name: PDF backend
         run: |
           moon -C pdf check --target all --deny-warn
           moon -C pdf test --target native
+          moon -C prawn check --target all --deny-warn
+          moon -C prawn test --target native
 
       # the asciidoctor-pdf command, native and wasm (as moonx runs it), with
       # its bundled fonts: sample documents must convert to valid PDFs

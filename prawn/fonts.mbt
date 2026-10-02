@@ -1,8 +1,5 @@
 ///|
-using @pagelayout {type Color}
-
-///|
-fn rgb_hex(value : Int) -> Color {
+pub fn rgb_hex(value : Int) -> Color {
   Color::rgb((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF)
 }
 
@@ -10,7 +7,7 @@ fn rgb_hex(value : Int) -> Color {
 /// One face of the font catalog, with the metrics Prawn (the layout engine
 /// behind Ruby asciidoctor-pdf) derives from it. Prawn works in 1/1000 em
 /// and truncates every metric to an integer there; so does this.
-priv struct Face {
+pub(all) struct Face {
   metrics : @fonts.FaceMetrics
   /// OS/2 typo metrics (hhea when zero), 1/1000 em, truncated
   ascender : Int
@@ -26,7 +23,7 @@ priv struct Face {
 ///|
 /// Prawn's glyph width in 1/1000 em (truncated), used to break lines as
 /// Prawn does.
-fn Face::prawn_width(self : Face, codepoint : Int) -> Double {
+pub fn Face::prawn_width(self : Face, codepoint : Int) -> Double {
   (self.metrics.advance_pt(codepoint, 1000.0) + 1.0e-9).floor()
 }
 
@@ -40,7 +37,7 @@ fn Face::drawn_width(self : Face, codepoint : Int) -> Double {
 
 ///|
 /// Kerning between two codepoints, 1/1000 em (negative tightens).
-fn Face::kerning(self : Face, left : Int, right : Int) -> Double {
+pub fn Face::kerning(self : Face, left : Int, right : Int) -> Double {
   if self.kern.is_empty() {
     return 0.0
   }
@@ -50,24 +47,24 @@ fn Face::kerning(self : Face, left : Int, right : Int) -> Double {
 }
 
 ///|
-fn Face::ascender_pt(self : Face, size : Double) -> Double {
+pub fn Face::ascender_pt(self : Face, size : Double) -> Double {
   self.ascender.to_double() / 1000.0 * size
 }
 
 ///|
 /// Positive depth below the baseline.
-fn Face::descender_pt(self : Face, size : Double) -> Double {
+pub fn Face::descender_pt(self : Face, size : Double) -> Double {
   -self.descender.to_double() / 1000.0 * size
 }
 
 ///|
-fn Face::line_gap_pt(self : Face, size : Double) -> Double {
+pub fn Face::line_gap_pt(self : Face, size : Double) -> Double {
   self.line_gap.to_double() / 1000.0 * size
 }
 
 ///|
 /// Prawn's `font.height`: ascender − descender + line gap.
-fn Face::height_pt(self : Face, size : Double) -> Double {
+pub fn Face::height_pt(self : Face, size : Double) -> Double {
   (self.ascender - self.descender + self.line_gap).to_double() / 1000.0 * size
 }
 
@@ -172,13 +169,13 @@ fn load_face(
 /// pagelayout registry holding them, which the renderer draws with; and
 /// the icon sets (`icons=font`), each a font family of its own.
 pub struct FontCatalog {
-  priv faces : Map[String, Face]
-  priv registry : @fonts.FontRegistry
+  faces : Map[String, Face]
+  registry : @fonts.FontRegistry
   /// icon set (`fas`) → icon name → glyph (see `IconSet`)
   priv icons : Map[String, Map[String, String]]
   /// Font Awesome 4 icon name (`fa-save`) → set and name (`far-save`)
   /// (asciidoctor-pdf's `fa-legacy-mapping.yml`)
-  priv legacy_icons : Map[String, String]
+  legacy_icons : Map[String, String]
   /// the theme's fallback fonts (`font_fallbacks`), in order
   priv fallbacks : Array[String]
 }
@@ -263,7 +260,7 @@ fn parse_flat_yaml(text : String) -> Map[String, String] {
 }
 
 ///|
-fn face_key(family : String, bold : Bool, italic : Bool) -> String {
+pub fn face_key(family : String, bold : Bool, italic : Bool) -> String {
   "\{family}|\{bold}|\{italic}"
 }
 
@@ -355,8 +352,8 @@ pub fn FontCatalog::load(
 ///|
 /// The text of fragments set in a standard font, in WinAnsi (see
 /// `winansi_text`).
-fn FontCatalog::apply_winansi(
-  self : FontCatalog,
+fn TextContext::apply_winansi(
+  self : TextContext,
   fragments : Array[Fragment],
 ) -> Array[Fragment] {
   if !fragments.iter().any(f => self.is_standard(f.style)) {
@@ -373,7 +370,7 @@ fn FontCatalog::apply_winansi(
 
 ///|
 /// Whether a style's face is a standard font.
-fn FontCatalog::is_standard(self : FontCatalog, style : Style) -> Bool {
+fn TextContext::is_standard(self : TextContext, style : Style) -> Bool {
   let (bold, italic) = style.face_style()
   self.face(style.family, bold, italic).standard
 }
@@ -393,12 +390,12 @@ fn Face::has_glyph(self : Face, codepoint : Int) -> Bool {
 /// fragment its font lacks are set in the first fallback font that has
 /// them (a character none has stays in the fragment's font, where it shows
 /// as the .notdef glyph).
-fn FontCatalog::apply_fallbacks(
-  self : FontCatalog,
+fn TextContext::apply_fallbacks(
+  self : TextContext,
   fragments : Array[Fragment],
 ) -> Array[Fragment] {
   let fragments = self.apply_winansi(fragments)
-  if self.fallbacks.is_empty() {
+  if self.catalog.fallbacks.is_empty() {
     return fragments
   }
   let out : Array[Fragment] = []
@@ -415,7 +412,7 @@ fn FontCatalog::apply_fallbacks(
       if cp == 0x0A || face.has_glyph(cp) {
         return fragment.style.family
       }
-      for f in self.fallbacks {
+      for f in self.catalog.fallbacks {
         if self.face(f, bold, italic).has_glyph(cp) {
           return f
         }
@@ -452,7 +449,7 @@ fn FontCatalog::apply_fallbacks(
 
 ///|
 /// The glyph of icon `name` in icon set `set`, when the catalog has both.
-fn FontCatalog::icon_glyph(
+pub fn FontCatalog::icon_glyph(
   self : FontCatalog,
   set : String,
   name : String,
@@ -462,17 +459,17 @@ fn FontCatalog::icon_glyph(
 
 ///|
 /// Whether the catalog can draw font icons (it has icon sets).
-fn FontCatalog::has_icons(self : FontCatalog) -> Bool {
+pub fn FontCatalog::has_icons(self : FontCatalog) -> Bool {
   !self.icons.is_empty()
 }
 
 ///|
 /// The face text in a family neither the catalog nor the base font family
 /// has is set in: Prawn's default font (Helvetica) in that style, reported
-/// once per document (Prawn raises `UnknownFont`, which ends the
+/// to `unknown_font` (Prawn raises `UnknownFont`, which ends the
 /// conversion).
-fn FontCatalog::unknown_face(
-  self : FontCatalog,
+fn TextContext::unknown_face(
+  self : TextContext,
   family : String,
   bold : Bool,
   italic : Bool,
@@ -483,43 +480,72 @@ fn FontCatalog::unknown_face(
     (false, true) => "italic"
     (true, true) => "bold_italic"
   }
-  let known = session().unknown_fonts
-  let key = "\{family} (\{style})"
-  if !known.contains(key) {
-    known[key] = true
-    report(
-      "WARNING \{key} is not a known font; using Helvetica instead at <document>",
-    )
-  }
-  match self.faces.get(face_key("Helvetica", bold, italic)) {
+  (self.hooks.unknown_font)("\{family} (\{style})")
+  match self.catalog.faces.get(face_key("Helvetica", bold, italic)) {
     Some(face) => face
     None =>
       // the standard families are always there, unless the catalog has a
       // Helvetica of its own without that style
-      match self.faces.get(face_key("Helvetica", false, false)) {
+      match self.catalog.faces.get(face_key("Helvetica", false, false)) {
         Some(face) => face
-        None => self.faces.values().next().unwrap()
+        None => self.catalog.faces.values().next().unwrap()
       }
   }
 }
 
 ///|
-fn FontCatalog::face(
-  self : FontCatalog,
+pub fn TextContext::face(
+  self : TextContext,
   family : String,
   bold : Bool,
   italic : Bool,
 ) -> Face {
-  match self.faces.get(face_key(family, bold, italic)) {
+  match self.catalog.faces.get(face_key(family, bold, italic)) {
     Some(face) => face
     None =>
-      match self.faces.get(face_key(family, false, false)) {
+      match self.catalog.faces.get(face_key(family, false, false)) {
         Some(face) => face
         None =>
-          match self.faces.get(face_key(base_font_family(), bold, italic)) {
+          match
+            self.catalog.faces.get(
+              face_key(self.hooks.base_family, bold, italic),
+            ) {
             Some(face) => face
             None => self.unknown_face(family, bold, italic)
           }
       }
   }
+}
+
+///|
+/// The families Prawn knows (`font_families`), with their styles: the
+/// catalog's (not the icon sets'), and Prawn's built-in AFM families.
+pub fn FontCatalog::svg_families(
+  self : FontCatalog,
+) -> Array[(String, Array[String])] {
+  let families : Array[(String, Array[String])] = []
+  for key, _ in self.faces {
+    let parts = key.split("|").map(p => p.to_owned()).collect()
+    guard parts.length() == 3 else { continue }
+    let family = parts[0]
+    if self.icons.contains(family) {
+      continue
+    }
+    let style = match (parts[1] == "true", parts[2] == "true") {
+      (false, false) => "normal"
+      (true, false) => "bold"
+      (false, true) => "italic"
+      (true, true) => "bold_italic"
+    }
+    match families.iter().find_first(f => f.0 == family) {
+      Some(f) => f.1.push(style)
+      None => families.push((family, [style]))
+    }
+  }
+  for afm in ["Courier", "Times-Roman", "Helvetica"] {
+    if !families.iter().any(f => f.0 == afm) {
+      families.push((afm, ["normal", "bold", "italic", "bold_italic"]))
+    }
+  }
+  families
 }
