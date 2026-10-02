@@ -46,21 +46,10 @@ pdflite 0.3.2 and pagelayout 0.7.1.
 - **Activation regression.** The harvest has no committed test that the pinned highlighter
   version wins when a newer Rouge (4.x) is installed alongside it.
 
-## prawn module (`prawn/`, `bobzhang/prawn`)
+## prawn module
 
-- **API cleanup** before treating it as standalone:
-  - move converter-only `Style.text_transform` and `default_font_files` back to `pdf/`
-  - stop exposing `build_items` and `Item`, which are public only for a `pdf/` white-box test
-  - `Flow` is `pub(all)` for now
-- **Move to `~/git/prawn.mbt`.** Its `PLAN.md` describes a separate line-by-line port that emits
-  bytes through pdf-core. Settle in that plan:
-  - The licence: Prawn, pdf-core and TTFunk are Ruby/GPLv2/GPLv3, so a direct port can't simply
-    be MIT. See the NOTICE approach in `prawn/NOTICE`.
-  - The versions: the plan targets Prawn 2.5 / prawn-svg 0.40, but the oracle here is
-    asciidoctor-pdf 2.3.27 on Prawn 2.4.0 / prawn-svg 0.34.2.
-- **SVG regression coverage** (Codex nit on #7):
-  - SVG rendering under different documents' font scopes
-  - bounds-dependent SVG in a section title loaded after a differently sized document
+Moved to [prawn.mbt](https://github.com/bobzhang/prawn.mbt), with its open items (API cleanup,
+licence, versions, SVG coverage) in that repository's `PLAN.md`.
 
 ## Size
 

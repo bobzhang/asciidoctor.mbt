@@ -211,8 +211,7 @@ where Ruby itself crashes (manpage).
 | `io/` | async file-system integration (`load_file`, `convert_file`, `convert_source`) |
 | `cmd/asciidoctor` | CLI |
 | `cmd/golden`, `scripts/` | golden harvesting/replay, regex oracle, corpus comparison |
-| `pdf/` | the PDF backend, a module of its own (`bobzhang/asciidoctor-pdf`) |
-| `prawn/` | the Prawn layout the PDF backend uses, a module of its own (`bobzhang/prawn`): Prawn's cursor, text and fonts, prawn-svg, prawn-table sizing |
+| `pdf/` | the PDF backend, a module of its own (`bobzhang/asciidoctor-pdf`), laid out by [`bobzhang/prawn`](https://github.com/bobzhang/prawn.mbt) |
 | `tests/pdf_golden/` | conversions harvested from asciidoctor-pdf's RSpec suite (`scripts/pdf_harvest.mbtx`) |
 
 ## Development
@@ -259,14 +258,13 @@ moon run --target native scripts/pdf_compare.mbtx -- --spec-goldens  # replay as
 ### Releasing
 
 `bobzhang/asciidoctor` is published from the repository root (`moon publish`; `.moonignore` leaves
-`pdf/`, `prawn/` and `docs/` out). `bobzhang/asciidoctor-pdf` depends on the core and
-`bobzhang/prawn` releases named in `pdf/moon.mod`, so publish those first. moon applies the root
-`.moonignore` to `pdf/` and `prawn/` as well, so publish those modules from copies outside the
-repository, without the workspace file (`pdf/.moonignore` keeps its tests and tools out):
+`pdf/` and `docs/` out). `bobzhang/asciidoctor-pdf` depends on the core and
+[`bobzhang/prawn`](https://github.com/bobzhang/prawn.mbt) releases named in `pdf/moon.mod`, always
+published versions: release a prawn change first, then bump it there. moon applies the root
+`.moonignore` to `pdf/` as well, so publish it from a copy outside the repository, without the
+workspace file (`pdf/.moonignore` keeps its tests and tools out):
 
 ```
-rsync -a --exclude _build --exclude .mooncakes prawn/ /tmp/prawn/
-moon -C /tmp/prawn publish
 rsync -a --exclude _build --exclude .mooncakes --exclude moon.work pdf/ /tmp/asciidoctor-pdf/
 moon -C /tmp/asciidoctor-pdf publish
 ```

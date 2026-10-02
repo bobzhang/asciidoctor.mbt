@@ -25,9 +25,9 @@ The MIT license text is in LICENSE.
 
 == bobzhang/prawn
 
-The layout is bobzhang/prawn's (a separate module, from the same
-repository), with its own LICENSE and NOTICE: its prawn-svg port (MIT) and
-the parts adapted from Prawn and prawn-table.
+The layout is bobzhang/prawn's (a separate module,
+https://github.com/bobzhang/prawn.mbt), with its own LICENSE and NOTICE: its
+prawn-svg port (MIT) and the parts adapted from Prawn and prawn-table.
 
 == prawn-table 0.2.2 (Ruby's license terms, or GPLv2/GPLv3)
 
