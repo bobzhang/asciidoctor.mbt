@@ -35,6 +35,8 @@ pub fn diff(Map[String, String]) -> Lexer
 
 pub fn docker(Map[String, String]) -> Lexer
 
+pub fn elixir(Map[String, String]) -> Lexer
+
 pub fn erb(Map[String, String]) -> Lexer
 
 pub fn find(String) -> ((Map[String, String]) -> Lexer)?
@@ -48,6 +50,10 @@ pub fn gradle(Map[String, String]) -> Lexer
 pub fn groovy(Map[String, String]) -> Lexer
 
 pub fn group_text(@regex.MatchData, Int) -> String
+
+pub fn guess(String?, mimetype? : String) -> Array[String]
+
+pub fn haskell(Map[String, String]) -> Lexer
 
 pub fn html(Map[String, String]) -> Lexer
 
@@ -75,11 +81,21 @@ pub fn lexer_tags() -> Array[String]
 
 pub fn lookup_fancy(String) -> (((Map[String, String]) -> Lexer)?, Map[String, String])
 
+pub fn lua(Map[String, String]) -> Lexer
+
 pub fn make(Map[String, String]) -> Lexer
+
+pub fn markdown(Map[String, String]) -> Lexer
+
+pub fn matlab(Map[String, String]) -> Lexer
 
 pub fn nginx(Map[String, String]) -> Lexer
 
 pub fn option_bool(String) -> Bool
+
+pub fn perl(Map[String, String]) -> Lexer
+
+pub fn php(Map[String, String]) -> Lexer
 
 pub fn plain_text(Map[String, String]) -> Lexer
 
@@ -88,6 +104,10 @@ pub fn powershell(Map[String, String]) -> Lexer
 pub fn properties(Map[String, String]) -> Lexer
 
 pub fn protobuf(Map[String, String]) -> Lexer
+
+pub fn python(Map[String, String]) -> Lexer
+
+pub fn r(Map[String, String]) -> Lexer
 
 pub fn ruby(Map[String, String]) -> Lexer
 

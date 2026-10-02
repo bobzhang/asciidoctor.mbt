@@ -14,7 +14,13 @@
 #   cases    lexing cases of the lexers TAG...: [name, lexer spec, input,
 #            tokens], tokens as `shortname:length` (UTF-16 code units),
 #            from Rouge's demos, its visual samples (truncated at a line
-#            boundary) and the source blocks of asciidoctor-pdf's specs
+#            boundary), the source blocks of asciidoctor-pdf's specs, the
+#            inputs of Rouge's own lexer specs and targeted cases
+#   lexers   every lexer of Rouge in its order (Lexer.all): [tag, aliases,
+#            mimetypes, whether it has a detect?]
+#   guesses  Lexer.guess(source:) of Rouge's demos and a few sources:
+#            [name, source, tags] (none: plain text, several: ambiguous)
+#   keywords the builtin tables of the ported Lua, PHP and MATLAB lexers
 require 'json'
 require 'rouge'
 
@@ -124,9 +130,23 @@ end
   ['d', %(auto s = q"[a[b]c]";\nauto t = q{ int x = 1; };\n/+ outer /+ inner +/ still +/\nauto u = q"EOS\nline\nEOS";\n)],
   ['csharp', %(var s = $"x {1} y {name,10:F2}";\nvar v = $@"c:\\{dir}";\n)],
   ['rust', %(/** /* nested */ */\nfn main() { let r = r#"raw "str""#; }\n)],
+  ['markdown', %(```\n<?php echo 1; ?>\n```\n```\n#!/usr/bin/env python\nprint(1)\n```\n```\n# vim: ft=ruby\nputs 1\n```\n```\nplain words\n```\n)],
+  ['markdown?disabledmodules=String&disabledmodules=Math', %(```php?disabledmodules=Date%2FTime\nstrlen('x'); abs(1); date('Y');\n```\n)],
 ].each do |spec, input|
   next unless tags.include? spec[/\A[^?]+/]
   add.call %(#{spec}: targeted), spec, input
+end
+
+# Markdown fences that guess: an ambiguous guess (PHP and HTML) takes the
+# first lexer with Markdown's own options, not the fence's; a mimetype
+# given twice is a list, which no lexer has, so the source decides
+if tags.include? 'markdown'
+  {
+    'ambiguous guess' => %(```guess?disabledmodules=String\n<?php strlen('x'); ?>\n<html></html>\n```\n),
+    'repeated mimetype' => %(```guess?mimetype=text/x-php&mimetype=text/plain\n<?php echo 1; ?>\n```\n),
+  }.each do |what, input|
+    add.call %(markdown: #{what}), 'markdown', input
+  end
 end
 
 # the inputs of Rouge's own lexer specs (spec/lexers/<tag>_spec.rb:
@@ -185,4 +205,47 @@ Dir[File.join(spec_dir, '*_spec.rb')].sort.each do |file|
   end
 end
 
-File.write out, (JSON.generate tokens: tokens, themes: themes, unicode: unicode, cases: cases)
+lexers = Rouge::Lexer.all.map {|l| [l.tag, l.aliases, l.mimetypes, l.detectable?] }
+
+guesses = []
+guess = lambda do |name, source|
+  found = begin
+    l = Rouge::Lexer.guess source: source
+    l == Rouge::Lexers::PlainText ? [] : [l.tag]
+  rescue Rouge::Guesser::Ambiguous => e
+    e.alternatives.map(&:tag)
+  end
+  guesses << [name, source, found]
+end
+Dir[File.join(gem_dir, 'lib/rouge/demos/*')].sort.each do |demo|
+  guess.call %(demo #{File.basename demo}), (File.read demo, mode: 'r:UTF-8')
+end
+[
+  ['php open tag', %(<?php echo 1; ?>\n)],
+  ['hack open tag', %(<?hh echo 1;\n)],
+  ['python shebang', %(#!/usr/bin/env python3\nprint(1)\n)],
+  ['shell shebang', %(#!/bin/bash\necho hi\n)],
+  ['vim modeline', %(x = 1\n# vim: ft=ruby\n)],
+  ['emacs modeline', %(# -*- mode: python -*-\nx = 1\n)],
+  ['html doctype', %(<!DOCTYPE html>\n<html></html>\n)],
+  ['xml declaration', %(<?xml version="1.0"?>\n<a/>\n)],
+  ['yaml directive', %(%YAML 1.2\n---\na: 1\n)],
+  ['git diff', %(diff --git a/x b/x\n--- a/x\n+++ b/x\n)],
+  ['postscript and diff', %(%!PS\n--- a\n+++ b\n)],
+  ['plain words', %(nothing to see here\n)],
+  ['empty', ''],
+  ['bom and crlf', %(\uFEFF#!/usr/bin/perl\r\nprint 1;\r\n)],
+].each {|name, source| guess.call name, source }
+
+keywords = {}
+if tags.include? 'lua'
+  keywords['lua'] = Rouge::Lexers::Lua.builtins.map {|m, fns| [m.to_s, fns.to_a.sort] }.sort
+end
+if tags.include? 'php'
+  keywords['php'] = Rouge::Lexers::PHP.builtins.map {|m, fns| [m.to_s, fns.to_a.sort] }.sort
+end
+if tags.include? 'matlab'
+  keywords['matlab'] = [['', Rouge::Lexers::Matlab.builtins.to_a.sort]]
+end
+
+File.write out, (JSON.generate tokens: tokens, themes: themes, unicode: unicode, cases: cases, lexers: lexers, guesses: guesses, keywords: keywords)
