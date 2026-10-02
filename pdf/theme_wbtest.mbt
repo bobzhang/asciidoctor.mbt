@@ -5,7 +5,7 @@ fn use_theme(yaml : String) -> Unit raise {
   let theme = @theme.load_text(yaml)
   prepare_theme(theme)
   current_theme.val = theme
-  font_scope.val = None
+  session().font_scope = None
 }
 
 ///|

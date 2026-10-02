@@ -46,7 +46,7 @@ fn periphery_trim(
   side : String,
   page_size? : (Double, Double),
 ) -> Trim {
-  let setup = page_setup.val
+  let setup = session().page_setup
   let (page_w, page_h) = page_size.unwrap_or((setup.width, setup.height))
   let (margin_left, margin_right) = match side_margins.val {
     Some((recto, verso)) => if side == "verso" { verso } else { recto }

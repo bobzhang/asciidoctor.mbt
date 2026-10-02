@@ -11,7 +11,7 @@ fn resolve_top(flow : Flow, value : @theme.Value) -> Double {
   if s.has_suffix("vh") {
     page_height() * (@theme.ruby_string_to_f(s) / 100.0)
   } else if s.has_suffix("%") {
-    let setup = page_setup.val
+    let setup = session().page_setup
     let effective = setup.height - setup.margin_top - setup.margin_bottom
     flow.y + effective * (@theme.ruby_string_to_f(s) / 100.0)
   } else {

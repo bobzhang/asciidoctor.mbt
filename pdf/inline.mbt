@@ -59,6 +59,12 @@ priv struct Session {
   /// what `register` was given when the document's converter was created:
   /// a later `register` leaves the documents loaded before it as they were
   registration : Registration
+  /// the page size and margins (resolved when the conversion starts)
+  mut page_setup : PageSetup
+  /// the font blocks are set in while a category's `theme_font` is in force
+  /// (the admonition, example, sidebar or quote content), with its base
+  /// line height; None outside them
+  mut font_scope : (Style, Double)?
 }
 
 ///|
@@ -82,6 +88,8 @@ fn Session::new() -> Session {
     converting: false,
     unknown_fonts: Map([]),
     registration,
+    page_setup: default_page_setup(),
+    font_scope: None,
   }
 }
 

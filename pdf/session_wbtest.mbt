@@ -215,3 +215,38 @@ test "a document's flow hooks work in its own session" {
     content="[]",
   )
 }
+
+///|
+test "a document's image hooks size images against its own page" {
+  register()
+  let a = load_pdf(doc_a)
+  let b = load_pdf(doc_b)
+  activate_session(a)
+  let session_a = session()
+  // a 600pt content area in A, 200pt in B
+  session_a.page_setup = {
+    width: 400.0,
+    height: 700.0,
+    margin_top: 50.0,
+    margin_right: 50.0,
+    margin_bottom: 50.0,
+    margin_left: 50.0,
+  }
+  session_a.inline_images.push({
+    data: b"",
+    mime: "image/png",
+    px_w: 100,
+    px_h: 400,
+    width: "100",
+    fit: None,
+    svg: None,
+  })
+  let hooks_a = document_hooks()
+  activate_session(b)
+  session().page_setup = { ..session_a.page_setup, height: 300.0, }
+  // 100pt wide, 400pt tall: fits A's 600pt, would shrink to 200pt in B
+  debug_inspect(
+    (hooks_a.image_size)(0, 500.0, 12.0),
+    content="(100, 400, true)",
+  )
+}

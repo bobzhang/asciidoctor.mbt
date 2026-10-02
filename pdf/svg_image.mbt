@@ -23,7 +23,7 @@ fn fallback_svg_font_name() -> String {
 /// The width of a page's content area: the bounds an inline SVG image is
 /// sized in.
 fn content_width() -> Double {
-  let setup = page_setup.val
+  let setup = session().page_setup
   setup.width - setup.margin_left - setup.margin_right
 }
 

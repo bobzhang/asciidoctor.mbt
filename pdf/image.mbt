@@ -449,7 +449,7 @@ fn inline_image_size(
 /// The height of a page's content area: the bounds an inline image must
 /// fit in.
 fn content_height() -> Double {
-  let setup = page_setup.val
+  let setup = session().page_setup
   setup.height - setup.margin_top - setup.margin_bottom
 }
 

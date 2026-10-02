@@ -102,5 +102,5 @@ fn document_hooks() -> Hooks {
 ///|
 /// A flow over the document's pages (`scratch` for a dry run).
 fn new_flow(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
-  Flow::new(catalog, page_setup.val, hooks=document_hooks(), scratch~)
+  Flow::new(catalog, session().page_setup, hooks=document_hooks(), scratch~)
 }
