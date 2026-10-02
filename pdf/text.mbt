@@ -37,6 +37,7 @@ fn text_style(
     code_background: None,
     linenum: false,
     line_mark: false,
+    wrap_break: false,
   }
 }
 
