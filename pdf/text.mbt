@@ -34,6 +34,9 @@ fn text_style(
     wj: false,
     image: -1,
     callback: -1,
+    code_background: None,
+    linenum: false,
+    line_mark: false,
   }
 }
 
