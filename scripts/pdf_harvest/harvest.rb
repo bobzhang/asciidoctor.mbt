@@ -530,9 +530,12 @@ module PdfHarvest
     end
   end
 
+  # the messages of the document's logger (Asciidoctor::LoggerManager);
+  # those of other loggers (pygments.rb's, which logs its process ids) are
+  # not the conversion's
   module LoggerHook
     def add severity, message = nil, progname = nil, &block
-      if (rec = PdfHarvest.current)
+      if (rec = PdfHarvest.current) && (equal? ::Asciidoctor::LoggerManager.logger)
         msg = message || (block ? block.call : progname)
         entry = { 'severity' => (severity || ::Logger::Severity::UNKNOWN) }
         if msg.respond_to?(:[]) && msg.respond_to?(:key?) && !(::String === msg)
