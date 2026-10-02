@@ -991,6 +991,22 @@ test "rouge: markdown?disabledmodules=String&disabledmodules=Math: targeted" {
 }
 
 ///|
+test "rouge: markdown: ambiguous guess" {
+  check_lex(
+    "markdown", "```guess?disabledmodules=String\n<?php strlen('x'); ?>\n<html></html>\n```\n",
+    "p:3 nl:29 cp:5 :1 nb:6 p:1 s1:3 p:2 :1 cp:2 :1 nt:13 :1 p:3 :1",
+  )
+}
+
+///|
+test "rouge: markdown: repeated mimetype" {
+  check_lex(
+    "markdown", "```guess?mimetype=text/x-php&mimetype=text/plain\n<?php echo 1; ?>\n```\n",
+    "p:3 nl:46 cp:5 :1 k:4 :1 mi:1 p:1 :1 cp:2 :1 p:3 :1",
+  )
+}
+
+///|
 test "rouge: c: rouge spec #1" {
   check_lex("c", "// comment", "c1:10")
 }

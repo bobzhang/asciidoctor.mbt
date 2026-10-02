@@ -60,8 +60,9 @@ fn script_lexer_or_text(tag : String, options : Map[String, String]) -> Lexer {
 /// language with cgi-style options, built with `defaults` and the options of
 /// `spec` (an option of `spec` replaces all the values `defaults` has for
 /// it); None when the language is unknown. `guess` guesses from `code`
-/// (`guess`; an ambiguous guess takes the first lexer, as Markdown does,
-/// and a guessed lexer that is not ported is plain text).
+/// (`guess`; an ambiguous guess takes the first lexer with `defaults`
+/// alone, as Markdown's handler of `Ambiguous` does, a repeated mimetype
+/// narrows nothing, and a guessed lexer that is not ported is plain text).
 fn script_find_fancy(
   spec : String,
   code : String?,
@@ -84,9 +85,19 @@ fn script_find_fancy(
   }
   match factory {
     Some(f) => Some(f(options))
-    None if name == "guess" =>
+    None if name == "guess" => {
+      // a mimetype given more than once is a list, which is no lexer's
+      let mimetype = if options.contains(all_values_key("mimetype")) {
+        None
+      } else {
+        options.get("mimetype")
+      }
+      let guessed = guess(code, mimetype?)
+      // an ambiguous guess (Rouge raises Ambiguous): Markdown's handler
+      // takes the first lexer, with its own options only
+      let options = if guessed.length() > 1 { defaults.copy() } else { options }
       Some(
-        match guess(code, mimetype?=options.get("mimetype")).get(0) {
+        match guessed.get(0) {
           Some(tag) =>
             match script_find(tag) {
               Some(f) => f(options)
@@ -95,6 +106,7 @@ fn script_find_fancy(
           None => plain_text(options)
         },
       )
+    }
     None => None
   }
 }

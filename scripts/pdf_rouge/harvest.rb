@@ -137,6 +137,18 @@ end
   add.call %(#{spec}: targeted), spec, input
 end
 
+# Markdown fences that guess: an ambiguous guess (PHP and HTML) takes the
+# first lexer with Markdown's own options, not the fence's; a mimetype
+# given twice is a list, which no lexer has, so the source decides
+if tags.include? 'markdown'
+  {
+    'ambiguous guess' => %(```guess?disabledmodules=String\n<?php strlen('x'); ?>\n<html></html>\n```\n),
+    'repeated mimetype' => %(```guess?mimetype=text/x-php&mimetype=text/plain\n<?php echo 1; ?>\n```\n),
+  }.each do |what, input|
+    add.call %(markdown: #{what}), 'markdown', input
+  end
+end
+
 # the inputs of Rouge's own lexer specs (spec/lexers/<tag>_spec.rb:
 # assert_tokens_equal with a string literal) for the ported lexers
 literal = /assert_tokens_equal\s+(%q\((?:[^()\\]|\\.|\([^()]*\))*\)|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*,/m
