@@ -3,6 +3,7 @@ import {
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/io",
   "bobzhang/asciidoctor-pdf" @asciidoctor_pdf,
+  "bobzhang/asciidoctor-pdf/pygments",
   "bobzhang/asciidoctor-pdf/fonts" @bundled,
   "bobzhang/asciidoctor-pdf/fonts/sans",
   "bobzhang/asciidoctor-pdf/fonts/fallback",

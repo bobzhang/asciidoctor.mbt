@@ -269,6 +269,8 @@ let cases : Array[(String, String, String)] = [
   ("book-parts", "pdf/tests/book-parts.adoc", ""),
   ("line-metrics", "pdf/tests/line-metrics.adoc", ""),
   ("callouts", "pdf/tests/callouts.adoc", ""),
+  ("source-rouge", "pdf/tests/source-rouge.adoc", ""),
+  ("source-pygments", "pdf/tests/source-pygments.adoc", ""),
   ("icons", "pdf/tests/icons.adoc", ""),
   ("table-autowidth", "pdf/tests/table-autowidth.adoc", ""),
   ("arrange-block", "pdf/tests/arrange-block.adoc", ""),

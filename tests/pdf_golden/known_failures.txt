@@ -296,10 +296,11 @@ section_spec-1.70-1: page break/extra pages, geometry, navigation/metadata, styl
 section_spec-1.71-1: missing/extra text, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 6 in order of 8 Ruby / 8 spike
 section_spec-1.73-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 4 in order of 5 Ruby / 5 spike
 section_spec-1.8-1: styling/assets; raster p1 8.034% of content differs > 1.250%
-source_spec-1.1.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
-source_spec-1.1.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
-source_spec-1.1.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
-source_spec-1.1.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+source_spec-1.2.10-1: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.2.10-2: unsupported feature, styling/assets; raster p1 30.601% of content has flat (fill) differences > 0.500%
+source_spec-1.2.3-1: unsupported feature, styling/assets; raster p1 1.553% of content differs > 1.250%
+source_spec-1.2.4-1: unsupported feature, styling/assets; raster p1 1.584% of content differs > 1.250%
+source_spec-1.3.2-2: styling/assets; structure: fonts
 table_spec-1.10.1-1: geometry, styling/assets; within 1pt 11/13 (84.615%) < 99.500%
 table_spec-1.11.5-1: geometry; within 1pt 9/13 (69.230%) < 99.500%
 table_spec-1.13.10-1: missing/extra text, geometry, navigation/metadata; lines: 7 in order of 9 Ruby / 7 spike

@@ -359,6 +359,8 @@ async fn invoke(opts : CliOptions) -> Int {
     icon_fonts_dir?=icon_fonts_dir.map(d => @core.expand_path_from(cwd, d)),
     pdf_theme?,
   )
+  // `source-highlighter: pygments`
+  @pygments.register()
   for input in opts.input_files {
     let stdin = input == "-"
     let path = if stdin {

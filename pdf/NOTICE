@@ -135,3 +135,10 @@ Icon names
 Programs built with this module also link moonbitlang/pagelayout, which
 bundles Carlito, Liberation and Noto Sans SC fonts under the SIL Open Font
 License 1.1 (see that module's fonts/LICENSES).
+
+== Pygments (BSD-2-Clause)
+
+Programs that link the package bobzhang/asciidoctor-pdf/pygments (the
+command line does) also link bobzhang/pygments, a port of Pygments
+(Copyright 2006-present by the Pygments authors) under its own license (see
+that module's LICENSE).

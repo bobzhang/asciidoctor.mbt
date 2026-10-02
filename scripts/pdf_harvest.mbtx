@@ -87,7 +87,10 @@ let spec_gems : Ref[String] = { val: ".repos/gems-pdf-spec" }
 ///|
 /// The oracle: asciidoctor-pdf 2.3.27 and its runtime dependencies, at the
 /// versions the gem home the goldens were harvested with has (installed
-/// 2026-09-29).
+/// 2026-09-29), and the syntax highlighters it loads when a document asks
+/// for them (`source-highlighter`): rouge and pygments.rb, at the versions
+/// of the spec gems (added 2026-10-02), so that scripts/pdf_compare.mbtx
+/// can convert highlighted documents with the oracle.
 let runtime_pinned : Array[(String, String)] = [
   ("Ascii85", "2.0.1"),
   ("addressable", "2.9.0"),
@@ -110,7 +113,9 @@ let runtime_pinned : Array[(String, String)] = [
   ("prawn-table", "0.2.2"),
   ("prawn-templates", "0.1.2"),
   ("public_suffix", "7.0.5"),
+  ("pygments.rb", "2.4.1"),
   ("rexml", "3.4.4"),
+  ("rouge", "3.30.0"),
   ("treetop", "1.6.18"),
   ("ttfunk", "1.7.0"),
 ]

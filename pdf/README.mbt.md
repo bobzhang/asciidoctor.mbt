@@ -103,6 +103,28 @@ test "a theme with fonts of another package" {
 a path of its own (`pdf-fontsdir`, a font next to the theme file) are read through the document's
 `Vfs`, as in Ruby.
 
+## Source highlighting
+
+`source-highlighter: rouge` works out of the box: the package `bobzhang/asciidoctor-pdf/rouge` is a
+port of Rouge 3.30 (the version asciidoctor-pdf's own tests run with), its lexer core, its themes
+(`rouge-style`) and, token for token, these lexers: apache, batchfile, c, coffeescript, conf,
+console, cpp, csharp, css, d, dart, diff, docker, elixir, erb, go, gradle, groovy, haskell, html, ini,
+irb, java, javascript, json, json-doc, jsx, kotlin, lua, make, markdown, matlab, nginx, perl, php,
+plaintext, powershell, properties, protobuf, python, r, ruby, rust, sass, scala, scss, shell, sql,
+swift, toml, tsx, typescript, vue, xml and yaml (with their aliases). A language Rouge does not know,
+or one not ported yet, is set as plain text. Line numbers (`linenums`, `start`), highlighted lines
+(`highlight`) and callouts are laid out as asciidoctor-pdf does.
+
+`source-highlighter: pygments` needs Pygments, which is in a package of its own
+(`bobzhang/asciidoctor-pdf/pygments`, on [`bobzhang/pygments`](https://mooncakes.io/docs/bobzhang/pygments),
+a port of Pygments 2.21) so that a program links it only when it asks for it; the command line does:
+
+```mbt nocheck
+@pygments.register() // package bobzhang/asciidoctor-pdf/pygments
+```
+
+`source-highlighter: coderay` is not supported (listings are set in plain text).
+
 ## What is supported
 
 The converter follows asciidoctor-pdf 2.3.27's converter and theme loader: every bundled theme and
@@ -118,15 +140,14 @@ It is measured against Ruby asciidoctor-pdf 2.3.27 by `scripts/pdf_compare.mbtx`
 repository, which converts with both and compares page count, text, the position of every word
 (±1pt), rasterized pages and PDF structure:
 
-* the gate (36 documents covering every feature above): 36 / 36 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 1978 / 2329 pass (the rest are listed with
+* the gate (38 documents covering every feature above): 38 / 38 identical within the thresholds;
+* the conversions of asciidoctor-pdf's own RSpec suite: 2064 / 2416 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
 ## Known differences from Ruby asciidoctor-pdf
 
-* No source highlighting: `source-highlighter` (Rouge, Pygments, CodeRay) is ignored and listings
-  are set in plain text.
+* No CodeRay highlighting, and only the Rouge lexers listed above (see Source highlighting).
 * AsciiDoc table cells (`a|`), video poster images, GIF/BMP/TIFF and PDF images (`image::x.pdf[]`)
   are not rendered; image icons (`icons` other than `font`) show their alt text.
 * A few theme keys are ignored: `abstract_padding`, caption backgrounds,
