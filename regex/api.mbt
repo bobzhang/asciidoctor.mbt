@@ -339,6 +339,34 @@ fn Regex::try_at(
 }
 
 ///|
+/// Matches only at `pos`, as if the text began there: what Ruby's
+/// `StringScanner#scan` sees (without `fixed_anchor`), `s[pos:]` as the
+/// whole string, so `\A` and `^` match at `pos`, `\b` sees no character
+/// before it and lookbehind cannot look before it; without copying the
+/// rest of the text. Offsets stay those of `s`. Raises `RegexTimeout` when
+/// the step budget runs out.
+pub fn Regex::try_scan_at(
+  self : Regex,
+  s : String,
+  pos : Int,
+) -> MatchData? raise RegexTimeout {
+  if pos < 0 || pos > s.length() || splits_pair(s, pos) {
+    return None
+  }
+  let vm = self.acquire(s)
+  vm.base = pos
+  vm.search_start = pos
+  let m = self.try_at(vm, pos) catch {
+    RegexTimeout(pattern~, limit~) => {
+      self.release(vm)
+      raise RegexTimeout(pattern~, limit~)
+    }
+  }
+  self.release(vm)
+  m
+}
+
+///|
 /// Like `match_at`, but raises `RegexTimeout` when the step budget runs out.
 pub fn Regex::try_match_at(
   self : Regex,
