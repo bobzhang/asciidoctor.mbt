@@ -48,6 +48,8 @@ pub fn ruby(options : Map[String, String]) -> Lexer {
   // the heredocs opened on the current line: whether the terminator may be
   // indented (`<<-`, `<<~`), and the terminator
   let heredoc_queue : Array[(Bool, String)] = []
+  // where the queue starts (Ruby's `shift`, without moving the rest)
+  let heredoc_head = Ref(0)
   lx.state("symbols", fn(s) {
     // symbols
     s.rule(
@@ -196,6 +198,7 @@ pub fn ruby(options : Map[String, String]) -> Lexer {
   lx.start(fn(lx) {
     lx.push("expr_start")
     heredoc_queue.clear()
+    heredoc_head.val = 0
   })
   lx.state("whitespace", fn(s) {
     s.mix_in("inline_whitespace")
@@ -314,18 +317,18 @@ pub fn ruby(options : Map[String, String]) -> Lexer {
   })
   lx.state("test_heredoc", fn(s) {
     s.call("[^#\\\\\\n]*$", fn(lx, m) {
-      let check = match heredoc_queue.get(0) {
+      let check = match heredoc_queue.get(heredoc_head.val) {
         Some((true, _)) => Some(ruby_strip(m.matched()))
         Some((false, _)) => Some(ruby_rstrip(m.matched()))
         None => None
       }
       // check if we found the end of the heredoc
       if check is Some(c) &&
-        heredoc_queue.get(0) is Some((_, name)) &&
+        heredoc_queue.get(heredoc_head.val) is Some((_, name)) &&
         c == name {
-        ignore(heredoc_queue.remove(0))
+        heredoc_head.val += 1
         // if there's no more, we're done looking.
-        if heredoc_queue.is_empty() {
+        if heredoc_head.val >= heredoc_queue.length() {
           lx.pop()
         }
         lx.token("Name.Constant")

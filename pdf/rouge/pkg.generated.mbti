@@ -88,7 +88,7 @@ type State
 pub struct StateBuilder {
   // private fields
 }
-pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String) -> Unit
+pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String, can_match? : (String, Int) -> Bool) -> Unit
 pub fn StateBuilder::mix_in(Self, String) -> Unit
 pub fn StateBuilder::rule(Self, String, String, flags? : String, next? : String) -> Unit
 

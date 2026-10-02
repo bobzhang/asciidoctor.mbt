@@ -35,6 +35,7 @@ pub fn java(options : Map[String, String]) -> Lexer {
         lx.token("Operator", val=group_text(m, 4))
       },
       flags="mx",
+      can_match=signature_ahead(),
     )
     s.rule("@\{id}", "Name.Decorator")
     s.rule("(?:\{alt(declarations)})\\b", "Keyword.Declaration")
@@ -72,4 +73,48 @@ pub fn java(options : Map[String, String]) -> Lexer {
     s.rule("[a-z0-9_.]+\\*?", "Name.Namespace", flags="i", next="#pop")
   })
   lx
+}
+
+///|
+/// Whether a character can be part of a Java method signature before its
+/// `(` (the signature rule's `[a-zA-Z0-9_.\[\]<>]` and `\s`).
+fn is_signature_char(c : UInt16) -> Bool {
+  let c = c.to_int()
+  (c >= 'a'.to_int() && c <= 'z'.to_int()) ||
+  (c >= 'A'.to_int() && c <= 'Z'.to_int()) ||
+  (c >= '0'.to_int() && c <= '9'.to_int()) ||
+  c == '_'.to_int() ||
+  c == '.'.to_int() ||
+  c == '['.to_int() ||
+  c == ']'.to_int() ||
+  c == '<'.to_int() ||
+  c == '>'.to_int() ||
+  c == ' '.to_int() ||
+  (c >= 0x09 && c <= 0x0D)
+}
+
+///|
+/// The signature rule's `can_match`: a signature is signature characters up
+/// to a `(`, so the rule cannot match where the run of them does not end in
+/// one. The run's end is kept, so that the positions of one run are checked
+/// in constant time (the rule would rescan the rest of the run at each
+/// identifier, quadratic in a long run with no `(`).
+fn signature_ahead() -> (String, Int) -> Bool {
+  let last_text : Ref[String] = Ref("")
+  let run_start = Ref(-1)
+  let run_end = Ref(-1)
+  fn(text, pos) {
+    if !(physical_equal(text, last_text.val) &&
+      pos >= run_start.val &&
+      pos <= run_end.val) {
+      let mut end = pos
+      while end < text.length() && is_signature_char(text.unsafe_get(end)) {
+        end += 1
+      }
+      last_text.val = text
+      run_start.val = pos
+      run_end.val = end
+    }
+    run_end.val < text.length() && text.unsafe_get(run_end.val) == '('
+  }
 }

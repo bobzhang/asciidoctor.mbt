@@ -80,6 +80,56 @@ test "rouge: plaintext: visual sample" {
 }
 
 ///|
+test "rouge: ruby: rouge spec #1" {
+  check_lex("ruby", "foo\n  .bar()", "n:3 :3 p:1 nf:3 p:2")
+}
+
+///|
+test "rouge: ruby: rouge spec #2" {
+  check_lex("ruby", "foo\n  .bar()\n  .baz", "n:3 :3 p:1 nf:3 p:2 :3 p:1 nf:3")
+}
+
+///|
+test "rouge: ruby: rouge spec #3" {
+  check_lex("ruby", "foo.\n  bar()", "n:3 p:1 :3 nf:3 p:2")
+}
+
+///|
+test "rouge: ruby: rouge spec #4" {
+  check_lex("ruby", "foo.\n  bar().\n  baz", "n:3 p:1 :3 nf:3 p:3 :3 nf:3")
+}
+
+///|
+test "rouge: ruby: rouge spec #5" {
+  check_lex("ruby", "1..10", "mi:1 o:2 mi:2")
+}
+
+///|
+test "rouge: ruby: rouge spec #6" {
+  check_lex("ruby", "'a'...'z'", "s1:3 o:3 s1:3")
+}
+
+///|
+test "rouge: ruby: rouge spec #7" {
+  check_lex("ruby", "2.3 + 5", "mf:3 :1 o:1 :1 mi:1")
+}
+
+///|
+test "rouge: ruby: rouge spec #8" {
+  check_lex("ruby", "12.3e4", "mf:6")
+}
+
+///|
+test "rouge: ruby: rouge spec #9" {
+  check_lex("ruby", "5.67e-9", "mf:7")
+}
+
+///|
+test "rouge: ruby: rouge spec #10" {
+  check_lex("ruby", "20.4e+8", "mf:7")
+}
+
+///|
 test "rouge: ruby: source_spec #1" {
   check_lex("ruby", "puts 'yo, world!'", "nb:4 :1 s1:12")
 }
@@ -180,14 +230,21 @@ test "rouge: xml: source_spec #23" {
 
 ///|
 test "rouge: ruby: source_spec #24" {
-  check_lex(
-    "ruby", "----\nEOS\nlines = (to_pdf input, attribute_overrides: { 'source-highlighter' => 'coderay' }, analyze: :line).lines\ntext = (to_pdf input, attribute_overrides: { 'source-highlighter' => 'coderay' }, analyze: true).text\n(expect (lines[0][:from][:y] - lines[1][:from][:y]).abs).to be < 5\n(expect text).to be_empty\nend).not_to raise_exception\nend\nend\ncontext 'Pygments' do\nit 'should highlight source using Pygments if source-highlighter is pygments' do\npdf = to_pdf <<~'EOS', analyze: true\n:source-highlighter: pygments\n[source,ruby]\n----\nputs \"Hello, Pygments!\"\n----\nEOS\nhello_text = (pdf.find_text '\"Hello, Pygments!\"')[0]\n(expect hello_text).not_to be_nil\n(expect hello_text[:font_color]).to eql 'DD2200'\n(expect hello_text[:font_name]).to eql 'mplus1mn-regular'\nend\nit 'should display encoded source without highlighting if lexer fails to return a value' do\ninput = <<~'EOS'\n:source-highlighter: pygments\n[source,xml]\n----\n<payload>&amp;</payload>\n----\nEOS\n# warm up pygments\npdf = to_pdf input, analyze: true\n(expect pdf.text).to have_size 3\nxml_lexer = Pygments::Lexer.find_by_alias 'xml'\n# emulate highlight returning nil\nclass << xml_lexer\nalias_method :_highlight, :highlight\ndef highlight *_args; end\nend\npdf = to_pdf <<~'EOS', analyze: true\n:source-highlighter: pygments\n[source,xml]\n----\n<payload>&amp;</payload>\n----\nEOS\n(expect pdf.text).to have_size 1\nsource_text = pdf.text[0]\n(expect source_text[:string]).to eql '<payload>&amp;</payload>'\n(expect source_text[:font_color]).to eql '333333'\nensure\nclass << xml_lexer\nundef_method :highlight\nalias_method :highlight, :_highlight\nend\nend\nit 'should not crash when adding indentation guards' do\n(expect do\npdf = to_pdf <<~'EOS', analyze: true\n:source-highlighter: pygments\n[source,yaml]",
-    "o:4 :1 no:3 :1 n:5 :1 o:1 :1 p:1 n:6 :1 n:5 p:1 :1 ss:21 p:1 :1 s1:20 :1 o:2 :1 s1:9 :1 p:2 :1 ss:14 p:2 nf:5 :1 n:4 :1 o:1 :1 p:1 n:6 :1 n:5 p:1 :1 ss:21 p:1 :1 s1:20 :1 o:2 :1 s1:9 :1 p:2 :1 ss:9 kp:4 p:2 nf:4 :1 p:1 n:6 :1 p:1 n:5 p:1 mi:1 p:2 ss:5 p:2 ss:2 p:1 :1 o:1 :1 n:5 p:1 mi:1 p:2 ss:5 p:2 ss:2 p:3 nf:3 p:2 nf:2 :1 n:2 :1 o:1 :1 mi:1 :1 p:1 n:6 :1 n:4 p:2 nf:2 :1 n:8 :1 k:3 p:2 nf:6 :1 n:15 :1 k:3 :1 k:3 :1 n:7 :1 s1:10 :1 k:2 :1 n:2 :1 s1:74 :1 k:2 :1 n:3 :1 o:1 :1 n:6 :1 o:3 no:5 p:1 :1 ss:9 kp:4 sh:79 no:3 :1 n:10 :1 o:1 :1 p:1 n:3 p:1 nf:9 :1 s1:20 p:2 mi:1 p:1 :1 p:1 n:6 :1 n:10 p:2 nf:6 :1 n:6 :1 p:1 n:6 :1 n:10 p:1 ss:11 p:3 nf:2 :1 n:3 :1 s1:8 :1 p:1 n:6 :1 n:10 p:1 ss:10 p:3 nf:2 :1 n:3 :1 s1:18 :1 k:3 :1 n:2 :1 s1:85 :1 k:2 :1 n:5 :1 o:1 :1 o:3 no:5 sh:79 no:3 :1 c1:18 :1 n:3 :1 o:1 :1 n:6 :1 n:5 p:1 :1 ss:9 kp:4 :1 p:1 n:6 :1 n:3 p:1 nf:4 p:2 nf:2 :1 n:9 :1 mi:1 :1 n:9 :1 o:1 :1 no:8 o:2 no:5 p:1 nf:13 :1 s1:5 :1 c1:33 :1 k:5 :1 o:2 :1 n:9 :1 kp:12 :1 ss:11 p:1 :1 ss:10 :1 k:3 :1 nf:9 :1 o:1 n:5 p:1 :1 k:3 :1 k:3 :1 n:3 :1 o:1 :1 n:6 :1 o:3 no:5 p:1 :1 ss:9 kp:4 sh:79 no:3 :1 p:1 n:6 :1 n:3 p:1 nf:4 p:2 nf:2 :1 n:9 :1 mi:1 :1 n:11 :1 o:1 :1 n:3 p:1 nf:4 p:1 mi:1 p:1 :1 p:1 n:6 :1 n:11 p:1 ss:7 p:3 nf:2 :1 n:3 :1 s1:26 :1 p:1 n:6 :1 n:11 p:1 ss:11 p:3 nf:2 :1 n:3 :1 s1:8 :1 k:6 :1 k:5 :1 o:2 :1 n:9 :1 n:12 :1 ss:10 :1 kp:12 :1 ss:10 p:1 :1 ss:11 :1 k:3 :1 k:3 :1 n:2 :1 s1:49 :1 k:2 :1 p:1 n:6 :1 k:2 :1 n:3 :1 o:1 :1 n:6 :1 o:3 no:5 p:1 :1 ss:9 kp:4 sh:44",
-  )
+  check_lex("ruby", "", "")
 }
 
 ///|
-test "rouge: ruby: source_spec #27" {
+test "rouge: ruby: source_spec #25" {
+  check_lex("ruby", "puts \"Hello, Pygments!\"", "nb:4 :1 s2:18")
+}
+
+///|
+test "rouge: xml: source_spec #26" {
+  check_lex("xml", "<payload>&amp;</payload>", "nt:9 ni:5 nt:10")
+}
+
+///|
+test "rouge: ruby: source_spec #30" {
   check_lex(
     "ruby", "# Matches a hex color value like #FF0000\nif /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend",
     "c1:40 :1 k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
@@ -195,48 +252,48 @@ test "rouge: ruby: source_spec #27" {
 }
 
 ///|
-test "rouge: ruby: source_spec #28" {
+test "rouge: ruby: source_spec #31" {
   check_lex(
     "ruby", "if /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend", "k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
   )
 }
 
 ///|
-test "rouge: text: source_spec #34" {
+test "rouge: text: source_spec #37" {
   check_lex("text", "  lead space\nflush\n  lead space", ":31")
 }
 
 ///|
-test "rouge: ruby: source_spec #35" {
+test "rouge: ruby: source_spec #38" {
   check_lex("ruby", "<1>", "o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: xml: source_spec #36" {
+test "rouge: xml: source_spec #39" {
   check_lex(
     "xml", "<root>\n  <child>content</child>\n</root>", "nt:6 :3 nt:7 :7 nt:8 :1 nt:7",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #38" {
+test "rouge: ruby: source_spec #41" {
   check_lex("ruby", "source = %(before\n\\<1>\nafter)", "n:6 :1 o:1 :1 sx:20")
 }
 
 ///|
-test "rouge: ruby: source_spec #39" {
+test "rouge: ruby: source_spec #42" {
   check_lex(
     "ruby", "source = %(before\nnot a conum <1>\nafter)", "n:6 :1 o:1 :1 sx:31",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #40" {
+test "rouge: ruby: source_spec #43" {
   check_lex("ruby", "puts 'Hello, World' <1>", "nb:4 :1 s1:14 :1 o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: java: source_spec #42" {
+test "rouge: java: source_spec #45" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1><2>\n  String getDob();\n  int getAge(); // <3><4><5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:9 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:12 :1 o:1",
@@ -244,7 +301,7 @@ test "rouge: java: source_spec #42" {
 }
 
 ///|
-test "rouge: java: source_spec #43" {
+test "rouge: java: source_spec #46" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1> <2>\n  String getDob();\n  int getAge(); // <3> <4> <5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:10 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:14 :1 o:1",
@@ -252,7 +309,7 @@ test "rouge: java: source_spec #43" {
 }
 
 ///|
-test "rouge: java: source_spec #44" {
+test "rouge: java: source_spec #47" {
   check_lex(
     "java", "public interface Person {\n  String getName(); <1>\n  String getDob(); <2>\n  int getAge(); <3>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 mi:1 o:1 :3 nc:6 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :3 kt:3 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :1 o:1",
@@ -260,7 +317,7 @@ test "rouge: java: source_spec #44" {
 }
 
 ///|
-test "rouge: java: source_spec #45" {
+test "rouge: java: source_spec #48" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:6 :1 o:1",
@@ -268,7 +325,7 @@ test "rouge: java: source_spec #45" {
 }
 
 ///|
-test "rouge: java: source_spec #46" {
+test "rouge: java: source_spec #49" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.> <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:10 :1 o:1",
@@ -276,7 +333,7 @@ test "rouge: java: source_spec #46" {
 }
 
 ///|
-test "rouge: java: source_spec #47" {
+test "rouge: java: source_spec #50" {
   check_lex(
     "java", "public interface Person {\n  String getName();\n}  <1>", "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 :2 o:1 mi:1 o:1",
   )

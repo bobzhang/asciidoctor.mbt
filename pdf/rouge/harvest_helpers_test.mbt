@@ -17,6 +17,11 @@ fn check_lex(spec : String, input : String, expected : String) -> Unit raise {
     None => fail("no lexer for \{spec}")
   }
   let tokens = lexer.tokens(input)
+  // a lexer lexes again from a fresh state (Rouge's `lex` resets it)
+  let again = lexer.tokens(input)
+  if again != tokens {
+    fail("\{spec}: lexing again with the same lexer gives other tokens")
+  }
   let text = tokens.map(t => t.1).join("")
   if text != input {
     fail("\{spec}: the tokens do not add up to the input")

@@ -22,22 +22,8 @@ out, checkout, spec_dir, pdf_lib, *tags = ARGV
 
 # asciidoctor-pdf's default Rouge theme
 require File.join(pdf_lib, 'asciidoctor/pdf/ext/rouge/themes/asciidoctor_pdf_default')
-# Ruby 4.0 has no CGI.parse (cgi-style lexer options); restore it as the cgi
-# gem defines it (scripts/pdf_harvest/harvest.rb does the same)
-require 'cgi'
-unless CGI.respond_to? :parse
-  def CGI.parse query
-    params = {}
-    query.split(/[&;]/).each do |pairs|
-      key, value = pairs.split('=', 2).collect {|v| CGI.unescape v }
-      next unless key
-      params[key] ||= []
-      params[key].push value if value
-    end
-    params.default = [].freeze
-    params
-  end
-end
+# Ruby 4.0 has no CGI.parse (cgi-style lexer options): restore it
+require_relative '../pdf_harvest/cgi_parse'
 
 MAX_SAMPLE = 6000
 
@@ -126,13 +112,46 @@ end
   add.call %(#{spec}: repeated options), spec, input
 end
 
+# targeted cases: options, nested states, Unicode
+[
+  ['erb?parent=json', %({"a": <%= @x %>, "b": [1, 2]}\n)],
+  ['erb?parent=xml', %(<a href="<%= url %>">\n  <% if x %>y<% end %>\n</a>\n)],
+  ['vue', %(<template>\n  <p :id="x">{{ msg }}</p>\n</template>\n<script>\nexport default { data() { return { msg: 'hi' } } }\n</script>\n<style scoped>\np { color: red; }\n</style>\n)],
+  ['console?comments=true', %(# a comment\n$ ls -l\ntotal 0\n)],
+  ['console?error=error:,fatal:&output=yaml', %($ make\nerror: no rule\nkey: value\nfatal: stop\n)],
+  ['console?lang=ruby&prompt=%3E%3E', %(>> puts 1 + 2\n3\n)],
+  ['yaml', %(a: &anchör x\nb: *anchör\nc: &é_1 [1, 2]\nd: *é_1\n)],
+  ['d', %(auto s = q"[a[b]c]";\nauto t = q{ int x = 1; };\n/+ outer /+ inner +/ still +/\nauto u = q"EOS\nline\nEOS";\n)],
+  ['csharp', %(var s = $"x {1} y {name,10:F2}";\nvar v = $@"c:\\{dir}";\n)],
+  ['rust', %(/** /* nested */ */\nfn main() { let r = r#"raw "str""#; }\n)],
+].each do |spec, input|
+  next unless tags.include? spec[/\A[^?]+/]
+  add.call %(#{spec}: targeted), spec, input
+end
+
+# the inputs of Rouge's own lexer specs (spec/lexers/<tag>_spec.rb:
+# assert_tokens_equal with a string literal) for the ported lexers
+literal = /assert_tokens_equal\s+(%q\((?:[^()\\]|\\.|\([^()]*\))*\)|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*,/m
+tags.each do |tag|
+  file = File.join checkout, 'spec/lexers', %(#{tag}_spec.rb)
+  next unless File.file? file
+  n = 0
+  (File.read file, mode: 'r:UTF-8').scan(literal) do |(source)|
+    input = (eval source rescue nil) # a string literal of the spec file
+    next unless String === input
+    add.call %(#{tag}: rouge spec ##{n += 1}), tag, input
+  end
+end
+
 # the source blocks of asciidoctor-pdf's specs whose language is a lexer of
 # TAG... (with their cgi-style options)
 wanted = tags.map {|t| Rouge::Lexer.find(t) }.to_set
 Dir[File.join(spec_dir, '*_spec.rb')].sort.each do |file|
   src = File.read file, mode: 'r:UTF-8'
   n = 0
-  src.scan(/^( *)\[source,([^\]\n,]+)[^\]\n]*\]\n\1(-{4,})\n(.*?)\n\1\3$/m) do |indent, lang, _, body|
+  # the first closing fence ends a block, an empty one too
+  src.scan(/^( *)\[source,([^\]\n,]+)[^\]\n]*\]\n\1(-{4,})\n(?:(.*?)\n)??\1\3$/m) do |indent, lang, _, body|
+    body ||= ''
     lexer_class = (Rouge::Lexer.lookup_fancy lang)[0] rescue nil
     next unless wanted.include? lexer_class
     next if body.include? '#{'

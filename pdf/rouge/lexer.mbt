@@ -33,7 +33,9 @@ priv enum Action {
 /// A rule of a state: a pattern and its action, or the rules of another
 /// state mixed in (by name, resolved when the rule is tried).
 priv enum Rule {
-  Match(@regex.Regex, Bool, Action)
+  /// the pattern, whether it starts with `^`, the action, and a test that
+  /// tells, before matching, when the pattern cannot match at a position
+  Match(@regex.Regex, Bool, Action, ((String, Int) -> Bool)?)
   Mixin(String)
 }
 
@@ -62,6 +64,10 @@ pub struct Lexer {
   priv states : Map[String, State]
   priv starts : Array[(Lexer) -> Unit]
   priv mut stack : Array[State]
+  /// whether `stack` was made since the last reset (Rouge's `@stack`, nil
+  /// until the `stack` accessor makes it `[:root]`; an emptied stack stays
+  /// empty)
+  priv mut stack_ready : Bool
   /// the current match (Rouge's `@current_stream`)
   priv mut current : @regex.MatchData?
   /// where tokens go (Rouge's `@output_stream`)
@@ -105,10 +111,12 @@ pub fn Lexer::new(
 ) -> Lexer {
   {
     tag,
-    options,
+    // Rouge copies the options it is given (its readers delete from them)
+    options: options.copy(),
     states: Map([]),
     starts: [],
     stack: [],
+    stack_ready: false,
     current: None,
     output: fn(_, _) {  },
     null_steps: 0,
@@ -198,20 +206,23 @@ pub fn StateBuilder::rule(
     None => Emit(tok)
   }
   self.rules.push(
-    Match(compile(pattern, flags), pattern.has_prefix("^"), action),
+    Match(compile(pattern, flags), pattern.has_prefix("^"), action, None),
   )
 }
 
 ///|
-/// `rule re do |m| ... end`.
+/// `rule re do |m| ... end`. `can_match`, when given, tells before the
+/// pattern is tried that it cannot match at a position of the text (to spare
+/// an attempt that would scan far); it must not say so where it matches.
 pub fn StateBuilder::call(
   self : StateBuilder,
   pattern : String,
   f : (Lexer, @regex.MatchData) -> Unit,
   flags? : String = "",
+  can_match? : (String, Int) -> Bool,
 ) -> Unit {
   self.rules.push(
-    Match(compile(pattern, flags), pattern.has_prefix("^"), Call(f)),
+    Match(compile(pattern, flags), pattern.has_prefix("^"), Call(f), can_match),
   )
 }
 
@@ -234,6 +245,7 @@ fn Lexer::get_state(self : Lexer, name : String) -> State {
 /// `[:root]`, then the start blocks.
 pub fn Lexer::reset(self : Lexer) -> Unit {
   self.stack = []
+  self.stack_ready = false
   self.current = None
   for f in self.starts {
     f(self)
@@ -241,9 +253,11 @@ pub fn Lexer::reset(self : Lexer) -> Unit {
 }
 
 ///|
+/// Rouge's `stack` accessor: `[:root]` the first time after a reset.
 fn Lexer::ensure_stack(self : Lexer) -> Unit {
-  if self.stack.is_empty() && self.custom is None {
-    self.stack.push(self.get_state("root"))
+  if !self.stack_ready && self.custom is None {
+    self.stack = [self.get_state("root")]
+    self.stack_ready = true
   }
 }
 
@@ -335,6 +349,7 @@ fn Lexer::stream_tokens(
 ///|
 /// The state on top of the stack.
 fn Lexer::top_state(self : Lexer) -> State {
+  self.ensure_stack()
   match self.stack.last() {
     Some(state) => state
     None => abort("rouge: \{self.tag}: empty stack!")
@@ -359,8 +374,11 @@ fn Lexer::step(
           Some(size) => return Some(size)
           None => ()
         }
-      Match(re, at_bol, action) => {
+      Match(re, at_bol, action, can_match) => {
         if at_bol && !bol {
+          continue
+        }
+        if can_match is Some(possible) && !possible(text, pos) {
           continue
         }
         let m = re.try_scan_at(text, pos) catch { _ => None }
@@ -487,6 +505,7 @@ pub fn Lexer::push_rules(self : Lexer, defn : (StateBuilder) -> Unit) -> Unit {
 ///|
 /// Pop `times` states (Rouge's `pop!`).
 pub fn Lexer::pop(self : Lexer, times? : Int = 1) -> Unit {
+  self.ensure_stack()
   if self.stack.is_empty() {
     abort("rouge: \{self.tag}: empty stack!")
   }
@@ -498,6 +517,7 @@ pub fn Lexer::pop(self : Lexer, times? : Int = 1) -> Unit {
 ///|
 /// Replace the top of the stack with `name` (Rouge's `goto`).
 pub fn Lexer::goto(self : Lexer, name : String) -> Unit {
+  self.ensure_stack()
   if self.stack.is_empty() {
     abort("rouge: \{self.tag}: empty stack!")
   }
@@ -508,6 +528,7 @@ pub fn Lexer::goto(self : Lexer, name : String) -> Unit {
 /// Back to `[:root]` (Rouge's `reset_stack`).
 pub fn Lexer::reset_stack(self : Lexer) -> Unit {
   self.stack = [self.get_state("root")]
+  self.stack_ready = true
 }
 
 ///|
@@ -527,6 +548,7 @@ pub fn Lexer::state_is(self : Lexer, name : String) -> Bool {
 ///|
 /// The depth of the state stack.
 pub fn Lexer::stack_size(self : Lexer) -> Int {
+  self.ensure_stack()
   self.stack.length()
 }
 
