@@ -59,6 +59,12 @@ priv struct Session {
   mut template_error : String?
   /// the fonts (`family (style)`) reported as unknown
   unknown_fonts : Map[String, Bool]
+  /// the Rouge formatter of the document's source blocks, made for the
+  /// first (asciidoctor-pdf's `@rouge_formatter`)
+  mut rouge_formatter : RougeFormatter?
+  /// an error Prawn raises while the document is laid out (a line that
+  /// cannot fit), which fails its conversion
+  mut failure : String?
   /// what `register` was given when the document's converter was created:
   /// a later `register` leaves the documents loaded before it as they were
   registration : Registration
@@ -91,6 +97,8 @@ fn Session::new() -> Session {
     converting: false,
     template_error: None,
     unknown_fonts: Map([]),
+    rouge_formatter: None,
+    failure: None,
     registration,
     page_setup: default_page_setup(),
     font_scope: None,

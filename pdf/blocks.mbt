@@ -166,12 +166,13 @@ fn Converter::convert_code(
   )
   let face = flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
-  let text = guard_indentation(node.content())
-  let fragments = if plain {
-    [({ text, style, anchor: None, } : Fragment)]
-  } else {
-    parse_formatted(text, style, normalize=false)
+  let chunks = self.code_chunks(node, style, plain~)
+  // the highlighter's text colour, for the fragments that set none
+  let style = match chunks.font_color {
+    Some(color) => { ..style, color, }
+    None => style
   }
+  let fragments = chunks.fragments
   let (pad_top, pad_right, pad_bottom, pad_left) = padding_of("code")
   // `autofit` (`compute_autofit_font_size`): a smaller font when the widest
   // line does not fit, no smaller than `code_font_size_min` (else
@@ -233,10 +234,34 @@ fn Converter::convert_code(
     let (left, right) = (flow.left, flow.right)
     flow.move_down(pad_top)
     flow.indent(pad_left, pad_right, fn() {
-      flow.typeset(fragments, metrics, style, bottom_gutter=pad_bottom)
+      let fragments = if chunks.source_wrap {
+        match source_wrap(fragments, flow.text(), flow.width()) {
+          Some(wrapped) => wrapped
+          None => {
+            // a line that cannot fit fails the conversion, as Prawn's
+            // CannotFit does in Ruby
+            session().failure = Some("Prawn::Errors::CannotFit")
+            fragments
+          }
+        }
+      } else {
+        fragments
+      }
+      if chunks.highlighted && fragments.is_empty() {
+        // no text (an empty block a highlighter left without fragments):
+        // Prawn prints no line, only the bottom padding of the line
+        // metrics follows
+        flow.y += metrics.padding_bottom
+      } else {
+        flow.typeset(fragments, metrics, style, bottom_gutter=pad_bottom)
+      }
     })
     flow.pad_bottom(pad_bottom)
-    match frame_of("code") {
+    let frame = match chunks.background {
+      Some(bg) => frame_of("code", background=Some(bg))
+      None => frame_of("code")
+    }
+    match frame {
       Some(frame) =>
         flow.underlay(start, fn(top, bottom, first, last) {
           frame.items(left, right, top, bottom, first, last)

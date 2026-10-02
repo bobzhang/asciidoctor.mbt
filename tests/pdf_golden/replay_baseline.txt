@@ -3,10 +3,10 @@
 
 records: 2536
 replayed: 2415 / 2536
-  pass: 2024 / 2415
-  fail: 391 / 2415 (391 listed as known, 0 new)
-  theme-dependent: 1237 / 2415 (pass 1040)
-  default theme: 1178 / 2415 (pass 984)
+  pass: 2074 / 2415
+  fail: 341 / 2415 (341 listed as known, 0 new)
+  theme-dependent: 1237 / 2415 (pass 1045)
+  default theme: 1178 / 2415 (pass 1029)
 not replayed, skipped: 121 / 2536
 
 skipped by reason:
@@ -36,22 +36,22 @@ replayed by status:
 failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): 0 / 2415
 
 failing records by category (a record can be in several):
-  300	styling/assets
-  195	geometry
-  103	missing/extra text
-  96	unsupported feature
-  81	navigation/metadata
+  255	styling/assets
+  179	geometry
+  87	missing/extra text
+  80	navigation/metadata
+  46	unsupported feature
   22	reading order
   14	page break/extra pages
   8	line-wrap change
 
 failing records by first gate failure:
-  116	lines
-  90	raster
+  100	lines
+  89	raster
   59	geometry (within 1pt)
-  39	structure: fonts
-  21	raster (flat fills)
+  14	raster (flat fills)
   14	structure: outline
+  13	structure: fonts
   12	indentation
   11	coverage
   7	structure: links
@@ -62,17 +62,17 @@ failing records by first gate failure:
   2	structure: page boxes
 
 failing records by gate failure (any):
-  252	raster
-  160	raster (flat fills)
-  154	geometry (within 1pt)
-  122	lines
-  113	coverage
-  103	words
-  72	structure: fonts
+  224	raster
+  141	raster (flat fills)
+  139	geometry (within 1pt)
+  106	lines
+  97	coverage
+  87	words
+  41	structure: fonts
   41	structure: outline
   38	structure: destinations
-  25	structure: links
-  23	indentation
+  24	structure: links
+  20	indentation
   7	structure: page labels
   6	pages
   6	structure: document info
@@ -80,7 +80,8 @@ failing records by gate failure (any):
   3	structure: viewer settings
 
 failing records reporting unsupported content (kind, what):
-  77	attribute source-highlighter
+  23	attribute source-highlighter=pygments
+  4	attribute source-highlighter=coderay
   4	theme caption background
   3	theme abstract_padding
   3	theme footer_column_rule
@@ -129,7 +130,7 @@ by spec file: pass / replayed (records, theme-dependent)
   running_content_spec: 166 / 188 (190, themes 176)
   section_spec: 92 / 105 (106, themes 60)
   sidebar_spec: 27 / 27 (27, themes 18)
-  source_spec: 22 / 99 (111, themes 9)
+  source_spec: 72 / 99 (111, themes 9)
   stem_spec: 4 / 4 (4, themes 1)
   table_spec: 158 / 190 (194, themes 98)
   thematic_break_spec: 12 / 14 (14, themes 13)

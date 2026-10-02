@@ -1,0 +1,130 @@
+= Source Highlighting with Rouge
+:source-highlighter: rouge
+
+Source blocks in the languages documents use most, highlighted by Rouge.
+
+[source,ruby]
+----
+require 'sinatra' # <1>
+
+class Greeter < Base
+  attr_reader :name
+
+  def initialize(name = "World")
+    @name = name
+  end
+
+  def greet
+    puts "Hello, #{@name}!" if @name =~ /\w+/
+    %w(a b c).map(&:upcase)
+  end
+end <2>
+----
+<1> Library import
+<2> End of the class
+
+[source,java,linenums]
+----
+package org.example;
+
+import java.util.List;
+
+/**
+ * A greeting.
+ */
+public class Greeting {
+    private static final int MAX = 0x10;
+
+    @Override
+    public String toString() {
+        return "Hello " + List.of(1, 2.5f, 'c');
+    }
+}
+----
+
+[source,xml,highlight=2..3]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <!-- a comment -->
+  <name>demo &amp; more</name>
+</project>
+----
+
+[source,yaml]
+----
+server:
+  port: 8080 # the port
+  hosts: [a.example.org, "b.example.org"]
+spring:
+  profiles:
+    active: dev
+----
+
+[source,javascript,linenums,start=98,highlight=99]
+----
+const add = (a, b) => a + b;
+// a comment
+export default function greet(name) {
+  return `Hello, ${name}!`;
+}
+----
+
+[source,python]
+----
+@dataclass
+class Point:
+    x: float = 0.0  # default
+
+def norm(p: Point) -> float:
+    """The length."""
+    return (p.x ** 2) ** 0.5
+----
+
+[source,console]
+----
+$ ./gradlew build --info
+BUILD SUCCESSFUL in 2s
+$ echo "$HOME" | wc -c
+----
+
+[source,diff]
+----
+--- a/file.txt
++++ b/file.txt
+@@ -1,2 +1,2 @@
+-old line
++new line
+ context
+----
+
+[source,c,linenums]
+----
+#include <stdio.h>
+
+int main(void) {
+	printf("a very long line that does not fit on one line of the listing and has to wrap at least once, %d\n", 42);
+	return 0;
+}
+----
+
+[source,json]
+----
+{"name": "demo", "version": 1.2, "tags": ["a", "b"], "nested": {"ok": true, "none": null}}
+----
+
+[source,sql]
+----
+SELECT id, name FROM users WHERE age > 21 ORDER BY name; -- adults
+----
+
+[source,php?start_inline=1]
+----
+$total = array_sum([1, 2, 3]); echo "total: $total";
+----
+
+[source,unknownlanguage]
+----
+plain text, as Rouge knows no such language
+----
