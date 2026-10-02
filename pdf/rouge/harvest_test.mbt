@@ -35,6 +35,22 @@ test "rouge: d: visual sample" {
 }
 
 ///|
+test "rouge: r: demo" {
+  check_lex(
+    "r", "dbenford <- function(x){\n    log10(1 + 1/x)\n}\n\npbenford <- function(q){\n    cumprobs <- cumsum(dbenford(1:9))\n    return(cumprobs[q])\n}\n",
+    "n:8 w:1 o:2 w:1 k:8 p:1 n:1 p:2 w:5 n:5 p:1 m:1 w:1 o:1 w:1 m:1 o:1 n:1 p:1 w:1 p:1 w:2 n:8 w:1 o:2 w:1 k:8 p:1 n:1 p:2 w:5 n:8 w:1 o:2 w:1 nf:6 p:1 n:8 p:1 m:1 o:1 m:1 p:2 w:5 nf:6 p:1 n:8 p:1 n:1 p:2 w:1 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: r: visual sample" {
+  check_lex(
+    "r", "#!/usr/bin/env Rscript\n### Example R script for syntax highlighting\n\n# This is also a comment\n\n## Valid names\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV0123456789._a <- NULL\nf2_bar <- NULL\nF2_BAR <- NULL\n.foo_ <- NULL\n._foo <- NULL\n. <- NULL\n.. <- NULL\n... <- NULL\nc <- NULL\nc(T, F)\n\n## Invalid names\n0abc <- NULL\n.0abc <- NULL\nabc+cde <- NULL\n_ <- NULL\n_x <- NULL\n\n## Reserved Words\nNA\nNA_integer_\nNA_real_\nNA_character_\nNA_complex_\nNULL\nNaN\nInf\n## Not reserved\nNULLa <- NULL\nNULL1 <- NULL\nNULL. <- NULL\nNA_foo_ <- NULL\n\n## Numbers\n12345678901\n123456.78901\n123e3\n123E3\n1.23e-3\n1.23e3\n1.23e-3\n.25\n## integer constants\n123L\n1.23L\n## imaginary numbers\n123i\n-123i\n123e4i\n123e-4i\n## Hex numbers\n0xabcdefABCDEF01234\n0xabcp123\n0xabcP123\n## Not hex\n0xg\n\n## Special operators %xyz%\n## %xyz%\n1 %% 2\ndiag(2) %*% diag(2)\n1 %/% 2\n1 %in% 1:10\ndiag(2) %o% diag(2)\ndiag(2) %x% diag(2)\n`%foo bar%` <- function(x, y) x + y\n1 %foo bar% 2\n\n## Control Structures (3.2) and Function\n## if, else\nif (TRUE) print(\"foo\") else print(\"bar\")\n## For, in\nfor(i in 1:5) {\n    print(i)\n}\n## While, break\ni <- 1\nwhile (TRUE) {\n    i <- i + 1\n    if (i > 3) break\n}\n## Repeat\nrepeat {1+1}\n## Switch\nx <- 3\nswitch(x, 2+2, mean(1:10), rnorm(5))\n## Function, dot-dot-dot, return\nfoo <- function(...) {\n    return(sum(...))\n}\n# Not keywords\nfunctiona <- 2 + 2\nfunction. <- 2 + 2\nfunction1 <- 2 + 2\n\n\n## Grouping Tokens 10.3.7\n## Parentheses\n1 + (2 + 3)\n## brackets\nfoo <- function(a) {\n    a + 1\n}\n\n## Indexing 10.3.8\n## []\nbar <- 1:10\nbar[3]\n## [[]]\nfoo <- list(a=1, b=2, c=3)\nfoo[[\"a\"]]\n## $\nfoo$a\nfoo$\"a\"\n\n## Operators\n2 - 2\n2 + 2\n2 ~ 2\n! TRUE\n?\"help\"\n1:2\n2 * 2\n2 / 2\n2^2\n2 < 2\n2 > 2\n2 == 2\n2 >= 2\n2 <= 2\n2 != 2\nTRUE & FALSE\nTRUE && FALSE\nTRUE | FALSE\nTRUE || FALSE\nfoo <- 2 + 2\nfoo = 2 + 2\n2 + 2 -> foo\nfoo <<- 2 + 2\n2 + 2 ->> foo\nbase:::sum\nbase::sum\n\n## Strings\nfoo <- \"hello, world!\"\nfoo <- 'hello, world!'\nfoo <- \"Hello, 'world!\"\nfoo <- 'Hello, \"world!'\nfoo <- 'Hello, \\'world!\\''\nfoo <- \"Hello, \\\"world!\\\"\"\nfoo <- \"Hello,\nworld!\"\nfoo <- 'Hello,\nworld!'\n\n## Backtick strings\n`foo123 +!\"bar'baz` <- 2 + 2\nx = ` ` % % 2\n\n## Builtin names\n\nLETTERS\nletters\nmonth.abb\nmonth.name\npi\n\n## Roxygen\n\n#' A description\n#'\n#' Long description\n#' @param x the object\n#' @return A logical indicating whether \\code{x == 0}\nis_zero = function (x) x == 0\n",
+    "c1:22 w:1 c1:44 w:2 c1:24 w:2 c1:14 w:1 n:61 w:1 o:2 w:1 kc:4 w:1 n:6 w:1 o:2 w:1 kc:4 w:1 n:6 w:1 o:2 w:1 kc:4 w:1 n:5 w:1 o:2 w:1 kc:4 w:1 n:5 w:1 o:2 w:1 kc:4 w:1 n:1 w:1 o:2 w:1 kc:4 w:1 n:2 w:1 o:2 w:1 kc:4 w:1 n:3 w:1 o:2 w:1 kc:4 w:1 n:1 w:1 o:2 w:1 kc:4 w:1 nf:1 p:1 nb:1 p:1 w:1 nb:1 p:1 w:2 c1:16 w:1 m:1 n:3 w:1 o:2 w:1 kc:4 w:1 m:2 n:3 w:1 o:2 w:1 kc:4 w:1 n:3 o:1 n:3 w:1 o:2 w:1 kc:4 w:1 err:1 w:1 o:2 w:1 kc:4 w:1 err:1 n:1 w:1 o:2 w:1 kc:4 w:2 c1:17 w:1 kc:2 w:1 kc:11 w:1 kc:8 w:1 kc:13 w:1 kc:11 w:1 kc:4 w:1 kc:3 w:1 kc:3 w:1 c1:15 w:1 n:5 w:1 o:2 w:1 kc:4 w:1 n:5 w:1 o:2 w:1 kc:4 w:1 n:5 w:1 o:2 w:1 kc:4 w:1 n:7 w:1 o:2 w:1 kc:4 w:2 c1:10 w:1 m:11 w:1 m:12 w:1 m:5 w:1 m:5 w:1 m:7 w:1 m:6 w:1 m:7 w:1 m:3 w:1 c1:20 w:1 m:4 w:1 m:5 w:1 c1:20 w:1 m:4 w:1 m:5 w:1 m:6 w:1 m:7 w:1 c1:14 w:1 mh:19 w:1 mh:9 w:1 mh:9 w:1 c1:10 w:1 m:1 n:2 w:2 c1:26 w:1 c1:8 w:1 m:1 w:1 o:2 w:1 m:1 w:1 n:4 p:1 m:1 p:1 w:1 o:3 w:1 n:4 p:1 m:1 p:1 w:1 m:1 w:1 o:3 w:1 m:1 w:1 m:1 w:1 o:4 w:1 m:1 o:1 m:2 w:1 n:4 p:1 m:1 p:1 w:1 o:3 w:1 n:4 p:1 m:1 p:1 w:1 n:4 p:1 m:1 p:1 w:1 o:3 w:1 n:4 p:1 m:1 p:1 w:1 n:11 w:1 o:2 w:1 k:8 p:1 n:1 p:1 w:1 n:1 p:1 w:1 n:1 w:1 o:1 w:1 n:1 w:1 m:1 w:1 o:9 w:1 m:1 w:2 c1:40 w:1 c1:11 w:1 k:2 w:1 p:1 kc:4 p:1 w:1 n:5 p:1 s2:5 p:1 w:1 k:4 w:1 n:5 p:1 s2:5 p:1 w:1 c1:10 w:1 k:3 p:1 n:1 w:1 k:2 w:1 m:1 o:1 m:1 p:1 w:1 p:1 w:5 n:5 p:1 n:1 p:1 w:1 p:1 w:1 c1:15 w:1 n:1 w:1 o:2 w:1 m:1 w:1 k:5 w:1 p:1 kc:4 p:1 w:1 p:1 w:5 n:1 w:1 o:2 w:1 n:1 w:1 o:1 w:1 m:1 w:5 k:2 w:1 p:1 n:1 w:1 o:1 w:1 m:1 p:1 w:1 k:5 w:1 p:1 w:1 c1:9 w:1 k:6 w:1 p:1 m:3 p:1 w:1 c1:9 w:1 n:1 w:1 o:2 w:1 m:1 w:1 nf:6 p:1 n:1 p:1 w:1 m:3 p:1 w:1 n:4 p:1 m:1 o:1 m:2 p:2 w:1 n:5 p:1 m:1 p:2 w:1 c1:32 w:1 n:3 w:1 o:2 w:1 k:8 p:1 n:3 p:1 w:1 p:1 w:5 nf:6 p:1 nf:3 p:1 n:3 p:2 w:1 p:1 w:1 c1:14 w:1 n:9 w:1 o:2 w:1 m:1 w:1 o:1 w:1 m:1 w:1 n:9 w:1 o:2 w:1 m:1 w:1 o:1 w:1 m:1 w:1 n:9 w:1 o:2 w:1 m:1 w:1 o:1 w:1 m:1 w:3 c1:25 w:1 c1:14 w:1 m:1 w:1 o:1 w:1 p:1 m:1 w:1 o:1 w:1 m:1 p:1 w:1 c1:11 w:1 n:3 w:1 o:2 w:1 k:8 p:1 n:1 p:1 w:1 p:1 w:5 n:1 w:1 o:1 w:1 m:1 w:1 p:1 w:2 c1:18 w:1 c1:5 w:1 n:3 w:1 o:2 w:1 m:1 o:1 m:2 w:1 n:3 p:1 m:1 p:1 w:1 c1:7 w:1 n:3 w:1 o:2 w:1 nf:4 p:1 n:1 o:1 m:1 p:1 w:1 n:1 o:1 m:1 p:1 w:1 n:1 o:1 m:1 p:1 w:1 n:3 p:2 s2:3 p:2 w:1 c1:4 w:1 n:3 o:1 n:1 w:1 n:3 o:1 s2:3 w:2 c1:12 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 o:1 w:1 kc:4 w:1 o:1 s2:6 w:1 m:1 o:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 o:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:2 w:1 m:1 w:1 m:1 w:1 o:2 w:1 m:1 w:1 m:1 w:1 o:2 w:1 m:1 w:1 m:1 w:1 o:2 w:1 m:1 w:1 kc:4 w:1 o:1 w:1 kc:5 w:1 kc:4 w:1 o:2 w:1 kc:5 w:1 kc:4 w:1 o:1 w:1 kc:5 w:1 kc:4 w:1 o:2 w:1 kc:5 w:1 n:3 w:1 o:2 w:1 m:1 w:1 o:1 w:1 m:1 w:1 n:3 w:1 o:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 o:2 w:1 n:3 w:1 n:3 w:1 o:3 w:1 m:1 w:1 o:1 w:1 m:1 w:1 m:1 w:1 o:1 w:1 m:1 w:1 o:3 w:1 n:3 w:1 n:4 o:3 n:3 w:1 n:4 o:2 n:3 w:2 c1:10 w:1 n:3 w:1 o:2 w:1 s2:15 w:1 n:3 w:1 o:2 w:1 s1:15 w:1 n:3 w:1 o:2 w:1 s2:16 w:1 n:3 w:1 o:2 w:1 s1:16 w:1 n:3 w:1 o:2 w:1 s1:19 w:1 n:3 w:1 o:2 w:1 s2:19 w:1 n:3 w:1 o:2 w:1 s2:15 w:1 n:3 w:1 o:2 w:1 s1:15 w:2 c1:19 w:1 n:19 w:1 o:2 w:1 m:1 w:1 o:1 w:1 m:1 w:1 n:1 w:1 o:1 w:1 n:3 w:1 o:3 w:1 m:1 w:2 c1:16 w:2 nb:7 w:1 nb:7 w:1 nb:9 w:1 nb:10 w:1 nb:2 w:2 c1:10 w:2 cd:16 w:1 cd:2 w:1 cd:19 w:1 cd:22 w:1 cd:53 w:1 n:7 w:1 o:1 w:1 k:8 w:1 p:1 n:1 p:1 w:1 n:1 w:1 o:2 w:1 m:1 w:1",
+  )
+}
+
+///|
 test "rouge: go: demo" {
   check_lex(
     "go", "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, 世界\")\n}\n",
@@ -158,6 +174,37 @@ test "rouge: jsx: visual sample" {
   check_lex(
     "jsx", "<header className=\"App-header\">\n  Hello React!\n</header>\n\nvar myDivElement = <div className=\"foo\" />;\nReactDOM.render(myDivElement, document.getElementById('example'));\n\nvar MyComponent = React.createClass({/*...*/});\nvar myElement = <MyComponent someProperty={true} />;\nReactDOM.render(myElement, document.getElementById('example'));\n\nvar myElement = <MyComponent someProperty={{a:true}.a} />;\nvar myElement = <MyComponent someProperty={function() {\n  var x = { a: true };\n  return x.a;\n}} />\n\nthing.otherThing<MyComponent.property // comment - this is comparison\nvar myElement = <MyComponent thing={thing.otherThing>2}>\n  hello, world!\n</MyComponent>\n\nvar content = <Container>{window.isLoggedIn ? <Nav /> : <Login />}</Container>;\n\n// These two are equivalent in JSX for disabling a button\n<input type=\"button\" disabled />;\n<input type=\"button\" disabled={true} />;\n\n// And these two are equivalent in JSX for not disabling a button\n<input type=\"button\" />;\n<input type=\"button\" disabled={false} />;\n\nvar App = (\n  <Form>\n    <Form.Row>\n      <Form.Label />\n      <Form.Input />\n    </Form.Row>\n  </Form>\n);\n\nvar content = (\n  <Nav>\n    {/* child comment, put {} around */}\n    a slash-star that isn't a comment because this is html: /*\n    <Person\n      /* multi\n         line\n         comment */\n      name={window.isLoggedIn ? window.name : ''} // end of line comment\n    />\n  </Nav>\n);\n\nvar thing = <A b={function() { var c = <D e={true}>&quot;</D>; }()}/>\n\nclass LikeButton extends React.Component {\n  constructor() {\n    super();\n    this.state = {\n      liked: false\n    };\n    this.handleClick = this.handleClick.bind(this);\n  }\n  handleClick() {\n    this.setState({liked: !this.state.liked});\n  }\n  render() {\n    const text = this.state.liked ? 'liked' : 'haven\\'t liked';\n    return (\n      <div onClick={this.handleClick}>\n        You {text} this. Click to toggle.\n      </div>\n    );\n  }\n}\n\nReactDOM.render(\n  <LikeButton />,\n  document.getElementById('example')\n);\n",
     "p:1 nt:6 :1 na:9 p:1 s:12 p:1 :16 p:2 nt:6 p:1 :2 kd:3 :1 nx:12 :1 o:1 :1 p:1 nt:3 :1 na:9 p:1 s:5 :1 p:3 :1 nx:8 p:1 nx:6 p:1 nx:12 p:1 :1 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:3 :2 kd:3 :1 nx:11 :1 o:1 :1 nx:5 p:1 nx:11 p:2 cm:7 p:3 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 kc:4 si:1 :1 p:3 :1 nx:8 p:1 nx:6 p:1 nx:9 p:1 :1 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:3 :2 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 p:1 na:1 p:1 kc:4 p:2 nx:1 si:1 :1 p:3 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:12 p:1 si:1 kd:8 p:2 :1 p:1 :3 kd:3 :1 nx:1 :1 o:1 :1 p:1 :1 na:1 p:1 :1 kc:4 :1 p:2 :3 k:6 :1 nx:1 p:1 nx:1 p:1 :1 p:1 si:1 :1 p:2 :2 nx:5 p:1 nx:10 o:1 nx:11 p:1 nx:8 :1 c1:31 :1 kd:3 :1 nx:9 :1 o:1 :1 p:1 nc:11 :1 na:5 p:1 si:1 nx:5 p:1 nx:10 o:1 mi:1 si:1 p:1 :17 p:2 nc:11 p:1 :2 kd:3 :1 nx:7 :1 o:1 :1 p:1 nc:9 p:1 si:1 nb:6 p:1 nx:10 :1 p:1 :1 p:1 nc:3 :1 p:2 :1 p:1 :1 p:1 nc:5 :1 p:2 si:1 p:2 nc:9 p:2 :2 c1:57 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 :1 p:3 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 p:1 si:1 kc:4 si:1 :1 p:3 :2 c1:65 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 p:3 :1 p:1 nt:5 :1 na:4 p:1 s:8 :1 na:8 p:1 si:1 kc:5 si:1 :1 p:3 :2 kd:3 :1 nx:3 :1 o:1 :1 p:1 :3 p:1 nc:4 p:1 :5 p:1 nc:4 p:1 nc:3 p:1 :7 p:1 nc:4 p:1 nc:5 :1 p:2 :7 p:1 nc:4 p:1 nc:5 :1 p:2 :5 p:2 nc:4 p:1 nc:3 p:1 :3 p:2 nc:4 p:1 :1 p:2 :2 kd:3 :1 nx:7 :1 o:1 :1 p:1 :3 p:1 nc:3 p:1 :5 si:1 cm:34 si:1 :68 p:1 nc:6 :7 cm:42 :7 na:4 p:1 si:1 nb:6 p:1 nx:10 :1 p:1 :1 nb:6 p:1 nx:4 :1 p:1 :1 dl:2 si:1 :1 c1:22 :5 p:2 :3 p:2 nc:3 p:1 :1 p:2 :2 kd:3 :1 nx:5 :1 o:1 :1 p:1 nc:1 :1 na:1 p:1 si:1 kd:8 p:2 :1 p:1 :1 kd:3 :1 nx:1 :1 o:1 :1 p:1 nc:1 :1 na:1 p:1 si:1 kc:4 si:1 p:1 ni:6 p:2 nc:1 p:2 :1 p:3 si:1 p:2 :2 kd:5 :1 nx:10 :1 kd:7 :1 nx:5 p:1 nx:9 :1 p:1 :3 kd:11 p:2 :1 p:1 :5 k:5 p:3 :5 k:4 p:1 nx:5 :1 o:1 :1 p:1 :7 na:5 p:1 :1 kc:5 :5 p:2 :5 k:4 p:1 nx:11 :1 o:1 :1 k:4 p:1 nx:11 p:1 nx:4 p:1 k:4 p:2 :3 p:1 :3 nx:11 p:2 :1 p:1 :5 k:4 p:1 nx:8 p:2 na:5 p:1 :1 o:1 k:4 p:1 nx:5 p:1 nx:5 p:3 :3 p:1 :3 nx:6 p:2 :1 p:1 :5 kd:5 :1 nx:4 :1 o:1 :1 k:4 p:1 nx:5 p:1 nx:5 :1 p:1 :1 dl:1 s1:5 dl:1 :1 p:1 :1 dl:1 s1:5 se:2 s1:7 dl:1 p:1 :5 k:6 :1 p:1 :7 p:1 nt:3 :1 na:7 p:1 si:1 k:4 p:1 nx:11 si:1 p:1 :13 si:1 nx:4 si:1 :30 p:2 nt:3 p:1 :5 p:2 :3 p:1 :1 p:1 :2 nx:8 p:1 nx:6 p:1 :3 p:1 nc:10 :1 p:3 :3 nb:8 p:1 nx:14 p:1 dl:1 s1:7 dl:1 p:1 :1 p:2 :1",
+  )
+}
+
+///|
+test "rouge: lua: demo" {
+  check_lex(
+    "lua", "-- defines a factorial function\nfunction fact (n)\n  if n == 0 then\n    return 1\n  else\n    return n * fact(n-1)\n  end\nend\n    \nprint(\"enter a number:\")\na = io.read(\"*number\")        -- read a number\nprint(fact(a))\n",
+    "c1:31 :1 k:8 :1 nf:4 :1 p:1 n:1 p:1 :3 k:2 :1 n:1 :1 o:2 :1 mi:1 :1 k:4 :5 k:6 :1 mi:1 :3 k:4 :5 k:6 :1 n:1 :1 o:1 :1 n:4 p:1 n:1 o:1 mi:1 p:1 :3 k:3 :1 k:3 :6 nb:5 p:1 s2:17 p:1 :1 n:1 :1 o:1 :1 nb:7 p:1 s2:9 p:1 :8 c1:16 :1 nb:5 p:1 n:4 p:1 n:1 p:2 :1",
+  )
+}
+
+///|
+test "rouge: lua: visual sample" {
+  check_lex(
+    "lua", "#!/usr/local/bin/lua\n\n--[[ Example code by Steve Donovan from luanova.org ]]\n\n-- basic1.lua\nrequire\"orbit\"\n\n-- declaration\nmodule(\"basic1\", package.seeall, orbit.new)\n\n-- handler\nfunction index(web)\n  return render_index()\nend\n\nsnowman('☃')\n\n-- dispatch\nbasic1:dispatch_get(index, \"/\", \"/index\")\n\n-- render\nfunction render_index()\n   return [[\n    <head></head>\n    <html>\n    <h2>Pretty Easy!</h2>\n    </html>\n    ]]\nend\n\n-- basic3.lua\nrequire\"orbit\"\n\nmodule(\"basic3\", package.seeall, orbit.new)\n\nbasic3:dispatch_get(function(web)\n    local ls = {}\n    for k,v in pairs(web.GET) do\n        table.insert(ls,('<li>%s = %s</li>'):format(k,v))\n    end\n    ls = '<ul>'..table.concat(ls,'\\n')..'</ul>'\n    return ([[\n    <html><head></head><body>\n    Web Variables <br/>\n    %s\n    </body></html>\n    ]]):format(ls)\nend, \"/\", \"/index\")\n\n-- basic2.lua\nrequire\"orbit\"\n\nmodule(\"basic2\", package.seeall, orbit.new)\n\nfunction index(web)\n  return render_index(collectgarbage(\"count\"))\nend\n\nbasic2:dispatch_get(index, \"/\", \"/index\")\n-- any file in this directory will be served statically\nbasic2:dispatch_static (\"/images/.+\")\n\nlocal template = [[\n<head></head>\n<html>\n%s\n</html>\n]]\n\nfunction render_page(contents)\n    return template:format(contents)\nend\n\nfunction render_index(mem)\n   return ([[\n    <img src=\"/images/lua.png\"/>\n    <h2>Memory used by Lua is %6.0f kB<h2>\n   ]]):format(mem)\nend\n\n-- html1.lua\nrequire\"orbit\"\n\nfunction generate()\n    return html {\n        head{title \"HTML Example\"},\n        body{\n            h2{\"Here we go again!\"}\n        }\n    }\nend\n\norbit.htmlify(generate)\n\nprint(generate())\n\nfunction generate()\n    return sensors {\n        sensor {name=\"one\"},\n        sensor {name=\"two\"},\n    }\nend\n\nfunction generate (web)\n    local list = {}\n    for name,value in pairs(web.GET) do\n        table.insert(list,li(name..\" = \"..value))\n    end\n    return ul(list)\nend\n\nrequire\"orbit\"\n\nfunction wrap (inner)\n    return html{ head(), body(inner) }\nend\n\nfunction test ()\n    return wrap(form (H'table' {\n        tr{td\"First name\",td( input{type='text', name='first'})},\n        tr{td\"Second name\",td(input{type='text', name='second'})},\n        tr{ td(input{type='submit', value='Submit!'}),\n            td(input{type='submit',value='Cancel'})\n        },\n    }))\nend\n\n\norbit.htmlify(wrap,test)\n\nprint(test())\n\nfunction show_form (web)\n    return wrap(form {\n        htable {\n            {text(\"First name\",'first')},\n            {text(\"Second name\",'second')},\n            {submit 'Submit', submit 'Cancel'},\n        }\n    })\nend\n\n-- ORM1.lua\nrequire \"orbit\"\nrequire \"luasql.sqlite3\"\nlocal env = luasql.sqlite3()\n\nfunction dump (t)\n    if #t > 0 then\n        for _,row in ipairs(t) do\n            dump(row)\n        end\n    else\n        for field,value in pairs(t) do\n            if type(value) == 'string' then\n                value = value:sub(1,60)\n            end\n            print(field,type(value),value)\n        end\n        print '-----'\n    end\nend\n\nmapper = orbit.model.new()\nmapper.conn = env:connect(\"../blog/blog.db\")\nmapper.driver = \"sqlite3\"\nmapper.table_prefix = 'blog_'\n\nposts = mapper:new 'post'  -- maps to blog_post table\n\n-- print out the second post\nsecond = posts:find(2)\n\ndump(second)\n\ndump(posts:find_all(\"id = ? or id = ?\",\n    {2,4,order = \"published_at asc\"}))\n\norbit.htmlify(blog1,'render_.+')\n\nfunction index(web)\n  return render_index(posts:find_all())\nend\n\nblog1:dispatch_get(index, \"/\", \"/index\")\n\nlocal function limit (s,maxlen)\n    if #s > maxlen then\n        return s:sub(1,maxlen)..'...'\n    else\n        return s\n    end\nend\n\nfunction render_page(contents)\n    return html {\n        head { title 'Blog Example' },\n        body (contents)\n    }\nend\n\nfunction render_post(post)\n    return div {\n        h3 (post.id .. ' ' .. post.title),\n        p (limit(post.body,128)),\n        em(os.date('%a %b %d %H:%M %Y',post.published_at)),\n        ' ',post.n_comments,' comments'\n    }\nend\n\nfunction render_index(posts)\n    local res = {}\n    for i,post in ipairs(posts) do\n        res[i] = render_post(post)\n    end\n    return render_page(res)\nend\n\nfunction index(web)\n  local keyword = web.GET.keyword or ''\n  if keyword == '' then return {}\n  else\n    return render_index(posts:find_all('title like ?',{'%'..keyword..'%'}))\n  end\nend\n\nfunction render_index(posts)\n    local res = {}\n    append(res,p (form {\n        input {type='text',name='keyword'},\n        input {type='submit',value='Submit'},\n    }))\n    append(res,hr())\n    append(res,h2(('Found %d posts'):format(#posts)))\n    for _,post in ipairs(posts) do\n        append(res,render_post(post))\n    end\n    return render_page(res)\nend\n\n\n--[[ Example code from http://lua-users.org/wiki/SimpleLuaClasses ]]\nAccount = {}\nAccount.__index = Account\n\nfunction Account.create(balance)\n   local acnt = {}             -- our new object\n   setmetatable(acnt,Account)  -- make Account handle lookup\n   acnt.balance = balance      -- initialize our object\n   return acnt\nend\n\nfunction Account:withdraw(amount)\n   self.balance = self.balance - amount\nend\n\n-- create and use an Account\nacc = Account.create(1000)\nacc:withdraw(100)\n\nif\n   url = url:gsub(\"^['\\\"]\", \"\"):gsub(\"['\\\"]$\", \"\")\nend\n",
+    "cp:20 :2 cm:54 :2 c1:13 :1 nb:7 s2:7 :2 c1:14 :1 n:6 p:1 s2:8 p:1 :1 n:7 p:1 n:6 p:1 :1 n:5 p:1 n:3 p:1 :2 c1:10 :1 k:8 :1 nf:5 p:1 n:3 p:1 :3 k:6 :1 n:12 p:2 :1 k:3 :2 n:7 p:1 s1:3 p:1 :2 c1:11 :1 n:6 p:1 n:12 p:1 n:5 p:1 :1 s2:3 p:1 :1 s2:8 p:1 :2 c1:9 :1 k:8 :1 nf:12 p:2 :4 k:6 :1 s:76 :1 k:3 :2 c1:13 :1 nb:7 s2:7 :2 n:6 p:1 s2:8 p:1 :1 n:7 p:1 n:6 p:1 :1 n:5 p:1 n:3 p:1 :2 n:6 p:1 n:12 p:1 k:8 p:1 n:3 p:1 :5 kd:5 :1 n:2 :1 o:1 :1 p:2 :5 k:3 :1 n:1 p:1 n:1 :1 k:2 :1 nb:5 p:1 n:3 p:1 n:3 p:1 :1 k:2 :9 nb:12 p:1 n:2 p:2 s1:18 p:2 n:6 p:1 n:1 p:1 n:1 p:2 :5 k:3 :5 n:2 :1 o:1 :1 s1:6 o:2 nb:12 p:1 n:2 p:1 s1:1 se:2 s1:1 p:1 o:2 s1:7 :5 k:6 :1 p:1 s:89 p:2 n:6 p:1 n:2 p:1 :1 k:3 p:1 :1 s2:3 p:1 :1 s2:8 p:1 :2 c1:13 :1 nb:7 s2:7 :2 n:6 p:1 s2:8 p:1 :1 n:7 p:1 n:6 p:1 :1 n:5 p:1 n:3 p:1 :2 k:8 :1 nf:5 p:1 n:3 p:1 :3 k:6 :1 n:12 p:1 nb:14 p:1 s2:7 p:2 :1 k:3 :2 n:6 p:1 n:12 p:1 n:5 p:1 :1 s2:3 p:1 :1 s2:8 p:1 :1 c1:55 :1 n:6 p:1 n:15 :1 p:1 s2:12 p:1 :2 kd:5 :1 n:8 :1 o:1 :1 s:37 :2 k:8 :1 nf:11 p:1 n:8 p:1 :5 k:6 :1 n:8 p:1 n:6 p:1 n:8 p:1 :1 k:3 :2 k:8 :1 nf:12 p:1 n:3 p:1 :4 k:6 :1 p:1 s:84 p:2 n:6 p:1 n:3 p:1 :1 k:3 :2 c1:12 :1 nb:7 s2:7 :2 k:8 :1 nf:8 p:2 :5 k:6 :1 n:4 :1 p:1 :9 n:4 p:1 n:5 :1 s2:14 p:2 :9 n:4 p:1 :13 n:2 p:1 s2:19 p:1 :9 p:1 :5 p:1 :1 k:3 :2 n:5 p:1 n:7 p:1 n:8 p:1 :2 nb:5 p:1 n:8 p:3 :2 k:8 :1 nf:8 p:2 :5 k:6 :1 n:7 :1 p:1 :9 n:6 :1 p:1 n:4 o:1 s2:5 p:2 :9 n:6 :1 p:1 n:4 o:1 s2:5 p:2 :5 p:1 :1 k:3 :2 k:8 :1 nf:8 :1 p:1 n:3 p:1 :5 kd:5 :1 n:4 :1 o:1 :1 p:2 :5 k:3 :1 n:4 p:1 n:5 :1 k:2 :1 nb:5 p:1 n:3 p:1 n:3 p:1 :1 k:2 :9 nb:12 p:1 n:4 p:1 n:2 p:1 n:4 o:2 s2:5 o:2 n:5 p:2 :5 k:3 :5 k:6 :1 n:2 p:1 n:4 p:1 :1 k:3 :2 nb:7 s2:7 :2 k:8 :1 nf:4 :1 p:1 n:5 p:1 :5 k:6 :1 n:4 p:1 :1 n:4 p:3 :1 n:4 p:1 n:5 p:1 :1 p:1 :1 k:3 :2 k:8 :1 nf:4 :1 p:2 :5 k:6 :1 n:4 p:1 n:4 :1 p:1 n:1 s1:7 :1 p:1 :9 n:2 p:1 n:2 s2:12 p:1 n:2 p:1 :1 n:5 p:1 nb:4 o:1 s1:6 p:1 :1 n:4 o:1 s1:7 p:4 :9 n:2 p:1 n:2 s2:13 p:1 n:2 p:1 n:5 p:1 nb:4 o:1 s1:6 p:1 :1 n:4 o:1 s1:8 p:4 :9 n:2 p:1 :1 n:2 p:1 n:5 p:1 nb:4 o:1 s1:8 p:1 :1 n:5 o:1 s1:9 p:3 :13 n:2 p:1 n:5 p:1 nb:4 o:1 s1:8 p:1 n:5 o:1 s1:8 p:2 :9 p:2 :5 p:3 :1 k:3 :3 n:5 p:1 n:7 p:1 n:4 p:1 n:4 p:1 :2 nb:5 p:1 n:4 p:3 :2 k:8 :1 nf:9 :1 p:1 n:3 p:1 :5 k:6 :1 n:4 p:1 n:4 :1 p:1 :9 n:6 :1 p:1 :13 p:1 n:4 p:1 s2:12 p:1 s1:7 p:3 :13 p:1 n:4 p:1 s2:13 p:1 s1:8 p:3 :13 p:1 n:6 :1 s1:8 p:1 :1 n:6 :1 s1:8 p:2 :9 p:1 :5 p:2 :1 k:3 :2 c1:11 :1 nb:7 :1 s2:7 :1 nb:7 :1 s2:16 :1 kd:5 :1 n:3 :1 o:1 :1 n:6 p:1 n:7 p:2 :2 k:8 :1 nf:4 :1 p:1 n:1 p:1 :5 k:2 :1 o:1 n:1 :1 o:1 :1 mi:1 :1 k:4 :9 k:3 :1 n:1 p:1 n:3 :1 k:2 :1 nb:6 p:1 n:1 p:1 :1 k:2 :13 n:4 p:1 n:3 p:1 :9 k:3 :5 k:4 :9 k:3 :1 n:5 p:1 n:5 :1 k:2 :1 nb:5 p:1 n:1 p:1 :1 k:2 :13 k:2 :1 nb:4 p:1 n:5 p:1 :1 o:2 :1 s1:8 :1 k:4 :17 n:5 :1 o:1 :1 n:5 p:1 n:3 p:1 mi:1 p:1 mi:2 p:1 :13 k:3 :13 nb:5 p:1 n:5 p:1 nb:4 p:1 n:5 p:2 n:5 p:1 :9 k:3 :9 nb:5 :1 s1:7 :5 k:3 :1 k:3 :2 n:6 :1 o:1 :1 n:5 p:1 n:5 p:1 n:3 p:2 :1 n:6 p:1 n:4 :1 o:1 :1 n:3 p:1 n:7 p:1 s2:17 p:1 :1 n:6 p:1 n:6 :1 o:1 :1 s2:9 :1 n:6 p:1 n:12 :1 o:1 :1 s1:7 :2 n:5 :1 o:1 :1 n:6 p:1 n:3 :1 s1:6 :2 c1:26 :2 c1:28 :1 n:6 :1 o:1 :1 n:5 p:1 n:4 p:1 mi:1 p:1 :2 n:4 p:1 n:6 p:1 :2 n:4 p:1 n:5 p:1 n:8 p:1 s2:18 p:1 :5 p:1 mi:1 p:1 mi:1 p:1 n:5 :1 o:1 :1 s2:18 p:3 :2 n:5 p:1 n:7 p:1 n:5 p:1 s1:11 p:1 :2 k:8 :1 nf:5 p:1 n:3 p:1 :3 k:6 :1 n:12 p:1 n:5 p:1 n:8 p:3 :1 k:3 :2 n:5 p:1 n:12 p:1 n:5 p:1 :1 s2:3 p:1 :1 s2:8 p:1 :2 kd:5 :1 k:8 :1 nf:5 :1 p:1 n:1 p:1 n:6 p:1 :5 k:2 :1 o:1 n:1 :1 o:1 :1 n:6 :1 k:4 :9 k:6 :1 n:1 p:1 n:3 p:1 mi:1 p:1 n:6 p:1 o:2 s1:5 :5 k:4 :9 k:6 :1 n:1 :5 k:3 :1 k:3 :2 k:8 :1 nf:11 p:1 n:8 p:1 :5 k:6 :1 n:4 :1 p:1 :9 n:4 :1 p:1 :1 n:5 :1 s1:14 :1 p:2 :9 n:4 :1 p:1 n:8 p:1 :5 p:1 :1 k:3 :2 k:8 :1 nf:11 p:1 n:4 p:1 :5 k:6 :1 n:3 :1 p:1 :9 n:2 :1 p:1 n:4 p:1 n:2 :1 o:2 :1 s1:3 :1 o:2 :1 n:4 p:1 n:5 p:2 :9 n:1 :1 p:1 n:5 p:1 n:4 p:1 n:4 p:1 mi:3 p:3 :9 n:2 p:1 nb:7 p:1 s1:19 p:1 n:4 p:1 n:12 p:3 :9 s1:3 p:1 n:4 p:1 n:10 p:1 s1:11 :5 p:1 :1 k:3 :2 k:8 :1 nf:12 p:1 n:5 p:1 :5 kd:5 :1 n:3 :1 o:1 :1 p:2 :5 k:3 :1 n:1 p:1 n:4 :1 k:2 :1 nb:6 p:1 n:5 p:1 :1 k:2 :9 n:3 p:1 n:1 p:1 :1 o:1 :1 n:11 p:1 n:4 p:1 :5 k:3 :5 k:6 :1 n:11 p:1 n:3 p:1 :1 k:3 :2 k:8 :1 nf:5 p:1 n:3 p:1 :3 kd:5 :1 n:7 :1 o:1 :1 n:3 p:1 n:3 p:1 n:7 :1 ow:2 :1 s1:2 :3 k:2 :1 n:7 :1 o:2 :1 s1:2 :1 k:4 :1 k:6 :1 p:2 :3 k:4 :5 k:6 :1 n:12 p:1 n:5 p:1 n:8 p:1 s1:14 p:2 s1:3 o:2 n:7 o:2 s1:3 p:3 :3 k:3 :1 k:3 :2 k:8 :1 nf:12 p:1 n:5 p:1 :5 kd:5 :1 n:3 :1 o:1 :1 p:2 :5 n:6 p:1 n:3 p:1 n:1 :1 p:1 n:4 :1 p:1 :9 n:5 :1 p:1 nb:4 o:1 s1:6 p:1 n:4 o:1 s1:9 p:2 :9 n:5 :1 p:1 nb:4 o:1 s1:8 p:1 n:5 o:1 s1:8 p:2 :5 p:3 :5 n:6 p:1 n:3 p:1 n:2 p:3 :5 n:6 p:1 n:3 p:1 n:2 p:2 s1:16 p:2 n:6 p:1 o:1 n:5 p:3 :5 k:3 :1 n:1 p:1 n:4 :1 k:2 :1 nb:6 p:1 n:5 p:1 :1 k:2 :9 n:6 p:1 n:3 p:1 n:11 p:1 n:4 p:2 :5 k:3 :5 k:6 :1 n:11 p:1 n:3 p:1 :1 k:3 :3 cm:68 :1 n:7 :1 o:1 :1 p:2 :1 n:7 p:1 n:7 :1 o:1 :1 n:7 :2 k:8 :1 nc:7 p:1 nf:6 p:1 n:7 p:1 :4 kd:5 :1 n:4 :1 o:1 :1 p:2 :13 c1:17 :4 nb:12 p:1 n:4 p:1 n:7 p:1 :2 c1:29 :4 n:4 p:1 n:7 :1 o:1 :1 n:7 :6 c1:24 :4 k:6 :1 n:4 :1 k:3 :2 k:8 :1 nf:7 p:1 n:8 p:1 n:6 p:1 :4 n:4 p:1 n:7 :1 o:1 :1 n:4 p:1 n:7 :1 o:1 :1 n:6 :1 k:3 :2 c1:28 :1 n:3 :1 o:1 :1 n:7 p:1 n:6 p:1 mi:4 p:1 :1 n:3 p:1 n:8 p:1 mi:3 p:1 :2 k:2 :4 n:3 :1 o:1 :1 n:3 p:1 nb:4 p:1 sr:2 se:1 sr:1 se:1 sr:1 se:1 sr:1 p:1 :1 sr:2 p:2 nb:4 p:1 sr:1 se:1 sr:1 se:1 sr:1 se:1 sr:2 p:1 :1 sr:2 p:1 :1 k:3 :1",
+  )
+}
+
+///|
+test "rouge: php: demo" {
+  check_lex(
+    "php", "<?php\n  print(\"Hello {$world}\");\n?>\n", "cp:5 :3 k:5 p:1 s2:7 si:1 nv:6 si:1 s2:1 p:2 :1 cp:2 :1",
+  )
+}
+
+///|
+test "rouge: php: visual sample" {
+  check_lex(
+    "php", "<p>It's html outside php!</p>\n\n\n<?php /* Single statements */ ?>\n\n<?php use Foo, Bar ?>\n<?php use /*Foo, */Bar ?>\n<?php use Class1, Class2; ?>\n<?php const FOO = 42, BAR = C ?>\n<?php const /*FOO = 42, */BAR = C; ?>\n\n\n<?php /* Multiple statements */ ?>\n\n<?php\n  file_put_contents(\"log.txt\", \"\\u{FEFF}===== Début du fichier =====\\n\");\n  $test = function($a) { $lambda = 1; }\n?>\n\n\n<?php /* Embedded PHP */ ?>\n\n<a href=\"<?= $url ?>\">I can close php tags and get html!</a>\n\n\n<?php\n\n/* Comments */\n\n# A comment\n$a = 1;\n// Another comment\n$a = 1;\n/* another comment */\n$a = 1;\n/* a multi\nline comemnt\nfollowed by an empty comment */\n$a = 1;\n/**/\n$a = 1;\n/**\n * doc block comment\n */\n$a = 1;\n\n\n/* Variable names */\n\n$a = 1;\n$Δ = 1;\n++$_Δ;\necho $ΔΔ;\n\n\n/* Numbers */\n\n1;\n3.14;\n1.414e10;\n1_000_000;\n007;\n0b1010;\n0xabcdef;\n\n\n/* Strings */\n\n'A single-quoted string';\n\"A double-quoted string\";\n\n// heredoc\n$a = <<<EOF\nSome long string with $values\nEOF;\n\n$b = <<<'EOF'\nSome long string without $values\nEOF;\n\n$c = <<<EOF\n  Hello\n  EOF;\n\n// Flexible heredoc\ncallingFunc(<<<EOF\n    With a long string\n    EOF, <<<'EOF'\n    Another string\n    EOF);\n\n// Interpolation\n\"thing {$thing->other_thing()}\"\n\n\n/* Functions */\n\nfunction &byref() {\n    $x = array();\n    return $x;\n}\n\npublic abstract function thing(mysqli $mysqli, int FOO + BAR, ?mysqli $mysqli): mysqli $mysqli;\n\nfunction sort_on(array &$array, string $key) {\n    usort($array, function ($a, $b) use($key) { return $a <=> $b; });\n}\n\n// Function-like keywords.\nisset($foo);\nempty($bar);\nunset($baz);\ndie($qux);\n\n// No \"use\"\n$example = function () {\n    some_fn($message);\n};\n\n// Inherit $message\n$example = function () use ($message) {\n    some_fn($message);\n};\n\n// A generator\n$gen = (function() {\n    yield 1;\n    yield 2;\n\n    return 3;\n})();\n\n$fn = fn($x) => fn($y) => $x * $y + $z;\nfn(array $x) => $x;\nstatic fn(): int => $x;\nfn($x = 42) => $x;\nfn(&$x) => $x;\nfn&($x) => $x;\nfn($x, ...$rest) => $rest;\n\n\n/* Classes */\n\nclass Foo extends AbstractFoo implements Bar {\n}\n\n//Anonymous class example\n$app->setLogger(new class implements Logger {\n    public function log(string $msg) {\n        echo $msg;\n    }\n});\n\nclass ClassB\n{\n    use TraitA, TraitB, TraitC {\n        TraitB::foo insteadof TraitA;\n    }\n}\n\nclass Zip\\Zipp {\n\n}\n\nclass Zip extends Archive {\n  function out($filename = false) {\n    // Empty output\n    $file_data = array(); // Data of the file part\n    $cd_data   = array(); // Data of the central directory\n  }\n}\n\nclass User\n{\n    public int $id;\n    public ?string $name;\n\n    public function __construct(int $id, ?string $name)\n    {\n        $this->id = $id;\n        $this->name = $name;\n    }\n}\n\nclass C {\n    private readonly $x;\n    protected readonly int $y;\n    private string $z;\n\n    public static ?string $a = \"\";\n    public static int $b = 0;\n\n    public function __construct(\n        public $foo,\n        protected readonly $bar,\n        private readonly array $baz = [],\n        private string $qux = \"\",\n    ) {\n    }\n}\n\n\n/* Traits */\n\ntrait SomeTrait {\n  // Some visibility\n  const PUBLIC_CONST_A = 1;\n  public const PUBLIC_CONST_B = 2;\n  protected const PROTECTED_CONST = 3;\n  private const PRIVATE_CONST = 4;\n\n  function afunc(string $arg, SomeInterface $arg2, callable $arg3, object $arg4): void {\n    echo \"hello\";\n    if (1 <=> 1) {\n      echo \"yep!\";\n    }\n  }\n}\n\n\n/* Interfaces */\n\ninterface SomeInterface {\n  function interfaceFunc(bool $arg): iterable;\n  function nullableTypes(?bool $arg): ?iterable;\n}\n\n\n/* Imports */\n\nuse some\\namespace\\ClassA;\nuse some\\namespace\\ClassB as B;\nuse function some\\namespace\\fn_a;\nuse const some\\namespace\\ConstA;\nuse Class1, /*Class2, */Class3;\n\nuse some\\namespace\\{ClassA, ClassB, ClassC as C};\nuse function some\\namespace\\{fn_a, fn_b, fn_c};\nuse const some\\namespace\\{ConstA, ConstB, ConstC};\nuse some\\name\\{function some_fn, const Foo\\BAR, SomeClass};\n\nuse const some\\namespace\\{\n    ConstA,\n    #ConstB,\n    ConstC\n};\n\n\n/* Namespaces */\n\nnamespace some\\namespace;\n\n\n/* Assignments */\n\nlist($id1, $name1) = $data[0];\n[$id1, $name1] = $data[0];\nconst A = f(1, 2, g(3, 4, $my_var[0])), B = \"abc\";\n\n\n/* Conditionals */\n\nif(!defined('UNLOCK') || !UNLOCK)\n  die();\n\nif(function_exists('gzdeflate')) {\n  $method = 8;\n  $compressed_data = gzdeflate($content);\n} elseif(function_exists('bzcompress')) {\n  $method = 12;\n  $compressed_data = bzcompress($content);\n} else {\n  $compressed_data = $content;\n}\n\nswitch($header_info['compression_method']) {\n  case 0:\n    $content = $data;\n    break;\n\n  case 8:\n    $content = gzinflate($data);\n    break;\n\n  case 12:\n    if(!function_exists('bzdecompress'))\n      return false;\n    break;\n\n  default:\n    return false;\n}\n\n$y = match ($x) {\n  0 => 1,\n  1 => -1,\n  default => 0,\n};\n\n/* Loops */\n\nforeach($this->files as $name => $file) {\n  $content = $file[0];\n  $fd .= \"\\x50\\x4b\\x03\\x04\";                  // Local file header signature\n  $fd .= pack(\"v\", 20);                       // Version needed to extract\n  $fd .= pack(\"V\", crc32($content));          // crc-32\n  $fd .= pack(\"V\", strlen($compressed_data)); // Compressed size\n}\n\nwhile($pos < strlen($cdr)) {\n  if(substr($cdr, $pos, 4) == \"\\x50\\x4b\\x05\\x05\") {\n    $tmp_info = unpack('vsize', substr($cdr, $pos + 4, 2));\n    $digital_sig = substr($header, $pos + 6, $tmp_info['size']);\n    break;\n  }\n}\n\n\n/* Exceptions */\n\nclass Test {\n    public function testing() {\n        try {\n            throw new MyException();\n        } catch (MyException | MyOtherException $e) {\n            var_dump(get_class($e));\n        }\n    }\n}\n\n?>\n\n<?php /* Edge cases */ ?>\n\n<?php if (true): ?><!-- Notice the space between the colon & question mark -->\n  <p>Hello world!</p>\n<?php endif ?>\n\n<?php if (true) :?><!-- No space -->\n  <p>Hello world!</p>\n<?php endif ?>\n\n<p>it's html here at the end, too.</p>\n",
+    "nt:3 :22 nt:4 :3 cp:5 :1 cm:23 :1 cp:2 :2 cp:5 :1 kn:3 :1 nc:3 p:1 :1 nc:3 :1 cp:2 :1 cp:5 :1 kn:3 :1 cm:9 nc:3 :1 cp:2 :1 cp:5 :1 kn:3 :1 nc:6 p:1 :1 nc:6 p:1 :1 cp:2 :1 cp:5 :1 k:5 :1 no:3 :1 o:1 :1 mi:2 p:1 :1 no:3 :1 o:1 :1 nc:1 :1 cp:2 :1 cp:5 :1 k:5 :1 cm:14 no:3 :1 o:1 :1 nc:1 p:1 :1 cp:2 :3 cp:5 :1 cm:25 :1 cp:2 :2 cp:5 :3 nb:17 p:1 s2:9 p:1 :1 s2:1 se:8 s2:28 se:2 s2:1 p:2 :3 nv:5 :1 o:1 :1 k:8 p:1 nv:2 p:1 :1 p:1 :1 nv:7 :1 o:1 :1 mi:1 p:1 :1 p:1 :1 cp:2 :3 cp:5 :1 cm:18 :1 cp:2 :2 nt:2 :1 na:5 s:1 cp:3 :1 nv:4 :1 cp:2 s:1 nt:1 :34 nt:4 :3 cp:5 :2 cm:14 :2 c1:11 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 c1:18 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 cm:21 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 cm:55 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 cm:4 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 cd:28 :1 nv:2 :1 o:1 :1 mi:1 p:1 :3 cm:20 :2 nv:2 :1 o:1 :1 mi:1 p:1 :1 nv:2 :1 o:1 :1 mi:1 p:1 :1 o:2 nv:3 p:1 :1 k:4 :1 nv:3 p:1 :3 cm:13 :2 mi:1 p:1 :1 mf:4 p:1 :1 mf:8 p:1 :1 mi:9 p:1 :1 mo:3 p:1 :1 mb:6 p:1 :1 mh:8 p:1 :3 cm:13 :2 s1:24 p:1 :1 s2:24 p:1 :2 c1:10 :1 nv:2 :1 o:1 :1 sh:41 :2 nv:2 :1 o:1 :1 sh:46 :2 nv:2 :1 o:1 :1 sh:21 :2 c1:19 :1 nf:11 p:1 sh:37 p:1 :1 sh:35 p:2 :2 c1:16 :1 s2:7 si:1 nv:6 o:2 nf:11 p:2 si:1 s2:1 :3 cm:15 :2 k:8 :1 o:1 n:5 p:2 :1 p:1 :5 nv:2 :1 o:1 :1 k:5 p:3 :5 k:6 :1 nv:2 p:1 :1 p:1 :2 k:6 :1 k:8 :1 k:8 :1 n:5 p:1 kt:6 :1 nv:7 p:1 :1 kt:3 :1 no:3 :1 o:1 :1 no:3 p:1 :1 kt:7 :1 nv:7 p:2 :1 kt:6 :1 nv:7 p:1 :2 k:8 :1 n:7 p:1 kt:5 :1 o:1 nv:6 p:1 :1 kt:6 :1 nv:4 p:1 :1 p:1 :5 nb:5 p:1 nv:6 p:1 :1 k:8 :1 p:1 nv:2 p:1 :1 nv:2 p:1 :1 k:3 p:1 nv:4 p:1 :1 p:1 :1 k:6 :1 nv:2 :1 o:3 :1 nv:2 p:1 :1 p:3 :1 p:1 :2 c1:26 :1 k:5 p:1 nv:4 p:2 :1 k:5 p:1 nv:4 p:2 :1 k:5 p:1 nv:4 p:2 :1 k:3 p:1 nv:4 p:2 :2 c1:11 :1 nv:8 :1 o:1 :1 k:8 :1 p:2 :1 p:1 :5 nf:7 p:1 nv:8 p:2 :1 p:2 :2 c1:19 :1 nv:8 :1 o:1 :1 k:8 :1 p:2 :1 k:3 :1 p:1 nv:8 p:1 :1 p:1 :5 nf:7 p:1 nv:8 p:2 :1 p:2 :2 c1:14 :1 nv:4 :1 o:1 :1 p:1 k:8 p:2 :1 p:1 :5 k:5 :1 mi:1 p:1 :5 k:5 :1 mi:1 p:1 :6 k:6 :1 mi:1 p:1 :1 p:5 :2 nv:3 :1 o:1 :1 k:2 p:1 nv:2 p:1 :1 o:2 :1 k:2 p:1 nv:2 p:1 :1 o:2 :1 nv:2 :1 o:1 :1 nv:2 :1 o:1 :1 nv:2 p:1 :1 k:2 p:1 kt:5 :1 nv:2 p:1 :1 o:2 :1 nv:2 p:1 :1 k:6 :1 k:2 p:3 :1 kt:3 :1 o:2 :1 nv:2 p:1 :1 k:2 p:1 nv:2 :1 o:1 :1 mi:2 p:1 :1 o:2 :1 nv:2 p:1 :1 k:2 p:1 o:1 nv:2 p:1 :1 o:2 :1 nv:2 p:1 :1 k:2 o:1 p:1 nv:2 p:1 :1 o:2 :1 nv:2 p:1 :1 k:2 p:1 nv:2 p:1 :1 p:3 nv:5 p:1 :1 o:2 :1 nv:5 p:1 :3 cm:13 :2 kd:5 :1 nc:3 :1 kd:7 :1 nc:11 :1 kd:10 :1 nc:3 :1 p:1 :1 p:1 :2 c1:25 :1 nv:4 o:2 nf:9 p:1 k:3 :1 kd:5 :1 kd:10 :1 nc:6 :1 p:1 :5 k:6 :1 k:8 :1 n:3 p:1 kt:6 :1 nv:4 p:1 :1 p:1 :9 k:4 :1 nv:4 p:1 :5 p:1 :1 p:3 :2 kd:5 :1 nc:6 :1 p:1 :5 kn:3 :1 nc:6 p:1 :1 nc:6 p:1 :1 nc:6 :1 p:1 :9 nc:6 o:2 n:3 :1 k:9 :1 nc:6 p:1 :5 p:1 :1 p:1 :2 kd:5 :1 nc:8 :1 p:1 :2 p:1 :2 kd:5 :1 nc:3 :1 kd:7 :1 nc:7 :1 p:1 :3 k:8 :1 n:3 p:1 nv:9 :1 o:1 :1 kc:5 p:1 :1 p:1 :5 c1:15 :5 nv:10 :1 o:1 :1 k:5 p:3 :1 c1:24 :5 nv:8 :3 o:1 :1 k:5 p:3 :1 c1:32 :3 p:1 :1 p:1 :2 kd:5 :1 nc:4 :1 p:1 :5 k:6 :1 kt:3 :1 nv:3 p:1 :5 k:6 :1 kt:7 :1 nv:5 p:1 :6 k:6 :1 k:8 :1 n:11 p:1 kt:3 :1 nv:3 p:1 :1 kt:7 :1 nv:5 p:1 :5 p:1 :9 nv:5 o:2 n:2 :1 o:1 :1 nv:3 p:1 :9 nv:5 o:2 n:4 :1 o:1 :1 nv:5 p:1 :5 p:1 :1 p:1 :2 kd:5 :1 nc:1 :1 p:1 :5 k:7 :1 k:8 :1 nv:2 p:1 :5 k:9 :1 k:8 :1 kt:3 :1 nv:2 p:1 :5 k:7 :1 kt:6 :1 nv:2 p:1 :6 k:6 :1 k:6 :1 kt:7 :1 nv:2 :1 o:1 :1 s2:2 p:1 :5 k:6 :1 k:6 :1 kt:3 :1 nv:2 :1 o:1 :1 mi:1 p:1 :6 k:6 :1 k:8 :1 n:11 p:1 :9 k:6 :1 nv:4 p:1 :9 k:9 :1 k:8 :1 nv:4 p:1 :9 k:7 :1 k:8 :1 kt:5 :1 nv:4 :1 o:1 :1 p:3 :9 k:7 :1 kt:6 :1 nv:4 :1 o:1 :1 s2:2 p:1 :5 p:1 :1 p:1 :5 p:1 :1 p:1 :3 cm:12 :2 kd:5 :1 nc:9 :1 p:1 :3 c1:18 :3 k:5 :1 no:14 :1 o:1 :1 mi:1 p:1 :3 k:6 :1 k:5 :1 no:14 :1 o:1 :1 mi:1 p:1 :3 k:9 :1 k:5 :1 no:15 :1 o:1 :1 mi:1 p:1 :3 k:7 :1 k:5 :1 no:13 :1 o:1 :1 mi:1 p:1 :4 k:8 :1 n:5 p:1 kt:6 :1 nv:4 p:1 :1 kt:13 :1 nv:5 p:1 :1 kt:8 :1 nv:5 p:1 :1 kt:6 :1 nv:5 p:2 :1 kt:4 :1 p:1 :5 k:4 :1 s2:7 p:1 :5 k:2 :1 p:1 mi:1 :1 o:3 :1 mi:1 p:1 :1 p:1 :7 k:4 :1 s2:6 p:1 :5 p:1 :3 p:1 :1 p:1 :3 cm:16 :2 kd:9 :1 nc:13 :1 p:1 :3 k:8 :1 n:13 p:1 kt:4 :1 nv:4 p:2 :1 kt:8 p:1 :3 k:8 :1 n:13 p:1 kt:5 :1 nv:4 p:2 :1 kt:9 p:1 :1 p:1 :3 cm:13 :2 kn:3 :1 nc:21 p:1 :1 kn:3 :1 nc:21 :1 k:2 :1 nc:1 p:1 :1 kn:3 :1 k:8 :1 nf:19 p:1 :1 kn:3 :1 k:5 :1 nc:21 p:1 :1 kn:3 :1 nc:6 p:1 :1 cm:12 nc:6 p:1 :2 kn:3 :1 nn:15 p:1 nc:6 p:1 :1 nc:6 p:1 :1 nc:6 :1 k:2 :1 nc:1 p:2 :1 kn:3 :1 k:8 :1 nn:15 p:1 nf:4 p:1 :1 nf:4 p:1 :1 nf:4 p:2 :1 kn:3 :1 k:5 :1 nn:15 p:1 nc:6 p:1 :1 nc:6 p:1 :1 nc:6 p:2 :1 kn:3 :1 nn:10 p:1 k:8 :1 nf:7 p:1 :1 k:5 :1 no:7 p:1 :1 nc:9 p:2 :2 kn:3 :1 k:5 :1 nn:15 p:1 :5 nc:6 p:1 :5 c1:8 :5 nc:6 :1 p:2 :3 cm:16 :2 kn:9 :1 nn:14 p:1 :3 cm:17 :2 k:4 p:1 nv:4 p:1 :1 nv:6 p:1 :1 o:1 :1 nv:5 p:1 mi:1 p:2 :1 p:1 nv:4 p:1 :1 nv:6 p:1 :1 o:1 :1 nv:5 p:1 mi:1 p:2 :1 k:5 :1 no:1 :1 o:1 :1 nf:1 p:1 mi:1 p:1 :1 mi:1 p:1 :1 nf:1 p:1 mi:1 p:1 :1 mi:1 p:1 :1 nv:7 p:1 mi:1 p:4 :1 no:1 :1 o:1 :1 s2:5 p:1 :3 cm:18 :2 k:2 p:1 o:1 nb:7 p:1 s1:8 p:1 :1 o:2 :1 o:1 no:6 p:1 :3 k:3 p:3 :2 k:2 p:1 nb:15 p:1 s1:11 p:2 :1 p:1 :3 nv:7 :1 o:1 :1 mi:1 p:1 :3 nv:16 :1 o:1 :1 nb:9 p:1 nv:8 p:2 :1 p:1 :1 k:6 p:1 nb:15 p:1 s1:12 p:2 :1 p:1 :3 nv:7 :1 o:1 :1 mi:2 p:1 :3 nv:16 :1 o:1 :1 nb:10 p:1 nv:8 p:2 :1 p:1 :1 k:4 :1 p:1 :3 nv:16 :1 o:1 :1 nv:8 p:1 :1 p:1 :2 k:6 p:1 nv:12 p:1 s1:20 p:2 :1 p:1 :3 k:4 :1 mi:1 o:1 :5 nv:8 :1 o:1 :1 nv:5 p:1 :5 k:5 p:1 :4 k:4 :1 mi:1 o:1 :5 nv:8 :1 o:1 :1 nb:9 p:1 nv:5 p:2 :5 k:5 p:1 :4 k:4 :1 mi:2 o:1 :5 k:2 p:1 o:1 nb:15 p:1 s1:14 p:2 :7 k:6 :1 kc:5 p:1 :5 k:5 p:1 :4 k:7 o:1 :5 k:6 :1 kc:5 p:1 :1 p:1 :2 nv:2 :1 o:1 :1 k:5 :1 p:1 nv:2 p:1 :1 p:1 :3 mi:1 :1 o:2 :1 mi:1 p:1 :3 mi:1 :1 o:2 :1 o:1 mi:1 p:1 :3 k:7 :1 o:2 :1 mi:1 p:1 :1 p:2 :2 cm:11 :2 k:7 p:1 nv:5 o:2 n:5 :1 k:2 :1 nv:5 :1 o:2 :1 nv:5 p:1 :1 p:1 :3 nv:8 :1 o:1 :1 nv:5 p:1 mi:1 p:2 :3 nv:3 :1 mf:1 o:1 :1 s2:1 se:16 s2:1 p:1 :18 c1:30 :3 nv:3 :1 mf:1 o:1 :1 nb:4 p:1 s2:3 p:1 :1 mi:2 p:2 :23 c1:28 :3 nv:3 :1 mf:1 o:1 :1 nb:4 p:1 s2:3 p:1 :1 nb:5 p:1 nv:8 p:3 :10 c1:9 :3 nv:3 :1 mf:1 o:1 :1 nb:4 p:1 s2:3 p:1 :1 nb:6 p:1 nv:16 p:3 :1 c1:18 :1 p:1 :2 k:5 p:1 nv:4 :1 o:1 :1 nb:6 p:1 nv:4 p:2 :1 p:1 :3 k:2 p:1 nb:6 p:1 nv:4 p:1 :1 nv:4 p:1 :1 mi:1 p:1 :1 o:2 :1 s2:1 se:16 s2:1 p:1 :1 p:1 :5 nv:9 :1 o:1 :1 nb:6 p:1 s1:7 p:1 :1 nb:6 p:1 nv:4 p:1 :1 nv:4 :1 o:1 :1 mi:1 p:1 :1 mi:1 p:3 :5 nv:12 :1 o:1 :1 nb:6 p:1 nv:7 p:1 :1 nv:4 :1 o:1 :1 mi:1 p:1 :1 nv:9 p:1 s1:6 p:3 :5 k:5 p:1 :3 p:1 :1 p:1 :3 cm:16 :2 kd:5 :1 nc:4 :1 p:1 :5 k:6 :1 k:8 :1 n:7 p:2 :1 p:1 :9 k:3 :1 p:1 :13 k:5 :1 k:3 :1 nc:11 p:3 :9 p:1 :1 k:5 :1 p:1 nc:11 :1 o:1 :1 nc:16 :1 nv:2 p:1 :1 p:1 :13 nb:8 p:1 nb:9 p:1 nv:2 p:3 :9 p:1 :5 p:1 :1 p:1 :2 cp:2 :2 cp:5 :1 cm:16 :1 cp:2 :2 cp:5 :1 k:2 :1 p:1 kc:4 p:1 o:1 :1 cp:2 c:59 :3 nt:3 :12 nt:4 :1 cp:5 :1 k:5 :1 cp:2 :2 cp:5 :1 k:2 :1 p:1 kc:4 p:1 :1 o:1 cp:2 c:17 :3 nt:3 :12 nt:4 :1 cp:5 :1 k:5 :1 cp:2 :2 nt:3 :31 nt:4 :1",
   )
 }
 
@@ -332,6 +379,22 @@ test "rouge: make: visual sample" {
   check_lex(
     "make", "# A comment\n\nVERSION := 0.1.$(shell git log --oneline | wc -l | sed -e \"s/ //g\")\n\n# Simple assignments\nLIST=\t\t\tParser Grammar Objects Python Modules Mac\nSTRING=\t\t\t'--with-pydebug'\nNUMBER=\t\t\t2.6\nDOT=\t\t\t.\nDIR=\t\t\t/usr/local\nDIR_LIST=\t\tModules/threadmodule.o  Modules/signalmodule.o \nCMD_WITH_SWITCH=\tgcc -pthread\nDIR_WITH_SWITCH=\t/usr/bin/install -c\nALL_SWITCHES=\t\t-g -Wall -Wstrict-prototypes\nEMPTY=\n\n# Interpolation\nSINGLE_PARENS=\t\t$(CC)\nMULTI_PARENS=\t\t$(LOCALMODLIBS) $(BASEMODLIBS)\nCMD_AND_PARENS=\t\tsvnversion $(srcdir)\nDIR_AND_PARENS=\t\t$(srcdir)/Modules/makesetup\nBRACES=\t\t\t${INSTALL}\nDIR_AND_BRACES==\t${prefix}/man\nBRACES_AND_SWITCH=\t${INSTALL} -m 644\n\n# Multiline assignment\nMULTI=\t\\\n\tModules/config.o \\\n\tModules/getpath.o \\\n\tModules/main.o \\\n\tModules/gcmodule.o\n\nMULTI_WITH_PARENS=\t\\\n\tModules/getbuildinfo.o \\\n\t$(PARSER_OBJS) \\\n\t$(OBJECT_OBJS)\n\n# Definition\nsimple:\t\t\t$(BUILDPYTHON) oldsharedmods sharedmods\n$(interpol):\t\tModules/python.o $(LIBRARY) $(LDLIBRARY)\nmulti dir/file.c:\tMakefile.pre \\\n\t\t\tModules/Setup.local\n\n# Commands\ncommands: $(SHELL) $(MAKESETUP) -c $(srcdir)/Modules/config.c.in\n\t@echo \"The Makefile was updated, you may need to re-run make.\"\n\ncommands/complex: $(srcdir)/Modules/Setup.dist\n\t@if test -f Modules/Setup; then \\\n\t\techo \"-----------------------------------------------\"; \\\n\tfi\n\ncommands_switch:\tall platform\n\t\t\t-find $(srcdir)/Lib -name '*.py[co]' -print | xargs rm -f\n\nframeworkaltinstallunixtools:\n\tcd Mac && $(MAKE) altinstallunixtools DESTDIR=\"$(DESTDIR)\"\n\ninclude SubMake.make # Insert lines from another file (which must exist)\n-include Maybe.make  # Next 2 similar, but not an error if they doon't exist\nsinclude DynamicDependencies.make\n\n# Function expansions (including $(shell)) can occur anywhere\n$(shell echo VARIABLE) := $(shell echo value)\n\n$(shell echo $(TARGET1)) $(TARGET2) target3: \\\n\t$(shell echo $(DEPENDENCY1)) $(DEPENDENCY2) dependency3\n\ttouch $(shell echo target{1..3})\n\t@echo $(shell echo 1)\n\t@echo $(shell echo 2 )\n\t@echo ${shell echo 3}\n\t@echo ${shell echo 4 }\n\n# Many other built-in functions exist\nOBJECT_GOALS = $(filter %.o,${MAKECMDGOALS})\n\n# User-defined functions can be used via $(call)\nreverse = $(2) $(1)\nfoo = $(call reverse,a,b) # foo contains 'b a'\n\n# Substitution references can be used when expanding variables\nSOURCE = $(OBJECT:.o=.c)\n\n# Alternative syntax for substitution references\nfoo = input1.txt\nbar = $(foo:input%.txt=output%.bin) # set to 'output1.bin'\n\n# Conditionals\nifdef THING\nTHING2 = $(THING)\nelse\nTHING2 = default\nendif\n\nifeq ($(TARGET),special) # syntax variant: parentheses and separating comma\nTARGET = something_else\nelse\n\tifneq '$(TARGET)' \"don't\" # syntax variant: either argument can be single or double quoted\nTARGET = be_silly\n\tendif # and can be indented, even with tabs (so long as not in a recipe)\nendif\n\ncount:\n\techo one\n\techo two\nifndef QUIET # conditionals can happen within recipes\n\techo miss a few\nendif\n\techo one hundred\n\n# Dollars must be escaped if a literal one is required\n\nprint_path:\n\techo $$PATH\n",
     "c:12 :1 nv:7 :1 o:2 :5 nf:2 nb:5 :9 nt:9 :3 nb:2 :1 nt:2 :3 nb:3 :1 nt:2 :1 s2:8 nf:1 :2 c:21 nv:4 o:1 :45 nv:6 o:1 :3 s1:16 :1 nv:6 o:1 :7 nv:3 o:1 :5 nv:3 o:1 :14 nv:8 o:1 :50 nv:15 o:1 :5 nt:8 :1 nv:15 o:1 :18 nt:2 :1 nv:12 o:1 :2 nt:2 :1 nt:5 :1 nt:19 :1 nv:5 o:1 :2 c:16 nv:13 o:1 :2 nv:5 :1 nv:12 o:1 :2 nv:15 :1 nv:14 :1 nv:14 o:1 :13 nv:9 :1 nv:14 o:1 :2 nv:9 :19 nv:6 o:1 :3 nv:10 :1 nv:14 o:2 :1 nv:9 :5 nv:17 o:1 :1 nv:10 :1 nt:2 :6 c:23 nv:5 o:1 :1 se:1 :19 se:1 :20 se:1 :17 se:1 :22 nv:17 o:1 :1 se:1 :25 se:1 :2 nv:14 :1 se:1 :2 nv:14 :2 c:13 nl:6 o:1 :3 nf:39 :1 nl:11 o:1 :2 nf:40 :1 nl:16 o:1 :1 nf:13 :2 nf:22 :2 c:11 nl:8 o:1 :1 nf:54 :2 p:1 nb:4 :1 s2:56 :2 nl:16 o:1 :1 nf:28 :2 p:1 k:3 nb:4 :1 nt:2 :14 p:1 :1 k:4 :1 se:1 :3 nb:4 :1 s2:49 p:1 :1 se:1 :2 k:2 :2 nl:15 o:1 :1 nf:12 :4 p:1 :5 nv:9 :5 nt:5 :1 s1:10 :1 nt:6 :9 nb:2 :1 nt:2 :2 nl:28 o:1 :2 nb:3 :4 o:2 :1 nv:7 :21 nv:7 o:1 s2:1 nv:10 s2:1 :2 k:7 sx:13 :1 c:52 k:8 sx:11 :2 c:56 k:8 sx:25 :2 c:62 nl:23 o:1 nf:21 :2 nl:43 o:1 :3 nf:56 :2 nb:5 :1 nf:2 nb:5 :1 nb:5 :6 o:1 :4 nf:1 o:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :1 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :2 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :1 nf:1 :2 p:1 nb:4 :1 nf:2 nb:5 :1 nb:5 :2 nf:1 :2 c:38 nv:12 :1 o:1 :1 nf:2 nb:6 :5 nv:15 nf:1 :2 c:49 nv:7 :1 o:1 :1 nv:4 :1 nv:4 :1 nv:3 :1 o:1 :1 nf:2 nb:4 :12 nf:1 :1 c:20 :2 c:63 nv:6 :1 o:1 :1 nv:15 :2 c:49 nv:3 :1 o:1 :12 nv:3 :1 o:1 :1 nv:29 :1 c:22 :2 c:15 k:5 :1 nv:5 :1 nv:6 :1 o:1 :1 nv:8 :1 k:4 :1 nv:6 :1 o:1 :9 k:5 :2 k:4 :1 nv:20 c:51 nv:6 :1 o:1 :16 k:4 :2 k:5 :1 nv:20 c:65 nv:6 :1 o:1 :11 k:6 c:67 k:5 :2 nl:5 o:1 :2 nb:5 :5 nb:5 :4 k:6 :1 nv:6 c:40 :2 nb:5 :11 k:5 :2 nb:5 :13 c:55 :1 nl:10 o:1 :2 nb:4 :1 nv:2 :5",
+  )
+}
+
+///|
+test "rouge: perl: demo" {
+  check_lex(
+    "perl", "#!/usr/bin/env perl\nuse warnings;\nprint \"a: \";\nmy $a = \"foo\";\nprint $a;\n",
+    "c1:19 :1 k:3 :1 nv:8 p:1 :1 k:5 :1 p:1 s2:3 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:3 p:2 :1 k:5 :1 nv:2 p:1 :1",
+  )
+}
+
+///|
+test "rouge: perl: visual sample" {
+  check_lex(
+    "perl", "#! /usr/bin/env perl\n\n# common regex delimiters\nsub substitutionOperator\n{\n    s!\\\\!\\\\\\\\!g;\n    s!\\\\!\\\\\\\\!g;\n    s!\"!\\\\\"!g;\n    s!\\(!\\\\\\(!g;\n    s!\\)!\\\\\\)!g;\n}\n\n$a =~ s/foo/bar/;\n$b =~ s!foo!bar!;\n$c =~ s@foo@bar@;\n$d =~ s\\foo\\bar\\;\n\n# balanced regex delimiters\n$e =~ s{foo}{bar};\n$f =~ s(foo)(bar);\n$g =~ s<foo><bar>;\n$h =~ s[foo][bar];\n\n# balanced regex delimiters with whitespace\n$i =~ s{foo} {bar};\n$j =~ s<foo>\t\t<bar>;\n$k =~\n\ts(foo)\n\n\t(bar);\n$l =~ s{foo} <bar>;\n$m =~ s(foo) !bar!;\n$n =~ s[foo] $bar$;\n\n# /x modifier after regex delimiters\n$o =~ s{\n\t\t\t\tfoo\n\t\t\t } {bar}x;\n$p =~ s%\n  foo\n  %bar%x;\n  #\n# arbitrary regex delimiters\nmy $re_1 = m,This should match,;\nmy $re_2 = m aSo should thisa;\nif $filename and $filename =~ m,usr/share/doc/[^/]+/examples/,;\n\n# keys in hashes aren't match as regular expressions\nmy %countries =  ( england => 'English',\n                   france => 'French',\n                   spain => 'Spanish',\n                   china => 'Chinese',\n                   germany => 'German',\n                   mozambique => 'Mozambican');\n\n# transliterations\nsay \"food\" =~ tr/o/e/r;\n$r =~ tr ^y^z^;\n$s =~ y/[]|/()&/; # \"backward\" compatible\n\n\n# quoted strings\nmy $a = 'foo';\nmy $a = 'foo\\'s bar';\nmy $a = 'foo\\bar';\nmy $a = 'foo\\\\bar';\nmy $a = \"foo\";\nmy $a = \"foo \\\" bar\";\nmy $a = \"foo\\bar\";\nmy $a = \"foo \\057 \\x7f \\x{263a} \\cC \\N{GREEK SMALL LETTER SIGMA} bar\";\nmy $a = \"invalid escape \\w\";\n\nprint \"a: \";\nprint $a, \" - \";\nprint $a, \"\\n\";\n\nmy $str1 = \"This is a ${ string } with fancy interpolation.\"\nmy $cmd1 = `So is @{ this } one.`\nmy $str2 = \"This is a $string with plain interpolation.\"\nmy $cmd2 = `So is @this one.`\nmy $str3 = 'A boring $string.'\n\nmy @w = ( q!str4!, qw< str5 str6 >, qq(str7 $str1), qx`false`, qr/foo/ );\n$a = qr/bar/i;\nmy %x = ( q_ThisString => \"doesnt_overrun as if it were q-quoted\" );\n\n# from http://gist.github.com/485595\nuse strict;\nuse warnings;\nuse Time::HiRes 'usleep';\n\nfor (1..5) {\n    open my $in, '<', '/proc/sys/kernel/random/entropy_avail' or die;\n    print <$in>;\n    close $in;\n    usleep 100_000;\n}\n\n# other miscellaneous tests of numbers separated by _\nusleep 100_000;\n100_000_000;\nmy $nichts = 0.005_006;\nprint 900_800_700.005_006_007, $/;\n\n# numbers from `man 1 perlnumber`\nmy $n;\n$n = 1234;              # decimal integer\n$n = 0b1110011;         # binary integer\n$n = 01234;             # octal integer\n$n = 0x1234;            # hexadecimal integer\n$n = 12.34e-56;         # exponential notation\n$n = \"-12.34e56\";       # number specified as a string\n$n = \"1234\";            # number specified as a string\n\n# other numbers\nfor (\n    -9876,\n    +8765,\n    -9876.02,\n    -9876.02e+10,\n    +765_432e30,\n    2002.,\n    .2002,\n) {\n    print $_, \"\\n\";\n}\n\n# operators on numbers\nfor (\n    $n + 300,\n    $n - 300,\n    $n / 300 + 10,\n    $n * 250 / 2.0,\n    $n == 100,\n    $n != 100,\n    $n > 100,\n    $n >= 100,\n    $n < 100,\n    $n <= 100,\n    $n % 2,\n    abs $n,\n) {\n    print $_, \"\\n\";\n}\n\n=head1 Single Quote Breaker\n\nThat's all folks\n\n=cut\n\nsub foo {\n    \"after the POD with the single quote, it's all still good\"\n}\n\n# operators\nmy $moduloOperation = $totalNumber % $columns ? 1 : 0;\n$moduloOperation = 2;\nmy $addOperation = $totalNumber + $myOtherVar;\n\nsub __END__but_not_really { 1 }\n\n# fat commas\nuse constant EMPTY_SPACE => '&nbsp;';\nmy %h = ( FOO => 23 );\n$text = format_text({FOO => 23, BAR => 30});\nfoo(\n  sub # comment\n      # second comment\n    => 1\n)\n\n# sigils\n${ $sref }\n@{ $aref }\n$#{ $aref }\n%{ $href }\n&{ $cref }\n*{ $gref }\n@$aref[ ... ]\n@$href{ ... }\n%$aref[ ... ]\n%$href{ ... }\n$sref->$*;  # same as  ${ $sref }\n$aref->@*;  # same as  @{ $aref }\n$aref->$#*; # same as $#{ $aref }\n$href->%*;  # same as  %{ $href }\n$cref->&*;  # same as  &{ $cref }\n$gref->**;  # same as  *{ $gref }\n$aref->@[ ... ];  # same as @$aref[ ... ]\n$href->@{ ... };  # same as @$href{ ... }\n$aref->%[ ... ];  # same as %$aref[ ... ]\n$href->%{ ... };  # same as %$href{ ... }\n\n__DATA__\n\nThis is just some end text; everything after DATA can be accessed\nby the <DATA> filehandle.  __END__ does the same thing, without the\nfilehandle, but we can't test both in the same file.\n",
+    "c1:20 :2 c1:25 :1 k:4 nf:20 :1 p:1 :5 sr:11 p:1 :5 sr:11 p:1 :5 sr:9 p:1 :5 sr:11 p:1 :5 sr:11 p:1 :1 p:1 :2 nv:2 :1 o:2 :1 sr:10 p:1 :1 nv:2 :1 o:2 :1 sr:10 p:1 :1 nv:2 :1 o:2 :1 sr:10 p:1 :1 nv:2 :1 o:2 :1 sr:10 p:1 :2 c1:27 :1 nv:2 :1 o:2 :1 sr:11 p:1 :1 nv:2 :1 o:2 :1 sr:11 p:1 :1 nv:2 :1 o:2 :1 sr:11 p:1 :1 nv:2 :1 o:2 :1 sr:11 p:1 :2 c1:43 :1 nv:2 :1 o:2 :1 sr:12 p:1 :1 nv:2 :1 o:2 :1 sr:13 p:1 :1 nv:2 :1 o:2 :2 sr:14 p:1 :1 nv:2 :1 o:2 :1 sr:12 p:1 :1 nv:2 :1 o:2 :1 sr:12 p:1 :1 nv:2 :1 o:2 :1 sr:12 p:1 :2 c1:36 :1 nv:2 :1 o:2 :1 sr:23 p:1 :1 nv:2 :1 o:2 :1 sr:17 p:1 :3 c1:1 :1 c1:28 :1 k:2 :1 nv:5 :1 o:1 :1 sr:20 p:1 :1 k:2 :1 nv:5 :1 o:1 :1 sr:18 p:1 :1 k:2 :1 nv:9 :1 ow:3 :1 nv:9 :1 o:2 :1 sr:32 p:1 :2 c1:52 :1 k:2 :1 nv:10 :1 o:1 :2 p:1 :1 s:7 :1 o:2 :1 p:1 s1:7 p:2 :20 s:6 :1 o:2 :1 p:1 s1:6 p:2 :20 s:5 :1 o:2 :1 p:1 s1:7 p:2 :20 s:5 :1 o:2 :1 p:1 s1:7 p:2 :20 s:7 :1 o:2 :1 p:1 s1:6 p:2 :20 s:10 :1 o:2 :1 p:1 s1:10 p:3 :2 c1:18 :1 nv:3 :1 p:1 s2:4 p:1 :1 o:2 :1 sr:8 p:1 :1 nv:2 :1 o:2 :1 sr:8 p:1 :1 nv:2 :1 o:2 :1 sr:10 p:1 :1 c1:23 :3 c1:16 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s1:3 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s1:3 se:2 s1:5 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s1:7 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s1:3 se:2 s1:3 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:3 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:4 se:2 s2:4 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:3 se:2 s2:2 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:4 se:4 s2:1 se:4 s2:1 se:8 s2:1 se:3 s2:1 se:28 s2:4 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 s2:15 se:1 s2:1 p:2 :2 k:5 :1 p:1 s2:3 p:2 :1 k:5 :1 nv:2 p:1 :1 p:1 s2:3 p:2 :1 k:5 :1 nv:2 p:1 :1 p:1 se:2 p:2 :2 k:2 :1 nv:5 :1 o:1 :1 p:1 s2:10 si:2 :1 si:6 :1 si:1 s2:26 p:1 :1 k:2 :1 nv:5 :1 o:1 :1 p:1 sb:6 si:2 :1 si:4 :1 si:1 sb:5 p:1 :1 k:2 :1 nv:5 :1 o:1 :1 p:1 s2:10 si:7 s2:26 p:1 :1 k:2 :1 nv:5 :1 o:1 :1 p:1 sb:6 si:5 sb:5 p:1 :1 k:2 :1 nv:5 :1 o:1 :1 p:1 s1:17 p:1 :2 k:2 :1 nv:2 :1 o:1 :1 p:1 :1 sx:7 p:1 :1 sx:15 p:1 :1 sx:14 p:1 :1 sx:9 p:1 :1 sx:7 :1 p:2 :1 nv:2 :1 o:1 :1 sx:7 nv:1 p:1 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 :1 s:12 :1 o:2 :1 p:1 s2:37 p:1 :1 p:2 :2 c1:36 :1 k:3 :1 nv:6 p:1 :1 k:3 :1 nv:8 p:1 :1 k:3 :1 nn:6 nv:5 :1 p:1 s1:6 p:2 :2 k:3 :1 p:1 mi:1 o:2 mi:1 p:1 :1 p:1 :5 nb:4 :1 k:2 :1 nv:3 p:1 :1 p:1 s1:1 p:2 :1 p:1 s1:37 p:1 :1 ow:2 :1 nb:3 p:1 :5 k:5 :1 o:1 nv:3 o:1 p:1 :5 nb:5 :1 nv:3 p:1 :5 nv:6 :1 mi:7 p:1 :1 p:1 :2 c1:53 :1 nv:6 :1 mi:7 p:1 :1 mi:11 p:1 :1 k:2 :1 nv:7 :1 o:1 :1 mf:9 p:1 :1 k:5 :1 mf:23 p:1 :1 vg:2 p:1 :2 c1:33 :1 k:2 :1 nv:2 p:1 :1 nv:2 :1 o:1 :1 mi:4 p:1 :14 c1:17 :1 nv:2 :1 o:1 :1 mb:9 p:1 :9 c1:16 :1 nv:2 :1 o:1 :1 mo:5 p:1 :13 c1:15 :1 nv:2 :1 o:1 :1 mh:6 p:1 :12 c1:21 :1 nv:2 :1 o:1 :1 mf:9 p:1 :9 c1:22 :1 nv:2 :1 o:1 :1 p:1 s2:9 p:2 :7 c1:30 :1 nv:2 :1 o:1 :1 p:1 s2:4 p:2 :12 c1:30 :2 c1:15 :1 k:3 :1 p:1 :5 o:1 mi:4 p:1 :5 o:1 mi:4 p:1 :5 o:1 mf:7 p:1 :5 o:1 mf:11 p:1 :5 o:1 mf:10 p:1 :5 mi:4 o:1 p:1 :5 mf:5 p:1 :1 p:1 :1 p:1 :5 k:5 :1 vg:2 p:1 :1 p:1 se:2 p:2 :1 p:1 :2 c1:22 :1 k:3 :1 p:1 :5 nv:2 :1 o:1 :1 mi:3 p:1 :5 nv:2 :1 o:1 :1 mi:3 p:1 :5 nv:2 :1 o:1 :1 mi:3 :1 o:1 :1 mi:2 p:1 :5 nv:2 :1 o:1 :1 mi:3 :1 o:1 :1 mf:3 p:1 :5 nv:2 :1 o:2 :1 mi:3 p:1 :5 nv:2 :1 o:2 :1 mi:3 p:1 :5 nv:2 :1 o:1 :1 mi:3 p:1 :5 nv:2 :1 o:2 :1 mi:3 p:1 :5 nv:2 :1 o:1 :1 mi:3 p:1 :5 nv:2 :1 o:2 :1 mi:3 p:1 :5 nv:2 :1 o:1 :1 mi:1 p:1 :5 nb:3 :1 nv:2 p:1 :1 p:1 :1 p:1 :5 k:5 :1 vg:2 p:1 :1 p:1 se:2 p:2 :1 p:1 :2 cm:51 :2 k:4 nf:3 :1 p:1 :5 p:1 s2:56 p:1 :1 p:1 :2 c1:11 :1 k:2 :1 nv:16 :1 o:1 :1 nv:12 :1 o:1 :1 nv:8 :1 p:1 :1 mi:1 :1 p:1 :1 mi:1 p:1 :1 nv:16 :1 o:1 :1 mi:1 p:1 :1 k:2 :1 nv:13 :1 o:1 :1 nv:12 :1 o:1 :1 nv:11 p:1 :2 k:4 nf:21 :1 p:1 :1 mi:1 :1 p:1 :2 c1:12 :1 k:3 :1 nv:8 :1 s:11 :1 o:2 :1 p:1 s1:6 p:2 :1 k:2 :1 nv:2 :1 o:1 :1 p:1 :1 s:3 :1 o:2 :1 mi:2 :1 p:2 :1 nv:5 :1 o:1 :1 nv:11 p:2 s:3 :1 o:2 :1 mi:2 p:1 :1 s:3 :1 o:2 :1 mi:2 p:3 :1 nv:3 p:1 :3 s:3 :1 c1:9 :7 c1:16 :5 o:2 :1 mi:1 :1 p:1 :2 c1:8 :1 nv:1 p:1 :1 nv:5 :1 p:1 :1 nv:1 p:1 :1 nv:5 :1 p:1 :1 nv:2 p:1 :1 nv:5 :1 p:1 :1 nv:1 p:1 :1 nv:5 :1 p:1 :1 nv:1 p:1 :1 nv:5 :1 p:1 :1 nv:1 p:1 :1 nv:5 :1 p:1 :1 nv:6 p:1 :1 o:3 :1 p:1 :1 nv:6 p:1 :1 o:3 :1 p:1 :1 nv:6 p:1 :1 o:3 :1 p:1 :1 nv:6 p:1 :1 o:3 :1 p:1 :1 nv:5 o:2 vg:2 p:1 :2 c1:21 :1 nv:5 o:2 nv:2 p:1 :2 c1:21 :1 nv:5 o:2 nv:3 p:1 :1 c1:21 :1 nv:5 o:2 nv:2 p:1 :2 c1:21 :1 nv:5 o:2 nv:2 p:1 :2 c1:21 :1 nv:5 o:2 nv:2 p:1 :2 c1:21 :1 nv:5 o:2 nv:1 p:1 :1 o:3 :1 p:2 :2 c1:23 :1 nv:5 o:2 nv:1 p:1 :1 o:3 :1 p:2 :2 c1:23 :1 nv:5 o:2 nv:1 p:1 :1 o:3 :1 p:2 :2 c1:23 :1 nv:5 o:2 nv:1 p:1 :1 o:3 :1 p:2 :2 c1:23 :2 cp:197",
   )
 }
 
@@ -534,6 +597,21 @@ test "rouge: docker: visual sample" {
 }
 
 ///|
+test "rouge: elixir: demo" {
+  check_lex(
+    "elixir", "Enum.map([1,2,3], fn(x) -> x * 2 end)\n", "no:4 o:1 n:3 p:2 mi:1 p:1 mi:1 p:1 mi:1 p:2 :1 k:2 p:1 n:1 p:1 :1 o:2 :1 n:1 :1 o:1 :1 mi:1 :1 k:3 p:1 :1",
+  )
+}
+
+///|
+test "rouge: elixir: visual sample" {
+  check_lex(
+    "elixir", "# numbers\n291         # integer\n0b100100011 # binary\n0o443       # octal\n0x123       # hexadecimal\n291.0       # float\n\n# keywords with no following whitespace\n(cond)\n(do)\n(end)\n\n# bitwise operators\n~~~1\n2 &&& 3\n\n# structs\n%Struct{  }\n\n# maps\n%{key: 1}\n\n# strings\n\"Hello world\"\n\"Hello \\\" world\"\n\"Hello \\n world\"\n\"Hello #{\"world\"}\"\n\"Hello #world\"\n\n# charlists\n'Hello world'\n'Hello \\' world'\n'Hello \\n world'\n'Hello #{'world'}'\n'Hello #world'\n\n# regexes\n~r()gif\n~r[]gfi\n~r<>fgi\n~r''fig\n~r\"\"igf\n~r||i\n~r//g\n\n~r()\n~r[]\n~r<>\n~r''\n~r\"\"\n~r||\n~r//variable\n\n# avoids greedy errors\nstring |> String.split(~r/[ -]/) |> Enum.map(&abbreviate_word/1) |> Enum.join()\n\n# sigils\n~c()\n~c[]\n~c<>\n~c''\n~c\"\"\n~c||\n~c//\n\n~S(inter #{pol <> \"ati#{o}\"} n)\n~S[inter #{pol <> \"ati#{o}\"} n]\n~S<inter #{pol <> \"ati#{o}\"} n>\n~S'inter #{pol <> \"ati#{o}\"} n'\n~S\"inter #{pol <> \"ati#{o}\"} n\"\n~S|inter #{pol <> \"ati#{o}\"} n|\n~S/inter #{pol <> \"ati#{o}\"} n/\n\n# first is Operator, second is &1 variable\n&(&1)\n\n# We cannot use to_char_list because it depends on inspect,\n# which depends on protocol, which depends on this module.\nimport Elixir::Builtin, except: [to_char_list: 1]\n\ndefmodule Module do\n  require Erlang.ets, as: ETS\n\n  @moduledoc \"\"\"\n  This module provides many functions to deal with modules during\n  compilation time. It allows a developer to dynamically attach\n  documentation, merge data, register attributes and so forth.\n\n  After the module is compiled, using many of the functions in\n  this module will raise errors, since it is out of their purpose\n  to inspect runtime data. Most of the runtime data can be inspected\n  via the `__info__(attr)` function attached to each compiled module.\n  \"\"\"\n\n  @doc \"\"\"\n  Evalutes the quotes contents in the given module context.\n  Raises an error if the module was already compiled.\n\n  ## Examples\n\n      defmodule Foo do\n        contents = quote do: (def sum(a, b), do: a + b)\n        Module.eval_quoted __MODULE__, contents, [], __FILE__, __LINE__\n      end\n\n      Foo.sum(1, 2) #=> 3\n  \"\"\"\n  def eval_quoted(module, quoted, binding, filename, line) do\n    assert_not_compiled!(:eval_quoted, module)\n    { binding, scope } = Erlang.elixir_module.binding_and_scope_for_eval(line, to_char_list(filename), module, binding)\n    Erlang.elixir_def.reset_last(module)\n    Erlang.elixir.eval_quoted([quoted], binding, line, scope)\n  end\n\n  @doc \"\"\"\n  Checks if the module is compiled or not.\n\n  ## Examples\n\n      defmodule Foo do\n        Module.compiled?(__MODULE__) #=> false\n      end\n\n      Module.compiled?(Foo) #=> true\n\n  \"\"\"\n  def compiled?(module) do\n    table = data_table_for(module)\n    table == ETS.info(table, :name)\n  end\n\n  @doc \"\"\"\n  Reads the data for the given module. This is used\n  to read data of uncompiled modules. If the module\n  was already compiled, you shoul access the data\n  directly by invoking `__info__(:data)` in that module.\n\n  ## Examples\n\n      defmodule Foo do\n        Module.merge_data __MODULE__, value: 1\n        Module.read_data __MODULE__ #=> [value: 1]\n      end\n\n  \"\"\"\n  def read_data(module) do\n    assert_not_compiled!(:read_data, module)\n    ETS.lookup_element(data_table_for(module), :data, 2)\n  end\n\n  @doc \"\"\"\n  Reads the data from `module` at the given key `at`.\n\n  ## Examples\n\n      defmodule Foo do\n        Module.merge_data __MODULE__, value: 1\n        Module.read_data __MODULE__, :value #=> 1\n      end\n\n  \"\"\"\n  def read_data(module, at) do\n    Orddict.get read_data(module), at\n  end\n\n  @doc \"\"\"\n  Merge the given data into the module, overriding any\n  previous one.\n\n  If any of the given data is a registered attribute, it is\n  automatically added to the attribute set, instead of marking\n  it as data. See register_attribute/2 and add_attribute/3 for\n  more info.\n\n  ## Examples\n\n      defmodule Foo do\n        Module.merge_data __MODULE__, value: 1\n      end\n\n      Foo.__info__(:data) #=> [value: 1]\n\n  \"\"\"\n  def merge_data(module, data) do\n    assert_not_compiled!(:merge_data, module)\n\n    table      = data_table_for(module)\n    old        = ETS.lookup_element(table, :data, 2)\n    registered = ETS.lookup_element(table, :registered_attributes, 2)\n\n    { attrs, new } = Enum.partition data, fn({k,_}) -> List.member?(registered, k) end\n    Enum.each attrs, fn({k,v}) -> add_attribute(module, k, v) end\n    ETS.insert(table, { :data,  Orddict.merge(old, new) })\n  end\n\n  @doc \"\"\"\n  Attaches documentation to a given function. It expects\n  the module the function belongs to, the line (a non negative\n  integer), the kind (def or defmacro), a tuple representing\n  the function and its arity and the documentation, which should\n  be either a binary or a boolean.\n\n  ## Examples\n\n      defmodule MyModule do\n        Module.add_doc(__MODULE__, __LINE__ + 1, :def, { :version, 0 }, \"Manually added docs\")\n        def version, do: 1\n      end\n\n  \"\"\"\n  def add_doc(module, line, kind, tuple, doc) when\n      is_binary(doc) or is_boolean(doc) do\n    assert_not_compiled!(:add_doc, module)\n    case kind do\n    match: :defp\n      :warn\n    else:\n      table = docs_table_for(module)\n      ETS.insert(table, { tuple, line, kind, doc })\n      :ok\n    end\n  end\n\n  @doc \"\"\"\n  Checks if a function was defined, regardless if it is\n  a macro or a private function. Use function_defined?/3\n  to assert for an specific type.\n\n  ## Examples\n\n      defmodule Example do\n        Module.function_defined? __MODULE__, { :version, 0 } #=> false\n        def version, do: 1\n        Module.function_defined? __MODULE__, { :version, 0 } #=> true\n      end\n\n  \"\"\"\n  def function_defined?(module, tuple) when is_tuple(tuple) do\n    assert_not_compiled!(:function_defined?, module)\n    table = function_table_for(module)\n    ETS.lookup(table, tuple) != []\n  end\n\n  @doc \"\"\"\n  Checks if a function was defined and also for its `kind`.\n  `kind` can be either :def, :defp or :defmacro.\n\n  ## Examples\n\n      defmodule Example do\n        Module.function_defined? __MODULE__, { :version, 0 }, :defp #=> false\n        def version, do: 1\n",
+    "c1:9 :1 mi:3 :9 c1:9 :1 mb:11 :1 c1:8 :1 mo:5 :7 c1:7 :1 mh:5 :7 c1:13 :1 mf:5 :7 c1:7 :2 c1:39 :1 p:1 k:4 p:1 :1 p:1 k:2 p:1 :1 p:1 k:3 p:1 :2 c1:19 :1 o:3 mi:1 :1 mi:1 :1 o:3 :1 mi:1 :2 c1:9 :1 p:1 no:6 p:1 :2 p:1 :2 c1:6 :1 p:2 ss:4 :1 mi:1 p:1 :2 c1:9 :1 s2:13 :1 s2:7 se:2 s2:7 :1 s2:7 se:2 s2:7 :1 s2:7 si:2 s2:7 si:1 s2:1 :1 s2:14 :2 c1:11 :1 s1:13 :1 s1:7 se:2 s1:7 :1 s1:7 se:2 s1:7 :1 s1:7 si:2 s1:7 si:1 s1:1 :1 s1:14 :2 c1:9 :1 sr:7 :1 sr:7 :1 sr:7 :1 sr:7 :1 sr:7 :1 sr:5 :1 sr:5 :2 sr:4 :1 sr:4 :1 sr:4 :1 sr:4 :1 sr:4 :1 sr:4 :1 sr:4 n:8 :2 c1:22 :1 n:6 :1 o:2 :1 no:6 o:1 n:5 p:1 sr:8 p:1 :1 o:2 :1 no:4 o:1 n:3 p:1 o:1 n:15 o:1 mi:1 p:1 :1 o:2 :1 no:4 o:1 n:4 p:2 :2 c1:8 :1 sx:4 :1 sx:4 :1 sx:4 :1 sx:4 :1 sx:4 :1 sx:4 :1 sx:4 :2 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :1 sx:9 si:2 n:3 :1 o:2 :1 s2:4 si:2 n:1 si:1 s2:1 si:1 sx:3 :2 c1:42 :1 o:1 p:1 nv:2 p:1 :2 c1:59 :1 c1:58 :1 kn:6 :1 no:6 p:2 no:7 p:1 :1 ss:7 :1 p:1 ss:13 :1 mi:1 p:1 :2 k:9 :1 no:6 :1 k:2 :3 kn:7 :1 no:6 o:1 n:3 p:1 :1 ss:3 :1 no:3 :4 nv:10 :1 sd:471 :4 nv:4 :1 sd:327 :3 k:3 :1 n:11 p:1 n:6 p:1 :1 n:6 p:1 :1 n:7 p:1 :1 n:8 p:1 :1 n:4 p:1 :1 k:2 :5 n:20 p:1 ss:12 p:1 :1 n:6 p:1 :5 p:1 :1 n:7 p:1 :1 n:5 :1 p:1 :1 o:1 :1 no:6 o:1 n:13 o:1 n:26 p:1 n:4 p:1 :1 n:12 p:1 n:8 p:2 :1 n:6 p:1 :1 n:7 p:1 :5 no:6 o:1 n:10 o:1 n:10 p:1 n:6 p:1 :5 no:6 o:1 n:6 o:1 n:11 p:2 n:6 p:2 :1 n:7 p:1 :1 n:4 p:1 :1 n:5 p:1 :3 k:3 :4 nv:4 :1 sd:187 :3 k:3 :1 n:9 p:1 n:6 p:1 :1 k:2 :5 n:5 :1 o:1 :1 n:14 p:1 n:6 p:1 :5 n:5 :1 o:2 :1 no:3 o:1 n:4 p:1 n:5 p:1 :1 ss:5 p:1 :3 k:3 :4 nv:4 :1 sd:368 :3 k:3 :1 n:9 p:1 n:6 p:1 :1 k:2 :5 n:20 p:1 ss:10 p:1 :1 n:6 p:1 :5 no:3 o:1 n:14 p:1 n:14 p:1 n:6 p:2 :1 ss:5 p:1 :1 mi:1 p:1 :3 k:3 :4 nv:4 :1 sd:210 :3 k:3 :1 n:9 p:1 n:6 p:1 :1 n:2 p:1 :1 k:2 :5 no:7 o:1 n:3 :1 n:9 p:1 n:6 p:2 :1 n:2 :3 k:3 :4 nv:4 :1 sd:419 :3 k:3 :1 n:10 p:1 n:6 p:1 :1 n:4 p:1 :1 k:2 :5 n:20 p:1 ss:11 p:1 :1 n:6 p:1 :6 n:5 :6 o:1 :1 n:14 p:1 n:6 p:1 :5 n:3 :8 o:1 :1 no:3 o:1 n:14 p:1 n:5 p:1 :1 ss:5 p:1 :1 mi:1 p:1 :5 n:10 :1 o:1 :1 no:3 o:1 n:14 p:1 n:5 p:1 :1 ss:22 p:1 :1 mi:1 p:1 :6 p:1 :1 n:5 p:1 :1 n:3 :1 p:1 :1 o:1 :1 no:4 o:1 n:9 :1 n:4 p:1 :1 k:2 p:2 n:1 p:1 n:1 p:2 :1 o:2 :1 no:4 o:1 n:7 p:1 n:10 p:1 :1 n:1 p:1 :1 k:3 :5 no:4 o:1 n:4 :1 n:5 p:1 :1 k:2 p:2 n:1 p:1 n:1 p:2 :1 o:2 :1 n:13 p:1 n:6 p:1 :1 n:1 p:1 :1 n:1 p:1 :1 k:3 :5 no:3 o:1 n:6 p:1 n:5 p:1 :1 p:1 :1 ss:5 p:1 :2 no:7 o:1 n:5 p:1 n:3 p:1 :1 n:3 p:1 :1 p:2 :3 k:3 :4 nv:4 :1 sd:467 :3 k:3 :1 n:7 p:1 n:6 p:1 :1 n:4 p:1 :1 n:4 p:1 :1 n:5 p:1 :1 n:3 p:1 :1 ow:4 :7 n:9 p:1 n:3 p:1 :1 ow:2 :1 n:10 p:1 n:3 p:1 :1 k:2 :5 n:20 p:1 ss:8 p:1 :1 n:6 p:1 :5 k:4 :1 n:4 :1 k:2 :5 ss:6 :1 ss:5 :7 ss:5 :5 k:4 p:1 :7 n:5 :1 o:1 :1 n:14 p:1 n:6 p:1 :7 no:3 o:1 n:6 p:1 n:5 p:1 :1 p:1 :1 n:5 p:1 :1 n:4 p:1 :1 n:4 p:1 :1 n:3 :1 p:2 :7 ss:3 :5 k:3 :3 k:3 :4 nv:4 :1 sd:378 :3 k:3 :1 n:17 p:1 n:6 p:1 :1 n:5 p:1 :1 ow:4 :1 n:8 p:1 n:5 p:1 :1 k:2 :5 n:20 p:1 ss:18 p:1 :1 n:6 p:1 :5 n:5 :1 o:1 :1 n:18 p:1 n:6 p:1 :5 no:3 o:1 n:6 p:1 n:5 p:1 :1 n:5 p:1 :1 o:2 :1 p:2 :3 k:3 :4 nv:4 :1 s2:261",
+  )
+}
+
+///|
 test "rouge: gradle: demo" {
   check_lex(
     "gradle", "apply plugin: 'java'\n\nrepositories {\n  jcenter()\n}\n\ndependencies {\n  compile 'org.openjdk.jmh:jmh-core:1.12'\n  compile 'org.openjdk.jmh:jmh-generator-annprocess:1.12'\n}\n",
@@ -582,6 +660,38 @@ test "rouge: kotlin: visual sample" {
 }
 
 ///|
+test "rouge: matlab: demo" {
+  check_lex(
+    "matlab", "A = cat( 3, [1 2 3; 9 8 7; 4 6 5], [0 3 2; 8 8 4; 5 3 5], ...\n                 [6 4 7; 6 8 5; 5 4 3]);\n% The EIG function is applied to each of the horizontal 'slices' of A.\nfor i = 1:3\n    eig(squeeze(A(i,:,:)))\nend\n",
+    "n:1 :1 o:1 :1 nb:3 p:1 :1 mi:1 p:1 :1 p:1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:2 :1 p:1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:2 :1 k:3 :18 p:1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:1 :1 mi:1 :1 mi:1 :1 mi:1 p:3 :1 c1:70 :1 k:3 :1 n:1 :1 o:1 :1 mi:1 p:1 mi:1 :5 nb:3 p:1 nb:7 p:1 n:1 p:1 n:1 p:7 :1 k:3 :1",
+  )
+}
+
+///|
+test "rouge: matlab: visual sample" {
+  check_lex(
+    "matlab", "function zz=sample(aa)\n%%%%%%%%%%%%%%%%%%\n% some comments\n%%%%%%%%%%%%%%%%%%\n\nx = \"a string\";    % some \"ticks\" in a comment\ny = \"a string with \"\"interal\"\" quotes\";\n\nx = 'a char array';    % some 'ticks' in a comment\ny = 'a char array with ''interal'' quotes';\n\nfor i=1:20\n  disp(i);\nend\n\na = rand(30);\nb = rand(30);\n\nc = a .* b ./ a \\ ... comment at end of line and continuation\n    (b .* a + b - a);\n\nc = a' * b';  % note: these ticks are for transpose, not quotes.\n\ndisp(\"a comment symbol, %, in a string\");\ndisp('a comment symbol, %, in a char array');\n\n!echo abc % this isn't a comment - it's passed to system command\n\nfunction y=myfunc(x)\ny = exp(x);\n\n {%\na block comment\n %}\n\n\nfunction myfunc(s)\n    a = 1;\nend\n",
+    "k:8 :1 n:2 o:1 n:6 p:1 n:2 p:1 :1 c1:18 :1 c1:15 :1 c1:18 :2 n:1 :1 o:1 :1 s2:10 p:1 :4 c1:27 :1 n:1 :1 o:1 :1 s2:15 se:2 s2:7 se:2 s2:8 p:1 :2 n:1 :1 o:1 :1 s1:14 p:1 :4 c1:27 :1 n:1 :1 o:1 :1 s1:19 se:2 s1:7 se:2 s1:8 p:1 :2 k:3 :1 n:1 o:1 mi:1 p:1 mi:2 :3 nb:4 p:1 n:1 p:2 :1 k:3 :2 n:1 :1 o:1 :1 nb:4 p:1 mi:2 p:2 :1 n:1 :1 o:1 :1 nb:4 p:1 mi:2 p:2 :2 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:1 :1 o:1 p:1 :1 n:1 :1 p:1 :1 k:3 c:40 :5 p:1 n:1 :1 o:2 :1 n:1 :1 o:1 :1 n:1 :1 o:1 :1 n:1 p:2 :2 n:1 :1 o:1 :1 n:1 s1:6 p:1 :2 c1:50 :2 nb:4 p:1 s2:34 p:2 :1 nb:4 p:1 s1:38 p:2 :2 k:1 nb:5 :4 c1:54 :2 k:8 :1 n:1 o:1 n:6 p:1 n:1 p:1 :1 n:1 :1 o:1 :1 nb:3 p:1 n:1 p:2 :3 cm:22 :3 k:8 :1 n:6 p:1 n:1 p:1 :5 n:1 :1 o:1 :1 mi:1 p:1 :1 k:3 :1",
+  )
+}
+
+///|
+test "rouge: python: demo" {
+  check_lex(
+    "python", "def fib(n):    # write Fibonacci series up to n\n    \"\"\"Print a Fibonacci series up to n.\"\"\"\n    a, b = 0, 1\n    while a < n:\n        print a,\n        a, b = b, a+b\n",
+    "k:3 :1 nf:3 p:1 n:1 p:2 :4 c1:33 :4 s:39 :5 n:1 p:1 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 mi:1 :5 k:5 :1 n:1 :1 o:1 :1 n:1 p:1 :9 k:5 :1 n:1 p:1 :9 n:1 p:1 :1 n:1 :1 o:1 :1 n:1 p:1 :1 n:1 o:1 n:1 :1",
+  )
+}
+
+///|
+test "rouge: python: visual sample" {
+  check_lex(
+    "python", "def lex(code, lexer):\n    \"\"\"\n    Lex ``code`` with ``lexer`` and return an iterable of tokens.\n    \"\"\"\n    try:\n        return lexer.get_tokens(code)\n    except TypeError, err:\n        if isinstance(err.args[0], str) and \\\n           'unbound method get_tokens' in err.args[0]:\n            raise TypeError('lex() argument must be a lexer instance, '\n                            'not a class')\n        raise\n\n# quotes in strings\ndef foo():\n    \"it's working\"\n\ndef foo():\n    'he said \"hi\"'\n\ndef foo():\n    \"\"\"it's working\"\"\"\n    \"\"\"he said \"hi\" \"\"\"\n\ndef foo():\n    '''he said \"hi\"'''\n    '''it's working'''\n\n# unicode docstrings\ndef foo():\n    ur\"\"\"unicode-raw\"\"\"\n\ndef bar():\n    u\"\"\"unicode\"\"\"\n\ndef baz():\n    r'raw'\n\ndef zap():\n    \"\"\"docstring\"\"\"\n\n# escaped characters in string literals\ndef baz():\n    '\\a\\b\\f\\n\\r\\t\\v\\\"\\''\n    '\\N{DEGREE SIGN}'\n    '\\uaF09'\n    '\\UaaaaAF09'\n    '\\xaf\\xAF\\x09'\n    '\\007'\n    '.*\\[p00t_(d\\d{4})\\].*' # There are no escape sequences in this string\n\n# escaped characters in raw strings\ndef baz():\n    r'\\a\\b\\f\\n\\r\\t\\v\\\"\\''\n    r'\\N{DEGREE SIGN}'\n    r'\\uaF09'\n    r'\\UaaaaAF09'\n    r'\\xaf\\xAF\\x09'\n    r'\\007'\n    r'.*\\[p00t_(d\\d{4})\\].*'\n\n# line continuations\napple.filter(x, y)\napple.\\\n    filter(x, y)\n\n1 \\\n    . \\\n    __str__\n\nfrom os import path\nfrom \\\n        os \\\n        import \\\n        path\n\nimport os.path as something\n\nimport \\\n        os.path \\\n        as \\\n        something\n\nclass \\\n Spam:\n    pass\n\nclass Spam: pass\n\nclass Spam(object):\n    pass\n\nclass \\\n Spam \\\n  (\n   object\n ) \\\n :\n pass\n\n\ndef \\\n spam \\\n  ( \\\n  ) \\\n  : \\\n  pass\n\ndef the_word_strand():\n    a = b.strip()\n    a = strand\n    b = band\n    c = strand\n    b = error\n    c = stror\n    c = string\n\npy2_long = -123L\n\n# Python 3\n\ndef test():\n    raise Exception from foo\n\ndef exceptions():\n    try:\n        print(\"Hello\")\n    except Exception as e:\n        print(\"Exception\")\n\n# PEP 515\ninteger_literals = [\n    123, -1_2_0, 0, 00, 0_0_00, 0b1, 0B1_0, 0b_1, 0b00_0,\n    0o1, 0O1_2, 0O_1, 0o00_0, 0x1, 0X1_2, 0x_1, 0x00_0\n]\nfloat_literals = [\n    0., 1., 00., 0_00., 1_0_0., 0_1., .0,\n    .1_2, 3.4_5, 1_2.3_4, 00_0.0_0_0, 0_0.1_2,\n    0_1_2j, 0_00J, 1.2J, 0.1j, 1_0.J,\n    0_00E+2_34_5, 0.e+1, 00_1.E-0_2, -100.e+20, 1e01,\n    0_00E+2_34_5j, 0.e+1J, 00_1.E-0_2j, -100.e+20J 1e01j\n]\nfloats = (19.0, 19.)\n\n# PEP 465\na = b @ c\nx @= y\n\n# PEP 498\nf'{hello} world {int(x) + 1}'\nf'{{ {4*10} }}'\nf'result: {value:{width}.{precision}}'\nf'{value!r}\n\n# Unicode identifiers\nα = 10\ndef coöperative(б):\n    return f\"{б} is Russian\"\n",
+    "k:3 :1 nf:3 p:1 n:4 p:1 :1 n:5 p:2 :5 s:77 :5 k:3 p:1 :9 k:6 :1 n:5 p:1 n:10 p:1 n:4 p:1 :5 k:6 :1 nb:9 p:1 :1 n:3 p:1 :9 k:2 :1 nb:10 p:1 n:3 p:1 n:4 p:1 mi:1 p:2 :1 nb:3 p:1 :1 ow:3 :14 s:27 :1 ow:2 :1 n:3 p:1 n:4 p:1 mi:1 p:2 :13 k:5 :1 nb:9 p:1 s:43 :29 s:13 p:1 :9 k:5 :2 c1:20 k:3 :1 nf:3 p:3 :5 s:14 :2 k:3 :1 nf:3 p:3 :5 s:14 :2 k:3 :1 nf:3 p:3 :5 s:18 :5 s:19 :2 k:3 :1 nf:3 p:3 :5 s:18 :5 s:18 :2 c1:21 k:3 :1 nf:3 p:3 :5 sa:2 s:17 :2 k:3 :1 nf:3 p:3 :5 sa:1 s:13 :2 k:3 :1 nf:3 p:3 :5 sa:1 s:5 :2 k:3 :1 nf:3 p:3 :5 s:15 :2 c1:40 k:3 :1 nf:3 p:3 :5 s:1 se:18 s:1 :5 s:1 se:15 s:1 :5 s:1 se:6 s:1 :5 s:1 se:10 s:1 :5 s:1 se:12 s:1 :5 s:1 se:4 s:1 :5 s:23 :1 c1:47 :1 c1:36 k:3 :1 nf:3 p:3 :5 sa:1 s:20 :5 sa:1 s:17 :5 sa:1 s:8 :5 sa:1 s:12 :5 sa:1 s:14 :5 sa:1 s:6 :5 sa:1 s:23 :2 c1:21 n:5 p:1 nb:6 p:1 n:1 p:1 :1 n:1 p:1 :1 n:5 p:1 :6 nb:6 p:1 n:1 p:1 :1 n:1 p:1 :2 mi:1 :7 p:1 :7 n:7 :2 kn:4 :1 nn:2 :1 kn:6 :1 n:4 :1 kn:4 :11 nn:2 :11 kn:6 :11 n:4 :2 kn:6 :1 nn:7 :1 k:2 :1 n:9 :2 k:6 :11 n:2 p:1 n:4 :11 k:2 :11 n:9 :2 k:5 :4 nc:4 p:1 :5 k:4 :2 k:5 :1 nc:4 p:1 :1 k:4 :2 k:5 :1 nc:4 p:1 nb:6 p:2 :5 k:4 :2 k:5 :4 nc:4 :5 p:1 :4 nb:6 :2 p:1 :4 p:1 :2 k:4 :3 k:3 :4 nf:4 :5 p:1 :5 p:1 :5 p:1 :5 k:4 :2 k:3 :1 nf:15 p:3 :5 n:1 :1 o:1 :1 n:1 p:1 n:5 p:2 :5 n:1 :1 o:1 :1 n:6 :5 n:1 :1 o:1 :1 n:4 :5 n:1 :1 o:1 :1 n:6 :5 n:1 :1 o:1 :1 n:5 :5 n:1 :1 o:1 :1 n:5 :5 n:1 :1 o:1 :1 n:6 :2 n:8 :1 o:1 :1 o:1 il:4 :2 c1:11 :1 k:3 :1 nf:4 p:3 :5 k:5 :1 nb:9 :1 k:4 :1 n:3 :2 k:3 :1 nf:10 p:3 :5 k:3 p:1 :9 k:5 p:1 s:7 p:1 :5 k:6 :1 nb:9 :1 k:2 :1 n:1 p:1 :9 k:5 p:1 s:11 p:1 :2 c1:10 n:16 :1 o:1 :1 p:1 :5 mi:3 p:1 :1 o:1 mi:5 p:1 :1 mi:1 p:1 :1 mi:2 p:1 :1 mi:6 p:1 :1 mb:3 p:1 :1 mb:5 p:1 :1 mb:4 p:1 :1 mb:6 p:1 :5 mo:3 p:1 :1 mo:5 p:1 :1 mo:4 p:1 :1 mo:6 p:1 :1 mh:3 p:1 :1 mh:5 p:1 :1 mh:4 p:1 :1 mh:6 :1 p:1 :1 n:14 :1 o:1 :1 p:1 :5 mf:2 p:1 :1 mf:2 p:1 :1 mf:3 p:1 :1 mf:5 p:1 :1 mf:6 p:1 :1 mf:4 p:1 :1 p:1 mi:1 p:1 :5 p:1 mi:3 p:1 :1 mf:5 p:1 :1 mf:7 p:1 :1 mf:10 p:1 :1 mf:7 p:1 :5 mf:6 p:1 :1 mf:5 p:1 :1 mf:4 p:1 :1 mf:4 p:1 :1 mf:5 p:1 :5 mf:12 p:1 :1 mf:5 p:1 :1 mf:10 p:1 :1 o:1 mf:8 p:1 :1 mf:4 p:1 :5 mf:13 p:1 :1 mf:6 p:1 :1 mf:11 p:1 :1 o:1 mf:9 :1 mf:5 :1 p:1 :1 n:6 :1 o:1 :1 p:1 mf:4 p:1 :1 mf:3 p:1 :2 c1:10 n:1 :1 o:1 :1 n:1 :1 o:1 :1 n:1 :1 n:1 :1 o:2 :1 n:1 :2 c1:10 sa:1 s:1 si:1 n:5 si:1 s:7 si:1 nb:3 p:1 n:1 p:1 :1 o:1 :1 mi:1 si:1 s:1 :1 sa:1 s:4 si:1 mi:1 o:1 mi:2 si:1 s:4 :1 sa:1 s:9 si:1 n:5 si:2 n:5 si:1 p:1 si:1 n:9 si:2 s:1 :1 sa:1 s:1 si:1 n:5 si:3 s:64 si:1 n:1 si:1 s:13",
+  )
+}
+
+///|
 test "rouge: console: demo" {
   check_lex(
     "console", "# prints \"hello, world\" to the screen\n~# echo Hello, World\nHello, World\n\n# don't run this\n~# rm -rf --no-preserve-root /\n",
@@ -598,6 +708,22 @@ test "rouge: console: visual sample" {
 }
 
 ///|
+test "rouge: haskell: demo" {
+  check_lex(
+    "haskell", "quicksort :: Ord a => [a] -> [a]\nquicksort []     = []\nquicksort (p:xs) = (quicksort lesser) ++ [p] ++ (quicksort greater)\n    where\n        lesser  = filter (< p) xs\n        greater = filter (>= p) xs\n",
+    "n:9 :1 o:2 :1 kt:3 :1 n:1 :1 o:2 :1 p:1 n:1 p:1 :1 o:2 :1 p:1 n:1 p:1 :1 n:9 :1 kt:2 :5 o:1 :1 kt:2 :1 n:9 :1 p:1 n:1 o:1 n:2 p:1 :1 o:1 :1 p:1 n:9 :1 n:6 p:1 :1 o:2 :1 p:1 n:1 p:1 :1 o:2 :1 p:1 n:9 :1 n:7 p:1 :5 kr:5 :9 n:6 :2 o:1 :1 n:6 :1 p:1 o:1 :1 n:1 p:1 :1 n:2 :9 n:7 :1 o:1 :1 n:6 :1 p:1 o:2 :1 n:1 p:1 :1 n:2 :1",
+  )
+}
+
+///|
+test "rouge: haskell: visual sample" {
+  check_lex(
+    "haskell", "\n-- Initial tests\n\n_a'\nAb'\n'Cd'\n\n---------------------------------------------------------------------\n-- SmallCheck: another lightweight testing library.\n-- Colin Runciman, August 2006\n-- Version 0.2 (November 2006)\n--\n-- After QuickCheck, by Koen Claessen and John Hughes (2000-2004).\n---------------------------------------------------------------------\n\nmodule SmallCheck (\n  smallCheck, depthCheck,\n  Property, Testable,\n  forAll, forAllElem,\n  exists, existsDeeperBy, thereExists, thereExistsElem,\n  (==>),\n  Series, Serial(..),\n  (\\/), (><), two, three, four,\n  cons0, cons1, cons2, cons3, cons4,\n  alts0, alts1, alts2, alts3, alts4,\n  N(..), Nat, Natural,\n  depth, inc, dec\n  ) where\n\nimport Data.List (intersperse)\nimport Control.Monad (when)\nimport System.IO (stdout, hFlush)\n\n------------------ <Series of depth-bounded values> -----------------\n\n-- Series arguments should be interpreted as a depth bound (>=0)\n-- Series results should have finite length\n\ntype Series a = Int -> [a]\n\n-- sum\ninfixr 7 \\/\n(\\/) :: Series a -> Series a -> Series a\ns1 \\/ s2 = \\d -> s1 d ++ s2 d\n\n-- product\ninfixr 8 ><\n(><) :: Series a -> Series b -> Series (a,b)\ns1 >< s2 = \\d -> [(x,y) | x <- s1 d, y <- s2 d]\n\n------------------- <methods for type enumeration> ------------------\n\n-- enumerated data values should be finite and fully defined\n-- enumerated functional values should be total and strict\n\n-- bounds:\n-- for data values, the depth of nested constructor applications\n-- for functional values, both the depth of nested case analysis\n-- and the depth of results\n \nclass Serial a where\n  series   :: Series a\n  coseries :: Serial b => Series (a->b)\n\ninstance Serial () where\n  series   _ = [()]\n  coseries d = [ \\() -> b\n               | b <- series d ]\n\ninstance Serial Int where\n  series   d = [(-d)..d]\n  coseries d = [ \\i -> if i > 0 then f (N (i - 1))\n                       else if i < 0 then g (N (abs i - 1))\n                       else z\n               | z <- alts0 d, f <- alts1 d, g <- alts1 d ]\n\ninstance Serial Integer where\n  series   d = [ toInteger (i :: Int)\n               | i <- series d ]\n  coseries d = [ f . (fromInteger :: Integer->Int)\n               | f <- series d ]\n\nnewtype N a = N a\n\ninstance Show a => Show (N a) where\n  show (N i) = show i\n\ninstance (Integral a, Serial a) => Serial (N a) where\n  series   d = map N [0..d']\n               where\n               d' = fromInteger (toInteger d)\n  coseries d = [ \\(N i) -> if i > 0 then f (N (i - 1))\n                           else z\n               | z <- alts0 d, f <- alts1 d ]\n\ntype Nat = N Int\ntype Natural = N Integer\n\ninstance Serial Float where\n  series d   = [ encodeFloat sig exp\n               | (sig,exp) <- series d,\n                 odd sig || sig==0 && exp==0 ]\n  coseries d = [ f . decodeFloat\n               | f <- series d ]\n             \ninstance Serial Double where\n  series   d = [ frac (x :: Float)\n               | x <- series d ]\n  coseries d = [ f . (frac :: Double->Float)\n               | f <- series d ]\n\nfrac :: (Real a, Fractional a, Real b, Fractional b) => a -> b\nfrac = fromRational . toRational\n\ninstance Serial Char where\n  series d   = take (d+1) ['a'..'z']\n  coseries d = [ \\c -> f (N (fromEnum c - fromEnum 'a'))\n               | f <- series d ]\n\ninstance (Serial a, Serial b) =>\n         Serial (a,b) where\n  series   = series >< series\n  coseries = map uncurry . coseries\n\ninstance (Serial a, Serial b, Serial c) =>\n         Serial (a,b,c) where\n  series   = \\d -> [(a,b,c) | (a,(b,c)) <- series d]\n  coseries = map uncurry3 . coseries\n\ninstance (Serial a, Serial b, Serial c, Serial d) =>\n         Serial (a,b,c,d) where\n  series   = \\d -> [(a,b,c,d) | (a,(b,(c,d))) <- series d]\n  coseries = map uncurry4 . coseries\n\nuncurry3 :: (a->b->c->d) -> ((a,b,c)->d)\nuncurry3 f (x,y,z) = f x y z\n\nuncurry4 :: (a->b->c->d->e) -> ((a,b,c,d)->e)\nuncurry4 f (w,x,y,z) = f w x y z\n\ntwo   :: Series a -> Series (a,a)\ntwo   s = s >< s\n\nthree :: Series a -> Series (a,a,a)\nthree s = \\d -> [(x,y,z) | (x,(y,z)) <- (s >< s >< s) d]\n\nfour  :: Series a -> Series (a,a,a,a)\nfour  s = \\d -> [(w,x,y,z) | (w,(x,(y,z))) <- (s >< s >< s >< s) d]\n\ncons0 :: \n         a -> Series a\ncons0 c _ = [c]\n\ncons1 :: Serial a =>\n         (a->b) -> Series b\ncons1 c d = [c z | d > 0, z <- series (d-1)]\n\ncons2 :: (Serial a, Serial b) =>\n         (a->b->c) -> Series c\ncons2 c d = [c y z | d > 0, (y,z) <- series (d-1)]\n\ncons3 :: (Serial a, Serial b, Serial c) =>\n         (a->b->c->d) -> Series d\ncons3 c d = [c x y z | d > 0, (x,y,z) <- series (d-1)]\n\ncons4 :: (Serial a, Serial b, Serial c, Serial d) =>\n         (a->b->c->d->e) -> Series e\ncons4 c d = [c w x y z | d > 0, (w,x,y,z) <- series (d-1)]\n\nalts0 ::  Serial a =>\n            Series a\nalts0 d = series d\n\nalts1 ::  (Serial a, Serial b) =>\n            Series (a->b)\nalts1 d = if d > 0 then series (dec d)\n          else [\\_ -> x | x <- series d]\n\nalts2 ::  (Serial a, Serial b, Serial c) =>\n            Series (a->b->c)\nalts2 d = if d > 0 then series (dec d)\n          else [\\_ _ -> x | x <- series d]\n\nalts3 ::  (Serial a, Serial b, Serial c, Serial d) =>\n            Series (a->b->c->d)\nalts3 d = if d > 0 then series (dec d)\n          else [\\_ _ _ -> x | x <- series d]\n\nalts4 ::  (Serial a, Serial b, Serial c, Serial d, Serial e) =>\n            Series (a->b->c->d->e)\nalts4 d = if d > 0 then series (dec d)\n          else [\\_ _ _ _ -> x | x <- series d]\n\ninstance Serial Bool where\n  series     = cons0 True \\/ cons0 False\n  coseries d = [ \\x -> if x then b1 else b2\n               | (b1,b2) <- series d ]\n\ninstance Serial a => Serial (Maybe a) where\n  series     = cons0 Nothing \\/ cons1 Just\n  coseries d = [ \\m -> case m of\n                       Nothing -> z\n                       Just x  -> f x\n               |  z <- alts0 d ,\n                  f <- alts1 d ]\n\ninstance (Serial a, Serial b) => Serial (Either a b) where\n  series     = cons1 Left \\/ cons1 Right\n  coseries d = [ \\e -> case e of\n                       Left x  -> f x\n",
+    ":1 c1:16 :2 n:3 :1 kt:3 :1 kt:4 :2 c1:69 :1 c1:51 :1 c1:30 :1 c1:30 :1 c1:2 :1 c1:66 :1 c1:69 :2 kr:6 :1 nn:10 :1 p:1 :3 nf:10 p:1 :1 nf:10 p:1 :3 kt:8 p:1 :1 kt:8 p:1 :3 nf:6 p:1 :1 nf:10 p:1 :3 nf:6 p:1 :1 nf:14 p:1 :1 nf:11 p:1 :1 nf:15 p:1 :3 p:1 o:3 p:2 :3 kt:6 p:1 :1 kt:6 p:1 o:2 p:2 :3 p:1 o:2 p:2 :1 p:1 o:2 p:2 :1 nf:3 p:1 :1 nf:5 p:1 :1 nf:4 p:1 :3 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :3 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :1 nf:5 p:1 :3 kt:1 p:1 o:2 p:2 :1 kt:3 p:1 :1 kt:7 p:1 :3 nf:5 p:1 :1 nf:3 p:1 :1 nf:3 :3 p:1 :1 kr:5 :2 kr:6 :1 nn:9 :1 p:1 nf:11 p:1 :1 kr:6 :1 nn:13 :1 p:1 nf:4 p:1 :1 kr:6 :1 nn:9 :1 p:1 nf:6 p:1 :1 nf:6 p:1 :2 c1:69 :2 c1:64 :1 c1:43 :2 kr:4 :1 kt:6 :1 n:1 :1 o:1 :1 kt:3 :1 o:2 :1 p:1 n:1 p:1 :2 c1:6 :1 kr:6 :1 mi:1 :1 o:2 :1 p:1 o:2 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:2 :1 o:2 :1 n:2 :1 o:1 :1 nf:1 n:1 :1 o:2 :1 n:2 :1 n:1 :1 o:2 :1 n:2 :1 n:1 :2 c1:10 :1 kr:6 :1 mi:1 :1 o:2 :1 p:1 o:2 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 n:1 p:1 n:1 p:1 :1 n:2 :1 o:2 :1 n:2 :1 o:1 :1 nf:1 n:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 :1 o:1 :1 n:1 :1 o:2 :1 n:2 :1 n:1 p:1 :1 n:1 :1 o:2 :1 n:2 :1 n:1 p:1 :2 c1:69 :2 c1:60 :1 c1:58 :2 c1:10 :1 c1:64 :1 c1:64 :1 c1:27 :3 kr:5 :1 kt:6 :1 n:1 :1 kr:5 :3 n:6 :3 o:2 :1 kt:6 :1 n:1 :3 n:8 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 n:1 o:2 n:1 p:1 :2 kr:8 :1 kt:6 :1 nb:2 :1 kr:5 :3 n:6 :3 kr:1 :1 o:1 :1 p:1 nb:2 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 nb:2 :1 o:2 :1 n:1 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :2 kr:8 :1 kt:6 :1 kt:3 :1 kr:5 :3 n:6 :3 n:1 :1 o:1 :1 p:2 o:1 n:1 p:1 o:2 n:1 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 n:1 :1 o:2 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:1 :1 p:1 kt:1 :1 p:1 n:1 :1 o:1 :1 mi:1 p:2 :24 kr:4 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:1 :1 p:1 kt:1 :1 p:1 n:3 :1 n:1 :1 o:1 :1 mi:1 p:2 :24 kr:4 :1 n:1 :16 o:1 :1 n:1 :1 o:2 :1 n:5 :1 n:1 p:1 :1 n:1 :1 o:2 :1 n:5 :1 n:1 p:1 :1 n:1 :1 o:2 :1 n:5 :1 n:1 :1 p:1 :2 kr:8 :1 kt:6 :1 kt:7 :1 kr:5 :3 n:6 :3 n:1 :1 o:1 :1 p:1 :1 n:9 :1 p:1 n:1 :1 o:2 :1 kt:3 p:1 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 n:1 :1 o:1 :1 p:1 n:11 :1 o:2 :1 kt:7 o:2 kt:3 p:1 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :2 kr:7 :1 kt:1 :1 n:1 :1 o:1 :1 kt:1 :1 n:1 :2 kr:8 :1 kt:4 :1 n:1 :1 o:2 :1 kt:4 :1 p:1 kt:1 :1 n:1 p:1 :1 kr:5 :3 n:4 :1 p:1 kt:1 :1 n:1 p:1 :1 o:1 :1 n:4 :1 n:1 :2 kr:8 :1 p:1 kt:8 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :1 kt:6 :1 p:1 kt:1 :1 n:1 p:1 :1 kr:5 :3 n:6 :3 n:1 :1 o:1 :1 n:3 :1 kt:1 :1 p:1 mi:1 o:2 n:2 p:1 :16 kr:5 :16 n:2 :1 o:1 :1 n:11 :1 p:1 n:9 :1 n:1 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 p:1 kt:1 :1 n:1 p:1 :1 o:2 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:1 :1 p:1 kt:1 :1 p:1 n:1 :1 o:1 :1 mi:1 p:2 :28 kr:4 :1 n:1 :16 o:1 :1 n:1 :1 o:2 :1 n:5 :1 n:1 p:1 :1 n:1 :1 o:2 :1 n:5 :1 n:1 :1 p:1 :2 kr:4 :1 kt:3 :1 o:1 :1 kt:1 :1 kt:3 :1 kr:4 :1 kt:7 :1 o:1 :1 kt:1 :1 kt:7 :2 kr:8 :1 kt:6 :1 kt:5 :1 kr:5 :3 n:6 :1 n:1 :3 o:1 :1 p:1 :1 n:11 :1 n:3 :1 n:3 :16 o:1 :1 p:1 n:3 p:1 n:3 p:1 :1 o:2 :1 n:6 :1 n:1 p:1 :18 n:3 :1 n:3 :1 o:2 :1 n:3 o:2 mi:1 :1 o:2 :1 n:3 o:2 mi:1 :1 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 n:1 :1 o:1 :1 n:11 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :15 kr:8 :1 kt:6 :1 kt:6 :1 kr:5 :3 n:6 :3 n:1 :1 o:1 :1 p:1 :1 n:4 :1 p:1 n:1 :1 o:2 :1 kt:5 p:1 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 n:1 :1 o:1 :1 p:1 n:4 :1 o:2 :1 kt:6 o:2 kt:5 p:1 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :2 n:4 :1 o:2 :1 p:1 kt:4 :1 n:1 p:1 :1 kt:10 :1 n:1 p:1 :1 kt:4 :1 n:1 p:1 :1 kt:10 :1 n:1 p:1 :1 o:2 :1 n:1 :1 o:2 :1 n:1 :1 n:4 :1 o:1 :1 n:12 :1 o:1 :1 n:10 :2 kr:8 :1 kt:6 :1 kt:4 :1 kr:5 :3 n:6 :1 n:1 :3 o:1 :1 n:4 :1 p:1 n:1 o:1 mi:1 p:1 :1 p:1 sc:3 o:2 sc:3 p:1 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 n:1 :1 o:2 :1 n:1 :1 p:1 kt:1 :1 p:1 n:8 :1 n:1 :1 o:1 :1 n:8 :1 sc:3 p:2 :16 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :2 kr:8 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 kt:6 :1 p:1 n:1 p:1 n:1 p:1 :1 kr:5 :3 n:6 :3 o:1 :1 n:6 :1 o:2 :1 n:6 :3 n:8 :1 o:1 :1 n:3 :1 n:7 :1 o:1 :1 n:8 :2 kr:8 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 kt:6 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 kr:5 :3 n:6 :3 o:1 :1 nf:1 n:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 p:1 n:1 p:2 n:1 p:1 n:1 p:2 :1 o:2 :1 n:6 :1 n:1 p:1 :3 n:8 :1 o:1 :1 n:3 :1 n:8 :1 o:1 :1 n:8 :2 kr:8 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 kt:6 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 kr:5 :3 n:6 :3 o:1 :1 nf:1 n:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 p:1 n:1 p:2 n:1 p:2 n:1 p:1 n:1 p:3 :1 o:2 :1 n:6 :1 n:1 p:1 :3 n:8 :1 o:1 :1 n:3 :1 n:8 :1 o:1 :1 n:8 :2 n:8 :1 o:2 :1 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 o:2 n:1 p:1 :1 n:8 :1 n:1 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 n:1 :1 n:1 :1 n:1 :1 n:1 :2 n:8 :1 o:2 :1 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 o:2 n:1 p:1 :1 n:8 :1 n:1 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 n:1 :1 n:1 :1 n:1 :1 n:1 :1 n:1 :2 n:3 :3 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 n:1 p:1 n:1 p:1 :1 n:3 :3 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:1 :2 n:5 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 n:5 :1 n:1 :1 o:1 :1 nf:1 n:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 p:1 n:1 p:2 n:1 p:1 n:1 p:2 :1 o:2 :1 p:1 n:1 :1 o:2 :1 n:1 :1 o:2 :1 n:1 p:1 :1 n:1 p:1 :2 n:4 :2 o:2 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 n:4 :2 n:1 :1 o:1 :1 nf:1 n:1 :1 o:2 :1 p:2 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:1 :1 p:1 n:1 p:2 n:1 p:2 n:1 p:1 n:1 p:3 :1 o:2 :1 p:1 n:1 :1 o:2 :1 n:1 :1 o:2 :1 n:1 :1 o:2 :1 n:1 p:1 :1 n:1 p:1 :2 n:5 :1 o:2 :11 n:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 kr:1 :1 o:1 :1 p:1 n:1 p:1 :2 n:5 :1 o:2 :1 kt:6 :1 n:1 :1 o:2 :10 p:1 n:1 o:2 n:1 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 n:1 :1 o:1 :1 p:1 n:1 :1 n:1 :1 o:1 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 n:1 :1 o:2 :1 n:6 :1 p:1 n:1 o:1 mi:1 p:2 :2 n:5 :1 o:2 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 p:1 n:1 o:2 n:1 o:2 n:1 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 n:1 :1 o:1 :1 p:1 n:1 :1 n:1 :1 n:1 :1 o:1 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 p:1 n:1 p:1 n:1 p:1 :1 o:2 :1 n:6 :1 p:1 n:1 o:1 mi:1 p:2 :2 n:5 :1 o:2 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 n:1 :1 o:1 :1 p:1 n:1 :1 n:1 :1 n:1 :1 n:1 :1 o:1 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:2 :1 n:6 :1 p:1 n:1 o:1 mi:1 p:2 :2 n:5 :1 o:2 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :10 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 o:2 :1 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 n:1 :1 o:1 :1 p:1 n:1 :1 n:1 :1 n:1 :1 n:1 :1 n:1 :1 o:1 :1 n:1 :1 o:1 :1 mi:1 p:1 :1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 n:1 p:1 :1 o:2 :1 n:6 :1 p:1 n:1 o:1 mi:1 p:2 :2 n:5 :1 o:2 :2 kt:6 :1 n:1 :1 o:2 :13 kt:6 :1 n:1 :1 n:5 :1 n:1 :1 o:1 :1 n:6 :1 n:1 :2 n:5 :1 o:2 :2 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :13 kt:6 :1 p:1 n:1 o:2 n:1 p:1 :1 n:5 :1 n:1 :1 o:1 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:6 :1 p:1 n:3 :1 n:1 p:1 :11 kr:4 :1 p:1 nf:1 kr:1 :1 o:2 :1 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 p:1 :2 n:5 :1 o:2 :2 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :13 kt:6 :1 p:1 n:1 o:2 n:1 o:2 n:1 p:1 :1 n:5 :1 n:1 :1 o:1 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:6 :1 p:1 n:3 :1 n:1 p:1 :11 kr:4 :1 p:1 nf:1 kr:1 :1 kr:1 :1 o:2 :1 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 p:1 :2 n:5 :1 o:2 :2 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :13 kt:6 :1 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 n:5 :1 n:1 :1 o:1 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:6 :1 p:1 n:3 :1 n:1 p:1 :11 kr:4 :1 p:1 nf:1 kr:1 :1 kr:1 :1 kr:1 :1 o:2 :1 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 p:1 :2 n:5 :1 o:2 :2 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :13 kt:6 :1 p:1 n:1 o:2 n:1 o:2 n:1 o:2 n:1 o:2 n:1 p:1 :1 n:5 :1 n:1 :1 o:1 :1 kr:2 :1 n:1 :1 o:1 :1 mi:1 :1 kr:4 :1 n:6 :1 p:1 n:3 :1 n:1 p:1 :11 kr:4 :1 p:1 nf:1 kr:1 :1 kr:1 :1 kr:1 :1 kr:1 :1 o:2 :1 n:1 :1 o:1 :1 n:1 :1 o:2 :1 n:6 :1 n:1 p:1 :2 kr:8 :1 kt:6 :1 kt:4 :1 kr:5 :3 n:6 :5 o:1 :1 n:5 :1 kt:4 :1 o:2 :1 n:5 :1 kt:5 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 n:1 :1 o:2 :1 kr:2 :1 n:1 :1 kr:4 :1 n:2 :1 kr:4 :1 n:2 :16 o:1 :1 p:1 n:2 p:1 n:2 p:1 :1 o:2 :1 n:6 :1 n:1 :1 p:1 :2 kr:8 :1 kt:6 :1 n:1 :1 o:2 :1 kt:6 :1 p:1 kt:5 :1 n:1 p:1 :1 kr:5 :3 n:6 :5 o:1 :1 n:5 :1 kt:7 :1 o:2 :1 n:5 :1 kt:4 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 n:1 :1 o:2 :1 kr:4 :1 n:1 :1 kr:2 :24 kt:7 :1 o:2 :1 n:1 :24 kt:4 :1 n:1 :2 o:2 :1 n:1 :1 n:1 :16 o:1 :2 n:1 :1 o:2 :1 n:5 :1 n:1 :1 p:1 :19 n:1 :1 o:2 :1 n:5 :1 n:1 :1 p:1 :2 kr:8 :1 p:1 kt:6 :1 n:1 p:1 :1 kt:6 :1 n:1 p:1 :1 o:2 :1 kt:6 :1 p:1 kt:6 :1 n:1 :1 n:1 p:1 :1 kr:5 :3 n:6 :5 o:1 :1 n:5 :1 kt:4 :1 o:2 :1 n:5 :1 kt:5 :3 n:8 :1 n:1 :1 o:1 :1 p:1 :1 nf:1 n:1 :1 o:2 :1 kr:4 :1 n:1 :1 kr:2 :24 kt:4 :1 n:1 :2 o:2 :1 n:1 :1 n:1 :1",
+  )
+}
+
+///|
 test "rouge: json-doc: demo" {
   check_lex(
     "json-doc", "{ \"one\": 1, \"two\": 2, \"null\": null, \"simple\": true } // a simple json object\n",
@@ -610,6 +736,22 @@ test "rouge: json-doc: visual sample" {
   check_lex(
     "json-doc", "{\n    // bare keys\n    bareKey: \"Hello\",\n    $: \"Dollar\",\n    foo     : \"Foo\",\n    bar\n\n      : { \"bar\": true }\n\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"age\": 25,\n    \"address\": {\n        \"streetAddress\": \"21 2nd Street\",\n        \"city\": \"New York\",\n        \"state\": \"NY\",\n        \"postalCode\": \"10021\",\n        \"country\": \"US\"\n    },\n    \"ellipsis\": {\n        \"object\": { ... },\n        ...\n        \"list\": [ ... ],\n        \"locations\": {\n            ...\n            \"city\": \"New York\",\n            ...\n            \"postalCode\": \"10021\",\n            ...\n        },\n        \"key\": ...,\n        ...\n    },\n    \"comments\": { // comments\n        \"key\": \"value\", // in\n        \"list\": [\n            // most\n        ], // locations\n        \"key\": \"value\",\n        \"emptyObject\": { // comment\n        }\n    },\n    ...\n    \"errors\": {\n        \"object\": { \"a\", \"b\" }\n    },\n    \"emptyObject\": {} // comment\n}\n",
     "p:1 w:5 c1:12 w:5 na:7 p:1 w:1 s2:7 p:1 w:5 na:1 p:1 w:1 s2:8 p:1 w:5 na:3 :5 p:1 w:1 s2:5 p:1 w:5 na:3 :8 p:1 w:1 p:1 w:1 nl:5 p:1 w:1 kc:4 w:1 p:1 w:6 nl:11 p:1 w:1 s2:6 p:1 w:5 nl:10 p:1 w:1 s2:7 p:1 w:5 nl:5 p:1 w:1 mi:2 p:1 w:5 nl:9 p:1 w:1 p:1 w:9 nl:15 p:1 w:1 s2:15 p:1 w:9 nl:6 p:1 w:1 s2:10 p:1 w:9 nl:7 p:1 w:1 s2:4 p:1 w:9 nl:12 p:1 w:1 s2:7 p:1 w:9 nl:9 p:1 w:1 s2:4 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 c1:3 w:9 nl:6 p:1 w:1 p:1 w:1 c1:3 w:1 p:2 w:9 nl:11 p:1 w:1 p:1 w:13 c1:3 w:13 nl:6 p:1 w:1 s2:10 p:1 w:13 c1:3 w:13 nl:12 p:1 w:1 s2:7 p:1 w:13 c1:3 w:9 p:2 w:9 nl:5 p:1 w:1 c1:3 p:1 w:9 c1:3 w:5 p:2 w:5 nl:10 p:1 w:1 p:1 w:1 c1:11 w:9 nl:5 p:1 w:1 s2:7 p:1 w:1 c1:5 w:9 nl:6 p:1 w:1 p:1 w:13 c1:7 w:9 p:2 w:1 c1:12 w:9 nl:5 p:1 w:1 s2:7 p:1 w:9 nl:13 p:1 w:1 p:1 w:1 c1:10 w:9 p:1 w:5 p:2 w:5 c1:3 w:5 nl:8 p:1 w:1 p:1 w:9 nl:8 p:1 w:1 p:1 w:1 s2:3 p:1 w:1 s2:3 w:1 p:1 w:5 p:2 w:5 nl:13 p:1 w:1 p:2 w:1 c1:10 w:1 p:1 w:1",
+  )
+}
+
+///|
+test "rouge: markdown: demo" {
+  check_lex(
+    "markdown", "Markdown has cool [reference links][ref 1]\nand [regular links too](http://example.com)\n\n[ref 1]: http://example.com\n",
+    ":18 p:1 nv:15 p:2 ss:5 p:1 :5 p:1 nv:17 p:2 sx:18 p:1 :2 p:1 ss:5 p:2 :1 sx:18 :1",
+  )
+}
+
+///|
+test "rouge: markdown: visual sample" {
+  check_lex(
+    "markdown", "---\ntitle: \"Markdown: Syntax\"\nauthor: daringfireball.net\n---\n\nMarkdown: Syntax\n================\n\n<ul id=\"ProjectSubmenu\">\n    <li><a href=\"/projects/markdown/\" title=\"Markdown Project Page\">Main</a></li>\n    <li><a href=\"/projects/markdown/basics\" title=\"Markdown Basics\">Basics</a></li>\n    <li><a class=\"selected\" title=\"Markdown Syntax Documentation\">Syntax</a></li>\n    <li><a href=\"/projects/markdown/license\" title=\"Pricing and License Information\">License</a></li>\n    <li><a href=\"/projects/markdown/dingus\" title=\"Online Markdown Web Form\">Dingus</a></li>\n</ul>\n\n\n*   [Overview](#overview)\n    *   [Philosophy](#philosophy)\n    *   [Inline HTML](#html)\n    *   [Automatic Escaping for Special Characters](#autoescape)\n*   [Block Elements](#block)\n    *   [Paragraphs and Line Breaks](#p)\n    *   [Headers](#header)\n    *   [Blockquotes](#blockquote)\n    *   [Lists](#list)\n    *   [Code Blocks](#precode)\n    *   [Horizontal Rules](#hr)\n*   [Span Elements](#span)\n    *   [Links](#link)\n    *   [Emphasis](#em)\n    *   [Code](#code)\n    *   [Images](#img)\n*   [Miscellaneous](#misc)\n    *   [Backslash Escapes](#backslash)\n    *   [Automatic Links](#autolink)\n\n\n**Note:** This document is itself written using Markdown; you\ncan [see the source for it by adding '.text' to the URL][src].\n\n  [src]: /projects/markdown/syntax.text\n\n* * *\n\n<h2 id=\"overview\">Overview</h2>\n\n<h3 id=\"philosophy\">Philosophy</h3>\n\nMarkdown is intended to be as easy-to-read and easy-to-write as is feasible.\n\nReadability, however, is emphasized above all else. A Markdown-formatted\ndocument should be publishable as-is, as plain text, without looking\nlike it's been marked up with tags or formatting instructions. While\nMarkdown's syntax has been influenced by several existing text-to-HTML\nfilters -- including [Setext] [1], [atx] [2], [Textile] [3], [reStructuredText] [4],\n[Grutatext] [5], and [EtText] [6] -- the single biggest source of\ninspiration for Markdown's syntax is the format of plain text email.\n\n  [1]: http://docutils.sourceforge.net/mirror/setext.html\n  [2]: http://www.aaronsw.com/2002/atx/\n  [3]: http://textism.com/tools/textile/\n  [4]: http://docutils.sourceforge.net/rst.html\n  [5]: http://www.triptico.com/software/grutatxt.html\n  [6]: http://ettext.taint.org/doc/\n\nTo this end, Markdown's syntax is comprised entirely of punctuation\ncharacters, which punctuation characters have been carefully chosen so\nas to look like what they mean. E.g., asterisks around a word actually\nlook like \\*emphasis\\*. Markdown lists look like, well, lists. Even\nblockquotes look like quoted passages of text, assuming you've ever\nused email.\n\n\n\n<h3 id=\"html\">Inline HTML</h3>\n\nMarkdown's syntax is intended for one purpose: to be used as a\nformat for *writing* for the web.\n\nMarkdown is not a replacement for HTML, or even close to it. Its\nsyntax is very small, corresponding only to a very small subset of\nHTML tags. The idea is *not* to create a syntax that makes it easier\nto insert HTML tags. In my opinion, HTML tags are already easy to\ninsert. The idea for Markdown is to make it easy to read, write, and\nedit prose. HTML is a *publishing* format; Markdown is a *writing*\nformat. Thus, Markdown's formatting syntax only addresses issues that\ncan be conveyed in plain text.\n\nFor any markup that is not covered by Markdown's syntax, you simply\nuse HTML itself. There's no need to preface it or delimit it to\nindicate that you're switching from Markdown to HTML; you just use\nthe tags.\n\nThe only restrictions are that block-level HTML elements -- e.g. `<div>`,\n`<table>`, `<pre>`, `<p>`, etc. -- must be separated from surrounding\ncontent by blank lines, and the start and end tags of the block should\nnot be indented with tabs or spaces. Markdown is smart enough not\nto add extra (unwanted) `<p>` tags around HTML block-level tags.\n\nFor example, to add an HTML table to a Markdown article:\n\n    This is a regular paragraph.\n\n    <table>\n        <tr>\n            <td>Foo</td>\n        </tr>\n    </table>\n\n    This is another regular paragraph.\n\nhighlighted:\n\nThis is a regular paragraph.\n\n<table>\n    <tr>\n        <td>Foo</td>\n    </tr>\n</table>\n\nThis is another regular paragraph.\n\nNote that Markdown formatting syntax is not processed within block-level\nHTML tags. E.g., you can't use Markdown-style `*emphasis*` inside an\nHTML block.\n\nSpan-level HTML tags -- e.g. `<span>`, `<cite>`, or `<del>` -- can be\nused anywhere in a Markdown paragraph, list item, or header. If you\nwant, you can even use HTML tags instead of Markdown formatting; e.g. if\nyou'd prefer to use HTML `<a>` or `<img>` tags instead of Markdown's\nlink or image syntax, go right ahead.\n\nUnlike block-level HTML tags, Markdown syntax *is* processed within\nspan-level tags.\n\n\n<h3 id=\"autoescape\">Automatic Escaping for Special Characters</h3>\n\nIn HTML, there are two characters that demand special treatment: `<`\nand `&`. Left angle brackets are used to start tags; ampersands are\nused to denote HTML entities. If you want to use them as literal\ncharacters, you must escape them as entities, e.g. `&lt;`, and\n`&amp;`.\n\nAmpersands in particular are bedeviling for web writers. If you want to\nwrite about 'AT&T', you need to write '`AT&amp;T`'. You even need to\nescape ampersands within URLs. Thus, if you want to link to:\n\n    http://images.google.com/images?num=30&q=larry+bird\n\nhttp://images.google.com/images?num=30&q=larry+bird\n\nyou need to encode the URL as:\n\n    http://images.google.com/images?num=30&amp;q=larry+bird\n\nin your anchor tag `href` attribute. Needless to say, this is easy to\nforget, and is probably the single most common source of HTML validation\nerrors in otherwise well-marked-up web sites.\n\nMarkdown allows you to use these characters naturally, taking care of\nall the necessary escaping for you. If you use an ampersand as part of\nan HTML entity, it remains unchanged; otherwise it will be translated\ninto `&amp;`.\n\nSo, if you want to include a copyright symbol in your article, you can write:\n\n    &copy;\n\n&copy;\n\n",
+    "nn:3 :1 na:5 pi:1 :1 s2:1 s:9 nv:1 s:7 :1 na:6 pi:1 :1 s:18 :1 nn:3 :2 gu:34 :1 nt:3 :1 na:3 s:16 nt:1 :5 nt:6 :1 na:5 s:21 :1 na:6 s:23 nt:1 :4 nt:9 :5 nt:6 :1 na:5 s:27 :1 na:6 s:17 nt:1 :6 nt:9 :5 nt:6 :1 na:6 s:10 :1 na:6 s:31 nt:1 :6 nt:9 :5 nt:6 :1 na:5 s:28 :1 na:6 s:33 nt:1 :7 nt:9 :5 nt:6 :1 na:5 s:27 :1 na:6 s:26 nt:1 :6 nt:9 :1 nt:5 sb:3 p:1 :3 p:1 nv:8 p:2 sx:9 p:1 :1 p:5 :3 p:1 nv:10 p:2 sx:11 p:1 :1 p:5 :3 p:1 nv:11 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:41 p:2 sx:11 p:1 :1 p:1 :3 p:1 nv:14 p:2 sx:6 p:1 :1 p:5 :3 p:1 nv:26 p:2 sx:2 p:1 :1 p:5 :3 p:1 nv:7 p:2 sx:7 p:1 :1 p:5 :3 p:1 nv:11 p:2 sx:11 p:1 :1 p:5 :3 p:1 nv:5 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:11 p:2 sx:8 p:1 :1 p:5 :3 p:1 nv:16 p:2 sx:3 p:1 :1 p:1 :3 p:1 nv:13 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:5 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:8 p:2 sx:3 p:1 :1 p:5 :3 p:1 nv:4 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:6 p:2 sx:4 p:1 :1 p:1 :3 p:1 nv:13 p:2 sx:5 p:1 :1 p:5 :3 p:1 nv:17 p:2 sx:10 p:1 :1 p:5 :3 p:1 nv:15 p:2 sx:9 p:1 sb:3 gs:9 :57 p:1 nv:50 p:2 ss:3 p:1 :5 p:1 ss:3 p:2 :1 sx:30 :1 p:7 :1 nt:3 :1 na:3 s:10 nt:1 :8 nt:5 :2 nt:3 :1 na:3 s:12 nt:1 :10 nt:5 :585 p:1 ss:1 p:2 :1 sx:50 :3 p:1 ss:1 p:2 :1 sx:32 :3 p:1 ss:1 p:2 :1 sx:33 :3 p:1 ss:1 p:2 :1 sx:40 :3 p:1 ss:1 p:2 :1 sx:46 :3 p:1 ss:1 p:2 :1 sx:28 :222 se:2 :8 se:2 :125 sb:4 nt:3 :1 na:3 s:6 nt:1 :11 nt:5 :76 ge:9 :170 ge:5 :198 ge:12 :23 ge:9 :378 sb:7 :2 sb:9 :2 sb:7 :2 sb:5 :206 sb:5 :93 sb:154 :44 nt:7 :5 nt:4 :9 nt:4 :3 nt:5 :5 nt:5 :1 nt:8 :157 sb:12 :53 sb:8 :2 sb:8 :5 sb:7 :177 sb:5 :4 sb:7 :113 ge:4 :34 sb:3 nt:3 :1 na:3 s:12 nt:1 :41 nt:5 :67 sb:3 :5 sb:3 :177 sb:6 :6 sb:7 :114 sb:10 :80 sb:59 :83 sb:63 :19 sb:6 :381 sb:7 :80 sb:14 ni:6 :2",
   )
 }
 
@@ -752,6 +894,13 @@ test "rouge: console?prompt=%25,%3E&prompt=%24&lang=shell: repeated options" {
 }
 
 ///|
+test "rouge: php?start_inline=0&start_inline=1: repeated options" {
+  check_lex(
+    "php?start_inline=0&start_inline=1", "echo \"hi\"; ?>\n<b>x</b>\n", "k:4 :1 s2:4 p:1 :1 cp:2 :1 nt:3 :1 nt:4 :1",
+  )
+}
+
+///|
 test "rouge: erb?parent=json: targeted" {
   check_lex(
     "erb?parent=json", "{\"a\": <%= @x %>, \"b\": [1, 2]}\n", "p:1 nl:3 p:1 w:1 cp:3 :1 vi:2 :1 cp:2 p:1 w:1 nl:3 p:1 w:1 p:1 mi:1 p:1 w:1 mi:1 p:2 w:1",
@@ -840,6 +989,98 @@ test "rouge: jsx: rouge spec #1" {
   check_lex(
     "jsx", "<button aria-label=\"hello\"/>", "p:1 nt:6 :1 na:10 p:1 s:7 p:2",
   )
+}
+
+///|
+test "rouge: php: rouge spec #1" {
+  check_lex("php", "# comment", "c1:9")
+}
+
+///|
+test "rouge: php: rouge spec #2" {
+  check_lex("php", "// comment", "c1:10")
+}
+
+///|
+test "rouge: php: rouge spec #3" {
+  check_lex(
+    "php", "try {} catch () {} finally {}", "k:3 :1 p:2 :1 k:5 :1 p:2 :1 p:2 :1 k:7 :1 p:2",
+  )
+}
+
+///|
+test "rouge: php: rouge spec #4" {
+  check_lex("php", "class A {}", "kd:5 :1 nc:1 :1 p:2")
+}
+
+///|
+test "rouge: php: rouge spec #5" {
+  check_lex("php", "interface A {}", "kd:9 :1 nc:1 :1 p:2")
+}
+
+///|
+test "rouge: php: rouge spec #6" {
+  check_lex("php", "trait A {}", "kd:5 :1 nc:1 :1 p:2")
+}
+
+///|
+test "rouge: php: rouge spec #7" {
+  check_lex("php", "While", "k:5")
+}
+
+///|
+test "rouge: php: rouge spec #8" {
+  check_lex("php", "Class BAR", "kd:5 :1 nc:3")
+}
+
+///|
+test "rouge: php: rouge spec #9" {
+  check_lex("php", "Const BAR", "k:5 :1 no:3")
+}
+
+///|
+test "rouge: php: rouge spec #10" {
+  check_lex("php", "Use BAR", "kn:3 :1 no:3")
+}
+
+///|
+test "rouge: php: rouge spec #11" {
+  check_lex("php", "NameSpace BAR", "kn:9 :1 nn:3")
+}
+
+///|
+test "rouge: php: rouge spec #12" {
+  check_lex("php", "Function (", "k:8 :1 p:1")
+}
+
+///|
+test "rouge: php: rouge spec #13" {
+  check_lex("php", "Function foo", "k:8 :1 n:3")
+}
+
+///|
+test "rouge: php: rouge spec #14" {
+  check_lex("php", "PHP_EOL", "kc:7")
+}
+
+///|
+test "rouge: php: rouge spec #15" {
+  check_lex("php", "PHP_EOL_1", "no:9")
+}
+
+///|
+test "rouge: php: rouge spec #16" {
+  check_lex("php", "E_user_DEPRECATED", "n:17")
+}
+
+///|
+test "rouge: php: rouge spec #17" {
+  check_lex("php", "E_USER_deprecated", "n:17")
+}
+
+///|
+test "rouge: php: rouge spec #18" {
+  check_lex("php", "E_USER_DEPRECATED", "kc:17")
 }
 
 ///|
@@ -1261,12 +1502,43 @@ test "rouge: sql: source_spec #2" {
 }
 
 ///|
-test "rouge: console?prompt=%: source_spec #3" {
+test "rouge: php: source_spec #3" {
+  check_lex("php", "echo \"<?php\";", ":6 cp:5 s2:2")
+}
+
+///|
+test "rouge: php?funcnamehighlighting=1: source_spec #4" {
+  check_lex(
+    "php?funcnamehighlighting=1", "cal_days_in_month(CAL_GREGORIAN, 6, 2019)", "nb:17 p:1 no:13 p:1 :1 mi:1 p:1 :1 mi:4 p:1",
+  )
+}
+
+///|
+test "rouge: php?funcnamehighlighting=0: source_spec #5" {
+  check_lex(
+    "php?funcnamehighlighting=0", "cal_days_in_month(CAL_GREGORIAN, 6, 2019)", "nf:17 p:1 no:13 p:1 :1 mi:1 p:1 :1 mi:4 p:1",
+  )
+}
+
+///|
+test "rouge: php?start_inline=1: source_spec #6" {
+  check_lex("php?start_inline=1", "echo \"<?php\";", "k:4 :1 s2:7 p:1")
+}
+
+///|
+test "rouge: php?start_inline=0: source_spec #7" {
+  check_lex(
+    "php?start_inline=0", "cal_days_in_month(CAL_GREGORIAN, 6, 2019)", ":41",
+  )
+}
+
+///|
+test "rouge: console?prompt=%: source_spec #8" {
   check_lex("console?prompt=%", "% bundle", "gp:1 w:1 :6")
 }
 
 ///|
-test "rouge: js: source_spec #4" {
+test "rouge: js: source_spec #9" {
   check_lex(
     "js", "'use strict'\nconst TAG_ALL_RX = /<[^>]+>/g\nmodule.exports = (html) => html && html.replace(TAG_ALL_RX, '')",
     "dl:1 s1:10 dl:1 :1 kd:5 :1 nx:10 :1 o:1 :1 sr:2 se:2 sr:1 se:1 sr:4 :1 nx:6 p:1 nx:7 :1 o:1 :1 p:1 nx:4 p:1 :1 o:2 :1 nx:4 :1 o:2 :1 nx:4 p:1 nx:7 p:1 nx:10 p:1 :1 dl:2 p:1",
@@ -1274,26 +1546,26 @@ test "rouge: js: source_spec #4" {
 }
 
 ///|
-test "rouge: console: source_spec #5" {
+test "rouge: console: source_spec #10" {
   check_lex(
     "console", "$ cd application-name\\bin\\", "gp:1 w:1 nb:3 :16 se:2 k:2 se:1",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #6" {
+test "rouge: ruby: source_spec #11" {
   check_lex("ruby", "puts 'yo, world!'", "nb:4 :1 s1:12")
 }
 
 ///|
-test "rouge: ruby: source_spec #7" {
+test "rouge: ruby: source_spec #12" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\nend", "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :1 k:3",
   )
 }
 
 ///|
-test "rouge: d: source_spec #8" {
+test "rouge: d: source_spec #13" {
   check_lex(
     "d", "int #line 6 \"pkg/mod.d\"\nx; // this is now line 6 of file pkg/mod.d",
     "kt:3 :1 cs:20 n:1 p:1 :1 c1:39",
@@ -1301,7 +1573,7 @@ test "rouge: d: source_spec #8" {
 }
 
 ///|
-test "rouge: ruby: source_spec #9" {
+test "rouge: ruby: source_spec #14" {
   check_lex(
     "ruby", "class Beer\n  attr_reader :style\n  def drink\n    puts 'aaaaaaaaah'\n  end\nend",
     "k:5 :1 nc:4 :3 nb:11 :1 ss:6 :3 k:3 :1 nf:5 :5 nb:4 :1 s1:12 :3 k:3 :1 k:3",
@@ -1309,22 +1581,22 @@ test "rouge: ruby: source_spec #9" {
 }
 
 ///|
-test "rouge: ruby: source_spec #10" {
+test "rouge: ruby: source_spec #15" {
   check_lex("ruby", "puts 'string'", "nb:4 :1 s1:8")
 }
 
 ///|
-test "rouge: ruby: source_spec #11" {
+test "rouge: ruby: source_spec #16" {
   check_lex("ruby", "puts \"Hello, World!\"", "nb:4 :1 s2:15")
 }
 
 ///|
-test "rouge: ruby: source_spec #12" {
+test "rouge: ruby: source_spec #17" {
   check_lex("ruby", "class Type; end", "k:5 :1 nc:4 p:1 :1 k:3")
 }
 
 ///|
-test "rouge: diff: source_spec #13" {
+test "rouge: diff: source_spec #18" {
   check_lex(
     "diff", "--- /tmp/list1.txt\n+++ /tmp/list2.txt\n@@ -1,4 +1,4 @@\n apples\n-oranges\n kiwis\n carrots\n+grapefruits",
     "gd:19 gi:19 p:15 :9 gd:9 :16 gi:12",
@@ -1332,12 +1604,12 @@ test "rouge: diff: source_spec #13" {
 }
 
 ///|
-test "rouge: diff: source_spec #14" {
+test "rouge: diff: source_spec #19" {
   check_lex("diff", "-oranges\n+grapefruits", "gd:9 gi:12")
 }
 
 ///|
-test "rouge: xml: source_spec #16" {
+test "rouge: xml: source_spec #21" {
   check_lex(
     "xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url>\n    <loc>https://example.org/home.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n  <url>\n    <loc>https://example.org/about.html</loc>\n    <lastmod>2019-01-01T00:00:00.000Z</lastmod>\n  </url>\n</urlset>",
     "cp:38 :1 nt:7 :1 na:6 s:45 nt:1 :3 nt:5 :5 nt:5 :29 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :3 nt:5 :5 nt:5 :30 nt:6 :5 nt:9 :24 nt:10 :3 nt:6 :1 nt:9",
@@ -1345,24 +1617,24 @@ test "rouge: xml: source_spec #16" {
 }
 
 ///|
-test "rouge: xml: source_spec #17" {
+test "rouge: xml: source_spec #22" {
   check_lex("xml", "puts 'Hello, World!'", ":20")
 }
 
 ///|
-test "rouge: yaml: source_spec #19" {
+test "rouge: yaml: source_spec #24" {
   check_lex(
     "yaml", "foo: 'bar'\nkey: 'value'\n<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 s:3",
   )
 }
 
 ///|
-test "rouge: text: source_spec #20" {
+test "rouge: text: source_spec #25" {
   check_lex("text", "foo\nbar\nbaz", ":11")
 }
 
 ///|
-test "rouge: c: source_spec #21" {
+test "rouge: c: source_spec #26" {
   check_lex(
     "c", "/**\n * A program that prints \"Hello, World!\"\n **/\n#include <stdio.h>\nint main(void) {\n  printf(\"Hello, World!\\n\");\n  return 0;\n}",
     "cm:49 :1 cp:8 :1 cpf:9 cp:1 kt:3 :1 nf:4 p:1 kt:4 p:1 :1 p:1 :3 n:6 p:1 s:14 se:2 s:1 p:2 :3 k:6 :1 mi:1 p:1 :1 p:1",
@@ -1370,7 +1642,7 @@ test "rouge: c: source_spec #21" {
 }
 
 ///|
-test "rouge: c: source_spec #23" {
+test "rouge: c: source_spec #28" {
   check_lex(
     "c", "#include <stdio.h>\nint main(void) {\n  printf(\"Hello, World!\\n\");\n  return 0;\n}",
     "cp:8 :1 cpf:9 cp:1 kt:3 :1 nf:4 p:1 kt:4 p:1 :1 p:1 :3 n:6 p:1 s:14 se:2 s:1 p:2 :3 k:6 :1 mi:1 p:1 :1 p:1",
@@ -1378,7 +1650,7 @@ test "rouge: c: source_spec #23" {
 }
 
 ///|
-test "rouge: groovy: source_spec #24" {
+test "rouge: groovy: source_spec #29" {
   check_lex(
     "groovy", "ratpack {\n    handlers {\n        get {\n            render '''|Hello,\n                      |World!'''.stripMargin()\n        }\n    }\n}",
     "n:7 :1 o:1 :5 n:8 :1 o:1 :9 n:3 :1 o:1 :13 n:6 :1 s1:43 o:1 na:11 o:2 :9 o:1 :5 o:1 :1 o:1",
@@ -1386,12 +1658,12 @@ test "rouge: groovy: source_spec #24" {
 }
 
 ///|
-test "rouge: text: source_spec #26" {
+test "rouge: text: source_spec #31" {
   check_lex("text", "  indented line", ":15")
 }
 
 ///|
-test "rouge: text: source_spec #28" {
+test "rouge: text: source_spec #33" {
   check_lex(
     "text", "Here we go again here we go again here we go again here we go again here we go again Here we go again",
     ":101",
@@ -1399,7 +1671,7 @@ test "rouge: text: source_spec #28" {
 }
 
 ///|
-test "rouge: xml: source_spec #29" {
+test "rouge: xml: source_spec #34" {
   check_lex(
     "xml", "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n  <modelVersion>4.0.0</modelVersion>\n</project>",
     "nt:8 :1 na:6 s:35 :1 na:10 s:43 :1 na:19 s:79 nt:1 :3 nt:14 :5 nt:15 :1 nt:10",
@@ -1407,12 +1679,12 @@ test "rouge: xml: source_spec #29" {
 }
 
 ///|
-test "rouge: ruby: source_spec #33" {
+test "rouge: ruby: source_spec #38" {
   check_lex("ruby", "puts 'Hello, CodeRay!'", "nb:4 :1 s1:17")
 }
 
 ///|
-test "rouge: sass: source_spec #34" {
+test "rouge: sass: source_spec #39" {
   check_lex(
     "sass", "$icon-font-path: \"node_modules/package-name/icon-fonts/\";\nbody {\n  background: #fafafa;\n}",
     "nv:15 p:1 :1 s2:39 err:1 :1 nt:4 :1 err:1 :3 nl:10 p:1 :1 mh:7 err:1 :1 err:1",
@@ -1420,43 +1692,43 @@ test "rouge: sass: source_spec #34" {
 }
 
 ///|
-test "rouge: yaml: source_spec #36" {
+test "rouge: yaml: source_spec #41" {
   check_lex(
     "yaml", "category:\n  hash:\n    key: \"value\"", "na:8 pi:1 :3 na:4 pi:1 :5 na:3 pi:1 :1 s2:1 s:6",
   )
 }
 
 ///|
-test "rouge: xml: source_spec #38" {
+test "rouge: xml: source_spec #43" {
   check_lex(
     "xml", "<tag <1>\n  attr=\"value\">\n  content\n</tag>", "nt:4 :1 err:2 nt:1 :27 nt:6",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #39" {
+test "rouge: ruby: source_spec #44" {
   check_lex("ruby", "", "")
 }
 
 ///|
-test "rouge: ruby: source_spec #40" {
+test "rouge: ruby: source_spec #45" {
   check_lex("ruby", "puts \"Hello, Pygments!\"", "nb:4 :1 s2:18")
 }
 
 ///|
-test "rouge: xml: source_spec #41" {
+test "rouge: xml: source_spec #46" {
   check_lex("xml", "<payload>&amp;</payload>", "nt:9 ni:5 nt:10")
 }
 
 ///|
-test "rouge: yaml: source_spec #47" {
+test "rouge: yaml: source_spec #53" {
   check_lex(
     "yaml", "foo: 'bar'\nkey: 'value' #<1>", "na:3 pi:1 :1 s1:1 s:4 :1 na:3 pi:1 :1 s1:1 s:6 :1 c1:4",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #48" {
+test "rouge: ruby: source_spec #54" {
   check_lex(
     "ruby", "# Matches a hex color value like #FF0000\nif /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend",
     "c1:40 :1 k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
@@ -1464,14 +1736,14 @@ test "rouge: ruby: source_spec #48" {
 }
 
 ///|
-test "rouge: ruby: source_spec #49" {
+test "rouge: ruby: source_spec #55" {
   check_lex(
     "ruby", "if /^#[a-fA-F0-9]{6}$/.match? color\n  puts 'hex color'\nend", "k:2 :1 sr:19 p:1 nf:6 :1 n:5 :3 nb:4 :1 s1:11 :1 k:3",
   )
 }
 
 ///|
-test "rouge: groovy: source_spec #54" {
+test "rouge: groovy: source_spec #60" {
   check_lex(
     "groovy", "package com.example\nimport static ratpack.groovy.Groovy.ratpack\nratpack {\n    handlers {\n        get {\n            render \"Hello, World!\"\n        }\n    }\n}",
     "kn:7 :1 nn:11 :1 kn:6 :1 nn:6 :1 n:7 o:1 na:6 o:1 na:6 o:1 na:7 :1 n:7 :1 o:1 :5 n:8 :1 o:1 :9 n:3 :1 o:1 :13 n:6 :1 s2:15 :9 o:1 :5 o:1 :1 o:1",
@@ -1479,41 +1751,41 @@ test "rouge: groovy: source_spec #54" {
 }
 
 ///|
-test "rouge: text: source_spec #57" {
+test "rouge: text: source_spec #63" {
   check_lex("text", "  lead space\nflush\n  lead space", ":31")
 }
 
 ///|
-test "rouge: ruby: source_spec #58" {
+test "rouge: ruby: source_spec #64" {
   check_lex("ruby", "<1>", "o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: xml: source_spec #59" {
+test "rouge: xml: source_spec #65" {
   check_lex(
     "xml", "<root>\n  <child>content</child>\n</root>", "nt:6 :3 nt:7 :7 nt:8 :1 nt:7",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #61" {
+test "rouge: ruby: source_spec #67" {
   check_lex("ruby", "source = %(before\n\\<1>\nafter)", "n:6 :1 o:1 :1 sx:20")
 }
 
 ///|
-test "rouge: ruby: source_spec #62" {
+test "rouge: ruby: source_spec #68" {
   check_lex(
     "ruby", "source = %(before\nnot a conum <1>\nafter)", "n:6 :1 o:1 :1 sx:31",
   )
 }
 
 ///|
-test "rouge: ruby: source_spec #63" {
+test "rouge: ruby: source_spec #69" {
   check_lex("ruby", "puts 'Hello, World' <1>", "nb:4 :1 s1:14 :1 o:1 mi:1 o:1")
 }
 
 ///|
-test "rouge: java: source_spec #65" {
+test "rouge: java: source_spec #71" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1><2>\n  String getDob();\n  int getAge(); // <3><4><5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:9 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:12 :1 o:1",
@@ -1521,7 +1793,7 @@ test "rouge: java: source_spec #65" {
 }
 
 ///|
-test "rouge: java: source_spec #66" {
+test "rouge: java: source_spec #72" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <1> <2>\n  String getDob();\n  int getAge(); // <3> <4> <5>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:10 :3 nc:6 :1 nf:6 o:3 :3 kt:3 :1 nf:6 o:3 :1 c1:14 :1 o:1",
@@ -1529,7 +1801,7 @@ test "rouge: java: source_spec #66" {
 }
 
 ///|
-test "rouge: java: source_spec #67" {
+test "rouge: java: source_spec #73" {
   check_lex(
     "java", "public interface Person {\n  String getName(); <1>\n  String getDob(); <2>\n  int getAge(); <3>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 mi:1 o:1 :3 nc:6 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :3 kt:3 :1 nf:6 o:3 :1 o:1 mi:1 o:1 :1 o:1",
@@ -1537,7 +1809,7 @@ test "rouge: java: source_spec #67" {
 }
 
 ///|
-test "rouge: java: source_spec #68" {
+test "rouge: java: source_spec #74" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:6 :1 o:1",
@@ -1545,7 +1817,7 @@ test "rouge: java: source_spec #68" {
 }
 
 ///|
-test "rouge: java: source_spec #69" {
+test "rouge: java: source_spec #75" {
   check_lex(
     "java", "public interface Person {\n  String getName(); // <.>\n  String getDob(); // <.>\n  int getAge(); // <.> <.>\n}",
     "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 c1:6 :3 nc:6 :1 nf:6 o:3 :1 c1:6 :3 kt:3 :1 nf:6 o:3 :1 c1:10 :1 o:1",
@@ -1553,14 +1825,14 @@ test "rouge: java: source_spec #69" {
 }
 
 ///|
-test "rouge: java: source_spec #70" {
+test "rouge: java: source_spec #76" {
   check_lex(
     "java", "public interface Person {\n  String getName();\n}  <1>", "kd:6 :1 kd:9 :1 nc:6 :1 o:1 :3 nc:6 :1 nf:7 o:3 :1 o:1 :2 o:1 mi:1 o:1",
   )
 }
 
 ///|
-test "rouge: apache: source_spec #71" {
+test "rouge: apache: source_spec #77" {
   check_lex(
     "apache", "<Directory /usr/share/httpd/noindex>\n    AllowOverride None <1>\n    Require all granted\n</Directory>",
     "p:1 nl:9 sr:25 p:2 :4 nc:13 :1 ss:4 :9 nc:7 :1 ss:3 :9 p:2 nl:9 p:1",
