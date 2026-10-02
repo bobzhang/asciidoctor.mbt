@@ -105,13 +105,7 @@ fn resolve_pagenums(value : String) -> Array[Int] {
 /// Start a page `w` by `h` after the last one (Prawn's `start_new_page`
 /// with a `size`).
 fn start_sized_page(flow : Flow, w : Double, h : Double) -> Unit {
-  flow.start_new_page()
-  let page = flow.model.pages[flow.page]
-  if page.width_pt != w || page.height_pt != h {
-    flow.model.pages[flow.page] = { ..page, width_pt: w, height_pt: h, }
-    flow.fit_page_size()
-    flow.apply_page_margins(flow.page)
-  }
+  flow.start_new_page(size=(w, h))
 }
 
 ///|

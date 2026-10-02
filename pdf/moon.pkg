@@ -7,6 +7,7 @@ import {
   "bobzhang/prawn/svg",
   "bobzhang/prawn/table",
   "moonbitlang/pagelayout/pdf",
+  "moonbitlang/pdflite",
   "moonbitlang/core/string",
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",
