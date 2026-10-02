@@ -213,6 +213,8 @@ fn error_message(e : Error) -> String {
     Failure(msg) => msg
     // Ruby RuntimeErrors are printed with their class
     @core.ConversionFailed(msg) => "\{msg} (RuntimeError)"
+    // PDF::Core::Errors::TemplateError is not a RuntimeError: its message
+    @asciidoctor_pdf.TemplateError(msg) => msg
     @core.SecurityError(msg) => msg
     e => e.to_string()
   }

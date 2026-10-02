@@ -110,7 +110,7 @@ fn Converter::convert_image(
   if format == "pdf" {
     match data {
       Some(bytes) => {
-        self.convert_pdf_image(node, bytes, path)
+        self.convert_pdf_image(node, bytes)
         return
       }
       // the alt text instead, as for a missing image
@@ -376,11 +376,15 @@ fn convert_inline_image(node : @core.Node) -> String {
       // a missing image is its alt text in Ruby too; asciidoctor-pdf draws
       // GIF (with prawn-gmagick) images this backend cannot
       if bytes is Some(_) && format == "pdf" {
-        // Prawn cannot draw a PDF in a line either (the arranger drops it)
-        warning(
-          "could not embed image: \{path}; image file is an unrecognised format",
-          node,
-        )
+        // Prawn cannot draw a PDF in a line either: the arranger drops it
+        // and, prawn-gmagick not being installed and the format being
+        // neither JPEG nor PNG (`recommend_prawn_gmagick?`), suggests it
+        if session().scratch == 0 {
+          warning(
+            "could not embed image: \{path}; image file is an unrecognised format; install prawn-gmagick gem to add support for PDF image format",
+            node,
+          )
+        }
       } else if bytes is Some(_) && !svg {
         unsupported("inline", "image \{target}", node)
       }

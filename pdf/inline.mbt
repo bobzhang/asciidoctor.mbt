@@ -54,6 +54,9 @@ priv struct Session {
   pending_diagnostics : Array[String]
   /// `convert_document` is converting the document
   mut converting : Bool
+  /// the first PDF a block image or a cover could not import (see
+  /// `template_failure`): the conversion fails with it
+  mut template_error : String?
   /// the fonts (`family (style)`) reported as unknown
   unknown_fonts : Map[String, Bool]
   /// what `register` was given when the document's converter was created:
@@ -86,6 +89,7 @@ fn Session::new() -> Session {
     ],
     pending_diagnostics: [],
     converting: false,
+    template_error: None,
     unknown_fonts: Map([]),
     registration,
     page_setup: default_page_setup(),

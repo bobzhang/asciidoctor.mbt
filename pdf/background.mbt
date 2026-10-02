@@ -567,7 +567,7 @@ fn Converter::ink_page_backgrounds(
   let color = page_background_color()
   let cache : Map[String, Map[String, BoxImage?]] = Map([])
   // the PDFs of PDF backgrounds, read once each
-  let pdfs : Map[Bytes, PdfPages?] = Map([])
+  let pdfs : Map[Bytes, PdfPages] = Map([])
   for index, page in pages {
     // a cover page has no background, nor has an imported page
     if (front_cover && index == 0) || self.imported_pages.contains(index) {
@@ -606,16 +606,36 @@ fn Converter::ink_page_backgrounds(
     // a PDF background replaces the page with the imported one (`init_page`
     // with `import_page`): no background color, nor running content
     match image {
-      Some({ pdf_page: Some(number), data, .. }) => {
-        let pdf = match pdfs.get(data) {
-          Some(pdf) => pdf
-          None => {
-            let pdf = read_pdf_pages(data)
-            pdfs[data] = pdf
-            pdf
+      Some({ pdf_page: Some(number), data, path, .. }) => {
+        let imported = try {
+          let pdf = match pdfs.get(data) {
+            Some(pdf) => pdf
+            None => {
+              let pdf = read_pdf_pages(data)
+              pdfs[data] = pdf
+              pdf
+            }
+          }
+          pdf.page(number)
+        } catch {
+          TemplateError(message) => {
+            // `init_page` rescues it: a warning, and the image is dropped
+            // for this side (and the facing side when it is the same), so it
+            // is reported once
+            warning(
+              "could not embed page background image: \{path}; \{message}",
+              self.doc,
+            )
+            let facing = if side == "recto" { "verso" } else { "recto" }
+            for s in [facing, side] {
+              if by_side.get(s) is Some(Some(other)) && other.path == path {
+                by_side[s] = None
+              }
+            }
+            None
           }
         }
-        match pdf.bind(pdf => pdf.page(number)) {
+        match imported {
           Some((imported, _, _)) => {
             page.items.insert(0, pdf_page_item(data, imported, w, h))
             self.imported_pages[index] = ()
@@ -664,9 +684,20 @@ fn Converter::ink_cover_page(self : Converter, face : String) -> Bool {
   // `advance_if_missing: false`): none when the PDF lacks the page
   match resolved {
     Found({ pdf_page: Some(number), data, .. }) => {
-      guard read_pdf_pages(data) is Some(pdf) && pdf.page(number) is Some(_) else {
-        return false
+      // a PDF that cannot be read fails the conversion (TemplateError)
+      let pdf = read_pdf_pages(data) catch {
+        error => {
+          template_failure(error)
+          return false
+        }
       }
+      let page = pdf.page(number) catch {
+        error => {
+          template_failure(error)
+          return false
+        }
+      }
+      guard page is Some(_) else { return false }
       if face == "front" {
         // in place of the empty first page, and the content on a new one
         return self.import_pdf_page(pdf, number, replace=true)

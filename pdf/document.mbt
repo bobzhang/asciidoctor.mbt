@@ -108,6 +108,7 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
   diagnostics.clear()
   diagnostics.append(state.pending_diagnostics)
   state.converting = true
+  state.template_error = None
   defer {
     state.converting = false
   }
@@ -394,6 +395,12 @@ pub fn convert_document(doc : @core.Node, catalog : FontCatalog) -> Bytes raise 
       | "fullscreen thumbs"
     ) => FullScreen
     _ => UseOutlines
+  }
+  // a PDF that could not be imported fails the conversion, as
+  // prawn-templates' TemplateError does
+  match state.template_error {
+    Some(message) => raise TemplateError(message)
+    None => ()
   }
   @pdf.render_pdf(
     flow.model,

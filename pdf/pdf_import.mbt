@@ -8,8 +8,32 @@
 // page as a Form XObject (an `application/pdf` image item).
 
 ///|
-/// The pages of a PDF: how many it has, and the size each is shown at;
-/// None when the bytes are not a readable PDF.
+/// prawn-templates' `PDF::Core::Errors::TemplateError`: a PDF imported as a
+/// block image or a cover cannot be read, which fails the conversion (see
+/// `template_failure`). The message is Ruby's.
+pub(all) suberror TemplateError {
+  TemplateError(String)
+}
+
+///|
+/// prawn-templates' message for a PDF it cannot read, with what went wrong.
+fn template_error_message(detail : String) -> String {
+  "Error reading template file. If you are sure it's a valid PDF, it may be a bug.\n\{detail}"
+}
+
+///|
+/// Fail the conversion with `error` once it is done (prawn-templates raises
+/// from the middle of it); the first failure is the one reported.
+fn template_failure(error : TemplateError) -> Unit {
+  let TemplateError(message) = error
+  let state = session()
+  if state.template_error is None {
+    state.template_error = Some(message)
+  }
+}
+
+///|
+/// The pages of a PDF: how many it has, and the size each is shown at.
 priv struct PdfPages {
   data : Bytes
   source : @pdflite.PdfPageSource
@@ -17,24 +41,40 @@ priv struct PdfPages {
 }
 
 ///|
-fn read_pdf_pages(data : Bytes) -> PdfPages? {
-  let source = @pdflite.PdfPageSource::new(
-    @pdflite.pdf_read_document_from_bytes(data),
-  ) catch {
-    _ => return None
+/// Read `data` as a PDF to import pages of, or raise `TemplateError` when it
+/// is not a readable PDF or its page tree cannot be read.
+fn read_pdf_pages(data : Bytes) -> PdfPages raise TemplateError {
+  let document = @pdflite.pdf_read_document_from_bytes(data) catch {
+    _ => raise TemplateError(template_error_message("PDF malformed"))
   }
-  Some({ data, source, count: source.page_count(), })
+  let source = @pdflite.PdfPageSource::new(document) catch {
+    HardError(_) =>
+      raise TemplateError("Template file contains unsupported PDF features")
+    _ =>
+      raise TemplateError(
+        template_error_message("PDF malformed: invalid page tree"),
+      )
+  }
+  { data, source, count: source.page_count(), }
 }
 
 ///|
 /// The size of page `number` (1-based), as prawn-templates looks pages up
 /// (`page_references[number - 1]`, so 0 and negative numbers count from
-/// the end), with the page's number from the start; None when there is no
-/// such page or its boxes cannot be read.
-fn PdfPages::page(self : PdfPages, number : Int) -> (Int, Double, Double)? {
+/// the end), with the page's number from the start; None when the PDF has
+/// no such page, and `TemplateError` when the page's boxes cannot be read.
+fn PdfPages::page(
+  self : PdfPages,
+  number : Int,
+) -> (Int, Double, Double)? raise TemplateError {
   let index = if number >= 1 { number } else { self.count + number }
   guard index >= 1 && index <= self.count else { return None }
-  let (w, h) = self.source.page_display_size(index) catch { _ => return None }
+  let (w, h) = self.source.page_display_size(index) catch {
+    _ =>
+      raise TemplateError(
+        template_error_message("PDF malformed: invalid page boxes"),
+      )
+  }
   Some((index, w, h))
 }
 
@@ -57,19 +97,26 @@ fn pdf_page_item(
 }
 
 ///|
-/// Ruby's `String#to_i`: the leading integer, after leading whitespace, or
-/// 0.
+/// Ruby's `String#to_i`: the leading integer, after leading whitespace and
+/// an optional sign, single underscores between digits allowed (`1_0` is
+/// 10), or 0.
 fn ruby_to_i(value : String) -> Int {
-  let text = value.trim_start(chars=" \t\n\r\u{0B}\u{0C}")
-  let mut negative = false
+  let chars = value.trim_start(chars=" \t\n\r\u{0B}\u{0C}").to_array()
+  let digit = (i : Int) => {
+    i < chars.length() && chars[i] >= '0' && chars[i] <= '9'
+  }
+  let mut i = 0
+  let negative = chars.get(0) == Some('-')
+  if chars.get(0) is Some('-' | '+') {
+    i = 1
+  }
   let mut n = 0
-  for i, c in text {
-    if i == 0 && (c == '-' || c == '+') {
-      negative = c == '-'
-      continue
+  while digit(i) {
+    if n < 100000000 {
+      n = n * 10 + (chars[i].to_int() - '0'.to_int())
     }
-    guard c >= '0' && c <= '9' && n < 100000000 else { break }
-    n = n * 10 + (c.to_int() - '0'.to_int())
+    // an underscore joins digits
+    i += if chars.get(i + 1) == Some('_') && digit(i + 2) { 2 } else { 1 }
   }
   if negative {
     -n
@@ -81,12 +128,17 @@ fn ruby_to_i(value : String) -> Int {
 ///|
 /// asciidoctor-pdf's `resolve_pagenums`: the `pages` attribute's entries,
 /// split on commas (else semicolons), each a page number or a `from..to`
-/// range (both at least 1).
+/// range (both at least 1). As Ruby's `String#split`, trailing empty
+/// entries are dropped (`1,` is page 1, an empty list no page) while
+/// others count as 0, which prawn-templates takes for the last page.
 fn resolve_pagenums(value : String) -> Array[Int] {
   let separator = if value.contains(",") { "," } else { ";" }
+  let entries = value.split(separator).map(e => e.to_owned()).to_array()
+  while entries.last() == Some("") {
+    ignore(entries.pop())
+  }
   let pages : Array[Int] = []
-  for entry in value.split(separator) {
-    let entry = entry.to_owned()
+  for entry in entries {
     match entry.find("..") {
       Some(i) => {
         let from = @cmp.maximum(ruby_to_i(entry[:i].to_owned()), 1)
@@ -127,6 +179,14 @@ fn Converter::import_pdf_page(
   dests? : Array[String] = [],
 ) -> Bool {
   let flow = self.flow
+  // prawn-templates reads the page before anything changes; a page it
+  // cannot read fails the conversion
+  let page = pdf.page(number) catch {
+    error => {
+      template_failure(error)
+      return false
+    }
+  }
   let (prev_w, prev_h) = match flow.model.pages.get(flow.page) {
     Some(p) => (p.width_pt, p.height_pt)
     None => (page_width(), page_height())
@@ -155,13 +215,24 @@ fn Converter::import_pdf_page(
     }
     start_sized_page(flow, prev_w, prev_h)
   }
-  match pdf.page(number) {
+  match page {
     Some((index, w, h)) => {
       start_sized_page(flow, w, h)
       if !flow.scratch {
         self.imported_pages[flow.page] = ()
       }
-      flow.model.pages[flow.page].items.append(carried)
+      // `dest_top` of the imported page: the destinations of the page it
+      // replaced (the parent section's, the document's top) go to its
+      // top-left corner
+      for item in carried {
+        match item {
+          Anchor(anchor) =>
+            flow.model.pages[flow.page].items.push(
+              Anchor({ ..anchor, x_pt: 0.0, y_pt: 0.0, }),
+            )
+          other => flow.model.pages[flow.page].items.push(other)
+        }
+      }
       for dest in dests {
         flow.add_anchor(dest, 0.0, 0.0)
       }
@@ -197,16 +268,12 @@ fn Converter::convert_pdf_image(
   self : Converter,
   node : @core.Node,
   data : Bytes,
-  path : String,
 ) -> Unit {
   let flow = self.flow
-  let pdf = match read_pdf_pages(data) {
-    Some(pdf) => pdf
-    None => {
-      // prawn-templates raises a TemplateError
-      if !flow.scratch {
-        warning("could not embed image: \{path}; not a readable PDF", node)
-      }
+  // prawn-templates raises a TemplateError, which fails the conversion
+  let pdf = read_pdf_pages(data) catch {
+    error => {
+      template_failure(error)
       return
     }
   }
