@@ -1,0 +1,47 @@
+= Source Highlighting with Pygments
+:source-highlighter: pygments
+:pygments-style: friendly
+
+Source blocks highlighted by Pygments, in the `friendly` style.
+
+[source,ruby]
+----
+require 'sinatra' # <1>
+
+def greet(name = "World")
+  puts "Hello, #{name}!" if name =~ /\w+/
+end
+----
+<1> Library import
+
+[source,java,linenums,highlight=3]
+----
+public class Greeting {
+    private static final int MAX = 0x10;
+    @Override
+    public String toString() {
+        return "Hello " + MAX;
+    }
+}
+----
+
+[source,python]
+----
+def norm(x: float) -> float:
+    """The length."""
+    return (x ** 2) ** 0.5  # positive
+----
+
+[source,xml]
+----
+<project>
+  <name>demo &amp; more</name>
+</project>
+----
+
+[source,c,linenums]
+----
+int main(void) {
+	printf("a very long line that does not fit on one line of the listing and has to wrap at least once, %d\n", 42);
+}
+----

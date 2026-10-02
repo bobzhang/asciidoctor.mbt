@@ -406,8 +406,64 @@ fn tag_style(tag : String, attrs : Map[String, String], style : Style) -> Style 
           }
         None => ()
       }
-      s
+      match attrs.get("style") {
+        Some(css) if tag == "span" => span_style(css, s)
+        _ => s
+      }
     }
     _ => style
   }
+}
+
+///|
+/// The `style` attribute of a `<span>` (asciidoctor-pdf's Transform, for
+/// syntax highlighters): `color` and `background-color` (`#` and three to
+/// six hex digits), `font-weight: bold`, `font-style: italic`; spaces are
+/// ignored, other properties too.
+fn span_style(css : String, style : Style) -> Style {
+  let mut s = style
+  let hex = fn(value : String) -> Color? {
+    let n = value.length()
+    if !value.has_prefix("#") || n < 4 || n > 7 {
+      return None
+    }
+    for c in value[1:] {
+      if !c.is_ascii_hexdigit() {
+        return None
+      }
+    }
+    if n == 7 {
+      parse_color(value)
+    } else {
+      let sb = StringBuilder()
+      for c in value[1:4] {
+        sb.write_char(c)
+        sb.write_char(c)
+      }
+      parse_color(sb.to_string())
+    }
+  }
+  for decl in css.replace_all(old=" ", new="").split(";") {
+    let decl = decl.to_owned()
+    let (name, value) = match decl.find(":") {
+      Some(i) => (decl[:i].to_owned(), decl[i + 1:].to_owned())
+      None => (decl, "")
+    }
+    match name {
+      "color" =>
+        match hex(value) {
+          Some(c) => s = { ..s, color: c, }
+          None => ()
+        }
+      "font-weight" => if value == "bold" { s = { ..s, bold: true, } }
+      "font-style" => if value == "italic" { s = { ..s, italic: true, } }
+      "background-color" =>
+        match hex(value) {
+          Some(c) => s = { ..s, background: Some(c), }
+          None => ()
+        }
+      _ => ()
+    }
+  }
+  s
 }

@@ -1,0 +1,8 @@
+import {
+  "bobzhang/asciidoctor-pdf" @asciidoctor_pdf,
+  "bobzhang/pygments" @py,
+  "bobzhang/pygments/lexers" @py_lexers,
+  "bobzhang/pygments/styles" @py_styles,
+}
+
+supported_targets = "native+wasm"

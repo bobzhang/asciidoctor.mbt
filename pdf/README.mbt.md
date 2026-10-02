@@ -21,7 +21,19 @@ Run the `asciidoctor-pdf` command with [`moonx`](https://www.moonbitlang.com) (n
 moonx bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf doc.adoc
 ```
 
-or build it natively from a checkout of the repository:
+It highlights source blocks with Rouge. `source-highlighter: pygments` needs the same command with
+Pygments linked in, which is larger:
+
+```
+moonx bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf-pygments doc.adoc
+```
+
+| Command | wasm | native (macOS arm64) |
+| --- | --- | --- |
+| `cmd/asciidoctor-pdf` (Rouge) | 18.5 MB | 24.8 MB |
+| `cmd/asciidoctor-pdf-pygments` (Rouge and Pygments) | 28.4 MB | 42.3 MB |
+
+or build them natively from a checkout of the repository:
 
 ```
 moon -C pdf build --target native --release
@@ -69,7 +81,7 @@ test "convert a document to PDF" {
 
 Files the document refers to (includes, images, themes) are read through the document's `Vfs`
 (`@core.Options::new(vfs=...)`); `bobzhang/asciidoctor/io` provides one backed by the file system
-(see `cmd/asciidoctor-pdf`).
+(see the package `bobzhang/asciidoctor-pdf/cli`, the command line).
 
 `register` takes the fonts the themes find in asciidoctor-pdf's font directory (`GEM_FONTS_DIR`).
 By default these are the default theme's (`@fonts.default_fonts()`, package
@@ -116,7 +128,16 @@ or one not ported yet, is set as plain text. Line numbers (`linenums`, `start`),
 (`highlight`) and callouts are laid out as asciidoctor-pdf does. As in Ruby, the `secure` safe mode (the
 API's default) turns `source-highlighter` off.
 
-`source-highlighter: pygments` and `coderay` are not supported yet (listings are set in plain text).
+`source-highlighter: pygments` needs Pygments, which is in a package of its own
+(`bobzhang/asciidoctor-pdf/pygments`, on [`bobzhang/pygments`](https://mooncakes.io/docs/bobzhang/pygments),
+a port of Pygments 2.21) so that a program links it only when it asks for it; the command
+`cmd/asciidoctor-pdf-pygments` does:
+
+```mbt nocheck
+@pygments.register() // package bobzhang/asciidoctor-pdf/pygments
+```
+
+`source-highlighter: coderay` is not supported (listings are set in plain text).
 
 ## What is supported
 
@@ -134,15 +155,14 @@ It is measured against Ruby asciidoctor-pdf 2.3.27 by `scripts/pdf_compare.mbtx`
 repository, which converts with both and compares page count, text, the position of every word
 (±1pt), rasterized pages and PDF structure:
 
-* the gate (37 documents covering every feature above): 37 / 37 identical within the thresholds;
-* the conversions of asciidoctor-pdf's own RSpec suite: 2074 / 2415 pass (the rest are listed with
+* the gate (38 documents covering every feature above): 38 / 38 identical within the thresholds;
+* the conversions of asciidoctor-pdf's own RSpec suite: 2064 / 2415 pass (the rest are listed with
   their reason in the repository's `tests/pdf_golden/known_failures.txt`);
 * a corpus of 2,840 real-world documents: 2772 pass.
 
 ## Known differences from Ruby asciidoctor-pdf
 
-* No Pygments or CodeRay highlighting, and only the Rouge lexers listed above (see Source
-  highlighting).
+* No CodeRay highlighting, and only the Rouge lexers listed above (see Source highlighting).
 * AsciiDoc table cells (`a|`), video poster images and GIF/BMP/TIFF images are not rendered;
   image icons (`icons` other than `font`) show their alt text.
 * A PDF page imported as an image keeps its drawing but not its links or other annotations.

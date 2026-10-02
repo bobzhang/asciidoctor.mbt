@@ -211,7 +211,10 @@ let cgi_parse_shim : Ref[String] = { val: "scripts/pdf_harvest/cgi_parse.rb" }
 let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd"
 
 ///|
-let default_spike : String = "\{bin}/asciidoctor-pdf/asciidoctor-pdf.exe"
+/// The command with Pygments, so that `source-highlighter: pygments` cases
+/// (the source-pygments case, the spec suite's Pygments examples) are
+/// converted as Ruby does; otherwise it is cmd/asciidoctor-pdf's command.
+let default_spike : String = "\{bin}/asciidoctor-pdf-pygments/asciidoctor-pdf-pygments.exe"
 
 ///|
 /// The spike executable: `default_spike`, or `--spike EXE` (e.g. a copy, so
@@ -287,6 +290,7 @@ let cases : Array[(String, String, String)] = [
   ("line-metrics", "pdf/tests/line-metrics.adoc", ""),
   ("callouts", "pdf/tests/callouts.adoc", ""),
   ("source-rouge", "pdf/tests/source-rouge.adoc", ""),
+  ("source-pygments", "pdf/tests/source-pygments.adoc", ""),
   ("icons", "pdf/tests/icons.adoc", ""),
   ("table-autowidth", "pdf/tests/table-autowidth.adoc", ""),
   ("arrange-block", "pdf/tests/arrange-block.adoc", ""),

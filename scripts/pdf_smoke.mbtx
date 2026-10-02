@@ -1,10 +1,11 @@
-// Smoke test of the asciidoctor-pdf command (CI): converts sample documents
+// Smoke test of the asciidoctor-pdf commands (CI): converts sample documents
 // with the native release build and the wasm release build (run with
 // moonrun, as moonx does), with no font directory, and checks that each
 // output is a well-formed PDF (header, trailer, cross-reference offset,
 // page count) — and, when poppler's pdfinfo is installed, that pdfinfo
 // accepts it. Also checks `--version` against pdf/moon.mod, `-o -`, standard
-// input, and the exit code of a bad option.
+// input, the exit code of a bad option, and source highlighting with Rouge
+// (both commands) and Pygments (cmd/asciidoctor-pdf-pygments only).
 //
 // Usage (after `moon -C pdf build --release --target native` and
 // `--target wasm`):
@@ -19,10 +20,17 @@ import {
 }
 
 ///|
-let bin : String = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.exe"
+/// The native executable of a command (`asciidoctor-pdf`, or
+/// `asciidoctor-pdf-pygments`, the command with Pygments).
+fn bin(command : String) -> String {
+  "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.exe"
+}
 
 ///|
-let wasm_file : String = "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/asciidoctor-pdf/asciidoctor-pdf.wasm"
+/// The wasm module of a command.
+fn wasm_file(command : String) -> String {
+  "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.wasm"
+}
 
 ///|
 let out_dir : String = "_build/pdf-smoke"
@@ -119,12 +127,13 @@ async fn pdfinfo_available() -> Bool {
 async fn run_cli(
   args : Array[String],
   wasm~ : Bool,
+  command? : String = "asciidoctor-pdf",
   stdin? : String,
 ) -> (Int, Bytes, String) {
   let (cmd, argv) = if wasm {
-    ("moonrun", [wasm_file, "--", ..args])
+    ("moonrun", [wasm_file(command), "--", ..args])
   } else {
-    (bin, args)
+    (bin(command), args)
   }
   let (code, out, err) = match stdin {
     Some(file) => @process.collect_output(cmd, argv, stdin=@process.redirect_from_file(file))
@@ -140,8 +149,9 @@ async fn convert(
   output : String,
   wasm~ : Bool,
   check_pdfinfo~ : Bool,
+  command? : String = "asciidoctor-pdf",
 ) -> Unit {
-  let (code, _, err) = run_cli(["-o", output, ..args], wasm~)
+  let (code, _, err) = run_cli(["-o", output, ..args], wasm~, command~)
   check("\{label}: exit 0", code == 0, detail=err)
   let data = @fs.read_file(output).binary() catch {
     _ => {
@@ -238,6 +248,50 @@ async fn main {
       "\{out_dir}/\{tag}-fallbacks.pdf",
       wasm~,
       check_pdfinfo~,
+    )
+    // source highlighting: Rouge in both commands, Pygments in the one with
+    // Pygments (the other sets those listings as they are, and says so)
+    convert(
+      "\{tag} rouge",
+      ["pdf/tests/source-rouge.adoc"],
+      "\{out_dir}/\{tag}-rouge.pdf",
+      wasm~,
+      check_pdfinfo~,
+    )
+    let (code, _, err) = run_cli(
+      ["-o", "\{out_dir}/\{tag}-no-pygments.pdf", "pdf/tests/source-pygments.adoc"],
+      wasm~,
+    )
+    check(
+      "\{tag} pygments without Pygments: converted, reported unsupported",
+      code == 0 && err.contains("UNSUPPORTED attribute source-highlighter=pygments"),
+      detail=err,
+    )
+    let pygments = "asciidoctor-pdf-pygments"
+    let (code, out, _) = run_cli(["--version"], wasm~, command=pygments)
+    let text = @utf8.decode_lossy(out)
+    check(
+      "\{tag} \{pygments}: --version names \{version}",
+      code == 0 && text.has_prefix("Asciidoctor PDF \{version} "),
+      detail=text,
+    )
+    convert(
+      "\{tag} \{pygments}",
+      ["pdf/tests/source-pygments.adoc"],
+      "\{out_dir}/\{tag}-pygments.pdf",
+      wasm~,
+      check_pdfinfo~,
+      command=pygments,
+    )
+    let (_, _, err) = run_cli(
+      ["-o", "\{out_dir}/\{tag}-pygments-2.pdf", "pdf/tests/source-pygments.adoc"],
+      wasm~,
+      command=pygments,
+    )
+    check(
+      "\{tag} \{pygments}: Pygments highlights",
+      !err.contains("UNSUPPORTED"),
+      detail=err,
     )
     // standard input to standard output
     let (code, out, err) = run_cli(["-"], wasm~, stdin=small)

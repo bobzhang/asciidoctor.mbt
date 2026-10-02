@@ -2,7 +2,7 @@
 // Source highlighting in asciidoctor-pdf's `convert_code`: which
 // highlighter a block gets, the source it is given (the block's
 // substitutions set aside, callouts taken out), and the fragments that
-// come back (Rouge: highlight_rouge.mbt).
+// come back (Rouge: highlight_rouge.mbt, Pygments: highlight_pygments.mbt).
 
 ///|
 /// The fragments a code block is typeset from, the background and text
@@ -62,8 +62,14 @@ fn Converter::code_chunks(
     return none(guard_indentation(node.content()))
   }
   let highlighter = match highlighter {
-    "pygments" | "coderay" as name => {
-      unsupported("attribute", "source-highlighter=\{name}", node)
+    "pygments" if pygments_backend.val is None => {
+      unsupported(
+        "attribute", "source-highlighter=pygments (Pygments not registered)", node,
+      )
+      None
+    }
+    "coderay" => {
+      unsupported("attribute", "source-highlighter=coderay", node)
       None
     }
     h => Some(h)
@@ -131,7 +137,16 @@ fn Converter::code_chunks(
   node.subs = saved_subs
   match highlighter {
     "rouge" => self.rouge_chunks(node, source, callouts, conums, base)
-    _ => none(guard_indentation(source))
+    _ =>
+      match pygments_backend.val {
+        Some(backend) => {
+          let (fragments, background, font_color, source_wrap) = pygments_chunks(
+            backend, node, source, callouts, conums, base,
+          )
+          { fragments, background, font_color, source_wrap, highlighted: true, }
+        }
+        None => none(guard_indentation(source))
+      }
   }
 }
 

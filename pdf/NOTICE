@@ -5,7 +5,8 @@ material listed below, which is under its own license.
 
 This module contains third-party material, listed below with its license.
 The license texts are in LICENSE (MIT), rouge/LICENSE (Rouge, MIT, and
-Pygments), LICENSES/LICENSE-prawn (prawn-table) and fonts/LICENSES.
+Pygments), pygments/LICENSE (Pygments, BSD-2-Clause), LICENSES/LICENSE-prawn
+(prawn-table) and fonts/LICENSES.
 
 == Asciidoctor PDF 2.3.27 (MIT)
 
@@ -135,3 +136,15 @@ Icon names
 Programs built with this module also link moonbitlang/pagelayout, which
 bundles Carlito, Liberation and Noto Sans SC fonts under the SIL Open Font
 License 1.1 (see that module's fonts/LICENSES).
+
+== Pygments (BSD-2-Clause)
+
+Copyright (c) 2006-2022 by the respective authors (see AUTHORS file).
+https://pygments.org
+
+Programs that link the package bobzhang/asciidoctor-pdf/pygments (the
+command cmd/asciidoctor-pdf-pygments does; cmd/asciidoctor-pdf does not)
+also link bobzhang/pygments, a port of Pygments, and must reproduce its
+license, whose text is in pygments/LICENSE (as bobzhang/pygments carries
+it). Rouge's lexers, linked by every program of this module, are adapted
+from Pygments too; rouge/LICENSE includes the same license.
