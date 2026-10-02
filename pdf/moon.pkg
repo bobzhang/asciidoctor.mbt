@@ -20,6 +20,7 @@ import {
   "moonbitlang/pagelayout/fontoutlines",
   "moonbitlang/pdflite",
   "bobzhang/asciidoctor-pdf/fonts/icons",
+  "moonbitlang/pdflite/core" @pdfcore,
 } for "wbtest"
 
 import {

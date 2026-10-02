@@ -29,6 +29,9 @@ priv struct Converter {
   mut float_box : FloatBox?
   /// the first page is a front cover (see `ink_cover_page`)
   mut has_front_cover : Bool
+  /// the pages imported from a PDF (`page.imported_page?`), by index: no
+  /// background or running content goes on them (see `import_pdf_page`)
+  imported_pages : Map[Int, Unit]
   /// asciidoctor-pdf's `pinned` option of `convert_image` (the title page
   /// logo): the image stays on the page, with no margin or float after it
   mut pinned : Bool
@@ -55,6 +58,7 @@ fn Converter::new(doc : @core.Node, flow : Flow) -> Converter {
     disable_running_content: Map([("header", []), ("footer", [])]),
     float_box: None,
     has_front_cover: false,
+    imported_pages: Map([]),
     pinned: false,
     ppbook: false,
     end_page_h: page_height(),
@@ -598,6 +602,8 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
           }
         }
         // at the top: first, going to the top of the TOC's first page
+        // (`dest_top`: at the height of the page the conversion ended on,
+        // as the outline's title)
         None =>
           Some(
             (
@@ -605,7 +611,14 @@ fn Converter::document_outline(self : Converter) -> Array[@pdf.OutlineEntry] {
               {
                 title: sanitize(toc_title),
                 level: 0,
-                dest: Position(page=extent.from_page, x=0.0, y=0.0),
+                dest: Position(
+                  page=extent.from_page,
+                  x=0.0,
+                  y=match self.flow.model.pages.get(extent.from_page) {
+                    Some(page) => page.height_pt - self.end_page_h
+                    None => 0.0
+                  },
+                ),
                 open: false,
               },
             ),

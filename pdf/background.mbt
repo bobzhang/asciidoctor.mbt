@@ -24,6 +24,9 @@ priv struct BoxImage {
   link : String?
   /// the macro's alt text, in brackets (`image_opts[:alt]`)
   alt : String?
+  /// for a PDF, the page it shows (the `page` attribute, at least 1):
+  /// imported rather than drawn in the box (see `import_pdf_page`)
+  pdf_page : Int?
 }
 
 ///|
@@ -282,8 +285,31 @@ fn Converter::resolve_box_image(
   }
   guard data is Some(data) else { return Unreadable(resolved) }
   if format == "pdf" {
-    unsupported("image", "format of \{path}", doc)
-    return NoImage
+    // a background or cover PDF is imported, at the page its `page`
+    // attribute names (`resolve_background_image`); in a box it cannot be
+    // drawn
+    if !background {
+      unsupported("image", "format of \{path}", doc)
+      return NoImage
+    }
+    return Found({
+      data,
+      svg: false,
+      path: resolved,
+      fit: None,
+      width: None,
+      height: None,
+      position: "center",
+      vposition: "center",
+      link: None,
+      alt: None,
+      pdf_page: Some(
+        @cmp.maximum(
+          ruby_to_i(attrs.bind(a => attrs_str(a, "page")).unwrap_or("")),
+          1,
+        ),
+      ),
+    })
   }
   let svg = format == "svg"
   let (cw, ch) = container
@@ -362,6 +388,7 @@ fn Converter::resolve_box_image(
     vposition,
     link: attrs.bind(a => attrs_str(a, "link")),
     alt: attrs.bind(a => attrs_str(a, "alt")).map(a => "[\{a}]"),
+    pdf_page: None,
   })
 }
 
@@ -401,6 +428,13 @@ fn Converter::box_image_items(
   page_h? : Double,
 ) -> (Array[@pagelayout.PageItem], Double, Double)? {
   let flow = self.flow
+  // a PDF is imported as a page, not drawn in a box
+  if img.pdf_page is Some(_) {
+    if !flow.scratch {
+      warning("could not embed image: \{img.path}", self.doc)
+    }
+    return None
+  }
   let place = (iw : Double, ih : Double) => {
     let x = match img.position {
       "left" => left
@@ -532,9 +566,11 @@ fn Converter::ink_page_backgrounds(
   let pages = self.flow.model.pages
   let color = page_background_color()
   let cache : Map[String, Map[String, BoxImage?]] = Map([])
+  // the PDFs of PDF backgrounds, read once each
+  let pdfs : Map[Bytes, PdfPages?] = Map([])
   for index, page in pages {
-    // a cover page has no background
-    if front_cover && index == 0 {
+    // a cover page has no background, nor has an imported page
+    if (front_cover && index == 0) || self.imported_pages.contains(index) {
       continue
     }
     let (w, h) = (page.width_pt, page.height_pt)
@@ -567,6 +603,29 @@ fn Converter::ink_page_backgrounds(
         _ => ()
       }
     }
+    // a PDF background replaces the page with the imported one (`init_page`
+    // with `import_page`): no background color, nor running content
+    match image {
+      Some({ pdf_page: Some(number), data, .. }) => {
+        let pdf = match pdfs.get(data) {
+          Some(pdf) => pdf
+          None => {
+            let pdf = read_pdf_pages(data)
+            pdfs[data] = pdf
+            pdf
+          }
+        }
+        match pdf.bind(pdf => pdf.page(number)) {
+          Some((imported, _, _)) => {
+            page.items.insert(0, pdf_page_item(data, imported, w, h))
+            self.imported_pages[index] = ()
+          }
+          None => ()
+        }
+        continue
+      }
+      _ => ()
+    }
     let items : Array[@pagelayout.PageItem] = []
     if page_color != rgb_hex(0xFFFFFF) {
       items.push(rect_item(0.0, 0.0, w, h, fill=page_color))
@@ -595,13 +654,28 @@ fn Converter::ink_page_backgrounds(
 fn Converter::ink_cover_page(self : Converter, face : String) -> Bool {
   let flow = self.flow
   let (w, h) = (page_width(), page_height())
-  let items = match
-    self.resolve_background_image(
-      Some("\{face}-cover-image"),
-      "cover_\{face}_image",
-      (w, h),
-      symbolic=true,
-    ) {
+  let resolved = self.resolve_background_image(
+    Some("\{face}-cover-image"),
+    "cover_\{face}_image",
+    (w, h),
+    symbolic=true,
+  )
+  // a PDF cover is the page imported (`import_page` with
+  // `advance_if_missing: false`): none when the PDF lacks the page
+  match resolved {
+    Found({ pdf_page: Some(number), data, .. }) => {
+      guard read_pdf_pages(data) is Some(pdf) && pdf.page(number) is Some(_) else {
+        return false
+      }
+      if face == "front" {
+        // in place of the empty first page, and the content on a new one
+        return self.import_pdf_page(pdf, number, replace=true)
+      }
+      return self.import_pdf_page(pdf, number, advance=false)
+    }
+    _ => ()
+  }
+  let items = match resolved {
     Symbolic("") => []
     Found(img) =>
       match self.box_image_items(img, 0.0, 0.0, w, h) {

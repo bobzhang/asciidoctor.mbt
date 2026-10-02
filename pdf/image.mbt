@@ -107,6 +107,16 @@ fn Converter::convert_image(
     )
   }
   let path = if image_target is Data(_) { target } else { path }
+  if format == "pdf" {
+    match data {
+      Some(bytes) => {
+        self.convert_pdf_image(node, bytes, path)
+        return
+      }
+      // the alt text instead, as for a missing image
+      None => if !flow.scratch { warn_missing_pdf(node, image_target, path) }
+    }
+  }
   let info = data.bind(image_info)
   // `float` (left or right), else `align` (left when unknown), else the
   // last alignment role
@@ -365,7 +375,13 @@ fn convert_inline_image(node : @core.Node) -> String {
     None => {
       // a missing image is its alt text in Ruby too; asciidoctor-pdf draws
       // GIF (with prawn-gmagick) images this backend cannot
-      if bytes is Some(_) && !svg {
+      if bytes is Some(_) && format == "pdf" {
+        // Prawn cannot draw a PDF in a line either (the arranger drops it)
+        warning(
+          "could not embed image: \{path}; image file is an unrecognised format",
+          node,
+        )
+      } else if bytes is Some(_) && !svg {
         unsupported("inline", "image \{target}", node)
       }
       "[\{alt}&#93;"
