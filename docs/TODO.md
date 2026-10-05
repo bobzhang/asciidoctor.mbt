@@ -1,12 +1,12 @@
 # TODO
 
-Open work after the 2026-10-02 releases: core 0.3.4, prawn 0.1.0, asciidoctor-pdf 0.2.0,
-pdflite 0.3.2 and pagelayout 0.7.1.
+Open work after the 2026-10-05 releases: prawn 0.2.0 and asciidoctor-pdf 0.2.1, on core 0.3.4,
+pdflite 0.3.7 and pagelayout 0.7.1.
 
 ## Where things stand
 
-- **Releases.** `bobzhang/asciidoctor` 0.3.4, `bobzhang/prawn` 0.1.0 and
-  `bobzhang/asciidoctor-pdf` 0.2.0 are published and tagged. Both commands work through moonx:
+- **Releases.** `bobzhang/asciidoctor` 0.3.4, `bobzhang/prawn` 0.2.0 and
+  `bobzhang/asciidoctor-pdf` 0.2.1 are published and tagged. Both commands work through moonx:
   `cmd/asciidoctor-pdf` (Rouge only) and `cmd/asciidoctor-pdf-pygments`.
 - **Spec suite.** asciidoctor-pdf's suite replays 2097 of 2415 conversions identically. The 318
   known failures are listed in `tests/pdf_golden/known_failures.txt`. The gate passes 38/38.
@@ -17,7 +17,7 @@ pdflite 0.3.2 and pagelayout 0.7.1.
 
 ## PDF backend: fidelity
 
-- **Known failures.** Work down the 318 known spec failures. By category: styling/assets 232,
+- **Known failures.** Work down the 318 known spec failures. By category: styling/assets 230,
   geometry 172, missing/extra text 80, navigation/metadata 80, unsupported 23, reading order 22,
   page breaks 14. Regenerate the list with `pdf_compare -- --spec-goldens --write-known ...`.
 - **Corpus.** Rerun the 2,840-document corpus comparison; it was last measured at 0.1.0

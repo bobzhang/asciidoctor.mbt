@@ -36,7 +36,7 @@ replayed by status:
 failing only through the extra running footer (the only gate failures are lines, words and raster, and every extra line is a page number): 0 / 2415
 
 failing records by category (a record can be in several):
-  232	styling/assets
+  230	styling/assets
   172	geometry
   80	missing/extra text
   80	navigation/metadata
@@ -62,15 +62,15 @@ failing records by first gate failure:
   2	structure: page boxes
 
 failing records by gate failure (any):
-  213	raster
-  132	geometry (within 1pt)
-  119	raster (flat fills)
+  211	raster
+  130	geometry (within 1pt)
+  118	raster (flat fills)
   99	lines
   90	coverage
   80	words
   41	structure: outline
   38	structure: destinations
-  29	structure: fonts
+  27	structure: fonts
   24	structure: links
   18	indentation
   7	structure: page labels
