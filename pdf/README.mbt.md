@@ -173,7 +173,7 @@ repository, which converts with both and compares page count, text, the position
 * SVG text in a font the theme's catalog does not have is set in the base font.
 * No Ruby extensions, converter subclasses or custom templates (`-r`, `-T`); `-r asciidoctor-pdf`
   is accepted (it is built in). No `asciidoctor-pdf-optimize`.
-* The PDF's Producer names this port (`Asciidoctor PDF 0.1.0 (MoonBit), based on pagelayout`).
+* The PDF's Producer names this port (`Asciidoctor PDF 0.2.1 (MoonBit), based on pagelayout`).
 
 ## Changes
 
