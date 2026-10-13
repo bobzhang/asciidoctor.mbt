@@ -22,7 +22,7 @@ pub(all) struct Node {
   // AbstractBlock
   blocks : Array[Node]
   mut content_model : ContentModel
-  mut level : Int
+  mut level : Int32
   mut numeral : String?
   mut source_location : Cursor?
   mut style : String?
@@ -31,12 +31,12 @@ pub(all) struct Node {
   priv mut title_ : String?
   priv mut converted_title : String?
   priv mut caption_ : String?
-  priv mut next_section_index : Int
-  priv mut next_section_ordinal : Int
+  priv mut next_section_index : Int32
+  priv mut next_section_ordinal : Int32
   // Block
   mut lines : Array[String]
   // Section
-  mut index : Int
+  mut index : Int32
   mut sectname : String?
   mut special : Bool
   mut numbered : Numbered
@@ -170,7 +170,7 @@ pub fn Node::attr(
   self : Node,
   name : String,
   default? : String,
-  inherited? : Bool = false,
+  inherited~ : Bool = false,
   fallback_name? : String,
 ) -> String? {
   match self.attributes.str(name) {
@@ -193,7 +193,7 @@ pub fn Node::has_attr(
   self : Node,
   name : String,
   expected? : String,
-  inherited? : Bool = false,
+  inherited~ : Bool = false,
 ) -> Bool {
   match expected {
     Some(e) => {
@@ -223,8 +223,8 @@ pub fn Node::has_attr(
 pub fn Node::set_attr(
   self : Node,
   name : String,
-  value? : AttrVal = Str(""),
-  overwrite? : Bool = true,
+  value~ : AttrVal = Str(""),
+  overwrite~ : Bool = true,
 ) -> Bool {
   if !overwrite && self.attributes.contains(name) {
     false
@@ -395,7 +395,7 @@ pub fn Node::file(self : Node) -> String? {
 }
 
 ///|
-pub fn Node::lineno(self : Node) -> Int? {
+pub fn Node::lineno(self : Node) -> Int32? {
   match self.source_location {
     Some(c) => Some(c.lineno)
     None => None
@@ -871,7 +871,7 @@ pub fn Node::find_by(
   style? : String,
   role? : String,
   id? : String,
-  traverse_documents? : Bool = false,
+  traverse_documents~ : Bool = false,
   filter? : (Node) -> FindVerdict,
 ) -> Array[Node] {
   let result = []
@@ -1097,8 +1097,8 @@ fn default_content_model(context : Context) -> ContentModel {
 /// Creates a section (Ruby `Section.new parent, level, numbered`).
 pub fn Node::new_section(
   parent : Node?,
-  level? : Int,
-  numbered? : Bool = false,
+  level? : Int32,
+  numbered~ : Bool = false,
   attributes? : Attributes,
 ) -> Node {
   let s = Node::alloc(parent, Section, attributes?)

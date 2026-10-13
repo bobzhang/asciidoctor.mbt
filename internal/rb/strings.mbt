@@ -97,7 +97,7 @@ pub fn chop(s : String) -> String {
 
 ///|
 /// Substring by UTF-16 offsets `[start, end)`, clamped to the string bounds.
-pub fn slice(s : String, start : Int, end : Int) -> String {
+pub fn slice(s : String, start : Int32, end : Int32) -> String {
   let n = s.length()
   let a = if start < 0 { 0 } else if start > n { n } else { start }
   let b = if end < a { a } else if end > n { n } else { end }
@@ -110,20 +110,20 @@ pub fn slice(s : String, start : Int, end : Int) -> String {
 
 ///|
 /// Everything from `start` (clamped) to the end.
-pub fn from(s : String, start : Int) -> String {
+pub fn from(s : String, start : Int32) -> String {
   slice(s, start, s.length())
 }
 
 ///|
 /// The first `n` code units (clamped).
-pub fn take(s : String, n : Int) -> String {
+pub fn take(s : String, n : Int32) -> String {
   slice(s, 0, n)
 }
 
 ///|
 /// Ruby `String#squeeze(chars)`: collapses runs of the same character that
 /// appears in `chars` (all characters when `chars` is empty).
-pub fn squeeze(s : String, chars? : String = "") -> String {
+pub fn squeeze(s : String, chars~ : String = "") -> String {
   let sb = StringBuilder()
   let mut prev : Char? = None
   let mut changed = false
@@ -208,7 +208,7 @@ pub fn split_ws(s : String) -> Array[String] {
 ///|
 /// Whether `needle` occurs in `s` at offset `i` (`i + needle.length()` must
 /// not exceed `s.length()`).
-fn matches_at(s : String, i : Int, needle : String) -> Bool {
+fn matches_at(s : String, i : Int32, needle : String) -> Bool {
   for j in 0..<needle.length() {
     if s.unsafe_get(i + j) != needle.unsafe_get(j) {
       return false
@@ -221,7 +221,7 @@ fn matches_at(s : String, i : Int, needle : String) -> Bool {
 /// Ruby `String#split(sep, limit)` with a literal (non-space) separator.
 /// With `limit == 0` trailing empty fields are removed; negative keeps them;
 /// positive limits the number of fields.
-pub fn split(s : String, sep : String, limit? : Int = 0) -> Array[String] {
+pub fn split(s : String, sep : String, limit~ : Int32 = 0) -> Array[String] {
   let out : Array[String] = []
   let n = s.length()
   if n == 0 {
@@ -299,7 +299,7 @@ pub fn rpartition(s : String, sep : String) -> (String, String, String) {
 
 ///|
 /// Index of `needle` at or after `from`.
-pub fn index_of(s : String, needle : String, from? : Int = 0) -> Int? {
+pub fn index_of(s : String, needle : String, from~ : Int32 = 0) -> Int32? {
   let n = s.length()
   let m = needle.length()
   if from > n {
@@ -324,7 +324,7 @@ pub fn index_of(s : String, needle : String, from? : Int = 0) -> Int? {
 
 ///|
 /// Count of non-overlapping occurrences of `needle`.
-pub fn count(s : String, needle : String) -> Int {
+pub fn count(s : String, needle : String) -> Int32 {
   if needle == "" {
     return 0
   }
@@ -340,7 +340,7 @@ pub fn count(s : String, needle : String) -> Int {
 ///|
 /// Ruby `String#to_i`: parses a leading (optionally signed) decimal integer,
 /// allowing single underscores between digits; returns 0 if none.
-pub fn to_i(s : String) -> Int {
+pub fn to_i(s : String) -> Int32 {
   let n = s.length()
   let mut i = 0
   while i < n && is_space(s[i]) {
@@ -382,7 +382,7 @@ pub fn to_i(s : String) -> Int {
 
 ///|
 /// Strict integer parse (Ruby `Integer(str)` for decimal strings); None if invalid.
-pub fn parse_int(s : String) -> Int? {
+pub fn parse_int(s : String) -> Int32? {
   let t = strip(s)
   let n = t.length()
   if n == 0 {
@@ -430,9 +430,9 @@ pub fn to_f(s : String) -> Double {
 
 ///|
 fn lookup_case(
-  keys : FixedArray[Int],
+  keys : FixedArray[Int32],
   vals : FixedArray[String],
-  cp : Int,
+  cp : Int32,
 ) -> String? {
   for lo = 0, hi = keys.length(); lo < hi; {
     let mid = lo + (hi - lo) / 2
@@ -580,7 +580,7 @@ pub fn succ(s : String) -> String {
 
 ///|
 /// Number of Unicode scalar values (Ruby `String#length`).
-pub fn char_length(s : String) -> Int {
+pub fn char_length(s : String) -> Int32 {
   let mut n = 0
   for _ in s {
     n += 1
@@ -590,7 +590,7 @@ pub fn char_length(s : String) -> Int {
 
 ///|
 /// UTF-8 byte length (Ruby `String#bytesize`).
-pub fn bytesize(s : String) -> Int {
+pub fn bytesize(s : String) -> Int32 {
   let mut n = 0
   for c in s {
     let cp = c.to_int()
@@ -609,7 +609,7 @@ pub fn bytesize(s : String) -> Int {
 
 ///|
 /// Truncates to at most `max` UTF-8 bytes without splitting a character.
-pub fn limit_bytesize(s : String, max : Int) -> String {
+pub fn limit_bytesize(s : String, max : Int32) -> String {
   let mut n = 0
   let mut end = 0
   for c in s {
@@ -653,7 +653,7 @@ pub fn capitalize(s : String) -> String {
 
 ///|
 /// Ruby `String#*`.
-pub fn repeat(s : String, n : Int) -> String {
+pub fn repeat(s : String, n : Int32) -> String {
   let sb = StringBuilder()
   for _ in 0..<n {
     sb.write_string(s)
@@ -663,7 +663,7 @@ pub fn repeat(s : String, n : Int) -> String {
 
 ///|
 /// Ruby `String#ljust`.
-pub fn ljust(s : String, width : Int, pad? : Char = ' ') -> String {
+pub fn ljust(s : String, width : Int32, pad~ : Char = ' ') -> String {
   let len = char_length(s)
   if len >= width {
     return s
@@ -678,7 +678,7 @@ pub fn ljust(s : String, width : Int, pad? : Char = ' ') -> String {
 
 ///|
 /// Ruby `String#rjust`.
-pub fn rjust(s : String, width : Int, pad? : Char = ' ') -> String {
+pub fn rjust(s : String, width : Int32, pad~ : Char = ' ') -> String {
   let len = char_length(s)
   if len >= width {
     return s
@@ -694,7 +694,7 @@ pub fn rjust(s : String, width : Int, pad? : Char = ' ') -> String {
 ///|
 /// Lexicographic comparison by code units (Ruby `String#<=>` for ASCII/BMP text).
 /// Note MoonBit's `String::compare` orders by length first.
-pub fn lex_compare(a : String, b : String) -> Int {
+pub fn lex_compare(a : String, b : String) -> Int32 {
   let n = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<n {
     let x = a[i].to_int()

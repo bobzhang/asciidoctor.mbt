@@ -49,9 +49,9 @@ fn front_matter(
   title_as_page : Bool,
   has_title_page : Bool,
   toc_at_top : Bool,
-  body_start : Int,
-  has_front_cover? : Bool = false,
-) -> (Int, Int) {
+  body_start : Int32,
+  has_front_cover~ : Bool = false,
+) -> (Int32, Int32) {
   // pages (0-based) before the body
   let body_offset = body_start
   if !title_as_page {
@@ -87,7 +87,7 @@ fn front_matter(
   }
   let (running_at, running_body) = resolve("running_content_start_at")
   let (numbering_at, numbering_body) = resolve("page_numbering_start_at")
-  let offset = (at : String, body : Int) => {
+  let offset = (at : String, body : Int32) => {
     match at {
       "title" => zero
       "toc" => first

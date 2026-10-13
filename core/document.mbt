@@ -1,7 +1,7 @@
 ///|
 /// A footnote registered in the document catalog.
 pub(all) struct Footnote {
-  index : Int
+  index : Int32
   id : String?
   text : String
 } derive(Debug)
@@ -42,7 +42,7 @@ pub(all) struct Options {
   /// Attribute overrides in order; `Nil` unsets, `Bool(false)` soft-unsets,
   /// a trailing `@` on a string value or name makes it soft.
   mut attributes : Array[(String, AttrVal)]
-  mut safe : Int?
+  mut safe : Int32?
   mut backend : String?
   mut doctype : String?
   mut standalone : Bool?
@@ -69,19 +69,19 @@ pub(all) struct Options {
 
 ///|
 pub fn Options::new(
-  attributes? : Array[(String, AttrVal)] = [],
-  safe? : Int,
+  attributes~ : Array[(String, AttrVal)] = [],
+  safe? : Int32,
   backend? : String,
   doctype? : String,
   standalone? : Bool,
   base_dir? : String,
   to_file? : String,
   to_dir? : String,
-  mkdirs? : Bool = false,
-  sourcemap? : Bool = false,
-  parse_header_only? : Bool = false,
-  catalog_assets? : Bool = false,
-  parse? : Bool = true,
+  mkdirs~ : Bool = false,
+  sourcemap~ : Bool = false,
+  parse_header_only~ : Bool = false,
+  catalog_assets~ : Bool = false,
+  parse~ : Bool = true,
   converter? : &Converter,
   extensions? : Extensions,
   vfs? : &Vfs,
@@ -120,7 +120,7 @@ fn Options::copy(self : Options) -> Options {
 ///|
 /// Data specific to a document node (Ruby `Document` instance variables).
 struct DocData {
-  mut safe : Int
+  mut safe : Int32
   mut compat_mode : Bool
   mut backend : String?
   mut doctype : String?
@@ -139,7 +139,7 @@ struct DocData {
   mut extensions : Extensions?
   attribute_overrides : Map[String, AttrVal]
   mut header_attributes : Attributes?
-  mut max_attribute_value_size : Int?
+  mut max_attribute_value_size : Int32?
   attributes_modified : Map[String, Bool]
   mut parsed : Bool
   mut reftexts : Map[String, String]?
@@ -624,7 +624,7 @@ pub fn Node::is_parsed(self : Node) -> Bool {
 }
 
 ///|
-pub fn Node::safe(self : Node) -> Int {
+pub fn Node::safe(self : Node) -> Int32 {
   self.doc().safe
 }
 
@@ -953,7 +953,7 @@ pub(all) struct DocTitle {
 ///|
 pub fn DocTitle::new(
   val : String,
-  sanitize? : Bool = false,
+  sanitize~ : Bool = false,
   separator? : String,
 ) -> DocTitle {
   let mut val = val
@@ -979,8 +979,8 @@ pub fn DocTitle::has_subtitle(self : DocTitle) -> Bool {
 /// Ruby `Document#doctitle(opts)` without partitioning.
 pub fn Node::doctitle(
   self : Node,
-  use_fallback? : Bool = false,
-  sanitize? : Bool = false,
+  use_fallback~ : Bool = false,
+  sanitize~ : Bool = false,
 ) -> String? {
   let doc = self.document()
   let val = match doc.attributes.str("title") {
@@ -1010,8 +1010,8 @@ pub fn Node::doctitle(
 /// Ruby `Document#doctitle(partition: ...)`.
 pub fn Node::doctitle_partitioned(
   self : Node,
-  use_fallback? : Bool = false,
-  sanitize? : Bool = false,
+  use_fallback~ : Bool = false,
+  sanitize~ : Bool = false,
   separator? : String,
 ) -> DocTitle? {
   let doc = self.document()
@@ -1127,7 +1127,7 @@ pub fn Node::first_section(self : Node) -> Node? {
 fn Node::finalize_header(
   self : Node,
   unrooted_attributes : Attributes,
-  header_valid? : Bool = true,
+  header_valid~ : Bool = true,
 ) -> Attributes {
   unrooted_attributes.clear_entries()
   self.save_attributes()
@@ -1180,7 +1180,7 @@ pub fn Node::restore_attributes(self : Node) -> Unit {
 pub fn Node::set_attribute(
   self : Node,
   name : String,
-  value? : String = "",
+  value~ : String = "",
 ) -> String? {
   if self.attribute_locked(name) {
     return None
@@ -1246,8 +1246,8 @@ pub fn Node::attribute_modified(self : Node, name : String) -> Bool {
 pub fn Node::set_header_attribute(
   self : Node,
   name : String,
-  value? : String = "",
-  overwrite? : Bool = true,
+  value~ : String = "",
+  overwrite~ : Bool = true,
 ) -> Bool {
   let attrs = match self.doc().header_attributes {
     Some(h) => h
@@ -1477,13 +1477,13 @@ pub fn set_now_epoch(f : () -> Int64) -> Unit {
 ///|
 /// Hook returning the local time zone's offset from UTC (seconds) at a given
 /// epoch second; the default is UTC.
-let utc_offset_ref : Ref[(Int64) -> Int] = { val: _ => 0, }
+let utc_offset_ref : Ref[(Int64) -> Int32] = { val: _ => 0, }
 
 ///|
 /// Sets the local time zone used for `localtime`, `doctime` and friends (the
 /// core defaults to UTC; `@io` and the CLI install the system time zone).
 /// `offset(epoch)` returns the offset from UTC in seconds at `epoch`.
-pub fn set_utc_offset(offset : (Int64) -> Int) -> Unit {
+pub fn set_utc_offset(offset : (Int64) -> Int32) -> Unit {
   utc_offset_ref.val = offset
 }
 
@@ -1515,7 +1515,7 @@ fn format_epoch(
   let d = doy - (153 * mp + 2) / 5 + 1
   let m = if mp < 10 { mp + 3 } else { mp - 9 }
   let y = if m <= 2 { y + 1 } else { y }
-  let pad = fn(n : Int) { if n < 10 { "0\{n}" } else { n.to_string() } }
+  let pad = fn(n : Int32) { if n < 10 { "0\{n}" } else { n.to_string() } }
   let date = "\{y}-\{pad(m)}-\{pad(d)}"
   let zone = if offset == 0 {
     "UTC"
@@ -1538,7 +1538,7 @@ let backend_aliases : Map[String, String] = {
 fn Node::update_backend_attributes(
   self : Node,
   new_backend : String,
-  init? : Bool = false,
+  init~ : Bool = false,
 ) -> String? {
   let dd = self.doc()
   if !init && Some(new_backend) == dd.backend {
@@ -1812,7 +1812,7 @@ pub fn Node::convert_with(
 /// Docinfo content for `location` (`head`, `header`, `footer`).
 pub fn Node::docinfo(
   self : Node,
-  location? : String = "head",
+  location~ : String = "head",
   suffix? : String,
 ) -> String {
   let dd = self.doc()
@@ -1903,7 +1903,7 @@ pub fn Node::docinfo(
 ///|
 pub fn Node::has_docinfo_processors(
   self : Node,
-  location? : String = "head",
+  location~ : String = "head",
 ) -> Bool {
   match self.doc().extensions {
     Some(e) => !e.docinfo_processors_for(location).is_empty()

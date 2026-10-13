@@ -1,9 +1,9 @@
 ///|
 /// Tracks callouts across listing blocks and callout lists (Ruby `Callouts`).
 pub struct Callouts {
-  priv lists : Array[Array[(Int, String)]]
-  priv mut list_index : Int
-  priv mut co_index : Int
+  priv lists : Array[Array[(Int32, String)]]
+  priv mut list_index : Int32
+  priv mut co_index : Int32
 }
 
 ///|
@@ -37,7 +37,7 @@ pub fn Callouts::read_next_id(self : Callouts) -> String? {
 
 ///|
 /// Space-separated ids of the callouts with the given ordinal.
-pub fn Callouts::callout_ids(self : Callouts, li_ordinal : Int) -> String {
+pub fn Callouts::callout_ids(self : Callouts, li_ordinal : Int32) -> String {
   self
   .current_list()
   .filter(item => item.0 == li_ordinal)
@@ -46,7 +46,7 @@ pub fn Callouts::callout_ids(self : Callouts, li_ordinal : Int) -> String {
 }
 
 ///|
-fn Callouts::current_list(self : Callouts) -> Array[(Int, String)] {
+fn Callouts::current_list(self : Callouts) -> Array[(Int32, String)] {
   self.lists[self.list_index - 1]
 }
 

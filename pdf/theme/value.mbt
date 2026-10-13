@@ -255,7 +255,7 @@ fn is_ruby_space(c : Char) -> Bool {
 ///|
 /// Digits with single underscores between them (Ruby's number literals in
 /// `to_f`/`to_i`), from `start`; returns the end and the digits.
-fn scan_digits(s : String, start : Int) -> (Int, String) {
+fn scan_digits(s : String, start : Int32) -> (Int32, String) {
   let sb = StringBuilder()
   let mut i = start
   while i < s.length() {

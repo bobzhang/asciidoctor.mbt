@@ -37,7 +37,7 @@ fn template_failure(error : TemplateError) -> Unit {
 priv struct PdfPages {
   data : Bytes
   source : @pdflite.PdfPageSource
-  count : Int
+  count : Int32
 }
 
 ///|
@@ -65,8 +65,8 @@ fn read_pdf_pages(data : Bytes) -> PdfPages raise TemplateError {
 /// no such page, and `TemplateError` when the page's boxes cannot be read.
 fn PdfPages::page(
   self : PdfPages,
-  number : Int,
-) -> (Int, Double, Double)? raise TemplateError {
+  number : Int32,
+) -> (Int32, Double, Double)? raise TemplateError {
   let index = if number >= 1 { number } else { self.count + number }
   guard index >= 1 && index <= self.count else { return None }
   let (w, h) = self.source.page_display_size(index) catch {
@@ -82,7 +82,7 @@ fn PdfPages::page(
 /// The image item that draws page `index` of `data` over a page `w` by `h`.
 fn pdf_page_item(
   data : Bytes,
-  index : Int,
+  index : Int32,
   w : Double,
   h : Double,
 ) -> @pagelayout.PageItem {
@@ -100,9 +100,9 @@ fn pdf_page_item(
 /// Ruby's `String#to_i`: the leading integer, after leading whitespace and
 /// an optional sign, single underscores between digits allowed (`1_0` is
 /// 10), or 0.
-fn ruby_to_i(value : String) -> Int {
+fn ruby_to_i(value : String) -> Int32 {
   let chars = value.trim_start(chars=" \t\n\r\u{0B}\u{0C}").to_array()
-  let digit = (i : Int) => {
+  let digit = (i : Int32) => {
     i < chars.length() && chars[i] >= '0' && chars[i] <= '9'
   }
   let mut i = 0
@@ -131,13 +131,13 @@ fn ruby_to_i(value : String) -> Int {
 /// range (both at least 1). As Ruby's `String#split`, trailing empty
 /// entries are dropped (`1,` is page 1, an empty list no page) while
 /// others count as 0, which prawn-templates takes for the last page.
-fn resolve_pagenums(value : String) -> Array[Int] {
+fn resolve_pagenums(value : String) -> Array[Int32] {
   let separator = if value.contains(",") { "," } else { ";" }
   let entries = value.split(separator).map(e => e.to_owned()).to_array()
   while entries.last() == Some("") {
     ignore(entries.pop())
   }
-  let pages : Array[Int] = []
+  let pages : Array[Int32] = []
   for entry in entries {
     match entry.find("..") {
       Some(i) => {
@@ -172,11 +172,11 @@ fn start_sized_page(flow : Flow, w : Double, h : Double) -> Unit {
 fn Converter::import_pdf_page(
   self : Converter,
   pdf : PdfPages,
-  number : Int,
-  replace? : Bool = false,
-  advance? : Bool = true,
-  advance_if_missing? : Bool = true,
-  dests? : Array[String] = [],
+  number : Int32,
+  replace~ : Bool = false,
+  advance~ : Bool = true,
+  advance_if_missing~ : Bool = true,
+  dests~ : Array[String] = [],
 ) -> Bool {
   let flow = self.flow
   // prawn-templates reads the page before anything changes; a page it

@@ -14,8 +14,8 @@ fn apply_text_category(
   style : Style,
   category : String,
   family_key? : String,
-  decoration? : Bool = false,
-  background? : Bool = true,
+  decoration~ : Bool = false,
+  background~ : Bool = true,
 ) -> Style {
   let mut s = style
   match t_color(category + "_font_color") {
@@ -223,7 +223,7 @@ fn transform_text(text : String, transform : String) -> String {
 /// The length of the markup at `i` that `PCDATAFilterRx` leaves alone: a
 /// tag (`<[^>]+>`), or with `entities` a character reference
 /// (`&#?[a-z\d]+;`); 0 when there is none.
-fn pcdata_markup_at(text : String, i : Int, entities : Bool) -> Int {
+fn pcdata_markup_at(text : String, i : Int32, entities : Bool) -> Int32 {
   let n = text.length()
   if text[i] == '<' {
     let mut j = i + 1
@@ -266,7 +266,7 @@ fn pcdata_markup_at(text : String, i : Int, entities : Bool) -> Int {
 fn pcdata_map(
   text : String,
   f : (String) -> String,
-  entities? : Bool = true,
+  entities~ : Bool = true,
 ) -> String {
   let n = text.length()
   let mut has_markup = false

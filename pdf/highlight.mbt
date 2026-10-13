@@ -42,7 +42,7 @@ fn Converter::code_chunks(
   self : Converter,
   node : @core.Node,
   base : Style,
-  plain? : Bool = false,
+  plain~ : Bool = false,
 ) -> CodeChunks {
   let none = fn(text : String) -> CodeChunks {
     let fragments = if plain {
@@ -298,7 +298,7 @@ fn Converter::rouge_chunks(
       if lines.is_empty() {
         None
       } else {
-        let m : Map[Int, Bool] = Map([])
+        let m : Map[Int32, Bool] = Map([])
         for l in lines {
           m[l] = true
         }

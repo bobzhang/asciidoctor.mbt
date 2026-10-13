@@ -1,6 +1,6 @@
 ///|
 /// Whether `s` matches the Ruby regex `pattern` somewhere (`s =~ re`).
-fn rx_search(pattern : String, s : String, flags? : String = "") -> Bool {
+fn rx_search(pattern : String, s : String, flags~ : String = "") -> Bool {
   compile(pattern, flags).find(s) is Some(_)
 }
 

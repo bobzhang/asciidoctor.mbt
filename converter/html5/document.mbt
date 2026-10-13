@@ -420,8 +420,8 @@ fn section_title_text(node : @core.Node, section : @core.Node) -> String {
 fn Html5Converter::convert_outline(
   self : Html5Converter,
   node : @core.Node,
-  toclevels? : Int,
-  sectnumlevels? : Int,
+  toclevels? : Int32,
+  sectnumlevels? : Int32,
 ) -> String? {
   if !node.has_sections() {
     return None

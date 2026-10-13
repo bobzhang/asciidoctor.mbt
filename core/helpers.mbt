@@ -3,7 +3,7 @@
 /// line ending when `trim_end` is false). Ruby `Helpers.prepare_source_string`.
 pub fn prepare_source_string(
   data : String,
-  trim_end? : Bool = true,
+  trim_end~ : Bool = true,
 ) -> Array[String] {
   if data == "" {
     return []
@@ -44,7 +44,7 @@ pub fn prepare_source_string(
 /// Ruby `Helpers.prepare_source_array`.
 pub fn prepare_source_array(
   data : Array[String],
-  trim_end? : Bool = true,
+  trim_end~ : Bool = true,
 ) -> Array[String] {
   if data.is_empty() {
     return []
@@ -119,7 +119,7 @@ pub fn rootname(filename : String) -> String {
 
 ///|
 /// Last path segment, optionally without extension (Ruby `Helpers.basename`).
-pub fn basename(filename : String, drop_ext? : Bool = false) -> String {
+pub fn basename(filename : String, drop_ext~ : Bool = false) -> String {
   // File.basename strips all trailing slashes; a path of only slashes is "/"
   let mut trimmed = filename
   while trimmed.length() > 1 && trimmed.has_suffix("/") {
@@ -170,7 +170,7 @@ pub fn has_extname(path : String) -> Bool {
 
 ///|
 /// The file extension including the dot, or `fallback`.
-pub fn extname(path : String, fallback? : String = "") -> String {
+pub fn extname(path : String, fallback~ : String = "") -> String {
   match path.rev_find(".") {
     Some(i) =>
       if @rb.index_of(path, "/", from=i) is Some(_) {
@@ -184,8 +184,8 @@ pub fn extname(path : String, fallback? : String = "") -> String {
 
 ///|
 /// Ruby `Helpers.roman_to_int`.
-pub fn roman_to_int(val : String) -> Int {
-  let value = fn(c : Char) -> Int {
+pub fn roman_to_int(val : String) -> Int32 {
+  let value = fn(c : Char) -> Int32 {
     match c {
       'I' => 1
       'V' => 5
@@ -295,7 +295,7 @@ pub fn Node::icon_uri(self : Node, name : String) -> String {
 pub fn Node::image_uri(
   self : Node,
   target_image : String,
-  asset_dir_key? : String? = Some("imagesdir"),
+  asset_dir_key~ : String? = Some("imagesdir"),
 ) -> String {
   let doc = self.document()
   let images_base = match asset_dir_key {
@@ -327,7 +327,7 @@ pub fn Node::image_uri(
 pub fn Node::media_uri(
   self : Node,
   target : String,
-  asset_dir_key? : String? = Some("imagesdir"),
+  asset_dir_key~ : String? = Some("imagesdir"),
 ) -> String {
   let base = match asset_dir_key {
     Some(k) => self.attr(k, inherited=true)
@@ -375,8 +375,8 @@ pub fn Node::generate_data_uri(
 pub fn Node::normalize_asset_path(
   self : Node,
   asset_ref : String,
-  asset_name? : String = "path",
-  autocorrect? : Bool = true,
+  asset_name~ : String = "path",
+  autocorrect~ : Bool = true,
 ) -> String raise SecurityError {
   // Ruby: normalize_system_path asset_ref, @document.base_dir, nil, ...
   // (jailed to the base dir unless the safe mode is UNSAFE)
@@ -395,7 +395,7 @@ pub fn Node::normalize_system_path(
   target : String,
   start? : String,
   jail? : String,
-  target_name? : String = "path",
+  target_name~ : String = "path",
 ) -> String {
   self.normalize_system_path_checked(target, start?, jail?, target_name~) catch {
     SecurityError(msg) => {
@@ -412,8 +412,8 @@ pub fn Node::normalize_system_path_checked(
   target : String,
   start? : String,
   jail? : String,
-  target_name? : String = "path",
-  recover? : Bool = true,
+  target_name~ : String = "path",
+  recover~ : Bool = true,
 ) -> String raise SecurityError {
   let doc = self.document()
   let pr = doc.path_resolver()
@@ -446,7 +446,7 @@ pub fn Node::normalize_web_path(
   self : Node,
   target : String,
   start? : String,
-  preserve_uri_target? : Bool = true,
+  preserve_uri_target~ : Bool = true,
 ) -> String {
   if preserve_uri_target && is_uriish(target) {
     encode_spaces_in_uri(target)
@@ -460,9 +460,9 @@ pub fn Node::normalize_web_path(
 pub fn Node::read_asset(
   self : Node,
   path : String,
-  normalize? : Bool = false,
-  warn_on_failure? : Bool = false,
-  label? : String = "file",
+  normalize~ : Bool = false,
+  warn_on_failure~ : Bool = false,
+  label~ : String = "file",
 ) -> String? {
   let doc = self.document()
   match doc.vfs().read(path) {
@@ -491,10 +491,10 @@ pub fn Node::read_contents(
   self : Node,
   target : String,
   start? : String,
-  normalize? : Bool = false,
-  warn_on_failure? : Bool = true,
-  warn_if_empty? : Bool = false,
-  label? : String = "asset",
+  normalize~ : Bool = false,
+  warn_on_failure~ : Bool = true,
+  warn_if_empty~ : Bool = false,
+  label~ : String = "asset",
 ) -> String? {
   let doc = self.document()
   let web_start = match start {

@@ -197,7 +197,7 @@ pub fn Node::sub_attributes(
   self : Node,
   text : String,
   attribute_missing? : String,
-  drop_line_ignore? : Bool = false,
+  drop_line_ignore~ : Bool = false,
 ) -> String {
   let doc = self.document()
   let doc_attrs = doc.attributes
@@ -490,8 +490,8 @@ fn Node::parse_quoted_text_attributes(self : Node, str : String) -> Attributes {
 /// Ruby `normalize_text`.
 fn normalize_text(
   text : String,
-  normalize_whitespace? : Bool = false,
-  unescape_closing_square_brackets? : Bool = false,
+  normalize_whitespace~ : Bool = false,
+  unescape_closing_square_brackets~ : Bool = false,
 ) -> String {
   if text == "" {
     return text
@@ -564,9 +564,9 @@ pub fn Node::parse_attributes(
   self : Node,
   attrlist : String,
   posattrs : Array[String?],
-  unescape_input? : Bool = false,
-  sub_input? : Bool = false,
-  sub_result? : Bool = false,
+  unescape_input~ : Bool = false,
+  sub_input~ : Bool = false,
+  sub_result~ : Bool = false,
   into? : Attributes,
 ) -> Attributes {
   if attrlist == "" {
@@ -788,9 +788,9 @@ fn Node::highlight_source(
 pub fn resolve_lines_to_highlight(
   source : String,
   spec : String,
-  start? : Int,
-) -> Array[Int] {
-  let mut lines : Array[Int] = []
+  start? : Int32,
+) -> Array[Int32] {
+  let mut lines : Array[Int32] = []
   let spec = if spec.contains(" ") { @rb.delete_chars(spec, " ") } else { spec }
   let entries = if spec.contains(",") {
     @rb.split(spec, ",")
@@ -1208,7 +1208,7 @@ fn sub_from_name(name : String) -> Sub? {
 pub fn Node::resolve_subs(
   _self : Node,
   subs : String,
-  type_? : String = "block",
+  type_~ : String = "block",
   defaults? : Array[Sub],
   subject? : String,
 ) -> Array[Sub] {
@@ -1220,7 +1220,7 @@ pub fn Node::resolve_subs(
   let modifiers_present = sub_modifier_sniff_rx.matches(subs)
   for key0 in @rb.split(subs, ",") {
     let mut key = key0
-    let mut op : Int = 0 // 1 append, 2 remove, 3 prepend
+    let mut op : Int32 = 0 // 1 append, 2 remove, 3 prepend
     if modifiers_present {
       if key.has_prefix("+") {
         op = 1
@@ -1321,7 +1321,7 @@ pub fn Node::resolve_block_subs(
 pub fn Node::resolve_pass_subs(
   self : Node,
   subs : String,
-  subject? : String = "passthrough macro",
+  subject~ : String = "passthrough macro",
 ) -> Array[Sub] {
   self.resolve_subs(subs, type_="inline", subject~)
 }
@@ -1386,11 +1386,11 @@ pub fn Node::commit_subs(self : Node) -> Unit {
 fn Node::extract_callouts(
   self : Node,
   source : String,
-) -> (String, Map[Int, Array[(AttrVal, String)]]?) {
-  let marks : Map[Int, Array[(AttrVal, String)]] = Map([])
+) -> (String, Map[Int32, Array[(AttrVal, String)]]?) {
+  let marks : Map[Int32, Array[(AttrVal, String)]] = Map([])
   let mut autonum = 0
   let mut lineno = 0
-  let mut last_lineno : Int? = None
+  let mut last_lineno : Int32? = None
   let callout_rx = if self.has_attr("line-comment") {
     callout_rx_for(self.attr("line-comment").unwrap_or(""), false)
   } else {
@@ -1438,8 +1438,8 @@ fn Node::extract_callouts(
 fn Node::restore_callouts(
   self : Node,
   source : String,
-  callout_marks : Map[Int, Array[(AttrVal, String)]],
-  source_offset? : Int,
+  callout_marks : Map[Int32, Array[(AttrVal, String)]],
+  source_offset? : Int32,
 ) -> String {
   let (preamble, source) = match source_offset {
     Some(off) => (@rb.slice(source, 0, off), @rb.from(source, off))

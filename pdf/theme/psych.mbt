@@ -28,16 +28,16 @@ pub impl Show for ThemeError with fn output(self, logger) {
 
 ///|
 priv enum Frame {
-  Seq(Array[Value], Int)
+  Seq(Array[Value], Int32)
   /// a mapping: its entries, its anchor, the pending key (with whether it
   /// is the merge key `<<`)
-  Mapping(Map[String, Value], Int, mut key~ : (String, Bool)?)
+  Mapping(Map[String, Value], Int32, mut key~ : (String, Bool)?)
 }
 
 ///|
 priv struct Builder {
   stack : Array[Frame]
-  anchors : Map[Int, Value]
+  anchors : Map[Int32, Value]
   mut root : Value?
   mut error : String?
 }
@@ -98,7 +98,7 @@ fn Builder::handle(self : Builder, ev : @yaml.Event) -> Unit raise ThemeError {
 fn Builder::insert(
   self : Builder,
   v : Value,
-  anchor : Int,
+  anchor : Int32,
   merge_key : Bool,
 ) -> Unit {
   if anchor > 0 {
@@ -417,7 +417,7 @@ fn looks_like_time(s : String) -> Bool {
   let body = if s.has_prefix("-") { s[1:].to_owned() } else { s }
   let chars : Array[Char] = body.iter().collect()
   let mut i = 0
-  let digits = (min : Int, max : Int) => {
+  let digits = (min : Int32, max : Int32) => {
     let start = i
     while i < chars.length() && is_digit(chars[i]) && i - start < max {
       i += 1

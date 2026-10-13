@@ -1,7 +1,7 @@
 ///|
 /// Error raised when a pattern (or a flag string) cannot be compiled.
 pub suberror RegexError {
-  RegexError(pattern~ : String, pos~ : Int, message~ : String)
+  RegexError(pattern~ : String, pos~ : Int32, message~ : String)
 } derive(Debug)
 
 ///|
@@ -26,7 +26,7 @@ const MAX_REPEAT = 100000
 ///|
 /// A character-set item. Code points are Unicode scalar values.
 priv enum ClassItem {
-  Range(Int, Int)
+  Range(Int32, Int32)
   AsciiDigit(Bool) // \d (ASCII) ; Bool = negated
   AsciiSpace(Bool) // \s (ASCII: space, \t \n \v \f \r)
   AsciiWord(Bool) // \w (ASCII)
@@ -69,8 +69,8 @@ priv struct CharClass {
 ///|
 fn CharClass::new(
   items : Array[ClassItem],
-  negated? : Bool = false,
-  icase? : Bool = false,
+  negated~ : Bool = false,
+  icase~ : Bool = false,
 ) -> CharClass {
   { items, negated, icase, ascii: FixedArray::make(0, false), }
 }
@@ -90,15 +90,15 @@ priv enum AssertKind {
 ///|
 priv enum Node {
   Empty
-  Char(Int) // literal code point
+  Char(Int32) // literal code point
   Any(Bool) // `.`; Bool = dot-all
   Class(CharClass)
   Concat(Array[Node])
   Alt(Array[Node])
-  Group(Int?, Node) // capture index (1-based) or non-capturing
-  Repeat(Node, Int, Int, Greed) // min, max (-1 = unbounded)
+  Group(Int32?, Node) // capture index (1-based) or non-capturing
+  Repeat(Node, Int32, Int32, Greed) // min, max (-1 = unbounded)
   Assert(AssertKind)
-  Backref(Int, Bool) // group, ignore case?
+  Backref(Int32, Bool) // group, ignore case?
   NamedBackref(String, Bool) // name, ignore case?
   Look(Node, Bool, Bool) // ahead?, negated?
   Atomic(Node)
@@ -115,19 +115,19 @@ priv enum Greed {
 ///|
 priv struct Parser {
   src : String
-  mut pos : Int
-  mut ncaps : Int
-  names : Map[String, Int]
+  mut pos : Int32
+  mut ncaps : Int32
+  names : Map[String, Int32]
   mut dotall : Bool
   mut icase : Bool
   mut extended : Bool
-  mut depth : Int
+  mut depth : Int32
   // Onigmo: once a pattern has named groups, plain groups do not capture and
   // numbered backreferences are rejected
   named_only : Bool
   mut plain_caps : Bool
-  numbered_refs : Array[(Int, Int)] // (group, source position)
-  lookbehinds : Array[(Node, Int)] // (body, source position)
+  numbered_refs : Array[(Int32, Int32)] // (group, source position)
+  lookbehinds : Array[(Node, Int32)] // (body, source position)
 }
 
 ///|
@@ -141,7 +141,7 @@ fn Parser::eof(self : Parser) -> Bool {
 }
 
 ///|
-fn Parser::peek(self : Parser) -> Int {
+fn Parser::peek(self : Parser) -> Int32 {
   if self.pos < self.src.length() {
     self.src[self.pos].to_int()
   } else {
@@ -150,7 +150,7 @@ fn Parser::peek(self : Parser) -> Int {
 }
 
 ///|
-fn Parser::peek_at(self : Parser, off : Int) -> Int {
+fn Parser::peek_at(self : Parser, off : Int32) -> Int32 {
   let p = self.pos + off
   if p < self.src.length() {
     self.src[p].to_int()
@@ -162,7 +162,7 @@ fn Parser::peek_at(self : Parser, off : Int) -> Int {
 ///|
 /// Reads one code point (combining surrogate pairs). Unpaired surrogates in
 /// the pattern are rejected, so literals never split a surrogate pair.
-fn Parser::next_cp(self : Parser) -> Int raise RegexError {
+fn Parser::next_cp(self : Parser) -> Int32 raise RegexError {
   let c = self.src[self.pos].to_int()
   if c >= 0xD800 && c <= 0xDBFF && self.pos + 1 < self.src.length() {
     let d = self.src[self.pos + 1].to_int()
@@ -200,7 +200,7 @@ fn Parser::skip_extended(self : Parser) -> Unit {
 
 ///|
 /// A literal code point, expanded to its case variants under `i`.
-fn Parser::literal(self : Parser, cp : Int) -> Node {
+fn Parser::literal(self : Parser, cp : Int32) -> Node {
   if self.icase && fold_next_of(cp) != cp {
     let items = [Range(cp, cp)]
     let mut c = fold_next_of(cp)
@@ -220,7 +220,7 @@ fn parse_pattern(
   dotall : Bool,
   icase : Bool,
   extended : Bool,
-) -> (Node, Int, Map[String, Int]) raise RegexError {
+) -> (Node, Int32, Map[String, Int32]) raise RegexError {
   let run = fn(named_only : Bool) -> (Parser, Node) raise RegexError {
     let p : Parser = {
       src,
@@ -386,10 +386,10 @@ fn Parser::parse_quantifiers(
 /// Tries to parse `{n}`, `{n,}`, `{,m}` or `{n,m}` at the current position.
 /// Returns None (without consuming) if it is not a valid interval, in which
 /// case Ruby treats `{` as a literal.
-fn Parser::try_interval(self : Parser) -> (Int, Int)? raise RegexError {
+fn Parser::try_interval(self : Parser) -> (Int32, Int32)? raise RegexError {
   let save = self.pos
   self.pos += 1
-  let read_int = fn() -> Int? raise RegexError {
+  let read_int = fn() -> Int32? raise RegexError {
     let start = self.pos
     let mut n = 0
     while self.peek() >= '0' && self.peek() <= '9' {
@@ -599,7 +599,7 @@ fn Parser::expect_close(self : Parser) -> Unit raise RegexError {
 }
 
 ///|
-fn Parser::read_name(self : Parser, close : Int) -> String raise RegexError {
+fn Parser::read_name(self : Parser, close : Int32) -> String raise RegexError {
   let start = self.pos
   while !self.eof() && self.peek() != close {
     self.pos += 1
@@ -616,7 +616,7 @@ fn Parser::read_name(self : Parser, close : Int) -> String raise RegexError {
 /// Reads a group name: word characters, not starting with a digit.
 fn Parser::read_group_name(
   self : Parser,
-  close : Int,
+  close : Int32,
 ) -> String raise RegexError {
   let start = self.pos
   let name = self.read_name(close)
@@ -690,7 +690,7 @@ fn Parser::parse_escape(self : Parser) -> Node raise RegexError {
     }
     'X' => raise self.fail("\\X (extended grapheme cluster) is not supported")
     'g' => raise self.fail("\\g (subexpression call) is not supported")
-    '1'..='9' => {
+    '1'..<='9' => {
       let digits = self.pos
       let mut n = 0
       while self.peek() >= '0' && self.peek() <= '9' {
@@ -714,7 +714,7 @@ fn Parser::parse_escape(self : Parser) -> Node raise RegexError {
     }
     'k' => {
       self.pos += 1
-      let close : Int = match self.peek() {
+      let close : Int32 = match self.peek() {
         '<' => '>'
         '\'' => '\''
         _ => raise self.fail("invalid backref number/name")
@@ -748,7 +748,7 @@ fn Parser::parse_escape(self : Parser) -> Node raise RegexError {
 
 ///|
 /// Parses `[+-]digits`; None if `s` is not an integer.
-fn parse_int_opt(s : String) -> Int? {
+fn parse_int_opt(s : String) -> Int32? {
   if s == "" {
     return None
   }
@@ -853,7 +853,7 @@ fn Parser::at_class_escape(self : Parser) -> Bool {
 }
 
 ///|
-fn Parser::check_scalar(self : Parser, cp : Int) -> Int raise RegexError {
+fn Parser::check_scalar(self : Parser, cp : Int32) -> Int32 raise RegexError {
   if cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF) {
     raise self.fail("invalid Unicode range")
   }
@@ -862,7 +862,7 @@ fn Parser::check_scalar(self : Parser, cp : Int) -> Int raise RegexError {
 
 ///|
 /// Reads up to `max` octal digits (at least `min`).
-fn Parser::read_octal(self : Parser, max : Int) -> Int raise RegexError {
+fn Parser::read_octal(self : Parser, max : Int32) -> Int32 raise RegexError {
   let mut n = 0
   let mut i = 0
   while i < max && self.peek() >= '0' && self.peek() <= '7' {
@@ -878,7 +878,7 @@ fn Parser::read_octal(self : Parser, max : Int) -> Int raise RegexError {
 
 ///|
 /// Parses a single-character escape (after the backslash) and returns its code point.
-fn Parser::parse_char_escape(self : Parser) -> Int raise RegexError {
+fn Parser::parse_char_escape(self : Parser) -> Int32 raise RegexError {
   let c = self.next_cp()
   match c {
     'n' => '\n'
@@ -889,7 +889,7 @@ fn Parser::parse_char_escape(self : Parser) -> Int raise RegexError {
     'a' => 0x07
     'e' => 0x1B
     '0' => self.read_octal(2)
-    '1'..='7' => {
+    '1'..<='7' => {
       self.pos -= 1
       self.read_octal(3)
     }
@@ -910,7 +910,7 @@ fn Parser::parse_char_escape(self : Parser) -> Int raise RegexError {
 
 ///|
 /// `\cX` / `\C-X`: the control character for X.
-fn Parser::read_control(self : Parser) -> Int raise RegexError {
+fn Parser::read_control(self : Parser) -> Int32 raise RegexError {
   if self.eof() {
     raise self.fail("too short control escape")
   }
@@ -922,7 +922,7 @@ fn Parser::read_control(self : Parser) -> Int raise RegexError {
 }
 
 ///|
-fn hex_digit(c : Int) -> Int {
+fn hex_digit(c : Int32) -> Int32 {
   if c >= '0' && c <= '9' {
     c - '0'
   } else if c >= 'a' && c <= 'f' {
@@ -936,7 +936,7 @@ fn hex_digit(c : Int) -> Int {
 
 ///|
 /// Reads the 1-2 hex digits of a `\x` escape.
-fn Parser::read_hex_byte(self : Parser) -> Int raise RegexError {
+fn Parser::read_hex_byte(self : Parser) -> Int32 raise RegexError {
   let mut n = 0
   let mut i = 0
   while i < 2 && hex_digit(self.peek()) >= 0 {
@@ -952,7 +952,7 @@ fn Parser::read_hex_byte(self : Parser) -> Int raise RegexError {
 
 ///|
 /// `\xHH`; bytes >= 0x80 must form a UTF-8 sequence of `\xHH` escapes.
-fn Parser::read_hex_bytes(self : Parser) -> Int raise RegexError {
+fn Parser::read_hex_bytes(self : Parser) -> Int32 raise RegexError {
   let b0 = self.read_hex_byte()
   if b0 < 0x80 {
     return b0
@@ -987,7 +987,7 @@ fn Parser::read_hex_bytes(self : Parser) -> Int raise RegexError {
 
 ///|
 /// `\uHHHH` or `\u{H...}` (a single code point).
-fn Parser::read_unicode(self : Parser) -> Int raise RegexError {
+fn Parser::read_unicode(self : Parser) -> Int32 raise RegexError {
   if self.peek() == '{' {
     self.pos += 1
     let mut n = 0

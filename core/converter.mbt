@@ -105,7 +105,7 @@ pub struct CompositeConverter {
 ///|
 pub fn CompositeConverter::new(
   delegate : &Converter,
-  handlers? : Map[String, (Node) -> String] = {},
+  handlers~ : Map[String, (Node) -> String] = {},
 ) -> CompositeConverter {
   { handlers, delegate, }
 }

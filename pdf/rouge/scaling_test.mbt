@@ -1,7 +1,7 @@
 ///|
 /// The milliseconds lexing `text` takes with the lexer of `lang`, checking
 /// that the tokens add up to the input.
-fn lex_time(lang : String, text : String) -> Int raise {
+fn lex_time(lang : String, text : String) -> Int32 raise {
   let lexer = @rouge.find(lang).unwrap()(Map([]))
   let start = @env.now()
   let tokens = lexer.tokens(text)
@@ -13,7 +13,7 @@ fn lex_time(lang : String, text : String) -> Int raise {
 ///|
 /// The fastest of three `lex_time`s, so that one slow run (a collection, a
 /// busy CI runner) does not count as the lexer's time.
-fn best_lex_time(lang : String, text : String) -> Int raise {
+fn best_lex_time(lang : String, text : String) -> Int32 raise {
   let mut best = lex_time(lang, text)
   for _ in 0..<2 {
     let ms = lex_time(lang, text)
@@ -28,7 +28,7 @@ fn best_lex_time(lang : String, text : String) -> Int raise {
 /// Whether lexing grows linearly: the input `make` builds for 64 KB takes
 /// at most eight times as long as the one for 16 KB, give or take 50 ms of
 /// noise. A quadratic lexer takes sixteen times as long.
-fn assert_linear_with(lang : String, make : (Int) -> String) -> Unit raise {
+fn assert_linear_with(lang : String, make : (Int32) -> String) -> Unit raise {
   let small = best_lex_time(lang, make(16 * 1024))
   let large = best_lex_time(lang, make(64 * 1024))
   if large > 8 * small + 50 {

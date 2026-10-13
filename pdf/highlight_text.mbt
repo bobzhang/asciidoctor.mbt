@@ -33,7 +33,7 @@ fn expand_tabs(text : String) -> String {
 /// highlighted (`extract_conums`): by line (0-based), the white space that
 /// preceded them, if any, and their numbers.
 priv struct Conums {
-  lines : Map[Int, (String?, Array[Int])]
+  lines : Map[Int32, (String?, Array[Int32])]
 }
 
 ///|
@@ -51,7 +51,7 @@ fn extract_conums(text : String) -> (String, Conums?) {
   while lines.length() > 0 && lines[lines.length() - 1] == "" {
     ignore(lines.pop())
   }
-  let mapping : Map[Int, (String?, Array[Int])] = Map([])
+  let mapping : Map[Int32, (String?, Array[Int32])] = Map([])
   let mut auto_num = 0
   let out = []
   for line_num, line in lines {
@@ -128,7 +128,7 @@ fn ruby_rstrip(s : String) -> String {
 ///|
 /// The glyphs of the conum numbers `numbers` (asciidoctor-pdf's
 /// `conum_glyph`), joined by spaces.
-fn conum_text(numbers : Array[Int]) -> String {
+fn conum_text(numbers : Array[Int32]) -> String {
   numbers.map(n => conum_glyph(n.to_string())).join(" ")
 }
 
@@ -142,13 +142,13 @@ fn restore_conums(
   fragments : Array[Fragment],
   conums : Conums?,
   base : Style,
-  linenums? : Int,
-  highlight? : Map[Int, Color],
+  linenums? : Int32,
+  highlight? : Map[Int32, Color],
 ) -> Array[Fragment] {
   // a line is made when a fragment is on it (Ruby's `lines[n] ||= []`): no
   // fragments, no lines, and no callouts (a block of callouts alone)
   let lines : Array[Array[Fragment]] = []
-  let line_at = (n : Int) => {
+  let line_at = (n : Int32) => {
     while lines.length() <= n {
       lines.push([])
     }

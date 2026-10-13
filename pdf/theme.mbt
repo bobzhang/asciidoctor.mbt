@@ -159,7 +159,7 @@ fn value_pt(v : @theme.Value) -> Double? {
 fn expand_rect(v : @theme.Value) -> (Double, Double, Double, Double) {
   match v {
     Array(items) => {
-      let at = (i : Int) => items.get(i).bind(value_pt).unwrap_or(0.0)
+      let at = (i : Int32) => items.get(i).bind(value_pt).unwrap_or(0.0)
       match items.length() {
         0 => (0.0, 0.0, 0.0, 0.0)
         1 => (at(0), at(0), at(0), at(0))
@@ -453,8 +453,8 @@ fn theme_font(
 fn theme_font_heading(
   base : Style,
   line_height : Double,
-  level : Int,
-  category? : String = "heading",
+  level : Int32,
+  category~ : String = "heading",
 ) -> (Style, Double) {
   let key = (name : String) => {
     match tv("\{category}_h\{level}_\{name}") {
@@ -496,7 +496,7 @@ fn theme_font_heading(
 /// first); None when neither says (`resolve_text_align_from_role`).
 fn text_align_from_roles(
   roles : Array[String],
-  query_theme? : Bool = false,
+  query_theme~ : Bool = false,
 ) -> Alignment? {
   for i = roles.length() - 1; i >= 0; i = i - 1 {
     match roles[i] {
@@ -676,7 +676,7 @@ fn toc_indent() -> Double {
 
 ///|
 /// `index_columns` (2 when the theme sets none)
-fn index_columns() -> Int {
+fn index_columns() -> Int32 {
   t_num_or("index_columns", 2.0).to_int()
 }
 

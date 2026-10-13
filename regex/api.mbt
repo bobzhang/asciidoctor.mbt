@@ -14,16 +14,16 @@ pub struct Regex {
   source : String
   priv prog : FixedArray[Inst]
   priv classes : FixedArray[CharClass]
-  priv sub_starts : FixedArray[Int]
-  priv ncaps : Int
-  priv nregs : Int
-  priv names : Map[String, Int]
+  priv sub_starts : FixedArray[Int32]
+  priv ncaps : Int32
+  priv nregs : Int32
+  priv names : Map[String, Int32]
   priv anchor : Anchor
   priv first : FirstSet?
-  priv required : FixedArray[Int]
-  priv lead : (Int, Int, Int)?
-  priv lead_units : (FixedArray[Bool], Int, Int)? // when `lead` is None
-  priv step_limit : Int
+  priv required : FixedArray[Int32]
+  priv lead : (Int32, Int32, Int32)?
+  priv lead_units : (FixedArray[Bool], Int32, Int32)? // when `lead` is None
+  priv step_limit : Int32
   // idle matchers, reused by later search operations (see `acquire`)
   priv pool : Array[Vm]
 }
@@ -32,7 +32,7 @@ pub struct Regex {
 /// Raised when a search exceeds its backtracking step budget (the analogue of
 /// Ruby's `Regexp::TimeoutError`). `limit` is the budget that was exhausted.
 pub suberror RegexTimeout {
-  RegexTimeout(pattern~ : String, limit~ : Int)
+  RegexTimeout(pattern~ : String, limit~ : Int32)
 } derive(Debug)
 
 ///|
@@ -54,7 +54,7 @@ const STEP_CAP = 0x7FFF_0000
 /// completes, if slowly) about `len * len`, so both fit with ample headroom,
 /// while exponential blowups exhaust it quickly. On the Asciidoctor corpus
 /// the worst search used under 50 steps per code unit.
-fn Regex::step_limit_for(self : Regex, len : Int) -> Int {
+fn Regex::step_limit_for(self : Regex, len : Int32) -> Int32 {
   if self.step_limit > 0 {
     return self.step_limit
   }
@@ -100,8 +100,8 @@ pub fn Regex::to_string(self : Regex) -> String {
 /// ```
 pub fn compile(
   pattern : String,
-  flags? : String = "",
-  step_limit? : Int = 0,
+  flags~ : String = "",
+  step_limit~ : Int32 = 0,
 ) -> Regex raise RegexError {
   compile_with(pattern, flags, step_limit, true)
 }
@@ -112,7 +112,7 @@ pub fn compile(
 fn compile_with(
   pattern : String,
   flags : String,
-  step_limit : Int,
+  step_limit : Int32,
   loops : Bool,
 ) -> Regex raise RegexError {
   let mut dotall = false
@@ -188,8 +188,8 @@ fn compile_with(
 /// Like `compile` but aborts on an invalid pattern. Intended for literal patterns.
 pub fn re(
   pattern : String,
-  flags? : String = "",
-  step_limit? : Int = 0,
+  flags~ : String = "",
+  step_limit~ : Int32 = 0,
 ) -> Regex {
   compile(pattern, flags~, step_limit~) catch {
     RegexError(message~, pos~, ..) =>
@@ -199,7 +199,7 @@ pub fn re(
 
 ///|
 /// Number of capture groups.
-pub fn Regex::group_count(self : Regex) -> Int {
+pub fn Regex::group_count(self : Regex) -> Int32 {
   self.ncaps
 }
 
@@ -207,8 +207,8 @@ pub fn Regex::group_count(self : Regex) -> Int {
 /// Result of a successful match.
 pub struct MatchData {
   input : String
-  priv offsets : FixedArray[Int]
-  priv names : Map[String, Int]
+  priv offsets : FixedArray[Int32]
+  priv names : Map[String, Int32]
 }
 
 ///|
@@ -219,7 +219,7 @@ pub fn MatchData::groups(self : MatchData) -> Array[String?] {
 
 ///|
 /// Captured text of group `i` (0 = whole match), or None if the group did not participate.
-pub fn MatchData::group(self : MatchData, i : Int) -> String? {
+pub fn MatchData::group(self : MatchData, i : Int32) -> String? {
   if 2 * i + 1 >= self.offsets.length() {
     return None
   }
@@ -234,13 +234,13 @@ pub fn MatchData::group(self : MatchData, i : Int) -> String? {
 
 ///|
 /// Captured text of group `i`, or "" if it did not participate.
-pub fn MatchData::at(self : MatchData, i : Int) -> String {
+pub fn MatchData::at(self : MatchData, i : Int32) -> String {
   self.group(i).unwrap_or("")
 }
 
 ///|
 /// Whether group `i` participated in the match.
-pub fn MatchData::has(self : MatchData, i : Int) -> Bool {
+pub fn MatchData::has(self : MatchData, i : Int32) -> Bool {
   2 * i + 1 < self.offsets.length() && self.offsets[2 * i] >= 0
 }
 
@@ -261,13 +261,13 @@ pub fn MatchData::has_names(self : MatchData) -> Bool {
 
 ///|
 /// Start offset of group `i` (-1 if unset).
-pub fn MatchData::begin(self : MatchData, i? : Int = 0) -> Int {
+pub fn MatchData::begin(self : MatchData, i~ : Int32 = 0) -> Int32 {
   self.offsets[2 * i]
 }
 
 ///|
 /// End offset of group `i` (-1 if unset).
-pub fn MatchData::end(self : MatchData, i? : Int = 0) -> Int {
+pub fn MatchData::end(self : MatchData, i~ : Int32 = 0) -> Int32 {
   self.offsets[2 * i + 1]
 }
 
@@ -291,7 +291,7 @@ pub fn MatchData::post_match(self : MatchData) -> String {
 
 ///|
 /// Number of groups including group 0.
-pub fn MatchData::size(self : MatchData) -> Int {
+pub fn MatchData::size(self : MatchData) -> Int32 {
   self.offsets.length() / 2
 }
 
@@ -312,7 +312,7 @@ fn[T] timeout_abort(err : RegexTimeout) -> T {
 fn Regex::try_at(
   self : Regex,
   vm : Vm,
-  pos : Int,
+  pos : Int32,
 ) -> MatchData? raise RegexTimeout {
   // Invariant: `caps` and `regs` are all -1 between attempts (and in pooled
   // matchers). A failed run backtracks through every recorded change, so it
@@ -348,7 +348,7 @@ fn Regex::try_at(
 pub fn Regex::try_scan_at(
   self : Regex,
   s : String,
-  pos : Int,
+  pos : Int32,
 ) -> MatchData? raise RegexTimeout {
   if pos < 0 || pos > s.length() || splits_pair(s, pos) {
     return None
@@ -371,7 +371,7 @@ pub fn Regex::try_scan_at(
 pub fn Regex::try_match_at(
   self : Regex,
   s : String,
-  pos : Int,
+  pos : Int32,
 ) -> MatchData? raise RegexTimeout {
   if pos < 0 || pos > s.length() || splits_pair(s, pos) {
     return None
@@ -391,7 +391,7 @@ pub fn Regex::try_match_at(
 ///|
 /// Matches only at position `pos` (like Ruby's `\G`-anchored match). There is
 /// no match at an offset inside a surrogate pair.
-pub fn Regex::match_at(self : Regex, s : String, pos : Int) -> MatchData? {
+pub fn Regex::match_at(self : Regex, s : String, pos : Int32) -> MatchData? {
   self.try_match_at(s, pos) catch {
     e => timeout_abort(e)
   }
@@ -399,7 +399,7 @@ pub fn Regex::match_at(self : Regex, s : String, pos : Int) -> MatchData? {
 
 ///|
 /// Whether a match can start at `pos` according to the first-unit prefilter.
-fn FirstSet::admits(self : FirstSet, s : String, pos : Int) -> Bool {
+fn FirstSet::admits(self : FirstSet, s : String, pos : Int32) -> Bool {
   let c = s[pos].to_int()
   if c < 128 {
     self.ascii[c]
@@ -411,14 +411,14 @@ fn FirstSet::admits(self : FirstSet, s : String, pos : Int) -> Bool {
 ///|
 /// One-unit strings for the ASCII range (needles for `find_unit`).
 let ascii_units : FixedArray[String] = FixedArray::makei(128, i => {
-  Int::unsafe_to_char(i).to_string()
+  Int32::unsafe_to_char(i).to_string()
 })
 
 ///|
 /// Offset of the first code unit `u` at or after `from`, or `s.length()` if
 /// there is none (`from` itself when `from >= s.length()`). ASCII units use the
 /// core library's vectorized search.
-fn find_unit(s : String, from : Int, u : Int) -> Int {
+fn find_unit(s : String, from : Int32, u : Int32) -> Int32 {
   let len = s.length()
   if from >= len {
     return from
@@ -442,7 +442,7 @@ fn find_unit(s : String, from : Int, u : Int) -> Int {
 fn Regex::find_with(
   self : Regex,
   vm : Vm,
-  start : Int,
+  start : Int32,
 ) -> MatchData? raise RegexTimeout {
   let s = vm.input
   let len = s.length()
@@ -591,7 +591,7 @@ fn Regex::find_with(
 pub fn Regex::try_find(
   self : Regex,
   s : String,
-  start? : Int = 0,
+  start~ : Int32 = 0,
 ) -> MatchData? raise RegexTimeout {
   if start < 0 || start > s.length() {
     return None
@@ -610,7 +610,7 @@ pub fn Regex::try_find(
 ///|
 /// Finds the first match at or after `start` (Ruby's `String#match(re, start)`).
 /// A `start` inside a surrogate pair is rounded up to the next code point.
-pub fn Regex::find(self : Regex, s : String, start? : Int = 0) -> MatchData? {
+pub fn Regex::find(self : Regex, s : String, start~ : Int32 = 0) -> MatchData? {
   self.try_find(s, start~) catch {
     e => timeout_abort(e)
   }
@@ -624,7 +624,7 @@ pub fn Regex::matches(self : Regex, s : String) -> Bool {
 
 ///|
 /// Width of the code point at `pos` (1 or 2).
-fn cp_width(s : String, pos : Int) -> Int {
+fn cp_width(s : String, pos : Int32) -> Int32 {
   let c = s[pos].to_int()
   if c >= 0xD800 && c <= 0xDBFF && pos + 1 < s.length() {
     let d = s[pos + 1].to_int()
@@ -699,7 +699,7 @@ pub fn Regex::try_replace(
   self : Regex,
   s : String,
   f : (MatchData) -> String,
-  once? : Bool = false,
+  once~ : Bool = false,
 ) -> String raise RegexTimeout {
   let vm = self.acquire(s)
   let out = self.replace_with(vm, f, once) catch {
@@ -801,7 +801,7 @@ pub fn MatchData::expand(self : MatchData, template : String) -> String {
     if c == '\\' && i + 1 < n {
       let d = template[i + 1]
       match d {
-        '0'..='9' => {
+        '0'..<='9' => {
           sb.write_string(self.at(d.to_int() - '0'))
           i += 2
         }
@@ -849,7 +849,7 @@ pub fn MatchData::expand(self : MatchData, template : String) -> String {
 }
 
 ///|
-fn index_from(s : String, needle : String, from : Int) -> Int? {
+fn index_from(s : String, needle : String, from : Int32) -> Int32? {
   match s.unsafe_substring(start=from, end=s.length()).find(needle) {
     Some(k) => Some(from + k)
     None => None
@@ -874,7 +874,7 @@ pub fn Regex::sub(self : Regex, s : String, template : String) -> String {
 pub fn Regex::try_split(
   self : Regex,
   s : String,
-  limit? : Int = 0,
+  limit~ : Int32 = 0,
 ) -> Array[String] raise RegexTimeout {
   let out : Array[String] = []
   let len = s.length()
@@ -896,7 +896,7 @@ pub fn Regex::try_split(
 fn Regex::split_with(
   self : Regex,
   vm : Vm,
-  limit : Int,
+  limit : Int32,
   out : Array[String],
 ) -> Unit raise RegexTimeout {
   let s = vm.input
@@ -952,7 +952,7 @@ fn Regex::split_with(
 pub fn Regex::split(
   self : Regex,
   s : String,
-  limit? : Int = 0,
+  limit~ : Int32 = 0,
 ) -> Array[String] {
   self.try_split(s, limit~) catch {
     e => timeout_abort(e)

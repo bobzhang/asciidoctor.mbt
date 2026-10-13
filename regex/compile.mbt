@@ -1,22 +1,22 @@
 ///|
 priv enum Inst {
-  Unit(Int) // one UTF-16 code unit
+  Unit(Int32) // one UTF-16 code unit
   AnyChar(Bool) // `.`, dot-all?
-  Set(Int) // index into classes
-  Split(Int, Int) // try first, push second
+  Set(Int32) // index into classes
+  Split(Int32, Int32) // try first, push second
   // `Star(greedy)` at pc heads the loop `Star; <one-char inst>; Jmp(pc)` and
   // behaves exactly like `Split(pc + 1, pc + 3)` (greedy) or
   // `Split(pc + 3, pc + 1)` (lazy) in its place, but keeps one backtrack
   // entry for the whole loop instead of one per iteration
   Star(Bool)
-  Jmp(Int)
-  Save(Int)
+  Jmp(Int32)
+  Save(Int32)
   Assert(AssertKind)
-  Backref(Int, Bool) // group, ignore case?
-  Look(Int, Bool, Bool, Int, Int, Bool) // sub index, ahead?, negated?, min width, max width (-1 unbounded), sub writes state?
-  Atomic(Int, Bool) // sub index, sub writes state?
-  Mark(Int) // regs[r] = pos
-  Progress(Int) // fail unless pos > regs[r]
+  Backref(Int32, Bool) // group, ignore case?
+  Look(Int32, Bool, Bool, Int32, Int32, Bool) // sub index, ahead?, negated?, min width, max width (-1 unbounded), sub writes state?
+  Atomic(Int32, Bool) // sub index, sub writes state?
+  Mark(Int32) // regs[r] = pos
+  Progress(Int32) // fail unless pos > regs[r]
   SubEnd // end of a (sub)program
 }
 
@@ -30,9 +30,9 @@ priv struct Compiler {
   prog : Array[Inst]
   classes : Array[CharClass]
   sub_nodes : Array[Node]
-  sub_starts : Array[Int]
-  mut nregs : Int
-  names : Map[String, Int]
+  sub_starts : Array[Int32]
+  mut nregs : Int32
+  names : Map[String, Int32]
   pattern : String
   loops : Bool // emit `Star` for one-character loops
 }
@@ -82,7 +82,7 @@ fn writes_state(node : Node) -> Bool {
 
 ///|
 /// Minimum and maximum width in UTF-16 code units (-1 = unbounded).
-fn width(node : Node) -> (Int, Int) {
+fn width(node : Node) -> (Int32, Int32) {
   match node {
     Empty | Assert(_) | Look(_, _, _) | Keep => (0, 0)
     Char(cp) => if cp >= 0x10000 { (2, 2) } else { (1, 1) }
@@ -117,7 +117,7 @@ fn width(node : Node) -> (Int, Int) {
 }
 
 ///|
-fn Compiler::emit(self : Compiler, inst : Inst) -> Int raise RegexError {
+fn Compiler::emit(self : Compiler, inst : Inst) -> Int32 raise RegexError {
   if self.prog.length() >= MAX_PROGRAM {
     raise RegexError(
       pattern=self.pattern,
@@ -130,12 +130,12 @@ fn Compiler::emit(self : Compiler, inst : Inst) -> Int raise RegexError {
 }
 
 ///|
-fn Compiler::pc(self : Compiler) -> Int {
+fn Compiler::pc(self : Compiler) -> Int32 {
   self.prog.length()
 }
 
 ///|
-fn Compiler::add_sub(self : Compiler, node : Node) -> Int {
+fn Compiler::add_sub(self : Compiler, node : Node) -> Int32 {
   self.sub_nodes.push(node)
   self.sub_nodes.length() - 1
 }
@@ -375,7 +375,7 @@ fn leading_anchor(node : Node) -> Anchor {
 
 ///|
 /// Code units that must occur in every match (used as a fast prefilter).
-fn required_units(node : Node) -> Array[Int] {
+fn required_units(node : Node) -> Array[Int32] {
   match node {
     Char(cp) => if cp < 0x10000 { [cp] } else { [] }
     Concat(items) => {
@@ -415,7 +415,7 @@ const MAX_LEAD_UNITS = 4
 /// only start with one of a few ASCII code units: (units, min offset, max
 /// offset). E.g. `(^|[^\w])(?:\[[^\]]+\])?#...` has the units `[` and `#` at
 /// offset 0 or 1. The search jumps between occurrences of these units.
-fn lead_set(node : Node) -> (FixedArray[Bool], Int, Int)? {
+fn lead_set(node : Node) -> (FixedArray[Bool], Int32, Int32)? {
   let items = match node {
     Concat(items) => items
     Group(_, Concat(items)) => items
@@ -460,7 +460,7 @@ fn lead_set(node : Node) -> (FixedArray[Bool], Int, Int)? {
 ///|
 /// A mandatory literal code unit at a bounded offset from the match start:
 /// (unit, min offset, max offset). Lets the search jump between occurrences.
-fn lead_literal(node : Node) -> (Int, Int, Int)? {
+fn lead_literal(node : Node) -> (Int32, Int32, Int32)? {
   let items = match node {
     Concat(items) => items
     Group(_, Concat(items)) => items

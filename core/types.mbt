@@ -211,20 +211,20 @@ pub fn Sub::name(self : Sub) -> String {
 
 ///|
 /// Safe mode levels (Ruby `SafeMode`).
-pub const SAFE_UNSAFE : Int = 0
+pub const SAFE_UNSAFE : Int32 = 0
 
 ///|
-pub const SAFE_SAFE : Int = 1
+pub const SAFE_SAFE : Int32 = 1
 
 ///|
-pub const SAFE_SERVER : Int = 10
+pub const SAFE_SERVER : Int32 = 10
 
 ///|
-pub const SAFE_SECURE : Int = 20
+pub const SAFE_SECURE : Int32 = 20
 
 ///|
 /// Safe mode value for a (case-insensitive) name.
-pub fn safe_mode_value_for_name(name : String) -> Int? {
+pub fn safe_mode_value_for_name(name : String) -> Int32? {
   match @rb.downcase_ascii(name) {
     "unsafe" => Some(SAFE_UNSAFE)
     "safe" => Some(SAFE_SAFE)
@@ -235,7 +235,7 @@ pub fn safe_mode_value_for_name(name : String) -> Int? {
 }
 
 ///|
-pub fn safe_mode_name_for_value(value : Int) -> String? {
+pub fn safe_mode_name_for_value(value : Int32) -> String? {
   match value {
     0 => Some("unsafe")
     1 => Some("safe")
@@ -251,7 +251,7 @@ pub(all) struct Cursor {
   file : String?
   dir : String?
   path : String?
-  mut lineno : Int
+  mut lineno : Int32
 } derive(Debug, Eq)
 
 ///|
@@ -259,13 +259,13 @@ pub fn Cursor::new(
   file? : String,
   dir? : String,
   path? : String,
-  lineno? : Int = 1,
+  lineno~ : Int32 = 1,
 ) -> Cursor {
   { file, dir, path, lineno, }
 }
 
 ///|
-pub fn Cursor::advance(self : Cursor, num : Int) -> Unit {
+pub fn Cursor::advance(self : Cursor, num : Int32) -> Unit {
   self.lineno += num
 }
 

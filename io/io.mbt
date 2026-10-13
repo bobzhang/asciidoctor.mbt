@@ -32,7 +32,7 @@ pub impl Show for IOError with fn output(self, logger) {
 /// files after `rounds` runs. `unresolved` lists the paths requested by the
 /// last run that were never loaded.
 pub suberror FixpointExhausted {
-  FixpointExhausted(rounds~ : Int, unresolved~ : Array[String])
+  FixpointExhausted(rounds~ : Int32, unresolved~ : Array[String])
 }
 
 ///|
@@ -197,7 +197,7 @@ pub fn FsVfs::add(self : FsVfs, path : String, data : Bytes) -> Unit {
 pub async fn[T] run_with_files(
   vfs : FsVfs,
   f : () -> T raise,
-  max_rounds? : Int = 32,
+  max_rounds~ : Int32 = 32,
 ) -> T {
   fixpoint(vfs, f, max_rounds, replay=true)
 }
@@ -206,7 +206,7 @@ pub async fn[T] run_with_files(
 async fn[T] fixpoint(
   vfs : FsVfs,
   f : () -> T raise,
-  max_rounds : Int,
+  max_rounds : Int32,
   replay~ : Bool,
 ) -> T {
   use_system_time_zone()

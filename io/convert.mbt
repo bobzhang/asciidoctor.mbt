@@ -147,10 +147,10 @@ fn resolve_target(
 /// and write phases.
 pub async fn convert_source(
   source : Source,
-  options? : @core.Options = @core.Options::new(),
-  destination? : Destination = Default,
+  options~ : @core.Options = @core.Options::new(),
+  destination~ : Destination = Default,
   to_dir? : String,
-  mkdirs? : Bool = false,
+  mkdirs~ : Bool = false,
 ) -> Conversion {
   let vfs = FsVfs::new()
   let cwd = vfs.working_dir
@@ -425,10 +425,10 @@ async fn copy_user_stylesheet(
 /// next to the input file.
 pub async fn convert_file(
   path : String,
-  options? : @core.Options = @core.Options::new(),
-  destination? : Destination = Default,
+  options~ : @core.Options = @core.Options::new(),
+  destination~ : Destination = Default,
   to_dir? : String,
-  mkdirs? : Bool = false,
+  mkdirs~ : Bool = false,
 ) -> String {
   convert_source(Path(path), options~, destination~, to_dir?, mkdirs~).output
 }
@@ -440,10 +440,10 @@ pub async fn convert_file(
 /// written.
 pub async fn convert(
   input : String,
-  options? : @core.Options = @core.Options::new(),
-  destination? : Destination = Default,
+  options~ : @core.Options = @core.Options::new(),
+  destination~ : Destination = Default,
   to_dir? : String,
-  mkdirs? : Bool = false,
+  mkdirs~ : Bool = false,
 ) -> String {
   convert_source(Text(input), options~, destination~, to_dir?, mkdirs~).output
 }

@@ -6,7 +6,7 @@
 /// The heading font of `level` and its line height; the heading's font
 /// style is inherited by its text as markup would be (`apply_text_decoration
 /// font_styles`), so it holds against the text's own font.
-fn heading_font(level : Int) -> (Style, Double) {
+fn heading_font(level : Int32) -> (Style, Double) {
   let (style, line_height) = theme_font_heading(
     base_style(),
     base_line_height(),
@@ -17,7 +17,7 @@ fn heading_font(level : Int) -> (Style, Double) {
 
 ///|
 /// A heading level's key, else the `heading_*` one.
-fn heading_key(level : Int, name : String) -> @theme.Value {
+fn heading_key(level : Int32, name : String) -> @theme.Value {
   match tv("heading_h\{level}_\{name}") {
     Null => tv("heading_\{name}")
     v => v
@@ -27,7 +27,7 @@ fn heading_key(level : Int, name : String) -> @theme.Value {
 ///|
 /// The alignment of a heading of `level`: `heading_h<n>_text_align`, else
 /// `heading_text_align`, else the base alignment.
-fn Converter::heading_align(self : Converter, level : Int) -> Alignment {
+fn Converter::heading_align(self : Converter, level : Int32) -> Alignment {
   match value_str(heading_key(level, "text_align")) {
     Some(align) => alignment_of(align)
     None => self.text_align
@@ -57,7 +57,7 @@ fn section_indent() -> (Double, Double)? {
 /// `outdent_section`: `body` outside the section indent (when `enabled`).
 fn[T] Converter::outdent_section(
   self : Converter,
-  enabled? : Bool = true,
+  enabled~ : Bool = true,
   body : () -> T,
 ) -> T {
   match section_indent() {
@@ -74,10 +74,10 @@ fn[T] Converter::outdent_section(
 fn Converter::ink_heading(
   self : Converter,
   title : String,
-  level : Int,
+  level : Int32,
   align? : Alignment,
   category? : String,
-  outdent? : Bool = false,
+  outdent~ : Bool = false,
 ) -> Unit {
   self.outdent_section(enabled=outdent, () => {
     self.ink_heading_text(title, level, align?, category?)
@@ -88,7 +88,7 @@ fn Converter::ink_heading(
 fn Converter::ink_heading_text(
   self : Converter,
   title : String,
-  level : Int,
+  level : Int32,
   align? : Alignment,
   category? : String,
 ) -> Unit {
@@ -180,7 +180,7 @@ fn border_items(
     Array(items) => {
       let w = items.map(v => value_num(v).unwrap_or(0.0))
       let w = if w.length() == 2 { [w[0], w[1], w[0], w[1]] } else { w }
-      let at = (i : Int) => w.get(i).unwrap_or(0.0)
+      let at = (i : Int32) => w.get(i).unwrap_or(0.0)
       let (wt, wr, wb, wl) = (at(0), at(1), at(2), at(3))
       let items = []
       if wt > 0.0 {
@@ -223,7 +223,7 @@ fn border_items(
 fn Converter::arrange_heading(
   self : Converter,
   title : String,
-  hlevel : Int,
+  hlevel : Int32,
   content_after : Bool,
 ) -> Unit {
   let flow = self.flow
