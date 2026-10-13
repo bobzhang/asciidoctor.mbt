@@ -47,8 +47,8 @@ cover_page_spec-1.8-1: geometry, styling/assets; within 1pt 1/3 (33.333%) < 99.5
 example_spec-1.13-1: styling/assets; raster p1 7.467% of content differs > 1.250%
 floating_title_spec-1.5-1: page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
 floating_title_spec-1.6-1: unsupported feature, page break/extra pages, geometry, navigation/metadata, styling/assets; lines: 1 in order of 2 Ruby / 2 spike
-font_spec-1.1.13-1: missing/extra text, geometry, styling/assets; lines: 0 in order of 2 Ruby / 2 spike
-font_spec-1.1.14-1: missing/extra text, geometry, styling/assets; lines: 1 in order of 3 Ruby / 3 spike
+font_spec-1.1.13-1: missing/extra text, geometry; lines: 0 in order of 2 Ruby / 2 spike
+font_spec-1.1.14-1: missing/extra text, geometry; lines: 1 in order of 3 Ruby / 3 spike
 font_spec-1.1.3-1: missing/extra text, geometry; words: 57 shared of 59 Ruby / 58 spike
 font_spec-1.1.4-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike
 font_spec-1.1.5-1: missing/extra text, geometry; words: 66 shared of 68 Ruby / 67 spike

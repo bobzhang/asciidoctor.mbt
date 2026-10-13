@@ -173,9 +173,26 @@ repository, which converts with both and compares page count, text, the position
 * SVG text in a font the theme's catalog does not have is set in the base font.
 * No Ruby extensions, converter subclasses or custom templates (`-r`, `-T`); `-r asciidoctor-pdf`
   is accepted (it is built in). No `asciidoctor-pdf-optimize`.
-* The PDF's Producer names this port (`Asciidoctor PDF 0.1.0 (MoonBit), based on pagelayout`).
+* The PDF's Producer names this port (`Asciidoctor PDF 0.2.1 (MoonBit), based on pagelayout`).
 
 ## Changes
+
+### 0.2.1
+
+* **Images** that 0.2.0 drew wrongly, or left out with an `UNSUPPORTED image` warning, are
+  embedded (pdflite 0.3.7):
+  * greyscale and CMYK JPEGs in their own colour space (they were written as RGB), progressive
+    JPEGs and JPEGs without a JFIF header (left out);
+  * 16-bit PNGs with an alpha channel and palette PNGs with transparency (left out), and the
+    transparent colour of a greyscale or truecolour PNG (drawn opaque).
+* **Characters beyond the Basic Multilingual Plane** (emoji, CJK extensions) are set with the
+  glyphs of a font that has them, such as the fallback font's emoji (they were empty boxes).
+* **Layout**: `bobzhang/prawn` 0.2.0. With the standard (AFM) fonts, as in the base theme, pairs
+  with an accented letter (`Té`, `Vé`, `Yó`) kern as in Ruby; they were not kerned, which moved the
+  rest of the line.
+* **Fidelity**: asciidoctor-pdf's spec suite replays as before, 2097 of 2415 records
+  identically. The two emoji examples now render as Ruby's do; they still count as different,
+  because Ruby's PDF gives the emoji other characters when its text is extracted.
 
 ### 0.2.0
 
