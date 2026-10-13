@@ -5,7 +5,7 @@
 // Ruby Asciidoctor.
 
 ///|
-fn lex_compare(a : String, b : String) -> Int {
+fn lex_compare(a : String, b : String) -> Int32 {
   let n = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<n {
     if a[i] != b[i] {
@@ -73,7 +73,7 @@ fn parse_header_metadata_from(source : String, doc? : Node) -> Attributes {
 
 ///|
 /// Ruby test helper `empty_document`.
-fn empty_document(attributes? : Array[(String, AttrVal)] = []) -> Node {
+fn empty_document(attributes~ : Array[(String, AttrVal)] = []) -> Node {
   new_document(Some([]), wb_options(attributes~))
 }
 
@@ -1382,7 +1382,7 @@ test "attribute entry overrides generated author initials" {
 // Parser.parse_colspecs, Parser.process_attribute_entry).
 
 ///|
-fn section_title_of(src : String) -> (String?, String?, String, Int, Bool) {
+fn section_title_of(src : String) -> (String?, String?, String, Int32, Bool) {
   let doc = new_document(Some([]), wb_options())
   parse_section_title(Reader::new(@rb.split(src, "\n")), doc, None)
 }

@@ -10,7 +10,7 @@ pub(all) enum Severity {
 } derive(Eq, Debug)
 
 ///|
-pub fn Severity::to_int(self : Severity) -> Int {
+pub fn Severity::to_int(self : Severity) -> Int32 {
   match self {
     Debug => 0
     Info => 1
@@ -67,7 +67,7 @@ pub struct Logger {
 /// Creates a logger that forwards messages at or above `level` to `sink`.
 pub fn Logger::new(
   sink : (LogMessage) -> Unit,
-  level? : Severity = Warn,
+  level~ : Severity = Warn,
 ) -> Logger {
   { level, max_severity: None, sink, record_all: false, report_all: false, }
 }

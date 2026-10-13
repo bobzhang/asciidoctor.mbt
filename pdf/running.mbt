@@ -256,17 +256,17 @@ priv struct PageSections {
 fn Converter::sections_by_page(
   self : Converter,
   periphery : String,
-  num_pages : Int,
-  body_start : Int,
+  num_pages : Int32,
+  body_start : Int32,
 ) -> Array[PageSections] {
   let doc = self.doc
   let is_book = doc.doctype() == "book"
   let sectlevels = t_num_or(periphery + "_sectlevels", 2.0).to_int()
   let sections = doc.find_by(context=Section).filter(s => s.level <= sectlevels)
-  let part_starts : Map[Int, @core.Node?] = Map([])
-  let chapter_starts : Map[Int, @core.Node] = Map([])
-  let section_starts : Map[Int, @core.Node] = Map([])
-  let trailing_starts : Map[Int, @core.Node] = Map([])
+  let part_starts : Map[Int32, @core.Node?] = Map([])
+  let chapter_starts : Map[Int32, @core.Node] = Map([])
+  let section_starts : Map[Int32, @core.Node] = Map([])
+  let trailing_starts : Map[Int32, @core.Node] = Map([])
   for sect in sections {
     let pgnum = match sect.attr("pdf-page-start") {
       Some(n) => @string.parse_int(n) catch { _ => 0 }
@@ -390,9 +390,9 @@ fn Converter::sections_by_page(
 fn Converter::ink_running_content(
   self : Converter,
   periphery : String,
-  skip_pages : Int,
-  skip_pagenums : Int,
-  body_start : Int,
+  skip_pages : Int32,
+  skip_pagenums : Int32,
+  body_start : Int32,
 ) -> Unit {
   let doc = self.doc
   let flow = self.flow

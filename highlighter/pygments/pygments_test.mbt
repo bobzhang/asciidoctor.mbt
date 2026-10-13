@@ -6,8 +6,8 @@
 ///|
 fn convert_with(
   input : String,
-  attrs? : Array[(String, String)] = [],
-  standalone? : Bool = false,
+  attrs~ : Array[(String, String)] = [],
+  standalone~ : Bool = false,
 ) -> String raise {
   @pygments.register()
   let attributes : Array[(String, @core.AttrVal)] = [

@@ -1,6 +1,6 @@
 ///|
 /// Binary search in a flattened list of inclusive [lo, hi] ranges.
-fn in_ranges(ranges : FixedArray[Int], cp : Int) -> Bool {
+fn in_ranges(ranges : FixedArray[Int32], cp : Int32) -> Bool {
   let n = ranges.length() / 2
   for lo = 0, hi = n; lo < hi; {
     let mid = lo + (hi - lo) / 2
@@ -19,7 +19,7 @@ fn in_ranges(ranges : FixedArray[Int], cp : Int) -> Bool {
 ///|
 /// Next member of `cp`'s case-insensitive equivalence class (cyclic), or `cp`
 /// itself when the class is trivial.
-fn fold_next_of(cp : Int) -> Int {
+fn fold_next_of(cp : Int32) -> Int32 {
   if cp < 0x41 {
     return cp
   }
@@ -40,7 +40,7 @@ fn fold_next_of(cp : Int) -> Int {
 
 ///|
 /// Whether `a` and `b` are equal ignoring case (Onigmo simple case folding).
-fn fold_eq(a : Int, b : Int) -> Bool {
+fn fold_eq(a : Int32, b : Int32) -> Bool {
   if a == b {
     return true
   }
@@ -55,7 +55,7 @@ fn fold_eq(a : Int, b : Int) -> Bool {
 }
 
 ///|
-fn is_ascii_word(cp : Int) -> Bool {
+fn is_ascii_word(cp : Int32) -> Bool {
   (cp >= 'a' && cp <= 'z') ||
   (cp >= 'A' && cp <= 'Z') ||
   (cp >= '0' && cp <= '9') ||
@@ -64,7 +64,7 @@ fn is_ascii_word(cp : Int) -> Bool {
 
 ///|
 /// Unicode word character as used by `\b` and `\p{Word}`.
-fn is_unicode_word(cp : Int) -> Bool {
+fn is_unicode_word(cp : Int32) -> Bool {
   if cp < 128 {
     is_ascii_word(cp)
   } else {
@@ -73,7 +73,7 @@ fn is_unicode_word(cp : Int) -> Bool {
 }
 
 ///|
-fn prop_contains(prop : Prop, cp : Int) -> Bool {
+fn prop_contains(prop : Prop, cp : Int32) -> Bool {
   match prop {
     Alpha =>
       if cp < 128 {
@@ -134,7 +134,7 @@ fn prop_folds(prop : Prop) -> Bool {
 }
 
 ///|
-fn item_contains(item : ClassItem, cp : Int) -> Bool {
+fn item_contains(item : ClassItem, cp : Int32) -> Bool {
   match item {
     Range(lo, hi) => cp >= lo && cp <= hi
     AsciiDigit(neg) => (cp >= '0' && cp <= '9') != neg
@@ -157,7 +157,7 @@ fn item_contains(item : ClassItem, cp : Int) -> Bool {
 /// Like Onigmo (for UTF-8), bracket classes do not case-fold input characters
 /// in U+0080..U+00FF: `/[à-ÿ]/i` does not match `À`. The exception is `ß`,
 /// which Onigmo reaches through its multi-character fold (`ẞ` = `ss` = `ß`).
-fn any_case_variant(cp : Int, pred : (Int) -> Bool) -> Bool {
+fn any_case_variant(cp : Int32, pred : (Int32) -> Bool) -> Bool {
   if cp >= 0x80 && cp <= 0xFF && cp != 0xDF {
     return false
   }
@@ -174,7 +174,7 @@ fn any_case_variant(cp : Int, pred : (Int) -> Bool) -> Bool {
 ///|
 /// Membership of an item under case-insensitive matching: literal ranges and
 /// cased properties (before their negation) also match case variants of `cp`.
-fn item_contains_fold(item : ClassItem, cp : Int) -> Bool {
+fn item_contains_fold(item : ClassItem, cp : Int32) -> Bool {
   match item {
     Range(lo, hi) =>
       (cp >= lo && cp <= hi) || any_case_variant(cp, c => c >= lo && c <= hi)
@@ -186,7 +186,7 @@ fn item_contains_fold(item : ClassItem, cp : Int) -> Bool {
 }
 
 ///|
-fn CharClass::contains_slow(self : CharClass, cp : Int) -> Bool {
+fn CharClass::contains_slow(self : CharClass, cp : Int32) -> Bool {
   let mut found = false
   for item in self.items {
     if (if self.icase {
@@ -202,7 +202,7 @@ fn CharClass::contains_slow(self : CharClass, cp : Int) -> Bool {
 }
 
 ///|
-fn CharClass::contains(self : CharClass, cp : Int) -> Bool {
+fn CharClass::contains(self : CharClass, cp : Int32) -> Bool {
   if cp < 128 && self.ascii.length() == 128 {
     self.ascii[cp]
   } else {

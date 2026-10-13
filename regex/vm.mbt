@@ -8,26 +8,26 @@
 priv struct Vm {
   prog : FixedArray[Inst]
   classes : FixedArray[CharClass]
-  sub_starts : FixedArray[Int]
+  sub_starts : FixedArray[Int32]
   mut input : String
-  mut len : Int
+  mut len : Int32
   // where the text begins for anchors, word boundaries and lookbehind: 0,
   // or the scan position of `Regex::try_scan_at`
-  mut base : Int
-  caps : FixedArray[Int]
-  regs : FixedArray[Int]
+  mut base : Int32
+  caps : FixedArray[Int32]
+  regs : FixedArray[Int32]
   // backtrack stack of triples (kind, a, b); `sp` is its logical length
-  mut stack : FixedArray[Int]
-  mut sp : Int
-  mut search_start : Int
+  mut stack : FixedArray[Int32]
+  mut sp : Int32
+  mut search_start : Int32
   // remaining step budget; a step is one branch (Split) or one (sub)program run
-  mut fuel : Int
-  mut limit : Int
+  mut fuel : Int32
+  mut limit : Int32
   mut timed_out : Bool
   // memo of the required-unit prefilter: the scan for `required[i]` that
   // started at `req_from[i]` (-1: none yet) found it at `req_at[i]` (len: absent)
-  req_from : FixedArray[Int]
-  req_at : FixedArray[Int]
+  req_from : FixedArray[Int32]
+  req_at : FixedArray[Int32]
 }
 
 ///|
@@ -128,7 +128,7 @@ const KIND_LOOP = 3
 
 ///|
 /// Whether `s[i]`, `s[i + 1]` form a surrogate pair (both indices in range).
-fn is_pair(s : String, i : Int) -> Bool {
+fn is_pair(s : String, i : Int32) -> Bool {
   let c = s.unsafe_get(i).to_int()
   let d = s.unsafe_get(i + 1).to_int()
   c >= 0xD800 && c <= 0xDBFF && d >= 0xDC00 && d <= 0xDFFF
@@ -137,7 +137,7 @@ fn is_pair(s : String, i : Int) -> Bool {
 ///|
 /// Runs the one-character instruction `inst` (the body of a `Star` loop) at
 /// `pos`; returns the position after the character, or -1.
-fn Vm::step1(self : Vm, inst : Inst, pos : Int) -> Int {
+fn Vm::step1(self : Vm, inst : Inst, pos : Int32) -> Int32 {
   if pos >= self.len {
     return -1
   }
@@ -182,7 +182,7 @@ fn Vm::step1(self : Vm, inst : Inst, pos : Int) -> Int {
 ///|
 /// Whether `pos` lies between the two code units of a surrogate pair of `s`.
 /// Matches never start or end there: Ruby matches on code points.
-fn splits_pair(s : String, pos : Int) -> Bool {
+fn splits_pair(s : String, pos : Int32) -> Bool {
   pos > 0 &&
   pos < s.length() &&
   s[pos].to_int() >= 0xDC00 &&
@@ -195,7 +195,7 @@ fn splits_pair(s : String, pos : Int) -> Bool {
 /// Decodes the code point at `pos` (`pos` must be < len). Its width in code
 /// units is `cp_width_of(cp)`: only a surrogate pair decodes above U+FFFF.
 /// (Returns a plain Int: a tuple would be heap-allocated on every call.)
-fn Vm::cp_at(self : Vm, pos : Int) -> Int {
+fn Vm::cp_at(self : Vm, pos : Int32) -> Int32 {
   let c = self.input.unsafe_get(pos).to_int()
   if c >= 0xD800 && c <= 0xDBFF && pos + 1 < self.len {
     let d = self.input.unsafe_get(pos + 1).to_int()
@@ -208,7 +208,7 @@ fn Vm::cp_at(self : Vm, pos : Int) -> Int {
 
 ///|
 /// Width in UTF-16 code units of a code point decoded by `cp_at`.
-fn cp_width_of(cp : Int) -> Int {
+fn cp_width_of(cp : Int32) -> Int32 {
   if cp >= 0x10000 {
     2
   } else {
@@ -218,7 +218,7 @@ fn cp_width_of(cp : Int) -> Int {
 
 ///|
 /// Decodes the code point ending just before `pos` (pos > 0).
-fn Vm::cp_before(self : Vm, pos : Int) -> Int {
+fn Vm::cp_before(self : Vm, pos : Int32) -> Int32 {
   let d = self.input[pos - 1].to_int()
   if d >= 0xDC00 && d <= 0xDFFF && pos >= self.base + 2 {
     let c = self.input[pos - 2].to_int()
@@ -230,7 +230,7 @@ fn Vm::cp_before(self : Vm, pos : Int) -> Int {
 }
 
 ///|
-fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
+fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int32) -> Bool {
   match kind {
     BeginLine =>
       pos == self.base || (self.input[pos - 1] == '\n' && pos < self.len)
@@ -250,7 +250,13 @@ fn Vm::check_assert(self : Vm, kind : AssertKind, pos : Int) -> Bool {
 
 ///|
 /// Matches the text of capture `[s, e)` at `pos`; returns the end or -1.
-fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
+fn Vm::backref(
+  self : Vm,
+  s : Int32,
+  e : Int32,
+  pos : Int32,
+  icase : Bool,
+) -> Int32 {
   let input = self.input
   let len = self.len
   let end = if !icase {
@@ -292,7 +298,7 @@ fn Vm::backref(self : Vm, s : Int, e : Int, pos : Int, icase : Bool) -> Int {
 }
 
 ///|
-fn Vm::push(self : Vm, kind : Int, a : Int, b : Int) -> Unit {
+fn Vm::push(self : Vm, kind : Int32, a : Int32, b : Int32) -> Unit {
   let sp = self.sp
   if sp + 3 > self.stack.length() {
     self.grow()
@@ -318,11 +324,11 @@ fn Vm::grow(self : Vm) -> Unit {
 /// outer backtrack stack so they are undone if the outer match backtracks.
 fn Vm::run_sub(
   self : Vm,
-  sub : Int,
-  pos : Int,
-  target : Int,
+  sub : Int32,
+  pos : Int32,
+  target : Int32,
   writes : Bool,
-) -> Int {
+) -> Int32 {
   if !writes {
     return self.run(self.sub_starts[sub], pos, target)
   }
@@ -348,8 +354,8 @@ fn Vm::run_sub(
 /// Restores capture/register state to the given snapshot without recording.
 fn Vm::restore(
   self : Vm,
-  caps_snap : FixedArray[Int],
-  regs_snap : FixedArray[Int],
+  caps_snap : FixedArray[Int32],
+  regs_snap : FixedArray[Int32],
 ) -> Unit {
   caps_snap.blit_to(self.caps, len=caps_snap.length())
   regs_snap.blit_to(self.regs, len=regs_snap.length())
@@ -364,7 +370,7 @@ fn Vm::restore(
 /// `timed_out` is set and -1 is returned all the way up. Recursion (for
 /// lookaround and atomic groups) is bounded by the syntactic nesting depth,
 /// which the parser limits.
-fn Vm::run(self : Vm, pc0 : Int, pos0 : Int, target : Int) -> Int {
+fn Vm::run(self : Vm, pc0 : Int32, pos0 : Int32, target : Int32) -> Int32 {
   self.fuel -= 1
   if self.fuel < 0 {
     self.timed_out = true

@@ -13,7 +13,7 @@ pub struct PathResolver {
 }
 
 ///|
-pub fn PathResolver::new(working_dir? : String = "/") -> PathResolver {
+pub fn PathResolver::new(working_dir~ : String = "/") -> PathResolver {
   { working_dir, sys_cache: {}, web_cache: {}, }
 }
 
@@ -43,7 +43,7 @@ pub fn PathResolver::descends_from(
   _self : PathResolver,
   path : String,
   base : String,
-) -> Int? {
+) -> Int32? {
   if base == path {
     Some(0)
   } else if base == "/" {
@@ -124,7 +124,7 @@ pub fn PathResolver::expand_path(self : PathResolver, path : String) -> String {
 pub fn PathResolver::partition_path(
   self : PathResolver,
   path : String,
-  web? : Bool = false,
+  web~ : Bool = false,
 ) -> (Array[String], String?) {
   let cache = if web { self.web_cache } else { self.sys_cache }
   match cache.get(path) {
@@ -176,8 +176,8 @@ pub fn PathResolver::system_path(
   target : String?,
   start? : String,
   jail? : String,
-  target_name? : String = "path",
-  recover? : Bool = true,
+  target_name~ : String = "path",
+  recover~ : Bool = true,
 ) -> String raise SecurityError {
   match jail {
     Some(j) =>

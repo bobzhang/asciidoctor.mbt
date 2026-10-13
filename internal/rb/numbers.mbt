@@ -59,7 +59,7 @@ pub fn float_to_s(x : Double) -> String {
 ///|
 /// Returns the shortest significant digits and the decimal point position
 /// (value = 0.DIGITS * 10^decpt) for a positive finite double.
-fn shortest_digits(x : Double) -> (String, Int) {
+fn shortest_digits(x : Double) -> (String, Int32) {
   // MoonBit's Double::to_string produces the shortest round-trip form,
   // either fixed ("33.3333", "100", "0.00001") or with an exponent ("1e+21").
   let s = x.to_string()
@@ -98,7 +98,7 @@ fn shortest_digits(x : Double) -> (String, Int) {
 
 ///|
 /// Ruby `Float#truncate(ndigits)` for positive `ndigits`.
-pub fn float_truncate(x : Double, ndigits : Int) -> Double {
+pub fn float_truncate(x : Double, ndigits : Int32) -> Double {
   let f = @math.pow(10.0, ndigits.to_double())
   if x >= 0.0 {
     let mul = (x * f).floor()
@@ -121,7 +121,7 @@ pub fn float_truncate(x : Double, ndigits : Int) -> Double {
 
 ///|
 /// Ruby `Float#round(ndigits)` (round half up) for positive `ndigits`.
-pub fn float_round(x : Double, ndigits : Int) -> Double {
+pub fn float_round(x : Double, ndigits : Int32) -> Double {
   let s = @math.pow(10.0, ndigits.to_double())
   let xs = x * s
   let mut f = xs.round()
@@ -145,7 +145,7 @@ pub fn is_integral(x : Double) -> Bool {
 
 ///|
 /// Converts an integer to an uppercase roman numeral.
-pub fn int_to_roman(n : Int) -> String {
+pub fn int_to_roman(n : Int32) -> String {
   let values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
   let numerals = [
     "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I",

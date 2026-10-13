@@ -42,7 +42,7 @@ fn doctype(text : String) -> String? {
 
 ///|
 /// Rouge's `TextAnalyzer#doctype?(type)`: the doctype matches `pattern`.
-fn doctype_is(text : String, pattern : String, flags? : String = "") -> Bool {
+fn doctype_is(text : String, pattern : String, flags~ : String = "") -> Bool {
   match doctype(text) {
     Some(d) => search(d, pattern, flags~)
     None => false
@@ -51,7 +51,7 @@ fn doctype_is(text : String, pattern : String, flags? : String = "") -> Bool {
 
 ///|
 /// `text =~ /pattern/flags`.
-fn search(text : String, pattern : String, flags? : String = "") -> Bool {
+fn search(text : String, pattern : String, flags~ : String = "") -> Bool {
   compile(pattern, flags).find(text) is Some(_)
 }
 

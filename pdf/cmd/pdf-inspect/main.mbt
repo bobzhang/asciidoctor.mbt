@@ -114,7 +114,7 @@ fn uri_text(stored : Bytes) -> String {
       bytes.push(b)
     }
   }
-  let is_hex = fn(i : Int) {
+  let is_hex = fn(i : Int32) {
     i < bytes.length() &&
     (
       (bytes[i] >= b'0' && bytes[i] <= b'9') ||
@@ -145,7 +145,7 @@ fn uri_text(stored : Bytes) -> String {
 priv struct Inspector {
   doc : @pdflite.PdfDocument
   /// page object number to page index
-  page_index : Map[Int, Int]
+  page_index : Map[Int32, Int32]
   /// page heights (top of the media box), by index
   tops : Array[Double]
   /// named destinations, in name-tree order
@@ -201,7 +201,7 @@ fn Inspector::walk_name_tree(
   self : Inspector,
   node : @syntax.PdfObject,
   out : Array[(String, @syntax.PdfObject)],
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   if depth > 32 {
     return
@@ -233,7 +233,7 @@ fn Inspector::walk_name_tree(
 fn Inspector::resolve_dest(
   self : Inspector,
   dest : @syntax.PdfObject,
-  depth? : Int = 0,
+  depth~ : Int32 = 0,
 ) -> Json {
   if depth > 8 {
     return Json::null()
@@ -341,7 +341,7 @@ fn Inspector::action_target(self : Inspector, dict : @syntax.PdfObject) -> Json 
 fn Inspector::outline(
   self : Inspector,
   first : @syntax.PdfObject?,
-  depth : Int,
+  depth : Int32,
   out : Array[Json],
 ) -> Unit {
   let mut item = first
@@ -379,7 +379,7 @@ fn Inspector::outline(
 }
 
 ///|
-fn roman(n : Int, upper : Bool) -> String {
+fn roman(n : Int32, upper : Bool) -> String {
   let values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
   let symbols = [
     "m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i",
@@ -400,7 +400,7 @@ fn roman(n : Int, upper : Bool) -> String {
 }
 
 ///|
-fn letters(n : Int, upper : Bool) -> String {
+fn letters(n : Int32, upper : Bool) -> String {
   if n <= 0 {
     return ""
   }
@@ -421,7 +421,7 @@ fn Inspector::page_labels(
   guard self.get(catalog, "/PageLabels") is Some(tree) else { return labels }
   let ranges = self.doc.read_number_tree(tree)
   for i in 0..<count {
-    let mut found : (Int, @syntax.PdfObject)? = None
+    let mut found : (Int32, @syntax.PdfObject)? = None
     for range in ranges {
       if range.0 <= i {
         found = Some(range)
@@ -587,7 +587,7 @@ fn Inspector::text_runs(
 ///|
 fn Inspector::new(doc : @pdflite.PdfDocument) -> Inspector raise {
   let numbers = doc.page_reference_numbers()
-  let page_index : Map[Int, Int] = Map([])
+  let page_index : Map[Int32, Int32] = Map([])
   for i, n in numbers {
     page_index[n] = i
   }
@@ -896,8 +896,8 @@ fn Inspector::info(self : Inspector) -> Json raise {
 /// A text object: the index of its BT and ET, and its baseline (the `f` of
 /// its last Tm or Td, which is how pagelayout positions every run).
 priv struct TextObject {
-  start : Int
-  stop : Int
+  start : Int32
+  stop : Int32
   y : Double
 }
 
@@ -963,7 +963,7 @@ fn mutate(bytes : Bytes, kind : String) -> Bytes raise {
   )
   let self = Inspector::new(doc)
   let pages = doc.pages_of_pagetree()
-  let set_ops = fn(index : Int, ops : Array[@content.PdfContentOp]) raise {
+  let set_ops = fn(index : Int32, ops : Array[@content.PdfContentOp]) raise {
     pages[index] = {
       ..pages[index],
       content: [@pdflite.pdf_content_stream_of_ops(ops)],
@@ -1115,10 +1115,10 @@ fn mutate(bytes : Bytes, kind : String) -> Bytes raise {
 
 ///|
 priv struct Image {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   data : Bytes
-  offset : Int
+  offset : Int32
 }
 
 ///|
@@ -1167,7 +1167,7 @@ fn read_ppm(data : Bytes) -> Image raise {
 }
 
 ///|
-let crc_table : FixedArray[UInt] = {
+let crc_table : FixedArray[UInt32] = {
   let table = FixedArray::make(256, 0U)
   for n in 0..<256 {
     let mut c = n.reinterpret_as_uint()
@@ -1180,7 +1180,7 @@ let crc_table : FixedArray[UInt] = {
 }
 
 ///|
-fn crc32(data : Bytes) -> UInt {
+fn crc32(data : Bytes) -> UInt32 {
   let mut c = 0xFFFFFFFFU
   for b in data {
     c = crc_table[((c ^ b.to_uint()) & 0xFFU).reinterpret_as_int()] ^ (c >> 8)
@@ -1189,7 +1189,7 @@ fn crc32(data : Bytes) -> UInt {
 }
 
 ///|
-fn write_u32(buffer : Buffer, value : UInt) -> Unit {
+fn write_u32(buffer : Buffer, value : UInt32) -> Unit {
   buffer.write_byte((value >> 24).to_byte())
   buffer.write_byte(((value >> 16) & 0xFFU).to_byte())
   buffer.write_byte(((value >> 8) & 0xFFU).to_byte())
@@ -1211,7 +1211,7 @@ fn png_chunk(out : Buffer, kind : String, data : Bytes) -> Unit {
 
 ///|
 /// An 8-bit RGB PNG of `rgb` (width × height × 3 bytes).
-fn encode_png(width : Int, height : Int, rgb : FixedArray[Byte]) -> Bytes {
+fn encode_png(width : Int32, height : Int32, rgb : FixedArray[Byte]) -> Bytes {
   let raw = Buffer()
   for y in 0..<height {
     raw.write_byte(b'\x00')
@@ -1232,7 +1232,7 @@ fn encode_png(width : Int, height : Int, rgb : FixedArray[Byte]) -> Bytes {
 }
 
 ///|
-let thresholds : Array[Int] = [16, 64, 128]
+let thresholds : Array[Int32] = [16, 64, 128]
 
 ///|
 /// Differing pixels between two renderings, and the difference image.
@@ -1360,12 +1360,12 @@ fn raster_compare(a : Image, b : Image) -> (Json, Bytes) {
 
 ///|
 /// Differences above this many levels count where both images are flat.
-let flat_threshold : Int = 6
+let flat_threshold : Int32 = 6
 
 ///|
 /// Whether the 3×3 neighbourhood of (x, y) is uniform: every channel of
 /// every neighbour within 2 levels of the centre.
-fn is_flat(img : Image, x : Int, y : Int) -> Bool {
+fn is_flat(img : Image, x : Int32, y : Int32) -> Bool {
   let center = img.offset + (y * img.width + x) * 3
   for dy in -1..<=1 {
     let yy = y + dy

@@ -1,6 +1,6 @@
 ///|
 /// The ranges of an expandable property, by name as written in `\p{...}`.
-fn property_ranges(name : String) -> FixedArray[Int]? {
+fn property_ranges(name : String) -> FixedArray[Int32]? {
   let key = StringBuilder()
   for c in name {
     if c != ' ' && c != '_' && c != '-' {
@@ -18,7 +18,7 @@ fn property_ranges(name : String) -> FixedArray[Int]? {
 
 ///|
 /// One code point as it may appear in a bracket expression.
-fn write_class_char(sb : StringBuilder, code : Int) -> Unit {
+fn write_class_char(sb : StringBuilder, code : Int32) -> Unit {
   if code < 0x80 {
     let c = code.unsafe_to_char()
     if c.is_ascii_alphabetic() || c.is_ascii_digit() {
@@ -37,8 +37,8 @@ fn write_class_char(sb : StringBuilder, code : Int) -> Unit {
 
 ///|
 /// The bracket-expression items of `ranges`, or of their complement.
-fn class_items(ranges : FixedArray[Int], negate : Bool) -> String {
-  let pairs : Array[(Int, Int)] = []
+fn class_items(ranges : FixedArray[Int32], negate : Bool) -> String {
+  let pairs : Array[(Int32, Int32)] = []
   if negate {
     let mut next = 0
     let mut i = 0

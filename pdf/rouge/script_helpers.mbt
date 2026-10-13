@@ -22,7 +22,7 @@ fn script_downcase(s : String) -> String {
 
 ///|
 /// Whether the Ruby regex `pattern` matches somewhere in `s` (`s =~ re`).
-fn script_match(pattern : String, s : String, flags? : String = "") -> Bool {
+fn script_match(pattern : String, s : String, flags~ : String = "") -> Bool {
   compile(pattern, flags).find(s) is Some(_)
 }
 

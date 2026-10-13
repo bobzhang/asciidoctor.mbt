@@ -69,7 +69,7 @@ fn RougeFormatter::fragment(
   base : Style,
   tok : String,
   text : String,
-  inline_block? : Bool = false,
+  inline_block~ : Bool = false,
 ) -> Fragment {
   let mut style = base
   match self.theme.style_for(tok) {
@@ -119,9 +119,9 @@ fn RougeFormatter::format(
   self : RougeFormatter,
   base : Style,
   tokens : Array[(String, String)],
-  line_numbers? : Bool = false,
-  start_line? : Int = 1,
-  highlight_lines? : Map[Int, Bool],
+  line_numbers~ : Bool = false,
+  start_line~ : Int32 = 1,
+  highlight_lines? : Map[Int32, Bool],
 ) -> Array[Fragment] {
   let out : Array[Fragment] = []
   let plain = fn(text : String) -> Fragment {
@@ -156,19 +156,19 @@ fn RougeFormatter::format(
     }
     return out
   }
-  let highlighted = fn(n : Int) {
+  let highlighted = fn(n : Int32) {
     highlight_lines.bind(h => h.get(n)) is Some(true)
   }
   let mut linenum = if start_line > 0 { start_line } else { 1 }
   let mut start_of_line = false
-  let linenum_fragment = fn(n : Int) -> Fragment {
+  let linenum_fragment = fn(n : Int32) -> Fragment {
     let f = self.fragment(base, "Generic.Lineno", "\{n} ")
     { ..f, style: { ..f.style, linenum: true, }, }
   }
   let mark = fn() {
     line_mark(base, self.highlight_color, Gap(self.line_gap, true))
   }
-  let next_line = fn(n : Int) {
+  let next_line = fn(n : Int32) {
     if line_numbers {
       out.push(linenum_fragment(n))
     } else {

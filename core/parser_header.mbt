@@ -289,8 +289,8 @@ fn next_section(
   let mut part = false
   let mut section = parent
   let mut current_level = 0
-  let mut expected_next_level : Int? = None
-  let mut expected_next_level_alt : Int? = None
+  let mut expected_next_level : Int32? = None
+  let mut expected_next_level_alt : Int32? = None
   let mut sectname = ""
   let document = parent.document()
   let book = document.doctype() == "book"
@@ -636,7 +636,7 @@ fn initialize_section(
 
 ///|
 /// Level of the section title at the reader position, if any.
-fn is_next_line_section(reader : Reader, attributes : Attributes) -> Int? {
+fn is_next_line_section(reader : Reader, attributes : Attributes) -> Int32? {
   let style = attributes.pos_str(1)
   if style == Some("discrete") || style == Some("float") {
     return None
@@ -666,7 +666,7 @@ fn is_next_line_doctitle(
 }
 
 ///|
-fn is_section_title(line1 : String, line2 : String?) -> Int? {
+fn is_section_title(line1 : String, line2 : String?) -> Int32? {
   match atx_section_title(line1) {
     Some(l) => Some(l)
     None =>
@@ -678,7 +678,7 @@ fn is_section_title(line1 : String, line2 : String?) -> Int? {
 }
 
 ///|
-fn atx_section_title(line : String) -> Int? {
+fn atx_section_title(line : String) -> Int32? {
   let m = if compliance.markdown_syntax {
     if line.has_prefix("=") || line.has_prefix("#") {
       ext_atx_section_title_rx.find(line)
@@ -697,7 +697,7 @@ fn atx_section_title(line : String) -> Int? {
 }
 
 ///|
-fn setext_level(ch : String) -> Int? {
+fn setext_level(ch : String) -> Int32? {
   match ch {
     "=" => Some(0)
     "-" => Some(1)
@@ -723,7 +723,7 @@ fn first_char(s : String) -> String {
 }
 
 ///|
-fn setext_section_title(line1 : String, line2 : String) -> Int? {
+fn setext_section_title(line1 : String, line2 : String) -> Int32? {
   let ch0 = first_char(line2)
   match setext_level(ch0) {
     Some(level) => {
@@ -746,7 +746,7 @@ fn parse_section_title(
   reader : Reader,
   document : Node,
   sect_id : String?,
-) -> (String?, String?, String, Int, Bool) {
+) -> (String?, String?, String, Int32, Bool) {
   let mut sect_id = sect_id
   let mut sect_reftext : String? = None
   let line1 = reader.read_line().unwrap_or("")
@@ -855,7 +855,7 @@ fn parse_header_metadata(reader : Reader, document : Node?) -> Attributes {
   let mut implicit_author : String? = None
   let mut implicit_authorinitials : String? = None
   let mut implicit_authors : String? = None
-  let mut authorcount : Int? = None
+  let mut authorcount : Int32? = None
   if reader.has_more_lines() && !reader.next_line_empty() {
     implicit_author_metadata = process_authors([reader.read_line().unwrap()])
     let ac = implicit_author_metadata
@@ -1013,8 +1013,8 @@ let author_keys : Array[String] = [
 /// Parses author lines (Ruby `process_authors`).
 fn process_authors(
   author_lines : Array[String],
-  names_only? : Bool = false,
-  multiple? : Bool = true,
+  names_only~ : Bool = false,
+  multiple~ : Bool = true,
 ) -> Attributes {
   let author_metadata = Attributes::new()
   let mut author_idx = 0
@@ -1067,7 +1067,7 @@ fn process_authors(
         None => ()
       }
     }
-    let seg = fn(segs : Array[String], i : Int) -> String? {
+    let seg = fn(segs : Array[String], i : Int32) -> String? {
       match segs.get(i) {
         Some(s) => if s == "\u{0}" { None } else { Some(s) }
         None => None
@@ -1145,7 +1145,7 @@ fn process_authors(
 
 ///|
 /// Ruby `str.split(nil, limit)`: whitespace split with a field limit.
-fn split_ws_limit(s : String, limit : Int) -> Array[String] {
+fn split_ws_limit(s : String, limit : Int32) -> Array[String] {
   let out = []
   let n = s.length()
   let mut i = 0
@@ -1175,7 +1175,7 @@ fn parse_block_metadata_lines(
   reader : Reader,
   document : Node,
   attributes : Attributes,
-  text_only? : Bool = false,
+  text_only~ : Bool = false,
 ) -> Attributes {
   while parse_block_metadata_line(reader, document, attributes, text_only~) {
     reader.shift() |> ignore
@@ -1193,7 +1193,7 @@ fn parse_block_metadata_line(
   reader : Reader,
   document : Node,
   attributes : Attributes,
-  text_only? : Bool = false,
+  text_only~ : Bool = false,
 ) -> Bool {
   guard reader.peek_line() is Some(next_line) else { return false }
   let normal = !text_only &&
@@ -1433,7 +1433,7 @@ fn sanitize_attribute_name(name : String) -> String {
 
 ///|
 /// Whether `str` consists of `len` copies of `chr` (Ruby `uniform?`).
-fn is_uniform(str : String, chr : String, len : Int) -> Bool {
+fn is_uniform(str : String, chr : String, len : Int32) -> Bool {
   @rb.count(str, chr) * chr.length() == len && str.length() == len
 }
 
@@ -1558,8 +1558,8 @@ fn parse_style_attribute(attributes : Attributes, reader : Reader?) -> String? {
 /// Adjusts indentation of lines (Ruby `adjust_indentation!`).
 fn adjust_indentation(
   lines : Array[String],
-  indent_size? : Int = 0,
-  tab_size? : Int = 0,
+  indent_size~ : Int32 = 0,
+  tab_size~ : Int32 = 0,
 ) -> Unit {
   if lines.is_empty() {
     return
@@ -1610,7 +1610,7 @@ fn adjust_indentation(
   if indent_size < 0 {
     return
   }
-  let mut block_indent : Int? = None
+  let mut block_indent : Int32? = None
   for line in lines {
     if line == "" {
       continue

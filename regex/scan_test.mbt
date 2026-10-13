@@ -1,6 +1,6 @@
 ///|
 /// The match of `pattern` at `pos` of `s` as `try_scan_at` finds it.
-fn scan(pattern : String, s : String, pos : Int) -> String raise {
+fn scan(pattern : String, s : String, pos : Int32) -> String raise {
   match @regex.re(pattern).try_scan_at(s, pos) {
     Some(m) => "\{m.begin()}..\{m.end()} \{m.matched()}"
     None => "none"
