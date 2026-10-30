@@ -424,7 +424,7 @@ fn find_unit(s : String, from : Int32, u : Int32) -> Int32 {
     return from
   }
   if u < 128 {
-    match s.view(start_offset=from).find(ascii_units[u]) {
+    match raw_view(s, from, s.length()).find(ascii_units[u]) {
       Some(i) => from + i
       None => len
     }
@@ -732,7 +732,7 @@ fn Regex::replace_with(
       Some(m) => {
         let b = m.begin()
         let e = m.end()
-        parts.push(s.view(start_offset=last, end_offset=b))
+        parts.push(raw_view(s, last, b))
         parts.push(f(m))
         if once {
           last = e
@@ -757,7 +757,7 @@ fn Regex::replace_with(
   if parts.is_empty() {
     s
   } else {
-    parts.push(s.view(start_offset=last, end_offset=len))
+    parts.push(raw_view(s, last, len))
     parts.join("")
   }
 }
@@ -957,4 +957,14 @@ pub fn Regex::split(
   self.try_split(s, limit~) catch {
     e => timeout_abort(e)
   }
+}
+
+///|
+// Regex offsets are raw UTF-16 positions. In particular, find_unit may start
+// inside a surrogate pair, so clamping would shift its relative search result.
+fn raw_view(s : String, start : Int32, end : Int32) -> StringView {
+  guard start >= 0 && start <= end && end <= s.length() else {
+    abort("Invalid index for View")
+  }
+  s.unsafe_view(start~, end~)
 }

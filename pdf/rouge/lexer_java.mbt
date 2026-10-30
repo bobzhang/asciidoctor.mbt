@@ -158,7 +158,7 @@ fn signature_ahead() -> (String, Int32) -> Bool {
         while i > pos && !is_signature_blank(text.unsafe_get(i - 1)) {
           i -= 1
         }
-        let word = text.view(start_offset=i, end_offset=word_end)
+        let word = text[i:word_end]
         let is_name = word.length() > 0 &&
           is_signature_start(word.unsafe_get(0)) &&
           word

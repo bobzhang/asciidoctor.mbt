@@ -1,3 +1,15 @@
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/pdflite@0.3.1",
+}
+----
+
 // Smoke test of the asciidoctor-pdf commands (CI): converts sample documents
 // with the native release build and the wasm release build (run with
 // moonrun, as moonx does), with no font directory, and checks that each
@@ -11,15 +23,6 @@
 // Usage (after `moon -C pdf build --release --target native` and
 // `--target wasm`):
 //   moon run --target native scripts/pdf_smoke.mbtx [-- --native-only]
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-  "moonbitlang/core/env",
-  "moonbitlang/core/cmp",
-  "moonbitlang/core/encoding/utf8",
-  "moonbitlang/pdflite@0.3.1",
-}
 
 ///|
 /// The PDF with its streams decompressed (the page content readable), or
@@ -28,9 +31,7 @@ fn decompressed(data : Bytes) -> Bytes? {
   let document = @pdflite.pdf_read_document_from_bytes(data).decompress() catch {
     _ => return None
   }
-  let bytes = @pdflite.pdf_write_document(document) catch {
-    _ => return None
-  }
+  let bytes = @pdflite.pdf_write_document(document) catch { _ => return None }
   Some(bytes)
 }
 
@@ -62,13 +63,13 @@ async fn token_style_problem(
 /// The native executable of a command (`asciidoctor-pdf`, or
 /// `asciidoctor-pdf-pygments`, the command with Pygments).
 fn bin(command : String) -> String {
-  "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.exe"
+  "pdf/_build/native/release/build/cmd/\{command}/\{command}.exe"
 }
 
 ///|
 /// The wasm module of a command.
 fn wasm_file(command : String) -> String {
-  "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.wasm"
+  "pdf/_build/wasm/release/build/cmd/\{command}/\{command}.wasm"
 }
 
 ///|
@@ -78,7 +79,7 @@ let out_dir : String = "_build/pdf-smoke"
 let failures : Array[String] = []
 
 ///|
-fn check(what : String, ok : Bool, detail? : String = "") -> Unit {
+fn check(what : String, ok : Bool, detail~ : String = "") -> Unit {
   if ok {
     println("ok    \{what}")
   } else {
@@ -88,7 +89,7 @@ fn check(what : String, ok : Bool, detail? : String = "") -> Unit {
 }
 
 ///|
-fn find(data : Bytes, needle : String) -> Int? {
+fn find(data : Bytes, needle : String) -> Int32? {
   let n = needle.length()
   for i in 0..<(data.length() - n + 1) {
     let mut j = 0
@@ -103,7 +104,7 @@ fn find(data : Bytes, needle : String) -> Int? {
 }
 
 ///|
-fn rfind(data : Bytes, needle : String) -> Int? {
+fn rfind(data : Bytes, needle : String) -> Int32? {
   let n = needle.length()
   for i = data.length() - n; i >= 0; i = i - 1 {
     let mut j = 0
@@ -126,9 +127,7 @@ fn pdf_problem(data : Bytes) -> String? {
     return Some("no %PDF- header")
   }
   guard rfind(data, "%%EOF") is Some(_) else { return Some("no %%EOF") }
-  guard rfind(data, "startxref") is Some(s) else {
-    return Some("no startxref")
-  }
+  guard rfind(data, "startxref") is Some(s) else { return Some("no startxref") }
   let mut i = s + 9
   while i < data.length() && (data[i] == b'\n' || data[i] == b'\r') {
     i += 1
@@ -166,16 +165,21 @@ async fn pdfinfo_available() -> Bool {
 async fn run_cli(
   args : Array[String],
   wasm~ : Bool,
-  command? : String = "asciidoctor-pdf",
+  command~ : String = "asciidoctor-pdf",
   stdin? : String,
-) -> (Int, Bytes, String) {
+) -> (Int32, Bytes, String) {
   let (cmd, argv) = if wasm {
     ("moonrun", [wasm_file(command), "--", ..args])
   } else {
     (bin(command), args)
   }
   let (code, out, err) = match stdin {
-    Some(file) => @process.collect_output(cmd, argv, stdin=@process.redirect_from_file(file))
+    Some(file) =>
+      @process.collect_output(
+        cmd,
+        argv,
+        stdin=@process.redirect_from_file(file),
+      )
     None => @process.collect_output(cmd, argv)
   }
   (code, out.binary(), err.text())
@@ -188,7 +192,7 @@ async fn convert(
   output : String,
   wasm~ : Bool,
   check_pdfinfo~ : Bool,
-  command? : String = "asciidoctor-pdf",
+  command~ : String = "asciidoctor-pdf",
 ) -> Unit {
   let (code, _, err) = run_cli(["-o", output, ..args], wasm~, command~)
   check("\{label}: exit 0", code == 0, detail=err)
@@ -199,10 +203,18 @@ async fn convert(
     }
   }
   let problem = pdf_problem(data)
-  check("\{label}: valid PDF (\{data.length()} bytes)", problem is None, detail=problem.unwrap_or(""))
+  check(
+    "\{label}: valid PDF (\{data.length()} bytes)",
+    problem is None,
+    detail=problem.unwrap_or(""),
+  )
   if check_pdfinfo {
     let (code, out, err) = @process.collect_output("pdfinfo", [output])
-    check("\{label}: pdfinfo accepts it", code == 0, detail=err.text() + out.text())
+    check(
+      "\{label}: pdfinfo accepts it",
+      code == 0,
+      detail=err.text() + out.text(),
+    )
   }
 }
 
@@ -234,7 +246,9 @@ async fn main {
     _ => ()
   }
   let check_pdfinfo = pdfinfo_available()
-  println("pdfinfo: \{if check_pdfinfo { "available" } else { "not installed" }}")
+  println(
+    "pdfinfo: \{if check_pdfinfo { "available" } else { "not installed" }}",
+  )
   let small = "\{out_dir}/small.adoc"
   @fs.write_file(
     small,
@@ -283,7 +297,9 @@ async fn main {
     )
     convert(
       "\{tag} default-with-font-fallbacks",
-      ["--theme", "default-with-font-fallbacks", "pdf/tests/theme-fallbacks.adoc"],
+      [
+        "--theme", "default-with-font-fallbacks", "pdf/tests/theme-fallbacks.adoc",
+      ],
       "\{out_dir}/\{tag}-fallbacks.pdf",
       wasm~,
       check_pdfinfo~,
@@ -298,12 +314,17 @@ async fn main {
       check_pdfinfo~,
     )
     let (code, _, err) = run_cli(
-      ["-o", "\{out_dir}/\{tag}-no-pygments.pdf", "pdf/tests/source-pygments.adoc"],
+      [
+        "-o",
+        "\{out_dir}/\{tag}-no-pygments.pdf",
+        "pdf/tests/source-pygments.adoc",
+      ],
       wasm~,
     )
     check(
       "\{tag} pygments without Pygments: converted, reported unsupported",
-      code == 0 && err.contains("UNSUPPORTED attribute source-highlighter=pygments"),
+      code == 0 &&
+      err.contains("UNSUPPORTED attribute source-highlighter=pygments"),
       detail=err,
     )
     let pygments = "asciidoctor-pdf-pygments"
@@ -323,7 +344,11 @@ async fn main {
       command=pygments,
     )
     let (_, _, err) = run_cli(
-      ["-o", "\{out_dir}/\{tag}-pygments-2.pdf", "pdf/tests/source-pygments.adoc"],
+      [
+        "-o",
+        "\{out_dir}/\{tag}-pygments-2.pdf",
+        "pdf/tests/source-pygments.adoc",
+      ],
       wasm~,
       command=pygments,
     )

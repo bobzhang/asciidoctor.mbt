@@ -16,11 +16,11 @@ pub async fn load(String, options? : @core.Options, prefetch_conversion? : Bool)
 
 pub async fn load_file(String, options? : @core.Options, prefetch_conversion? : Bool) -> @core.Node
 
-pub async fn[T] run_with_files(FsVfs, () -> T raise, max_rounds? : Int) -> T
+pub async fn[T] run_with_files(FsVfs, () -> T raise, max_rounds? : Int32) -> T
 
 // Errors
 pub suberror FixpointExhausted {
-  FixpointExhausted(rounds~ : Int, unresolved~ : Array[String])
+  FixpointExhausted(rounds~ : Int32, unresolved~ : Array[String])
 }
 pub impl Show for FixpointExhausted
 
