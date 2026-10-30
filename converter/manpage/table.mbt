@@ -10,7 +10,7 @@ fn[T] Slots::new() -> Slots[T] {
 }
 
 ///|
-fn[T] Slots::get(self : Slots[T], i : Int) -> T? {
+fn[T] Slots::get(self : Slots[T], i : Int32) -> T? {
   match self.items.get(i) {
     Some(v) => v
     None => None
@@ -18,7 +18,7 @@ fn[T] Slots::get(self : Slots[T], i : Int) -> T? {
 }
 
 ///|
-fn[T] Slots::set(self : Slots[T], i : Int, v : T) -> Unit {
+fn[T] Slots::set(self : Slots[T], i : Int32, v : T) -> Unit {
   while self.items.length() <= i {
     self.items.push(None)
   }
@@ -27,7 +27,7 @@ fn[T] Slots::set(self : Slots[T], i : Int, v : T) -> Unit {
 
 ///|
 /// Ruby `slots[i] ||= init()`.
-fn[T] Slots::ensure(self : Slots[T], i : Int, init : () -> T) -> T {
+fn[T] Slots::ensure(self : Slots[T], i : Int32, init : () -> T) -> T {
   match self.get(i) {
     Some(v) => v
     None => {

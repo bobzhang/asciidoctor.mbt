@@ -124,7 +124,7 @@ pub async fn run_process() -> Unit {
 
 ///|
 /// Runs the command line and returns the exit code.
-async fn run(args : Array[String]) -> Int {
+async fn run(args : Array[String]) -> Int32 {
   let command = parse_args(args) catch {
     CliError(msg) => {
       write_err(msg + "\n")
@@ -229,7 +229,7 @@ fn error_message(e : Error) -> String {
 async fn cli_attributes(opts : CliOptions) -> Array[(String, @core.AttrVal)] {
   let out : Array[(String, @core.AttrVal)] = []
   let mut next = 0
-  let flush = (upto : Int) => {
+  let flush = (upto : Int32) => {
     while next < upto {
       out.push(opts.attributes[next])
       next += 1
@@ -296,7 +296,7 @@ fn output_target(opts : CliOptions, cwd : String, input : String?) -> String? {
 ///|
 /// Converts the input files (Ruby `Invoker#invoke!`) and returns the exit
 /// code.
-async fn invoke(opts : CliOptions) -> Int {
+async fn invoke(opts : CliOptions) -> Int32 {
   let cwd = @env.current_dir().unwrap_or("/")
   let messages : Array[@core.LogMessage] = []
   let logger = if opts.verbose == 0 {
@@ -483,8 +483,8 @@ async fn invoke(opts : CliOptions) -> Int {
 
 ///|
 #cfg(target="native")
-extern "C" fn c_exit(code : Int) = "exit"
+extern "C" fn c_exit(code : Int32) = "exit"
 
 ///|
 #cfg(target="wasm")
-fn c_exit(code : Int) = "wasi_snapshot_preview1" "proc_exit"
+fn c_exit(code : Int32) = "wasi_snapshot_preview1" "proc_exit"

@@ -12,13 +12,13 @@ pub const DEFAULT_BACKEND : String = "html5"
 
 pub const DEFAULT_DOCTYPE : String = "article"
 
-pub const SAFE_SAFE : Int = 1
+pub const SAFE_SAFE : Int32 = 1
 
-pub const SAFE_SECURE : Int = 20
+pub const SAFE_SECURE : Int32 = 20
 
-pub const SAFE_SERVER : Int = 10
+pub const SAFE_SERVER : Int32 = 10
 
-pub const SAFE_UNSAFE : Int = 0
+pub const SAFE_UNSAFE : Int32 = 0
 
 pub const VERSION : String = "2.1.0.alpha.0"
 
@@ -54,7 +54,7 @@ pub fn create_paragraph(Node, Array[String], Attributes) -> Node
 
 pub fn create_pass_block(Node, Array[String], Attributes) -> Node
 
-pub fn create_section(Node, String, Attributes, level? : Int, numbered? : Bool) -> Node
+pub fn create_section(Node, String, Attributes, level? : Int32, numbered? : Bool) -> Node
 
 pub fn create_syntax_highlighter(String, String, Node) -> &SyntaxHighlighter?
 
@@ -126,11 +126,11 @@ pub fn rekey_attributes(Attributes, Array[String?]) -> Attributes
 
 pub fn reset_compliance() -> Unit
 
-pub fn resolve_lines_to_highlight(String, String, start? : Int) -> Array[Int]
+pub fn resolve_lines_to_highlight(String, String, start? : Int32) -> Array[Int32]
 
 pub fn restore_process_state(Array[String]) -> Unit
 
-pub fn roman_to_int(String) -> Int
+pub fn roman_to_int(String) -> Int32
 
 pub fn rootname(String) -> String
 
@@ -140,9 +140,9 @@ pub fn ruby_downcase(String) -> String
 
 pub fn ruby_upcase(String) -> String
 
-pub fn safe_mode_name_for_value(Int) -> String?
+pub fn safe_mode_name_for_value(Int32) -> String?
 
-pub fn safe_mode_value_for_name(String) -> Int?
+pub fn safe_mode_value_for_name(String) -> Int32?
 
 pub fn set_logger(Logger) -> Logger
 
@@ -150,7 +150,7 @@ pub fn set_now_epoch(() -> Int64) -> Unit
 
 pub fn set_source_date_epoch(Int64?) -> Unit
 
-pub fn set_utc_offset((Int64) -> Int) -> Unit
+pub fn set_utc_offset((Int64) -> Int32) -> Unit
 
 pub fn snapshot_process_state() -> Array[String]
 
@@ -184,12 +184,12 @@ pub suberror SecurityError {
 // Types and methods
 pub(all) enum AttrKey {
   Name(String)
-  Pos(Int)
+  Pos(Int32)
 } derive(Eq, Hash, @debug.Debug)
 
 pub(all) enum AttrVal {
   Str(String)
-  Int(Int)
+  Int(Int32)
   Float(Double)
   Bool(Bool)
   List(Array[String])
@@ -197,7 +197,7 @@ pub(all) enum AttrVal {
 } derive(Eq, @debug.Debug)
 pub fn AttrVal::is_str(Self, String) -> Bool
 pub fn AttrVal::to_f(Self) -> Double
-pub fn AttrVal::to_i(Self) -> Int
+pub fn AttrVal::to_i(Self) -> Int32
 pub fn AttrVal::to_s(Self) -> String
 pub fn AttrVal::truthy(Self) -> Bool
 
@@ -215,28 +215,28 @@ pub struct Attributes {
 pub fn Attributes::clear(Self) -> Unit
 pub fn Attributes::clear_entries(Self) -> Unit
 pub fn Attributes::contains(Self, String) -> Bool
-pub fn Attributes::contains_pos(Self, Int) -> Bool
+pub fn Attributes::contains_pos(Self, Int32) -> Bool
 pub fn Attributes::copy(Self) -> Self
 pub fn Attributes::from_array(Array[(String, AttrVal)]) -> Self
 pub fn Attributes::get(Self, String) -> AttrVal?
 pub fn Attributes::get_key(Self, AttrKey) -> AttrVal?
-pub fn Attributes::get_pos(Self, Int) -> AttrVal?
+pub fn Attributes::get_pos(Self, Int32) -> AttrVal?
 pub fn Attributes::is_empty(Self) -> Bool
 pub fn Attributes::iter(Self) -> Iter2[AttrKey, AttrVal]
-pub fn Attributes::length(Self) -> Int
+pub fn Attributes::length(Self) -> Int32
 pub fn Attributes::names(Self) -> Array[String]
 pub fn Attributes::new() -> Self
-pub fn Attributes::pos_str(Self, Int) -> String?
+pub fn Attributes::pos_str(Self, Int32) -> String?
 pub fn Attributes::remove(Self, String) -> AttrVal?
 pub fn Attributes::remove_key(Self, AttrKey) -> Unit
-pub fn Attributes::remove_pos(Self, Int) -> AttrVal?
+pub fn Attributes::remove_pos(Self, Int32) -> AttrVal?
 pub fn Attributes::remove_str(Self, String) -> String?
 pub fn Attributes::replace(Self, Self) -> Unit
 pub fn Attributes::save_entry(Self, AttributeEntry) -> Unit
 pub fn Attributes::set(Self, String, AttrVal) -> Unit
 pub fn Attributes::set_default(Self, String, AttrVal) -> Unit
 pub fn Attributes::set_key(Self, AttrKey, AttrVal) -> Unit
-pub fn Attributes::set_pos(Self, Int, AttrVal) -> Unit
+pub fn Attributes::set_pos(Self, Int32, AttrVal) -> Unit
 pub fn Attributes::set_str(Self, String, String) -> Unit
 pub fn Attributes::str(Self, String) -> String?
 pub fn Attributes::truthy(Self, String) -> Bool
@@ -281,7 +281,7 @@ pub(all) enum BlockSubs {
 pub struct Callouts {
   // private fields
 }
-pub fn Callouts::callout_ids(Self, Int) -> String
+pub fn Callouts::callout_ids(Self, Int32) -> String
 pub fn Callouts::new() -> Self
 pub fn Callouts::next_list(Self) -> Unit
 pub fn Callouts::read_next_id(Self) -> String?
@@ -299,14 +299,14 @@ pub struct Catalog {
 
 pub struct CellData {
   mut text : String
-  mut colspan : Int?
-  mut rowspan : Int?
+  mut colspan : Int32?
+  mut rowspan : Int32?
   mut inner_document : Node?
   // private fields
 }
 
 pub(all) struct ColSpec {
-  mut width : Int
+  mut width : Int32
   mut halign : String?
   mut valign : String?
   mut style : String?
@@ -321,7 +321,7 @@ pub(all) struct Compliance {
   mut attribute_undefined : String
   mut shorthand_property_syntax : Bool
   mut natural_xrefs : Bool
-  mut unique_id_start_index : Int
+  mut unique_id_start_index : Int32
   mut markdown_syntax : Bool
 }
 
@@ -398,12 +398,12 @@ pub(all) struct Cursor {
   file : String?
   dir : String?
   path : String?
-  mut lineno : Int
+  mut lineno : Int32
 } derive(Eq, @debug.Debug)
-pub fn Cursor::advance(Self, Int) -> Unit
+pub fn Cursor::advance(Self, Int32) -> Unit
 pub fn Cursor::dup(Self) -> Self
 pub fn Cursor::line_info(Self) -> String
-pub fn Cursor::new(file? : String, dir? : String, path? : String, lineno? : Int) -> Self
+pub fn Cursor::new(file? : String, dir? : String, path? : String, lineno? : Int32) -> Self
 
 pub(all) struct DlistItem {
   terms : Array[Node]
@@ -468,7 +468,7 @@ pub(all) enum FindVerdict {
 }
 
 pub(all) struct Footnote {
-  index : Int
+  index : Int32
   id : String?
   text : String
 } derive(@debug.Debug)
@@ -488,14 +488,14 @@ pub(all) enum HeaderOption {
 } derive(Eq, @debug.Debug)
 
 pub(all) struct HighlightOptions {
-  callouts : Map[Int, Array[(AttrVal, String)]]?
+  callouts : Map[Int32, Array[(AttrVal, String)]]?
   css_mode : String
-  highlight_lines : Array[Int]?
+  highlight_lines : Array[Int32]?
   number_lines : String?
-  start_line_number : Int?
+  start_line_number : Int32?
   style : String?
 }
-pub fn HighlightOptions::new(callouts? : Map[Int, Array[(AttrVal, String)]], css_mode? : String, highlight_lines? : Array[Int], number_lines? : String, start_line_number? : Int, style? : String) -> Self
+pub fn HighlightOptions::new(callouts? : Map[Int32, Array[(AttrVal, String)]], css_mode? : String, highlight_lines? : Array[Int32], number_lines? : String, start_line_number? : Int32, style? : String) -> Self
 
 pub(all) struct ImageReference {
   target : String
@@ -557,13 +557,13 @@ pub(all) struct Node {
   mut id : String?
   blocks : Array[Node]
   mut content_model : ContentModel
-  mut level : Int
+  mut level : Int32
   mut numeral : String?
   mut source_location : Cursor?
   mut style : String?
   mut subs : Array[Sub]
   mut lines : Array[String]
-  mut index : Int
+  mut index : Int32
   mut sectname : String?
   mut special : Bool
   mut numbered : Numbered
@@ -599,7 +599,7 @@ pub fn Node::catalog(Self) -> Catalog
 pub fn Node::cell_data(Self) -> CellData
 pub fn Node::cell_lines(Self) -> Array[String]
 pub fn Node::cell_paragraphs(Self) -> Array[String]
-pub fn Node::colspan(Self) -> Int?
+pub fn Node::colspan(Self) -> Int32?
 pub fn Node::column(Self) -> Self?
 pub fn Node::columns(Self) -> Array[Self]
 pub fn Node::commit_subs(Self) -> Unit
@@ -656,14 +656,14 @@ pub fn Node::is_outline(Self) -> Bool
 pub fn Node::is_parsed(Self) -> Bool
 pub fn Node::is_simple(Self) -> Bool
 pub fn Node::items(Self) -> Array[Self]
-pub fn Node::lineno(Self) -> Int?
+pub fn Node::lineno(Self) -> Int32?
 pub fn Node::list_marker_keyword(Self, list_type? : String) -> String?
 pub fn Node::media_uri(Self, String, asset_dir_key? : String?) -> String
 pub fn Node::new_block(Self, Context, content_model? : ContentModel, subs? : BlockSubs, source? : Array[String], source_text? : String, attributes? : Attributes) -> Self
 pub fn Node::new_inline(Self, Context, text? : String, id? : String, type_? : String, target? : String, attributes? : Attributes) -> Self
 pub fn Node::new_list(Self, Context, attributes? : Attributes) -> Self
 pub fn Node::new_list_item(Self, text? : String) -> Self
-pub fn Node::new_section(Self?, level? : Int, numbered? : Bool, attributes? : Attributes) -> Self
+pub fn Node::new_section(Self?, level? : Int32, numbered? : Bool, attributes? : Attributes) -> Self
 pub fn Node::new_table(Self, Attributes) -> Self
 pub fn Node::next_adjacent_block(Self) -> Self?
 pub fn Node::nofooter(Self) -> Bool
@@ -707,8 +707,8 @@ pub fn Node::role(Self) -> String?
 pub fn Node::role_is(Self, expected? : String) -> Bool
 pub fn Node::roles(Self) -> Array[String]
 pub fn Node::rows(Self) -> TableRows
-pub fn Node::rowspan(Self) -> Int?
-pub fn Node::safe(Self) -> Int
+pub fn Node::rowspan(Self) -> Int32?
+pub fn Node::safe(Self) -> Int32
 pub fn Node::sections(Self) -> Array[Self]
 pub fn Node::sectnum(Self, delimiter? : String, append? : String?) -> String
 pub fn Node::set_attr(Self, String, value? : AttrVal, overwrite? : Bool) -> Bool
@@ -756,7 +756,7 @@ pub(all) enum Numbered {
 
 pub(all) struct Options {
   mut attributes : Array[(String, AttrVal)]
-  mut safe : Int?
+  mut safe : Int32?
   mut backend : String?
   mut doctype : String?
   mut standalone : Bool?
@@ -777,13 +777,13 @@ pub(all) struct Options {
   mut parent : Node?
   mut cursor : Cursor?
 }
-pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs, timings? : Timings) -> Self
+pub fn Options::new(attributes? : Array[(String, AttrVal)], safe? : Int32, backend? : String, doctype? : String, standalone? : Bool, base_dir? : String, to_file? : String, to_dir? : String, mkdirs? : Bool, sourcemap? : Bool, parse_header_only? : Bool, catalog_assets? : Bool, parse? : Bool, converter? : &Converter, extensions? : Extensions, vfs? : &Vfs, timings? : Timings) -> Self
 
 pub struct PathResolver {
   mut working_dir : String
   // private fields
 }
-pub fn PathResolver::descends_from(Self, String, String) -> Int?
+pub fn PathResolver::descends_from(Self, String, String) -> Int32?
 pub fn PathResolver::expand_path(Self, String) -> String
 pub fn PathResolver::is_absolute(Self, String) -> Bool
 pub fn PathResolver::is_root(Self, String) -> Bool
@@ -812,7 +812,7 @@ pub struct Reader {
 }
 pub fn Reader::advance(Self) -> Bool
 pub fn Reader::cursor(Self) -> Cursor
-pub fn Reader::cursor_at_line(Self, Int) -> Cursor
+pub fn Reader::cursor_at_line(Self, Int32) -> Cursor
 pub fn Reader::cursor_at_mark(Self) -> Cursor
 pub fn Reader::cursor_at_prev_line(Self) -> Cursor
 pub fn Reader::cursor_before_mark(Self) -> Cursor
@@ -821,10 +821,10 @@ pub fn Reader::discard_save(Self) -> Unit
 pub fn Reader::file(Self) -> String?
 pub fn Reader::from_string(String, cursor? : Cursor) -> Self
 pub fn Reader::has_more_lines(Self) -> Bool
-pub fn Reader::include_depth(Self) -> Int
+pub fn Reader::include_depth(Self) -> Int32
 pub fn Reader::is_empty(Self) -> Bool
 pub fn Reader::line_info(Self) -> String
-pub fn Reader::lineno(Self) -> Int
+pub fn Reader::lineno(Self) -> Int32
 pub fn Reader::lines(Self) -> Array[String]
 pub fn Reader::mark(Self) -> Cursor
 pub fn Reader::new(Array[String], cursor? : Cursor, normalize? : Bool) -> Self
@@ -832,8 +832,8 @@ pub fn Reader::new_preprocessor(Node, Array[String], cursor? : Cursor, normalize
 pub fn Reader::next_line_empty(Self) -> Bool
 pub fn Reader::path(Self) -> String
 pub fn Reader::peek_line(Self, direct? : Bool) -> String?
-pub fn Reader::peek_lines(Self, num? : Int, direct? : Bool) -> Array[String]
-pub fn Reader::push_include_lines(Self, Array[String], file? : String, path? : String, lineno? : Int, attributes? : Attributes) -> Unit
+pub fn Reader::peek_lines(Self, num? : Int32, direct? : Bool) -> Array[String]
+pub fn Reader::push_include_lines(Self, Array[String], file? : String, path? : String, lineno? : Int32, attributes? : Attributes) -> Unit
 pub fn Reader::read(Self) -> String
 pub fn Reader::read_line(Self) -> String?
 pub fn Reader::read_lines(Self) -> Array[String]
@@ -842,7 +842,7 @@ pub fn Reader::replace_next_line(Self, String) -> Bool
 pub fn Reader::restore_save(Self) -> Unit
 pub fn Reader::save(Self) -> Unit
 pub fn Reader::shift(Self) -> String?
-pub fn Reader::skip_blank_lines(Self) -> Int?
+pub fn Reader::skip_blank_lines(Self) -> Int32?
 pub fn Reader::skip_comment_lines(Self) -> Unit
 pub fn Reader::skip_line_comments(Self) -> Array[String]
 pub fn Reader::source(Self) -> String
@@ -860,7 +860,7 @@ pub(all) enum Severity {
   Unknown
 } derive(Eq, @debug.Debug)
 pub fn Severity::label(Self) -> String
-pub fn Severity::to_int(Self) -> Int
+pub fn Severity::to_int(Self) -> Int32
 
 pub(all) enum Sub {
   SpecialCharacters
@@ -908,7 +908,7 @@ pub(all) struct TreeProcessor {
 }
 
 // Type aliases
-pub type CalloutMarks = Map[Int, Array[(AttrVal, String)]]
+pub type CalloutMarks = Map[Int32, Array[(AttrVal, String)]]
 
 pub type ConverterFactory = (String, String?, Node) -> &Converter
 
@@ -923,7 +923,7 @@ pub(open) trait Converter {
 pub(open) trait SyntaxHighlighter {
   fn name(Self) -> String
   fn handles_highlighting(Self) -> Bool = _
-  fn highlight(Self, Node, String, String?, HighlightOptions) -> (String, Int?) = _
+  fn highlight(Self, Node, String, String?, HighlightOptions) -> (String, Int32?) = _
   fn format(Self, Node, String?, FormatOptions) -> String = _
   fn has_docinfo(Self, String) -> Bool = _
   fn docinfo(Self, String, Node, DocinfoOptions) -> String = _

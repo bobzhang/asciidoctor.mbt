@@ -1,8 +1,8 @@
 ///|
 priv struct MaxDepth {
-  abs : Int
-  curr : Int
-  rel : Int
+  abs : Int32
+  curr : Int32
+  rel : Int32
 }
 
 ///|
@@ -11,7 +11,7 @@ priv struct IncludeFrame {
   file : String?
   dir : String
   path : String
-  lineno : Int
+  lineno : Int32
   maxdepth : MaxDepth?
   process_lines : Bool
 }
@@ -42,10 +42,10 @@ priv struct ReaderSnapshot {
   file : String?
   dir : String
   path : String
-  lineno : Int
+  lineno : Int32
   lines : Array[String]
   mark : Cursor?
-  look_ahead : Int
+  look_ahead : Int32
   process_lines : Bool
   unescape_next_line : Bool
   unterminated : Bool
@@ -59,11 +59,11 @@ pub struct Reader {
   priv mut file : String?
   priv mut dir : String
   priv mut path : String
-  priv mut lineno : Int
+  priv mut lineno : Int32
   priv mut lines : Array[String] // reversed: next line is last
   source_lines : Array[String]
   priv mut mark_ : Cursor?
-  priv mut look_ahead : Int
+  priv mut look_ahead : Int32
   mut process_lines : Bool
   priv mut unescape_next_line : Bool
   mut unterminated : Bool
@@ -76,7 +76,7 @@ pub struct Reader {
 }
 
 ///|
-fn reader_init(cursor : Cursor?) -> (String?, String, String, Int) {
+fn reader_init(cursor : Cursor?) -> (String?, String, String, Int32) {
   match cursor {
     None => (None, ".", "<stdin>", 1)
     Some(c) =>
@@ -99,7 +99,7 @@ fn reader_init(cursor : Cursor?) -> (String?, String, String, Int) {
 pub fn Reader::new(
   data : Array[String],
   cursor? : Cursor,
-  normalize? : Bool = false,
+  normalize~ : Bool = false,
 ) -> Reader {
   let (file, dir, path, lineno) = reader_init(cursor)
   let source_lines = if normalize {
@@ -177,7 +177,7 @@ pub fn Reader::new_preprocessor(
   document : Node,
   data : Array[String],
   cursor? : Cursor,
-  normalize? : Bool = false,
+  normalize~ : Bool = false,
 ) -> Reader {
   let (file, dir, path, lineno) = reader_init(cursor)
   let default_depth = match document.attributes.get("max-include-depth") {
@@ -238,8 +238,8 @@ fn Reader::pre_prepare_lines(
   normalize_chomp~ : Bool,
   normalize~ : Bool,
   for_include~ : Bool,
-  indent? : Int,
-  skip_front_matter? : Bool = false,
+  indent? : Int32,
+  skip_front_matter~ : Bool = false,
 ) -> Array[String] {
   let result = if normalize || normalize_chomp {
     prepare_source_array(data, trim_end=!normalize_chomp)
@@ -321,7 +321,7 @@ pub fn Reader::path(self : Reader) -> String {
 }
 
 ///|
-pub fn Reader::lineno(self : Reader) -> Int {
+pub fn Reader::lineno(self : Reader) -> Int32 {
   self.lineno
 }
 
@@ -384,7 +384,7 @@ fn Reader::base_peek_line(self : Reader, direct : Bool) -> String? {
 
 ///|
 /// The next line without consuming it.
-pub fn Reader::peek_line(self : Reader, direct? : Bool = false) -> String? {
+pub fn Reader::peek_line(self : Reader, direct~ : Bool = false) -> String? {
   match self.base_peek_line(direct) {
     Some(line) => Some(line)
     None =>
@@ -425,8 +425,8 @@ pub fn Reader::peek_line(self : Reader, direct? : Bool = false) -> String? {
 /// Peeks up to `num` lines (processing directives unless `direct`).
 pub fn Reader::peek_lines(
   self : Reader,
-  num? : Int,
-  direct? : Bool = false,
+  num? : Int32,
+  direct~ : Bool = false,
 ) -> Array[String] {
   let old_look_ahead = self.look_ahead
   let result = []
@@ -507,7 +507,7 @@ pub fn Reader::replace_next_line(self : Reader, replacement : String) -> Bool {
 
 ///|
 /// Skips blank lines; returns the number skipped, or None if at end.
-pub fn Reader::skip_blank_lines(self : Reader) -> Int? {
+pub fn Reader::skip_blank_lines(self : Reader) -> Int32? {
   if self.is_empty() {
     return None
   }
@@ -585,16 +585,16 @@ pub fn Reader::terminate(self : Reader) -> Unit {
 pub fn Reader::read_lines_until(
   self : Reader,
   terminator? : String,
-  skip_processing? : Bool = false,
-  break_on_blank_lines? : Bool = false,
-  break_on_list_continuation? : Bool = false,
-  skip_line_comments? : Bool = false,
-  skip_first_line? : Bool = false,
-  read_last_line? : Bool = false,
-  preserve_last_line? : Bool = false,
+  skip_processing~ : Bool = false,
+  break_on_blank_lines~ : Bool = false,
+  break_on_list_continuation~ : Bool = false,
+  skip_line_comments~ : Bool = false,
+  skip_first_line~ : Bool = false,
+  read_last_line~ : Bool = false,
+  preserve_last_line~ : Bool = false,
   context? : String?,
   cursor? : Cursor,
-  cursor_at_mark? : Bool = false,
+  cursor_at_mark~ : Bool = false,
   break_if? : (String) -> Bool,
 ) -> Array[String] {
   let result = []
@@ -743,7 +743,7 @@ pub fn Reader::cursor(self : Reader) -> Cursor {
 }
 
 ///|
-pub fn Reader::cursor_at_line(self : Reader, lineno : Int) -> Cursor {
+pub fn Reader::cursor_at_line(self : Reader, lineno : Int32) -> Cursor {
   Cursor::new(file?=self.file, dir=self.dir, path=self.path, lineno~)
 }
 
@@ -944,7 +944,7 @@ fn Reader::process_line(self : Reader, line : String) -> String? {
 /// A value of an ifeval expression operand.
 priv enum ExprVal {
   EStr(String)
-  EInt(Int)
+  EInt(Int32)
   EFloat(Double)
   EBool(Bool)
   ENil
@@ -1318,7 +1318,7 @@ fn Reader::preprocess_include_directive(
   let read_text = fn() -> String? {
     doc.vfs().read(inc_path).map(data => decode_text_with(data, encoding))
   }
-  let mut inc_linenos : Array[Int]? = None // -1 means "to the end"
+  let mut inc_linenos : Array[Int32]? = None // -1 means "to the end"
   let mut inc_tags : Array[(String, Bool)]? = None
   if attrlist is Some(_) {
     if parsed_attrs.contains("lines") {
@@ -1405,7 +1405,7 @@ fn Reader::preprocess_include_directive(
     Some(linenos) => {
       guard read_text() is Some(content) else { return unresolved() }
       let inc_lines = []
-      let mut inc_offset : Int? = None
+      let mut inc_offset : Int32? = None
       let mut inc_lineno = 0
       let mut remaining = linenos
       let mut select_remaining = false
@@ -1463,9 +1463,9 @@ fn Reader::preprocess_include_directive(
             }
           }
           let inc_lines = []
-          let mut inc_offset : Int? = None
+          let mut inc_offset : Int32? = None
           let mut inc_lineno = 0
-          let tag_stack : Array[(String, Bool, Int)] = []
+          let tag_stack : Array[(String, Bool, Int32)] = []
           let tags_selected : Array[String] = []
           let mut active_tag : String? = None
           let mut select = false
@@ -1709,7 +1709,7 @@ fn Reader::create_include_cursor(
   _self : Reader,
   file : String,
   path : String,
-  lineno : Int,
+  lineno : Int32,
 ) -> Cursor {
   Cursor::new(file~, dir=dirname(file), path~, lineno~)
 }
@@ -1721,7 +1721,7 @@ fn Reader::push_include(
   data : Array[String],
   file : String?,
   path : String?,
-  lineno : Int,
+  lineno : Int32,
   attributes : Attributes,
 ) -> Unit {
   self.push_include_impl(data, file, path, lineno, attributes)
@@ -1733,7 +1733,7 @@ fn Reader::push_include_string(
   data : String,
   file : String?,
   path : String?,
-  lineno : Int,
+  lineno : Int32,
   attributes : Attributes,
 ) -> Unit {
   self.push_include_impl(each_line(data), file, path, lineno, attributes)
@@ -1746,8 +1746,8 @@ pub fn Reader::push_include_lines(
   data : Array[String],
   file? : String,
   path? : String,
-  lineno? : Int = 1,
-  attributes? : Attributes = Attributes::new(),
+  lineno~ : Int32 = 1,
+  attributes~ : Attributes = Attributes::new(),
 ) -> Unit {
   self.push_include_impl(data, file, path, lineno, attributes)
 }
@@ -1758,7 +1758,7 @@ fn Reader::push_include_impl(
   data : Array[String],
   file : String?,
   path : String?,
-  lineno : Int,
+  lineno : Int32,
   attributes : Attributes,
 ) -> Unit {
   let pre = self.pre.unwrap()
@@ -1879,7 +1879,7 @@ fn Reader::pop_include(self : Reader) -> Unit {
 
 ///|
 /// Current include depth.
-pub fn Reader::include_depth(self : Reader) -> Int {
+pub fn Reader::include_depth(self : Reader) -> Int32 {
   match self.pre {
     Some(p) => p.include_stack.length()
     None => 0

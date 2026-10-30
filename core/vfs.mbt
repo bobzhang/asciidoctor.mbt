@@ -22,7 +22,7 @@ pub struct NullVfs {
 }
 
 ///|
-pub fn NullVfs::new(cwd? : String = "/") -> &Vfs {
+pub fn NullVfs::new(cwd~ : String = "/") -> &Vfs {
   ({ working_dir: cwd, } : NullVfs)
 }
 
@@ -60,7 +60,7 @@ pub struct MemoryVfs {
 }
 
 ///|
-pub fn MemoryVfs::new(cwd? : String = "/", home? : String = "/") -> MemoryVfs {
+pub fn MemoryVfs::new(cwd~ : String = "/", home~ : String = "/") -> MemoryVfs {
   { files: {}, working_dir: cwd, home_dir: home, }
 }
 

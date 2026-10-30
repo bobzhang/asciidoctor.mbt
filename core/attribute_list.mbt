@@ -2,7 +2,7 @@
 /// Parses an attribute list string (Ruby `AttributeList`).
 priv struct AttributeListParser {
   src : String
-  mut pos : Int
+  mut pos : Int32
   block : Node?
   delimiter : String
   attributes : Attributes
@@ -57,7 +57,7 @@ fn AttributeListParser::scan(
 fn AttributeListParser::skip(
   self : AttributeListParser,
   rx : @regex.Regex,
-) -> Int? {
+) -> Int32? {
   match rx.match_at(self.src, self.pos) {
     Some(m) => {
       let len = m.end() - m.begin()
@@ -136,7 +136,7 @@ fn AttributeListParser::parse_attribute_value(
 ///|
 fn AttributeListParser::parse_attribute(
   self : AttributeListParser,
-  index : Int,
+  index : Int32,
   positional_attrs : Array[String?],
 ) -> Bool {
   let mut continue_ = true
@@ -257,9 +257,9 @@ fn AttributeListParser::parse_attribute(
 /// Parses an attribute list into a new Attributes map.
 pub fn parse_attribute_list(
   source : String,
-  positional_attrs? : Array[String?] = [],
+  positional_attrs~ : Array[String?] = [],
   block? : Node,
-  delimiter? : String = ",",
+  delimiter~ : String = ",",
 ) -> Attributes {
   let p : AttributeListParser = {
     src: source,

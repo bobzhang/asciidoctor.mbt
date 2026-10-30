@@ -7,13 +7,13 @@ fn matched_all(re : @regex.Regex, s : String) -> Array[String] {
 }
 
 ///|
-fn offsets_all(re : @regex.Regex, s : String) -> Array[(Int, Int)] {
+fn offsets_all(re : @regex.Regex, s : String) -> Array[(Int32, Int32)] {
   re.find_all(s).map(m => (m.begin(), m.end()))
 }
 
 ///|
 /// The error message of compiling `pattern`, or "ok".
-fn compile_error(pattern : String, flags? : String = "") -> String {
+fn compile_error(pattern : String, flags~ : String = "") -> String {
   try @regex.compile(pattern, flags~) catch {
     @regex.RegexError(message~, ..) => message
   } noraise {

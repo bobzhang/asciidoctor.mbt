@@ -19,7 +19,7 @@ pub fn to_pt(num : Double, units : String) -> Double? {
 
 ///|
 /// Whether `s[i:]` starts with a unit of `(in|mm|cm|p[txc])`; its length.
-fn unit_at(s : String, i : Int) -> String? {
+fn unit_at(s : String, i : Int32) -> String? {
   if i + 2 > s.length() {
     return None
   }
@@ -109,7 +109,10 @@ pub fn resolve_measurement_values(str : String) -> String {
 ///|
 /// `-?\d+(?:\.\d+)?` then a unit then the end, a space or `)`, at `start`:
 /// (end, number, unit).
-fn match_inset_measurement(s : String, start : Int) -> (Int, String, String)? {
+fn match_inset_measurement(
+  s : String,
+  start : Int32,
+) -> (Int32, String, String)? {
   let n = s.length()
   let mut i = start
   if i < n && s[i] == '-' {

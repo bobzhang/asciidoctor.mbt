@@ -11,7 +11,7 @@
 /// is set for standalone documents so the stylesheet is not embedded.
 fn document_from_string(
   src : String,
-  options? : @core.Options = @core.Options::new(),
+  options~ : @core.Options = @core.Options::new(),
 ) -> @core.Node {
   if options.standalone is None {
     options.standalone = Some(true)
@@ -26,7 +26,7 @@ fn document_from_string(
 /// Ruby `convert_string_to_embedded`.
 fn convert_string_to_embedded(
   src : String,
-  options? : @core.Options = @core.Options::new(),
+  options~ : @core.Options = @core.Options::new(),
 ) -> String {
   options.standalone = Some(false)
   document_from_string(src, options~).convert()
@@ -35,7 +35,7 @@ fn convert_string_to_embedded(
 ///|
 /// Ruby `empty_document`: `Document.new [], options` (not parsed).
 fn empty_document(
-  options? : @core.Options = @core.Options::new(),
+  options~ : @core.Options = @core.Options::new(),
 ) -> @core.Node {
   options.parse = false
   @asciidoctor.load_lines([], options~)
@@ -92,7 +92,7 @@ fn fixtures_vfs() -> @core.MemoryVfs {
 /// docfilesuffix and docname like `@io.load_file` does.
 fn load_file(
   path : String,
-  options? : @core.Options = @core.Options::new(),
+  options~ : @core.Options = @core.Options::new(),
 ) -> @core.Node {
   let vfs = fixtures_vfs()
   let text = @core.decode_text(vfs.files[path])
@@ -108,7 +108,7 @@ fn load_file(
 }
 
 ///|
-fn linenos(nodes : Array[@core.Node]) -> Array[Int] {
+fn linenos(nodes : Array[@core.Node]) -> Array[Int32] {
   nodes.map(n => n.lineno().unwrap_or(-1))
 }
 
@@ -560,7 +560,7 @@ test "should track file and line information on list items if sourcemap option i
     options=@core.Options::new(sourcemap=true),
   )
   let first_section = doc.blocks[1]
-  let check = fn(idx : Int) -> (Int?, Array[Int]) {
+  let check = fn(idx : Int32) -> (Int32?, Array[Int32]) {
     let list = first_section.blocks[idx]
     (list.lineno(), linenos(list.find_by(context=ListItem)))
   }

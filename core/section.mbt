@@ -2,7 +2,7 @@
 /// Section number, e.g. `2.3.` (Ruby `Section#sectnum`).
 pub fn Node::sectnum(
   self : Node,
-  delimiter? : String = ".",
+  delimiter~ : String = ".",
   append? : String?,
 ) -> String {
   let append = match append {

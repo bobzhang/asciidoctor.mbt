@@ -131,8 +131,8 @@ async fn load_text(
 /// missing converter) is reported by `@core.Node::processing_error`.
 pub async fn load_file(
   path : String,
-  options? : @core.Options = @core.Options::new(),
-  prefetch_conversion? : Bool = false,
+  options~ : @core.Options = @core.Options::new(),
+  prefetch_conversion~ : Bool = false,
 ) -> @core.Node {
   let vfs = FsVfs::new()
   let (text, _, opts, read_time) = read_source(Path(path), options, vfs)
@@ -146,8 +146,8 @@ pub async fn load_file(
 /// See `load_file` for what is (and is not) resolved.
 pub async fn load(
   input : String,
-  options? : @core.Options = @core.Options::new(),
-  prefetch_conversion? : Bool = false,
+  options~ : @core.Options = @core.Options::new(),
+  prefetch_conversion~ : Bool = false,
 ) -> @core.Node {
   let vfs = FsVfs::new()
   let opts = with_vfs(options, vfs)

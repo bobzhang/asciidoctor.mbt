@@ -23,14 +23,14 @@ priv struct InlineConverter {
 priv struct Session {
   /// how deep in dry runs (asciidoctor-pdf's scratch document): inline
   /// conversions there must leave no trace (index terms are not stored)
-  mut scratch : Int
+  mut scratch : Int32
   /// the index terms met so far
   index : IndexCatalog
   /// how many footnotes are inked (`@rendered_footnotes`): a book inks
   /// them after each chapter, and labels count from there
-  mut rendered_footnotes : Int
+  mut rendered_footnotes : Int32
   /// the labels footnotes were inked with, by index
-  footnote_labels : Map[Int, String]
+  footnote_labels : Map[Int32, String]
   /// the font catalog: the theme's fonts, and the icon fonts, whose glyphs
   /// font icons (`icon:name[]`) take; loaded once per document, unless
   /// `register` was given one
@@ -192,7 +192,7 @@ fn activate_session(doc : @core.Node) -> Unit {
 /// document's VFS (see `load_document_theme`).
 pub fn register(
   catalog? : FontCatalog,
-  fonts? : Array[@bundled.Bundle] = [@bundled.default_fonts()],
+  fonts~ : Array[@bundled.Bundle] = [@bundled.default_fonts()],
   icon_fonts? : @bundled.Bundle,
   fonts_dir? : String,
   icon_fonts_dir? : String,
@@ -311,7 +311,7 @@ fn conum_glyph(text : String) -> String {
 ///|
 /// The theme's typographic quote `index` (`quotes`: open and close
 /// double, open and close single).
-fn theme_quote(node : @core.Node, index : Int) -> String {
+fn theme_quote(node : @core.Node, index : Int32) -> String {
   match document_theme(node)["quotes"] {
     Array(items) => items.get(index).bind(value_str).unwrap_or("")
     _ => ""

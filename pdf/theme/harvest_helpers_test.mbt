@@ -21,7 +21,7 @@ fn check_case(
     home="/home",
   )
   @theme.clear_warnings()
-  let arg = (i : Int) => args.get(i).unwrap_or(None)
+  let arg = (i : Int32) => args.get(i).unwrap_or(None)
   let result = try {
     let theme = match kind {
       "load" => @theme.load_text(arg(0).unwrap_or(""))

@@ -19,11 +19,11 @@ priv struct Converter {
   mut toc_node : (@core.Node, String)?
   /// `toclevels` as the conversion starts (`toc_num_levels`), before the
   /// body's attribute entries: the TOC's depth and the outline's default
-  mut toc_levels : Int
+  mut toc_levels : Int32
   /// asciidoctor-pdf's `@disable_running_content`: the (1-based) pages
   /// whose header or footer is left out (the TOC's, when the `toc::[]`
   /// macro has the `noheader` or `nofooter` option)
-  disable_running_content : Map[String, Array[Int]]
+  disable_running_content : Map[String, Array[Int32]]
   /// asciidoctor-pdf's `@float_box`: the space beside a floated image
   /// that the next paragraphs wrap into (see `init_float_box`)
   mut float_box : FloatBox?
@@ -31,7 +31,7 @@ priv struct Converter {
   mut has_front_cover : Bool
   /// the pages imported from a PDF (`page.imported_page?`), by index: no
   /// background or running content goes on them (see `import_pdf_page`)
-  imported_pages : Map[Int, Unit]
+  imported_pages : Map[Int32, Unit]
   /// asciidoctor-pdf's `pinned` option of `convert_image` (the title page
   /// logo): the image stays on the page, with no margin or float after it
   mut pinned : Bool
@@ -131,7 +131,7 @@ fn Converter::dry_run(
 /// above.
 fn Converter::arrange_block(
   self : Converter,
-  keep_together? : Bool = false,
+  keep_together~ : Bool = false,
   node? : @core.Node,
   body : (Converter) -> Unit,
 ) -> Unit {
@@ -177,8 +177,8 @@ fn first_child_at_top(node : @core.Node) -> Bool {
 ///|
 fn Converter::arrange_block_at(
   self : Converter,
-  keep_together? : Bool = false,
-  moved? : () -> Unit = () => (),
+  keep_together~ : Bool = false,
+  moved~ : () -> Unit = () => (),
   body : (Converter) -> Unit,
 ) -> Unit {
   let flow = self.flow
@@ -263,12 +263,12 @@ pub fn conversion_warnings() -> Array[String] {
 /// what it is, its source line, and the flow position (page from 1, cursor
 /// in points from the page top) where its conversion started and ended.
 priv struct TraceEntry {
-  depth : Int
+  depth : Int32
   what : String
-  line : Int
-  start_page : Int
+  line : Int32
+  start_page : Int32
   start_y : Double
-  mut end_page : Int
+  mut end_page : Int32
   mut end_y : Double
 }
 
@@ -276,7 +276,7 @@ priv struct TraceEntry {
 let trace : Array[TraceEntry] = []
 
 ///|
-let trace_depth : Ref[Int] = { val: 0, }
+let trace_depth : Ref[Int32] = { val: 0, }
 
 ///|
 /// Where the blocks of the last `convert_document` went, one line each in
@@ -461,7 +461,7 @@ fn pdf_info(doc : @core.Node) -> @pdf.DocumentInfo {
 /// asciidoctor-pdf's outline depth and how many levels start expanded:
 /// `outlinelevels` (default `toclevels` as the conversion starts, see
 /// `Converter::toc_levels`), where `N:M` expands only the first M levels.
-fn outline_levels(doc : @core.Node, toclevels : Int) -> (Int, Int) {
+fn outline_levels(doc : @core.Node, toclevels : Int32) -> (Int32, Int32) {
   match doc.attr("outlinelevels") {
     Some(spec) =>
       match spec.find(":") {
@@ -798,7 +798,7 @@ fn Converter::add_dest(self : Converter, node : @core.Node) -> Unit {
 /// its bottom margin.
 fn next_enclosed_block(
   block : @core.Node,
-  descend? : Bool = false,
+  descend~ : Bool = false,
 ) -> @core.Node? {
   if block.context == Document {
     return None
@@ -862,15 +862,15 @@ fn Converter::block_margin_bottom(self : Converter, node : @core.Node) -> Unit {
 fn Converter::ink_prose(
   self : Converter,
   text : String,
-  style? : Style = base_style(),
+  style~ : Style = base_style(),
   align? : Alignment,
-  margin_bottom? : Double = prose_margin_bottom(),
-  line_height? : Double = base_line_height(),
-  normalize? : Bool = true,
-  bottom_gutter? : Double = 0.0,
-  normalize_line_height? : Bool = false,
+  margin_bottom~ : Double = prose_margin_bottom(),
+  line_height~ : Double = base_line_height(),
+  normalize~ : Bool = true,
+  bottom_gutter~ : Double = 0.0,
+  normalize_line_height~ : Bool = false,
   first_line_style? : Style,
-  text_indent? : Double = 0.0,
+  text_indent~ : Double = 0.0,
 ) -> Unit {
   let face = self.flow.font(style)
   let metrics = line_metrics(line_height, face, style.size)
@@ -1205,7 +1205,7 @@ fn Converter::convert_paragraph(self : Converter, node : @core.Node) -> Unit {
 fn Converter::ink_caption(
   self : Converter,
   text : String,
-  bottom? : Bool = false,
+  bottom~ : Bool = false,
   category? : String,
   block_align? : Alignment,
   block_width? : Double,

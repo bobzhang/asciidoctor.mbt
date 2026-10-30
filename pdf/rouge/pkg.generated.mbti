@@ -49,7 +49,7 @@ pub fn gradle(Map[String, String]) -> Lexer
 
 pub fn groovy(Map[String, String]) -> Lexer
 
-pub fn group_text(@regex.MatchData, Int) -> String
+pub fn group_text(@regex.MatchData, Int32) -> String
 
 pub fn guess(String?, mimetype? : String) -> Array[String]
 
@@ -169,7 +169,7 @@ pub fn Lexer::lex(Self, String, (String, String) -> Unit) -> Unit
 pub fn Lexer::lexer_option(Self, String) -> Self?
 pub fn Lexer::list_option(Self, String) -> Array[String]?
 pub fn Lexer::new(String, options? : Map[String, String]) -> Self
-pub fn Lexer::pop(Self, times? : Int) -> Unit
+pub fn Lexer::pop(Self, times? : Int32) -> Unit
 pub fn Lexer::prepend(Self, String, (StateBuilder) -> Unit) -> Unit
 pub fn Lexer::push(Self, String) -> Unit
 pub fn Lexer::push_rules(Self, (StateBuilder) -> Unit) -> Unit
@@ -179,7 +179,7 @@ pub fn Lexer::reset(Self) -> Unit
 pub fn Lexer::reset_stack(Self) -> Unit
 pub fn Lexer::set_fresh(Self, () -> Self) -> Unit
 pub fn Lexer::set_stream(Self, (Self, String, (String, String) -> Unit) -> Unit) -> Unit
-pub fn Lexer::stack_size(Self) -> Int
+pub fn Lexer::stack_size(Self) -> Int32
 pub fn Lexer::start(Self, (Self) -> Unit) -> Unit
 pub fn Lexer::state(Self, String, (StateBuilder) -> Unit) -> Unit
 pub fn Lexer::state_is(Self, String) -> Bool
@@ -192,7 +192,7 @@ type State
 pub struct StateBuilder {
   // private fields
 }
-pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String, can_match? : (String, Int) -> Bool) -> Unit
+pub fn StateBuilder::call(Self, String, (Lexer, @regex.MatchData) -> Unit, flags? : String, can_match? : (String, Int32) -> Bool) -> Unit
 pub fn StateBuilder::mix_in(Self, String) -> Unit
 pub fn StateBuilder::rule(Self, String, String, flags? : String, next? : String) -> Unit
 

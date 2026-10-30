@@ -348,7 +348,7 @@ fn pdf_import_mixed_source() -> Bytes raise {
   let document = @pdflite.pdf_document_empty()
   let key = (text : String) => @pdfcore.pdf_name_of_bytes(@utf8.encode(text))
   let root = document.add_object(PdfNull)
-  let page = (w : Int, h : Int) => {
+  let page = (w : Int32, h : Int32) => {
     document.add_object(
       PdfDictionary([
         (key("/Type"), PdfNameObject(key("/Page"))),

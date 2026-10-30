@@ -12,7 +12,7 @@
 /// linked into core's white-box tests, and a document without a converter
 /// is not processed (Ruby raises `NotImplementedError`).
 fn wb_options(
-  attributes? : Array[(String, AttrVal)] = [],
+  attributes~ : Array[(String, AttrVal)] = [],
   standalone? : Bool,
 ) -> Options {
   Options::new(

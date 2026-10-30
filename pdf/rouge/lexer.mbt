@@ -35,7 +35,7 @@ priv enum Action {
 priv enum Rule {
   /// the pattern, whether it starts with `^`, the action, and a test that
   /// tells, before matching, when the pattern cannot match at a position
-  Match(@regex.Regex, Bool, Action, ((String, Int) -> Bool)?)
+  Match(@regex.Regex, Bool, Action, ((String, Int32) -> Bool)?)
   Mixin(String)
 }
 
@@ -72,7 +72,7 @@ pub struct Lexer {
   priv mut current : @regex.MatchData?
   /// where tokens go (Rouge's `@output_stream`)
   priv mut output : (String, String) -> Unit
-  priv mut null_steps : Int
+  priv mut null_steps : Int32
   priv mut custom : ((Lexer, String, (String, String) -> Unit) -> Unit)?
   /// builds a fresh lexer of the same kind with no options (`self.class`)
   priv mut fresh : (() -> Lexer)?
@@ -107,7 +107,7 @@ fn compile(pattern : String, flags : String) -> @regex.Regex {
 ///|
 pub fn Lexer::new(
   tag : String,
-  options? : Map[String, String] = Map([]),
+  options~ : Map[String, String] = Map([]),
 ) -> Lexer {
   {
     tag,
@@ -198,7 +198,7 @@ pub fn StateBuilder::rule(
   self : StateBuilder,
   pattern : String,
   tok : String,
-  flags? : String = "",
+  flags~ : String = "",
   next? : String,
 ) -> Unit {
   let action = match next {
@@ -218,8 +218,8 @@ pub fn StateBuilder::call(
   self : StateBuilder,
   pattern : String,
   f : (Lexer, @regex.MatchData) -> Unit,
-  flags? : String = "",
-  can_match? : (String, Int) -> Bool,
+  flags~ : String = "",
+  can_match? : (String, Int32) -> Bool,
 ) -> Unit {
   self.rules.push(
     Match(compile(pattern, flags), pattern.has_prefix("^"), Call(f), can_match),
@@ -364,9 +364,9 @@ fn Lexer::step(
   self : Lexer,
   state : State,
   text : String,
-  pos : Int,
+  pos : Int32,
   bol : Bool,
-) -> Int? {
+) -> Int32? {
   for rule in state.rules {
     match rule {
       Mixin(name) =>
@@ -504,7 +504,7 @@ pub fn Lexer::push_rules(self : Lexer, defn : (StateBuilder) -> Unit) -> Unit {
 
 ///|
 /// Pop `times` states (Rouge's `pop!`).
-pub fn Lexer::pop(self : Lexer, times? : Int = 1) -> Unit {
+pub fn Lexer::pop(self : Lexer, times~ : Int32 = 1) -> Unit {
   self.ensure_stack()
   if self.stack.is_empty() {
     abort("rouge: \{self.tag}: empty stack!")
@@ -547,7 +547,7 @@ pub fn Lexer::state_is(self : Lexer, name : String) -> Bool {
 
 ///|
 /// The depth of the state stack.
-pub fn Lexer::stack_size(self : Lexer) -> Int {
+pub fn Lexer::stack_size(self : Lexer) -> Int32 {
   self.ensure_stack()
   self.stack.length()
 }
@@ -555,6 +555,6 @@ pub fn Lexer::stack_size(self : Lexer) -> Int {
 ///|
 /// The text of group `i` of `m`, empty when it did not participate (where
 /// Ruby code tests `m[i]` for nil, use `MatchData::group`).
-pub fn group_text(m : @regex.MatchData, i : Int) -> String {
+pub fn group_text(m : @regex.MatchData, i : Int32) -> String {
   m.group(i).unwrap_or("")
 }

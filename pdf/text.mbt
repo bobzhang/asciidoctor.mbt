@@ -7,13 +7,13 @@
 /// A style in the theme's base font (`base_font_family` and the rest),
 /// overridden by what is given.
 fn text_style(
-  family? : String = base_font_family(),
-  size? : Double = base_font_size(),
-  bold? : Bool = false,
-  italic? : Bool = false,
-  doc_bold? : Bool = base_font_style().0,
-  doc_italic? : Bool = base_font_style().1,
-  color? : Color = base_font_color(),
+  family~ : String = base_font_family(),
+  size~ : Double = base_font_size(),
+  bold~ : Bool = false,
+  italic~ : Bool = false,
+  doc_bold~ : Bool = base_font_style().0,
+  doc_italic~ : Bool = base_font_style().1,
+  color~ : Color = base_font_color(),
 ) -> Style {
   {
     family,
@@ -63,7 +63,7 @@ fn decode_entity(name : String) -> String? {
 }
 
 ///|
-fn parse_int_radix(text : String, radix : Int) -> Int? {
+fn parse_int_radix(text : String, radix : Int32) -> Int32? {
   if text.is_empty() {
     return None
   }
@@ -87,7 +87,7 @@ fn parse_int_radix(text : String, radix : Int) -> Int? {
 }
 
 ///|
-fn code_to_string(code : Int) -> String {
+fn code_to_string(code : Int32) -> String {
   let sb = StringBuilder()
   sb.write_char(code.unsafe_to_char())
   sb.to_string()
@@ -223,7 +223,7 @@ let markup_void_tag_names : Array[String] = ["br", "img"]
 ///|
 /// Match the first of `names` that `s` has at `pos`, as a PEG ordered
 /// choice does; the position after it.
-fn match_name(s : String, pos : Int, names : Array[String]) -> Int? {
+fn match_name(s : String, pos : Int32, names : Array[String]) -> Int32? {
   for name in names {
     if s[pos:].has_prefix(name) {
       return Some(pos + name.length())
@@ -235,7 +235,7 @@ fn match_name(s : String, pos : Int, names : Array[String]) -> Int? {
 ///|
 /// `attributes`: ` name="value"` pairs, names in [a-z_]; the position
 /// after them.
-fn match_markup_attributes(s : String, pos : Int) -> Int {
+fn match_markup_attributes(s : String, pos : Int32) -> Int32 {
   let n = s.length()
   let mut p = pos
   while true {
@@ -317,7 +317,7 @@ fn markup_parses(s : String) -> Bool {
       i = q + 1
     } else if c == '&' {
       let mut j = i + 1
-      let digits = fn(from : Int, hex : Bool) {
+      let digits = fn(from : Int32, hex : Bool) {
         let mut k = from
         while k < n &&
               (
@@ -362,7 +362,7 @@ fn markup_parses(s : String) -> Bool {
 fn parse_formatted(
   markup : String,
   base : Style,
-  normalize? : Bool = true,
+  normalize~ : Bool = true,
 ) -> Array[Fragment] {
   if !markup_parses(markup) {
     // shown as it is, markup and all
@@ -373,7 +373,7 @@ fn parse_formatted(
   // each open element: its tag, the style outside it, how many fragments
   // there were when it opened (-1 for an anchor, which is never empty),
   // and the text fragment just before it (-1: none)
-  let stack : Array[(String, Style, Int, Int)] = []
+  let stack : Array[(String, Style, Int32, Int32)] = []
   let mut style = base
   let text = StringBuilder()
   fn flush() {

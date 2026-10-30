@@ -80,11 +80,11 @@ priv struct CliOptions {
   attributes : Array[(String, String)]
   input_files : Array[String]
   mut output_file : String?
-  mut safe : Int
+  mut safe : Int32
   mut standalone : Bool
   template_dirs : Array[String]
   /// 0 (`-q`), 1 (default) or 2 (`-v`)
-  mut verbose : Int
+  mut verbose : Int32
   load_paths : Array[String]
   requires : Array[String]
   mut base_dir : String?

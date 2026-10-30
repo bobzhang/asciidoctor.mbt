@@ -6,18 +6,18 @@ import {
 }
 
 // Values
-pub fn compile(String, flags? : String, step_limit? : Int) -> Regex raise RegexError
+pub fn compile(String, flags? : String, step_limit? : Int32) -> Regex raise RegexError
 
-pub fn re(String, flags? : String, step_limit? : Int) -> Regex
+pub fn re(String, flags? : String, step_limit? : Int32) -> Regex
 
 // Errors
 pub suberror RegexError {
-  RegexError(pattern~ : String, pos~ : Int, message~ : String)
+  RegexError(pattern~ : String, pos~ : Int32, message~ : String)
 } derive(@debug.Debug)
 pub fn RegexError::to_repr(Self) -> @debug.Repr
 
 pub suberror RegexTimeout {
-  RegexTimeout(pattern~ : String, limit~ : Int)
+  RegexTimeout(pattern~ : String, limit~ : Int32)
 } derive(@debug.Debug)
 pub fn RegexTimeout::to_repr(Self) -> @debug.Repr
 
@@ -26,41 +26,41 @@ pub struct MatchData {
   input : String
   // private fields
 }
-pub fn MatchData::at(Self, Int) -> String
-pub fn MatchData::begin(Self, i? : Int) -> Int
-pub fn MatchData::end(Self, i? : Int) -> Int
+pub fn MatchData::at(Self, Int32) -> String
+pub fn MatchData::begin(Self, i? : Int32) -> Int32
+pub fn MatchData::end(Self, i? : Int32) -> Int32
 pub fn MatchData::expand(Self, String) -> String
-pub fn MatchData::group(Self, Int) -> String?
+pub fn MatchData::group(Self, Int32) -> String?
 pub fn MatchData::groups(Self) -> Array[String?]
-pub fn MatchData::has(Self, Int) -> Bool
+pub fn MatchData::has(Self, Int32) -> Bool
 pub fn MatchData::has_names(Self) -> Bool
 pub fn MatchData::matched(Self) -> String
 pub fn MatchData::named(Self, String) -> String?
 pub fn MatchData::post_match(Self) -> String
 pub fn MatchData::pre_match(Self) -> String
-pub fn MatchData::size(Self) -> Int
+pub fn MatchData::size(Self) -> Int32
 
 pub struct Regex {
   source : String
   // private fields
 }
-pub fn Regex::find(Self, String, start? : Int) -> MatchData?
+pub fn Regex::find(Self, String, start? : Int32) -> MatchData?
 pub fn Regex::find_all(Self, String) -> Array[MatchData]
-pub fn Regex::group_count(Self) -> Int
+pub fn Regex::group_count(Self) -> Int32
 pub fn Regex::gsub(Self, String, String) -> String
-pub fn Regex::match_at(Self, String, Int) -> MatchData?
+pub fn Regex::match_at(Self, String, Int32) -> MatchData?
 pub fn Regex::matches(Self, String) -> Bool
 pub fn Regex::replace(Self, String, (MatchData) -> String) -> String
 pub fn Regex::replace_first(Self, String, (MatchData) -> String) -> String
-pub fn Regex::split(Self, String, limit? : Int) -> Array[String]
+pub fn Regex::split(Self, String, limit? : Int32) -> Array[String]
 pub fn Regex::sub(Self, String, String) -> String
 pub fn Regex::to_string(Self) -> String
-pub fn Regex::try_find(Self, String, start? : Int) -> MatchData? raise RegexTimeout
+pub fn Regex::try_find(Self, String, start? : Int32) -> MatchData? raise RegexTimeout
 pub fn Regex::try_find_all(Self, String) -> Array[MatchData] raise RegexTimeout
-pub fn Regex::try_match_at(Self, String, Int) -> MatchData? raise RegexTimeout
+pub fn Regex::try_match_at(Self, String, Int32) -> MatchData? raise RegexTimeout
 pub fn Regex::try_replace(Self, String, (MatchData) -> String, once? : Bool) -> String raise RegexTimeout
-pub fn Regex::try_scan_at(Self, String, Int) -> MatchData? raise RegexTimeout
-pub fn Regex::try_split(Self, String, limit? : Int) -> Array[String] raise RegexTimeout
+pub fn Regex::try_scan_at(Self, String, Int32) -> MatchData? raise RegexTimeout
+pub fn Regex::try_split(Self, String, limit? : Int32) -> Array[String] raise RegexTimeout
 
 // Type aliases
 
