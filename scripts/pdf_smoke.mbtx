@@ -1,4 +1,15 @@
-///|
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/env",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/pdflite@0.3.1",
+}
+----
+
 // Smoke test of the asciidoctor-pdf commands (CI): converts sample documents
 // with the native release build and the wasm release build (run with
 // moonrun, as moonx does), with no font directory, and checks that each
@@ -12,15 +23,6 @@
 // Usage (after `moon -C pdf build --release --target native` and
 // `--target wasm`):
 //   moon run --target native scripts/pdf_smoke.mbtx [-- --native-only]
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-  "moonbitlang/core/env",
-  "moonbitlang/core/cmp",
-  "moonbitlang/core/encoding/utf8",
-  "moonbitlang/pdflite@0.3.1",
-}
 
 ///|
 /// The PDF with its streams decompressed (the page content readable), or
@@ -61,13 +63,13 @@ async fn token_style_problem(
 /// The native executable of a command (`asciidoctor-pdf`, or
 /// `asciidoctor-pdf-pygments`, the command with Pygments).
 fn bin(command : String) -> String {
-  "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.exe"
+  "pdf/_build/native/release/build/cmd/\{command}/\{command}.exe"
 }
 
 ///|
 /// The wasm module of a command.
 fn wasm_file(command : String) -> String {
-  "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.wasm"
+  "pdf/_build/wasm/release/build/cmd/\{command}/\{command}.wasm"
 }
 
 ///|
