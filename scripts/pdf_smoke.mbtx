@@ -62,14 +62,24 @@ async fn token_style_problem(
 ///|
 /// The native executable of a command (`asciidoctor-pdf`, or
 /// `asciidoctor-pdf-pygments`, the command with Pygments).
-fn bin(command : String) -> String {
-  "pdf/_build/native/release/build/cmd/\{command}/\{command}.exe"
+async fn bin(command : String) -> String {
+  let workspace = "pdf/_build/native/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.exe"
+  if @fs.exists(workspace[:]) {
+    workspace
+  } else {
+    "pdf/_build/native/release/build/cmd/\{command}/\{command}.exe"
+  }
 }
 
 ///|
 /// The wasm module of a command.
-fn wasm_file(command : String) -> String {
-  "pdf/_build/wasm/release/build/cmd/\{command}/\{command}.wasm"
+async fn wasm_file(command : String) -> String {
+  let workspace = "pdf/_build/wasm/release/build/bobzhang/asciidoctor-pdf/cmd/\{command}/\{command}.wasm"
+  if @fs.exists(workspace[:]) {
+    workspace
+  } else {
+    "pdf/_build/wasm/release/build/cmd/\{command}/\{command}.wasm"
+  }
 }
 
 ///|
