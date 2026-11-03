@@ -1,8 +1,9 @@
 ///|
 /// Error raised when a pattern (or a flag string) cannot be compiled.
+#derive(Debug)
 pub suberror RegexError {
   RegexError(pattern~ : String, pos~ : Int32, message~ : String)
-} derive(Debug)
+}
 
 ///|
 pub extend RegexError with Debug::{to_repr}
@@ -76,6 +77,7 @@ fn CharClass::new(
 }
 
 ///|
+#derive(Eq)
 priv enum AssertKind {
   BeginLine // ^
   EndLine // $
@@ -85,7 +87,7 @@ priv enum AssertKind {
   WordBoundary // \b
   NotWordBoundary // \B
   SearchStart // \G
-} derive(Eq)
+}
 
 ///|
 priv enum Node {
@@ -106,11 +108,12 @@ priv enum Node {
 }
 
 ///|
+#derive(Eq)
 priv enum Greed {
   Greedy
   Lazy
   Possessive
-} derive(Eq)
+}
 
 ///|
 priv struct Parser {

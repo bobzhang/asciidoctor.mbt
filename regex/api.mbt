@@ -31,9 +31,10 @@ pub struct Regex {
 ///|
 /// Raised when a search exceeds its backtracking step budget (the analogue of
 /// Ruby's `Regexp::TimeoutError`). `limit` is the budget that was exhausted.
+#derive(Debug)
 pub suberror RegexTimeout {
   RegexTimeout(pattern~ : String, limit~ : Int32)
-} derive(Debug)
+}
 
 ///|
 pub extend RegexTimeout with Debug::{to_repr}

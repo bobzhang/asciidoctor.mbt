@@ -11,14 +11,16 @@ pub fn compile(String, flags? : String, step_limit? : Int32) -> Regex raise Rege
 pub fn re(String, flags? : String, step_limit? : Int32) -> Regex
 
 // Errors
+#derive(@debug.Debug)
 pub suberror RegexError {
   RegexError(pattern~ : String, pos~ : Int32, message~ : String)
-} derive(@debug.Debug)
+}
 pub fn RegexError::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub suberror RegexTimeout {
   RegexTimeout(pattern~ : String, limit~ : Int32)
-} derive(@debug.Debug)
+}
 pub fn RegexTimeout::to_repr(Self) -> @debug.Repr
 
 // Types and methods

@@ -177,16 +177,19 @@ pub(all) suberror ProcessingError {
 pub fn ProcessingError::message(Self) -> String
 pub impl Show for ProcessingError
 
+#derive(@debug.Debug)
 pub suberror SecurityError {
   SecurityError(String)
-} derive(@debug.Debug)
+}
 
 // Types and methods
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum AttrKey {
   Name(String)
   Pos(Int32)
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum AttrVal {
   Str(String)
   Int(Int32)
@@ -194,18 +197,19 @@ pub(all) enum AttrVal {
   Bool(Bool)
   List(Array[String])
   Nil
-} derive(Eq, @debug.Debug)
+}
 pub fn AttrVal::is_str(Self, String) -> Bool
 pub fn AttrVal::to_f(Self) -> Double
 pub fn AttrVal::to_i(Self) -> Int32
 pub fn AttrVal::to_s(Self) -> String
 pub fn AttrVal::truthy(Self) -> Bool
 
+#derive(@debug.Debug)
 pub(all) struct AttributeEntry {
   name : String
   value : String?
   negate : Bool
-} derive(@debug.Debug)
+}
 pub fn AttributeEntry::new(String, String?, negate? : Bool) -> Self
 
 pub struct Attributes {
@@ -242,6 +246,7 @@ pub fn Attributes::str(Self, String) -> String?
 pub fn Attributes::truthy(Self, String) -> Bool
 pub fn Attributes::update(Self, Self) -> Unit
 
+#derive(@debug.Debug)
 pub(all) struct Author {
   name : String?
   firstname : String?
@@ -249,15 +254,16 @@ pub(all) struct Author {
   lastname : String?
   initials : String?
   email : String?
-} derive(@debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct BackendTraits {
   basebackend : String
   filetype : String
   htmlsyntax : String?
   outfilesuffix : String
   supports_templates : Bool
-} derive(@debug.Debug)
+}
 
 pub(all) struct BlockMacroProcessor {
   name : String
@@ -305,12 +311,13 @@ pub struct CellData {
   // private fields
 }
 
+#derive(@debug.Debug)
 pub(all) struct ColSpec {
   mut width : Int32
   mut halign : String?
   mut valign : String?
   mut style : String?
-} derive(@debug.Debug)
+}
 
 pub(all) struct Compliance {
   mut block_terminates_paragraph : Bool
@@ -332,6 +339,7 @@ pub struct CompositeConverter {
 pub fn CompositeConverter::new(&Converter, handlers? : Map[String, (Node) -> String]) -> Self
 pub impl Converter for CompositeConverter
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ContentModel {
   Compound
   Simple
@@ -340,9 +348,10 @@ pub(all) enum ContentModel {
   Empty
   Skip
   Attributes
-} derive(Eq, @debug.Debug)
+}
 pub fn ContentModel::name(Self) -> String
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Context {
   Document
   Section
@@ -390,16 +399,17 @@ pub(all) enum Context {
   LatexMath
   AsciiMath
   Custom(String)
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn Context::from_name(String) -> Self
 pub fn Context::name(Self) -> String
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Cursor {
   file : String?
   dir : String?
   path : String?
   mut lineno : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn Cursor::advance(Self, Int32) -> Unit
 pub fn Cursor::dup(Self) -> Self
 pub fn Cursor::line_info(Self) -> String
@@ -412,12 +422,13 @@ pub(all) struct DlistItem {
 
 type DocData
 
+#derive(@debug.Debug)
 pub(all) struct DocTitle {
   main : String
   subtitle : String?
   combined : String
   sanitized : Bool
-} derive(@debug.Debug)
+}
 pub fn DocTitle::has_subtitle(Self) -> Bool
 pub fn DocTitle::new(String, sanitize? : Bool, separator? : String) -> Self
 
@@ -467,11 +478,12 @@ pub(all) enum FindVerdict {
   Skip
 }
 
+#derive(@debug.Debug)
 pub(all) struct Footnote {
   index : Int32
   id : String?
   text : String
-} derive(@debug.Debug)
+}
 
 pub(all) struct FormatOptions {
   nowrap : Bool
@@ -480,12 +492,13 @@ pub(all) struct FormatOptions {
 }
 pub fn FormatOptions::new(nowrap? : Bool, css_mode? : String, style? : String) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum HeaderOption {
   NoHeader
   ExplicitHeader
   ImplicitHeader
   UnsetHeader
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct HighlightOptions {
   callouts : Map[Int32, Array[(AttrVal, String)]]?
@@ -497,10 +510,11 @@ pub(all) struct HighlightOptions {
 }
 pub fn HighlightOptions::new(callouts? : Map[Int32, Array[(AttrVal, String)]], css_mode? : String, highlight_lines? : Array[Int32], number_lines? : String, start_line_number? : Int32, style? : String) -> Self
 
+#derive(@debug.Debug)
 pub(all) struct ImageReference {
   target : String
   imagesdir : String?
-} derive(@debug.Debug)
+}
 
 pub(all) struct IncludeProcessor {
   handles : (Node, String) -> Bool
@@ -518,12 +532,13 @@ pub(all) enum InlineResult {
   InlineText(String)
 }
 
+#derive(@debug.Debug)
 pub(all) struct LogMessage {
   severity : Severity
   text : String
   source_location : Cursor?
   include_location : Cursor?
-} derive(@debug.Debug)
+}
 pub fn LogMessage::to_string(Self) -> String
 
 pub struct Logger {
@@ -748,11 +763,12 @@ pub struct NullVfs {
 pub fn NullVfs::new(cwd? : String) -> &Vfs
 pub impl Vfs for NullVfs
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Numbered {
   NotNumbered
   Numbered
   NumberedChapter
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Options {
   mut attributes : Array[(String, AttrVal)]
@@ -851,6 +867,7 @@ pub fn Reader::terminate(Self) -> Unit
 pub fn Reader::unshift_line(Self, String) -> Unit
 pub fn Reader::unshift_lines(Self, Array[String]) -> Unit
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Severity {
   Debug
   Info
@@ -858,10 +875,11 @@ pub(all) enum Severity {
   Error
   Fatal
   Unknown
-} derive(Eq, @debug.Debug)
+}
 pub fn Severity::label(Self) -> String
 pub fn Severity::to_int(Self) -> Int32
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Sub {
   SpecialCharacters
   Quotes
@@ -871,7 +889,7 @@ pub(all) enum Sub {
   PostReplacements
   Callouts
   Highlight
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn Sub::name(Self) -> String
 
 pub struct TableData {

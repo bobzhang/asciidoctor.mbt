@@ -1,8 +1,9 @@
 ///|
 /// Raised when a path escapes the jail in non-recovering mode.
+#derive(Debug)
 pub suberror SecurityError {
   SecurityError(String)
-} derive(Debug)
+}
 
 ///|
 /// Resolves system and web paths (Ruby `PathResolver`). POSIX separators only.

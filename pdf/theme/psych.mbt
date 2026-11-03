@@ -10,9 +10,10 @@
 ///|
 /// Raised when a theme cannot be loaded: malformed YAML, a value
 /// `safe_load` refuses, a missing file.
+#derive(Debug)
 pub suberror ThemeError {
   ThemeError(String)
-} derive(Debug)
+}
 
 ///|
 pub extend ThemeError with Debug::{to_repr}

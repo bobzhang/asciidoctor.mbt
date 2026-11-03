@@ -942,13 +942,14 @@ fn Reader::process_line(self : Reader, line : String) -> String? {
 
 ///|
 /// A value of an ifeval expression operand.
+#derive(Eq)
 priv enum ExprVal {
   EStr(String)
   EInt(Int32)
   EFloat(Double)
   EBool(Bool)
   ENil
-} derive(Eq)
+}
 
 ///|
 fn compare_expr(lhs : ExprVal, op : String, rhs : ExprVal) -> Bool raise {

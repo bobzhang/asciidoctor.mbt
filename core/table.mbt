@@ -8,12 +8,13 @@ pub struct TableRows {
 
 ///|
 /// Implicit/explicit header state (Ruby `has_header_option`: true, :implicit, nil/false).
+#derive(Eq, Debug)
 pub(all) enum HeaderOption {
   NoHeader
   ExplicitHeader
   ImplicitHeader
   UnsetHeader // Ruby nil
-} derive(Eq, Debug)
+}
 
 ///|
 /// Table-specific data.
@@ -141,12 +142,13 @@ fn Node::header_row(self : Node) -> HeaderOption {
 
 ///|
 /// A column spec (Ruby Hash with width, halign, valign, style).
+#derive(Debug)
 pub(all) struct ColSpec {
   mut width : Int32
   mut halign : String?
   mut valign : String?
   mut style : String?
-} derive(Debug)
+}
 
 ///|
 /// Creates the columns from colspecs (Ruby `create_columns`).

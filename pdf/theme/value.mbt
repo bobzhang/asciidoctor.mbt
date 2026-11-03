@@ -6,6 +6,7 @@
 
 ///|
 /// A theme value.
+#derive(Eq, Debug)
 pub(all) enum Value {
   Null
   Bool(Bool)
@@ -24,7 +25,7 @@ pub(all) enum Value {
   Transparent
   /// `CMYKColorValue`: four components, each an Int or a Float (0..100)
   Cmyk(Array[Value])
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Value with Eq::{not_equal, equal}

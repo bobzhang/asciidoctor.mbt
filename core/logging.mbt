@@ -1,5 +1,6 @@
 ///|
 /// Log severity (Ruby `::Logger::Severity`).
+#derive(Eq, Debug)
 pub(all) enum Severity {
   Debug
   Info
@@ -7,7 +8,7 @@ pub(all) enum Severity {
   Error
   Fatal
   Unknown
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Severity::to_int(self : Severity) -> Int32 {
@@ -36,12 +37,13 @@ pub fn Severity::label(self : Severity) -> String {
 
 ///|
 /// A log message with optional source context (Ruby `message_with_context`).
+#derive(Debug)
 pub(all) struct LogMessage {
   severity : Severity
   text : String
   source_location : Cursor?
   include_location : Cursor?
-} derive(Debug)
+}
 
 ///|
 /// `path: line N: text` when a source location is present (Ruby `AutoFormattingMessage#inspect`).

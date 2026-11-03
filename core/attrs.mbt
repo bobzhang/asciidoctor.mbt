@@ -1,6 +1,7 @@
 ///|
 /// An attribute value. Ruby Asciidoctor stores strings, integers, floats,
 /// booleans and nil in attribute hashes; this enum mirrors that.
+#derive(Eq, Debug)
 pub(all) enum AttrVal {
   Str(String)
   Int(Int32)
@@ -8,7 +9,7 @@ pub(all) enum AttrVal {
   Bool(Bool)
   List(Array[String])
   Nil
-} derive(Eq, Debug)
+}
 
 ///|
 /// Ruby `to_s` of the value (`nil` → "").
@@ -62,19 +63,21 @@ pub fn AttrVal::is_str(self : AttrVal, s : String) -> Bool {
 
 ///|
 /// Key of an attribute: named (String) or positional (1-based Int).
+#derive(Eq, Hash, Debug)
 pub(all) enum AttrKey {
   Name(String)
   Pos(Int32)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A document attribute assignment recorded in the body of a document and
 /// replayed during conversion (Ruby `Document::AttributeEntry`).
+#derive(Debug)
 pub(all) struct AttributeEntry {
   name : String
   value : String?
   negate : Bool
-} derive(Debug)
+}
 
 ///|
 pub fn AttributeEntry::new(

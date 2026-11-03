@@ -348,11 +348,12 @@ fn first_info(node : Node) -> (FirstSet?, Bool) {
 }
 
 ///|
+#derive(Eq)
 priv enum Anchor {
   NoAnchor
   TextStart // \A
   LineStart // ^
-} derive(Eq)
+}
 
 ///|
 fn leading_anchor(node : Node) -> Anchor {

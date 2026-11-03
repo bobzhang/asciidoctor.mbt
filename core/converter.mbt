@@ -1,12 +1,13 @@
 ///|
 /// Traits describing a backend (Ruby `Converter::BackendTraits`).
+#derive(Debug)
 pub(all) struct BackendTraits {
   basebackend : String
   filetype : String
   htmlsyntax : String?
   outfilesuffix : String
   supports_templates : Bool
-} derive(Debug)
+}
 
 ///|
 /// Derives backend traits from a backend name (Ruby `Converter.derive_backend_traits`).

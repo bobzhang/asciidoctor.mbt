@@ -1,5 +1,6 @@
 ///|
 /// The context (kind) of a node. Mirrors the Ruby symbols (`:paragraph`, ...).
+#derive(Eq, Hash, Debug)
 pub(all) enum Context {
   Document
   Section
@@ -49,7 +50,7 @@ pub(all) enum Context {
   LatexMath
   AsciiMath
   Custom(String)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The Ruby name of the context (`:floating_title` → "floating_title").
@@ -159,6 +160,7 @@ pub fn Context::from_name(s : String) -> Context {
 
 ///|
 /// How the content of a block is processed.
+#derive(Eq, Debug)
 pub(all) enum ContentModel {
   Compound
   Simple
@@ -167,7 +169,7 @@ pub(all) enum ContentModel {
   Empty
   Skip
   Attributes // only used by block macro extension configs
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn ContentModel::name(self : ContentModel) -> String {
@@ -184,6 +186,7 @@ pub fn ContentModel::name(self : ContentModel) -> String {
 
 ///|
 /// A substitution step.
+#derive(Eq, Hash, Debug)
 pub(all) enum Sub {
   SpecialCharacters
   Quotes
@@ -193,7 +196,7 @@ pub(all) enum Sub {
   PostReplacements
   Callouts
   Highlight
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn Sub::name(self : Sub) -> String {
@@ -247,12 +250,13 @@ pub fn safe_mode_name_for_value(value : Int32) -> String? {
 
 ///|
 /// A source location (Ruby `Reader::Cursor`).
+#derive(Debug, Eq)
 pub(all) struct Cursor {
   file : String?
   dir : String?
   path : String?
   mut lineno : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Cursor::new(
@@ -282,8 +286,9 @@ pub fn Cursor::line_info(self : Cursor) -> String {
 
 ///|
 /// Whether a section is numbered, and if so whether like a chapter.
+#derive(Eq, Debug)
 pub(all) enum Numbered {
   NotNumbered
   Numbered
   NumberedChapter
-} derive(Eq, Debug)
+}

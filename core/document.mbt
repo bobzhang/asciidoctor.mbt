@@ -1,17 +1,19 @@
 ///|
 /// A footnote registered in the document catalog.
+#derive(Debug)
 pub(all) struct Footnote {
   index : Int32
   id : String?
   text : String
-} derive(Debug)
+}
 
 ///|
 /// An image reference registered in the catalog (when `catalog_assets` is set).
+#derive(Debug)
 pub(all) struct ImageReference {
   target : String
   imagesdir : String?
-} derive(Debug)
+}
 
 ///|
 /// Document catalog (Ruby `Document#catalog`).
@@ -943,12 +945,13 @@ pub fn Node::is_basebackend(self : Node, base : String) -> Bool {
 
 ///|
 /// A parsed document title (Ruby `Document::Title`).
+#derive(Debug)
 pub(all) struct DocTitle {
   main : String
   subtitle : String?
   combined : String
   sanitized : Bool
-} derive(Debug)
+}
 
 ///|
 pub fn DocTitle::new(
@@ -1040,6 +1043,7 @@ pub fn Node::doctitle_partitioned(
 
 ///|
 /// A document author (Ruby `Document::Author`).
+#derive(Debug)
 pub(all) struct Author {
   name : String?
   firstname : String?
@@ -1047,7 +1051,7 @@ pub(all) struct Author {
   lastname : String?
   initials : String?
   email : String?
-} derive(Debug)
+}
 
 ///|
 pub fn Node::author(self : Node) -> String? {
