@@ -4,7 +4,7 @@
 // the term.
 
 ///|
-let md5_shifts : Array[Int] = [
+let md5_shifts : Array[Int32] = [
   7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9,
   14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
   4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
@@ -12,13 +12,13 @@ let md5_shifts : Array[Int] = [
 
 ///|
 /// `floor(abs(sin(i + 1)) * 2^32)`
-let md5_constants : Array[UInt] = Array::makei(64, i => {
+let md5_constants : Array[UInt32] = Array::makei(64, i => {
   let v = (@math.sin((i + 1).to_double()).abs() * 4294967296.0).floor()
   v.to_uint64().to_uint()
 })
 
 ///|
-fn md5_rotl(x : UInt, n : Int) -> UInt {
+fn md5_rotl(x : UInt32, n : Int32) -> UInt32 {
   (x << n) | (x >> (32 - n))
 }
 
@@ -37,10 +37,10 @@ fn md5_hex(data : Bytes) -> String {
   for i in 0..<8 {
     msg[padded_len - 8 + i] = (bits >> (8 * i)).to_byte()
   }
-  let mut a0 : UInt = 0x67452301U
-  let mut b0 : UInt = 0xefcdab89U
-  let mut c0 : UInt = 0x98badcfeU
-  let mut d0 : UInt = 0x10325476U
+  let mut a0 : UInt32 = 0x67452301U
+  let mut b0 : UInt32 = 0xefcdab89U
+  let mut c0 : UInt32 = 0x98badcfeU
+  let mut d0 : UInt32 = 0x10325476U
   let m = FixedArray::make(16, 0U)
   for chunk = 0; chunk < padded_len; chunk = chunk + 64 {
     for j in 0..<16 {

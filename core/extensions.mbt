@@ -13,9 +13,9 @@ pub(all) struct ExtensionConfig {
 ///|
 pub fn ExtensionConfig::new(
   content_model? : ContentModel,
-  positional_attrs? : Array[String] = [],
-  default_attrs? : Array[(String, String)] = [],
-  contexts? : Array[Context] = [],
+  positional_attrs~ : Array[String] = [],
+  default_attrs~ : Array[(String, String)] = [],
+  contexts~ : Array[Context] = [],
   format? : String,
   regexp? : @regex.Regex,
 ) -> ExtensionConfig {
@@ -158,7 +158,7 @@ pub fn Extensions::activate(self : Extensions, doc : Node) -> Extensions {
 pub fn Extensions::preprocessor(
   self : Extensions,
   process : (Node, Reader) -> Reader? raise,
-  prefer? : Bool = false,
+  prefer~ : Bool = false,
 ) -> Unit {
   let p : Preprocessor = { process, }
   if prefer {
@@ -173,7 +173,7 @@ pub fn Extensions::preprocessor(
 pub fn Extensions::tree_processor(
   self : Extensions,
   process : (Node) -> Node? raise,
-  prefer? : Bool = false,
+  prefer~ : Bool = false,
 ) -> Unit {
   let p : TreeProcessor = { process, }
   if prefer {
@@ -188,7 +188,7 @@ pub fn Extensions::tree_processor(
 pub fn Extensions::postprocessor(
   self : Extensions,
   process : (Node, String) -> String raise,
-  prefer? : Bool = false,
+  prefer~ : Bool = false,
 ) -> Unit {
   let p : Postprocessor = { process, }
   if prefer {
@@ -203,8 +203,8 @@ pub fn Extensions::postprocessor(
 pub fn Extensions::include_processor(
   self : Extensions,
   process : (Node, Reader, String, Attributes) -> Unit raise,
-  handles? : (Node, String) -> Bool = (_, _) => true,
-  prefer? : Bool = false,
+  handles~ : (Node, String) -> Bool = (_, _) => true,
+  prefer~ : Bool = false,
 ) -> Unit {
   let p = { handles, process, }
   if prefer {
@@ -219,8 +219,8 @@ pub fn Extensions::include_processor(
 pub fn Extensions::docinfo_processor(
   self : Extensions,
   process : (Node) -> String? raise,
-  location? : String = "head",
-  prefer? : Bool = false,
+  location~ : String = "head",
+  prefer~ : Bool = false,
 ) -> Unit {
   let p = { location, process, }
   if prefer {
@@ -237,10 +237,10 @@ pub fn Extensions::block(
   self : Extensions,
   name : String,
   process : (Node, Reader, Attributes) -> Node? raise,
-  contexts? : Array[Context] = [Open, Paragraph],
-  content_model? : ContentModel = Compound,
-  positional_attrs? : Array[String] = [],
-  default_attrs? : Array[(String, String)] = [],
+  contexts~ : Array[Context] = [Open, Paragraph],
+  content_model~ : ContentModel = Compound,
+  positional_attrs~ : Array[String] = [],
+  default_attrs~ : Array[(String, String)] = [],
 ) -> Unit {
   self.block_map[name] = {
     name,
@@ -260,9 +260,9 @@ pub fn Extensions::block_macro(
   self : Extensions,
   name : String,
   process : (Node, String, Attributes) -> Node? raise,
-  content_model? : ContentModel = Attributes,
-  positional_attrs? : Array[String] = [],
-  default_attrs? : Array[(String, String)] = [],
+  content_model~ : ContentModel = Attributes,
+  positional_attrs~ : Array[String] = [],
+  default_attrs~ : Array[(String, String)] = [],
 ) -> Unit raise ArgumentError {
   if !macro_name_rx.matches(name) {
     raise ArgumentError("invalid name for block macro: \{name}")
@@ -287,9 +287,9 @@ pub fn Extensions::inline_macro(
   process : (Node, String, Attributes) -> InlineResult? raise,
   format? : String,
   regexp? : @regex.Regex,
-  content_model? : ContentModel = Attributes,
-  positional_attrs? : Array[String] = [],
-  default_attrs? : Array[(String, String)] = [],
+  content_model~ : ContentModel = Attributes,
+  positional_attrs~ : Array[String] = [],
+  default_attrs~ : Array[(String, String)] = [],
 ) -> Unit raise ArgumentError {
   if regexp is None && !macro_name_rx.matches(name) {
     raise ArgumentError("invalid name for inline macro: \{name}")
@@ -571,7 +571,7 @@ pub fn create_section(
   parent : Node,
   title : String,
   attrs : Attributes,
-  level? : Int,
+  level? : Int32,
   numbered? : Bool,
 ) -> Node {
   let doc = parent.document()
@@ -686,8 +686,8 @@ pub fn parse_content_from_reader(
 pub fn parse_extension_attributes(
   block : Node,
   attrlist : String,
-  positional_attributes? : Array[String] = [],
-  sub_attributes? : Bool = false,
+  positional_attributes~ : Array[String] = [],
+  sub_attributes~ : Bool = false,
 ) -> Attributes {
   if attrlist == "" {
     return Attributes::new()

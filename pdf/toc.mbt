@@ -9,15 +9,15 @@
 ///|
 /// Where the reserved TOC pages start (page index, cursor y).
 priv struct TocExtent {
-  from_page : Int
+  from_page : Int32
   from_y : Double
   /// the last page reserved
-  to_page : Int
+  to_page : Int32
 }
 
 ///|
 /// The document's `toclevels` (asciidoctor-pdf's `resolve_toclevels`).
-fn resolve_toclevels(doc : @core.Node) -> Int {
+fn resolve_toclevels(doc : @core.Node) -> Int32 {
   let levels = @string.parse_int(doc.attr("toclevels").unwrap_or("2")) catch {
     _ => 2
   }
@@ -48,7 +48,7 @@ fn signifier(doc : @core.Node, name : String, default : String) -> String {
 /// `Section#numbered_title`): the section number in front when numbered;
 /// `formal` adds the part or chapter signifier in a book. The index
 /// section has no title while there are no index terms (it is hidden).
-fn numbered_title(section : @core.Node, formal? : Bool = false) -> String {
+fn numbered_title(section : @core.Node, formal~ : Bool = false) -> String {
   if section.sectname == Some("index") && session().index.is_empty() {
     return ""
   }
@@ -121,7 +121,7 @@ fn Converter::string_width(
 /// The page label of a physical page (1-based) when the first
 /// `front_matter` pages are front matter: its number counted from the body,
 /// else roman.
-fn page_label(physical : Int, front_matter : Int) -> String {
+fn page_label(physical : Int32, front_matter : Int32) -> String {
   let number = physical - front_matter
   if number < 1 {
     roman(physical, false)
@@ -138,11 +138,11 @@ fn page_label(physical : Int, front_matter : Int) -> String {
 /// the last page it inked on.
 fn Converter::ink_toc(
   self : Converter,
-  levels : Int,
-  page : Int,
+  levels : Int32,
+  page : Int32,
   y : Double,
-  front_matter : Int,
-) -> Int {
+  front_matter : Int32,
+) -> Int32 {
   let flow = self.flow
   flow.go_to_page(page)
   flow.y = y
@@ -167,7 +167,7 @@ fn Converter::ink_toc(
 ///|
 /// The TOC's font for entries of `level` (`theme_font :toc, level:`: the
 /// `toc_h<n>_*` keys, else the `toc_*` ones) and its line height.
-fn toc_font(level : Int) -> (Style, Double) {
+fn toc_font(level : Int32) -> (Style, Double) {
   theme_font_heading(base_style(), base_line_height(), level, category="toc")
 }
 
@@ -178,7 +178,7 @@ fn toc_font(level : Int) -> (Style, Double) {
 priv struct DotLeader {
   text : String
   style : Style
-  levels : Array[Int]?
+  levels : Array[Int32]?
 }
 
 ///|
@@ -224,8 +224,8 @@ fn toc_dot_leader() -> DotLeader {
 fn Converter::ink_toc_level(
   self : Converter,
   entries : Array[@core.Node],
-  levels : Int,
-  front_matter : Int,
+  levels : Int32,
+  front_matter : Int32,
 ) -> Unit {
   let flow = self.flow
   let hanging_indent = t_num_or("toc_hanging_indent", 0.0)
@@ -367,7 +367,7 @@ fn Converter::ink_toc_level(
 
 ///|
 /// `toc-max-pagenum-digits` (default 3).
-fn toc_max_pagenum_digits(doc : @core.Node) -> Int {
+fn toc_max_pagenum_digits(doc : @core.Node) -> Int32 {
   @string.parse_int(doc.attr("toc-max-pagenum-digits").unwrap_or("3")) catch {
     _ => 3
   }
@@ -381,7 +381,7 @@ fn toc_max_pagenum_digits(doc : @core.Node) -> Int {
 /// after the block margin.
 fn Converter::allocate_toc(
   self : Converter,
-  levels : Int,
+  levels : Int32,
   break_after : Bool,
 ) -> TocExtent {
   let flow = self.flow

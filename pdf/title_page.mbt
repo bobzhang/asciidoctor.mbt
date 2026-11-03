@@ -215,7 +215,7 @@ fn Converter::ink_title_page_part(
   base : Style,
   line_height : Double,
   align : Alignment,
-  normalize? : Bool = true,
+  normalize~ : Bool = true,
 ) -> Unit {
   let flow = self.flow
   let key = "title_page_\{part}"

@@ -179,7 +179,7 @@ priv enum Whitespace {
 /// special man characters and strips trailing whitespace.
 ///
 /// It's crucial that text only ever pass through manify once.
-fn manify(str : String, whitespace? : Whitespace = Collapse) -> String {
+fn manify(str : String, whitespace~ : Whitespace = Collapse) -> String {
   let mut s = match whitespace {
     Preserve =>
       repeated_spaces_rx.replace(str.replace_all(old="\t", new=ET), m => {

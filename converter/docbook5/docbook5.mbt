@@ -7,7 +7,7 @@ pub struct DocBook5Converter {
 
 ///|
 pub fn DocBook5Converter::new(
-  backend? : String = "docbook5",
+  backend~ : String = "docbook5",
 ) -> DocBook5Converter {
   { backend, asciimath_checked: false, }
 }
@@ -230,7 +230,7 @@ fn enclose_content(node : @core.Node) -> String {
 }
 
 ///|
-fn title_tag(node : @core.Node, optional? : Bool = true) -> String {
+fn title_tag(node : @core.Node, optional~ : Bool = true) -> String {
   if !optional || node.has_title() {
     "<title>\{title_of(node)}</title>\n"
   } else {

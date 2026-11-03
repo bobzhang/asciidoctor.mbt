@@ -162,7 +162,7 @@ fn pygments_chunks(
       if lines.is_empty() {
         None
       } else {
-        let m : Map[Int, Color] = Map([])
+        let m : Map[Int32, Color] = Map([])
         for l in lines {
           m[l] = color
         }

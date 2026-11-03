@@ -9,7 +9,7 @@ pub(all) struct Compliance {
   mut attribute_undefined : String
   mut shorthand_property_syntax : Bool
   mut natural_xrefs : Bool
-  mut unique_id_start_index : Int
+  mut unique_id_start_index : Int32
   mut markdown_syntax : Bool
 }
 

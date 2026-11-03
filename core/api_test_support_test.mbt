@@ -6,7 +6,7 @@
 /// `AutoFormattingMessage#inspect` (source location prefix when present).
 /// Messages below `min_level` (see `Severity::to_int`) are dropped, which
 /// mirrors a Ruby logger whose level suppresses `debug?`/`info?` messages.
-fn log_lines(msgs : Array[@core.LogMessage], min_level? : Int = 0) -> String {
+fn log_lines(msgs : Array[@core.LogMessage], min_level~ : Int32 = 0) -> String {
   msgs
   .filter(m => m.severity.to_int() >= min_level)
   .map(m => {
@@ -50,12 +50,12 @@ fn attrs_inspect(attrs : @core.Attributes) -> String {
 /// `standalone: false` (test_helper.rb `block_from_string`).
 fn block_from_string(
   src : String,
-  attributes? : Array[(String, @core.AttrVal)] = [],
+  attributes~ : Array[(String, @core.AttrVal)] = [],
   backend? : String,
   doctype? : String,
-  safe? : Int,
+  safe? : Int32,
   vfs? : &@core.Vfs,
-  catalog_assets? : Bool = false,
+  catalog_assets~ : Bool = false,
 ) -> @core.Node {
   let doc = @asciidoctor.load(
     src,
