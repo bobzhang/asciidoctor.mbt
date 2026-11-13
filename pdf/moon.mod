@@ -1,6 +1,6 @@
 name = "bobzhang/asciidoctor-pdf"
 
-version = "0.2.1"
+version = "0.2.2"
 
 readme = "README.mbt.md"
 
@@ -13,7 +13,7 @@ keywords = [ "asciidoc", "asciidoctor", "asciidoctor-pdf", "pdf" ]
 description = "PDF backend for asciidoctor.mbt: a port of Asciidoctor PDF 2.3.27 with its themes and fonts bundled"
 
 import {
-  "bobzhang/asciidoctor@0.3.4",
+  "bobzhang/asciidoctor@0.3.5",
   "bobzhang/prawn@0.2.0",
   "bobzhang/pygments@0.1.1",
   "moonbitlang/pagelayout@0.7.1",
