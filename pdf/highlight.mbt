@@ -190,7 +190,7 @@ fn strip_markup(text : String) -> String {
         let code = match m.group(2) {
           Some(dec) => @string.parse_int(dec) catch { _ => 0x3F }
           None =>
-            @string.parse_int(m.group(3).unwrap_or("3f"), base=16) catch {
+            @string.parse_int(m.group(3).unwrap_or("3f"), radix=16) catch {
               _ => 0x3F
             }
         }

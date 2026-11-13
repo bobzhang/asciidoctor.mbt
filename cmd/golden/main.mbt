@@ -51,13 +51,13 @@ priv struct RecordVfs {
 impl @core.Vfs for RecordVfs with fn read(self, path) {
   match self.files.get(path) {
     Some(data) => Some(data)
-    None => self.base.read(path)
+    None => @core.Vfs::read(self.base, path)
   }
 }
 
 ///|
 impl @core.Vfs for RecordVfs with fn is_file(self, path) {
-  self.files.contains(path) || self.base.is_file(path)
+  self.files.contains(path) || @core.Vfs::is_file(self.base, path)
 }
 
 ///|
@@ -68,17 +68,17 @@ impl @core.Vfs for RecordVfs with fn is_dir(self, path) {
       return true
     }
   }
-  self.base.is_dir(path)
+  @core.Vfs::is_dir(self.base, path)
 }
 
 ///|
 impl @core.Vfs for RecordVfs with fn cwd(self) {
-  self.base.cwd()
+  @core.Vfs::cwd(self.base)
 }
 
 ///|
 impl @core.Vfs for RecordVfs with fn home(self) {
-  self.base.home()
+  @core.Vfs::home(self.base)
 }
 
 ///|

@@ -540,7 +540,7 @@ async test "a missing converter raises before anything is written" {
           mkdirs=true,
         )
       catch {
-        @core.MissingConverter(_) as e => e.to_string()
+        @core.MissingConverter(_) as e => Show::to_string(e)
         e => raise e
       } noraise {
         _ => "no error"
@@ -558,7 +558,7 @@ async test "a missing converter raises before anything is written" {
     let msg = try
       @io.convert("content", options=@core.Options::new(backend="nope"))
     catch {
-      e => e.to_string()
+      e => Show::to_string(e)
     } noraise {
       _ => "no error"
     }

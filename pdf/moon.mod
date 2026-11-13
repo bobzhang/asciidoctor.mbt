@@ -19,7 +19,7 @@ import {
   "moonbitlang/pagelayout@0.7.1",
   "moonbitlang/pdflite@0.3.7",
   "moonbitlang/async@0.22.4",
-  "moonbit-community/yaml@0.0.7",
+  "moonbit-community/yaml@0.0.8",
 }
 
 preferred_target = "native"
