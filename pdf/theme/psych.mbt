@@ -180,7 +180,7 @@ fn tagged_scalar(
 /// Parse YAML text as `YAML.safe_load(text, aliases: true)`: the first
 /// document's value (Null for an empty document).
 pub fn safe_load(text : String) -> Value raise ThemeError {
-  let parser = @yaml.Parser::new(text)
+  let parser = @yaml.Parser(text)
   let builder : Builder = {
     stack: [],
     anchors: Map([]),
@@ -325,7 +325,7 @@ fn parse_legacy_integer(s : String) -> Value {
   } else {
     (body, 10)
   }
-  let v = @string.parse_int64(digits, base=radix) catch { _ => return Str(s) }
+  let v = @string.parse_int64(digits, radix~) catch { _ => return Str(s) }
   Int(if sign == "-" { -v } else { v })
 }
 

@@ -391,7 +391,7 @@ fn convert_inline_image(node : @core.Node) -> String {
         // `parse_formatted` and `document_hooks`)
         let index = session().inline_images.length()
         session().inline_images.push({
-          data: Bytes::new(0),
+          data: b"",
           mime: "application/pdf",
           px_w: 1,
           px_h: 1,
