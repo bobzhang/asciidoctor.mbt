@@ -6,7 +6,7 @@
 // title is a caption below.
 
 ///|
-fn be32(data : Bytes, offset : Int) -> Int {
+fn be32(data : Bytes, offset : Int32) -> Int32 {
   (data[offset].to_int() << 24) |
   (data[offset + 1].to_int() << 16) |
   (data[offset + 2].to_int() << 8) |
@@ -16,7 +16,7 @@ fn be32(data : Bytes, offset : Int) -> Int {
 ///|
 /// Intrinsic (width, height) in pixels and the media type, for PNG and
 /// JPEG.
-fn image_info(data : Bytes) -> (Int, Int, String)? {
+fn image_info(data : Bytes) -> (Int32, Int32, String)? {
   if data.length() > 24 &&
     data[0] == b'\x89' &&
     data[1] == b'P' &&
@@ -55,7 +55,7 @@ fn image_info(data : Bytes) -> (Int, Int, String)? {
 fn resolve_length(
   value : String,
   bounds : Double,
-  bare_px? : Bool = true,
+  bare_px~ : Bool = true,
 ) -> Double? {
   let number = fn(text : String) -> Double? {
     Some(@string.parse_double(text)) catch {
@@ -85,7 +85,7 @@ fn resolve_length(
 fn Converter::convert_image(
   self : Converter,
   node : @core.Node,
-  relative_to_imagesdir? : Bool = true,
+  relative_to_imagesdir~ : Bool = true,
 ) -> Unit {
   let flow = self.flow
   let target = node.attr("target").unwrap_or("")
@@ -268,8 +268,8 @@ fn Converter::convert_image(
 priv struct InlineImage {
   data : Bytes
   mime : String
-  px_w : Int
-  px_h : Int
+  px_w : Int32
+  px_h : Int32
   width : String
   fit : String?
   /// an SVG image: the document (drawn at the size its line gives it), its
@@ -499,6 +499,6 @@ fn content_height() -> Double {
 
 ///|
 /// The big-endian 16-bit unsigned integer at `offset`.
-fn read_u16(data : Bytes, offset : Int) -> Int {
+fn read_u16(data : Bytes, offset : Int32) -> Int32 {
   (data[offset].to_int() << 8) | data[offset + 1].to_int()
 }

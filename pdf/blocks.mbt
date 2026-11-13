@@ -156,7 +156,7 @@ fn caption_below(category : String) -> Bool {
 fn Converter::convert_code(
   self : Converter,
   node : @core.Node,
-  plain? : Bool = false,
+  plain~ : Bool = false,
 ) -> Unit {
   let flow = self.flow
   let (style, line_height) = theme_font(

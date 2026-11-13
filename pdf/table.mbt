@@ -31,10 +31,10 @@ priv enum CellContent {
 ///|
 priv struct TableCell {
   node : @core.Node
-  row : Int
-  column : Int
-  rowspan : Int
-  colspan : Int
+  row : Int32
+  column : Int32
+  rowspan : Int32
+  colspan : Int32
   /// left edge and width of the whole span
   x : Double
   width : Double
@@ -147,7 +147,7 @@ fn Converter::text_cell_content(
   cell : @core.Node,
   head : Bool,
   width : Double,
-  foot? : Bool = false,
+  foot~ : Bool = false,
 ) -> (CellContent, Double) {
   let flow = self.flow
   let (base, fragments, line_height) = cell_fragments(cell, head, foot~)
@@ -176,7 +176,7 @@ fn Converter::text_cell_content(
 fn cell_fragments(
   cell : @core.Node,
   head : Bool,
-  foot? : Bool = false,
+  foot~ : Bool = false,
 ) -> (Style, Array[Fragment], Double) {
   let (table_style, table_lh) = category_font("table")
   let text_of = (style : Style) => {
@@ -349,7 +349,7 @@ fn Converter::autowidth_columns(
     let (_, right, _, left) = table_cell_padding_of(head)
     left + right
   }
-  let occupied : Map[(Int, Int), Bool] = Map([])
+  let occupied : Map[(Int32, Int32), Bool] = Map([])
   let cells : Array[@table.WidthCell] = []
   let mut num_cols = node.columns().length()
   for r, entry in all_rows {
@@ -559,11 +559,11 @@ priv struct TableLayout {
   /// the cells (indices into `cells`, in order) that start in each row: a
   /// tall table is drawn page by page and row by row, and a scan of every
   /// cell for each would be quadratic
-  by_row : Array[Array[Int]]
+  by_row : Array[Array[Int32]]
   row_heights : Array[Double]
-  head_rows : Int
-  num_rows : Int
-  num_cols : Int
+  head_rows : Int32
+  num_rows : Int32
+  num_cols : Int32
   rules : Rules
   /// prawn-table's `row_colors` for the body rows (None: the page's white)
   row_colors : Array[Color?]
@@ -592,7 +592,7 @@ fn Converter::layout_table(
   }
   let num_cols = columns.length()
   let colors = table_colors()
-  let occupied : Map[(Int, Int), Bool] = Map([])
+  let occupied : Map[(Int32, Int32), Bool] = Map([])
   let cells : Array[TableCell] = []
   for r, entry in all_rows {
     let (row, head, foot) = entry
@@ -703,7 +703,7 @@ fn Converter::layout_table(
     }),
     num_rows,
   )
-  let by_row : Array[Array[Int]] = Array::makei(num_rows, _ => [])
+  let by_row : Array[Array[Int32]] = Array::makei(num_rows, _ => [])
   for i, cell in cells {
     by_row[cell.row].push(i)
   }
@@ -737,7 +737,7 @@ fn TableLayout::span_height(self : TableLayout, cell : TableCell) -> Double {
 ///|
 /// The room a row needs to start on a page: its tallest cell with its span
 /// (prawn-table's `height_with_span`).
-fn TableLayout::row_height_with_span(self : TableLayout, row : Int) -> Double {
+fn TableLayout::row_height_with_span(self : TableLayout, row : Int32) -> Double {
   let mut h = self.row_heights[row]
   for i in self.by_row[row] {
     h = @cmp.maximum(h, self.span_height(self.cells[i]))
@@ -909,11 +909,11 @@ fn Converter::draw_cell_content(
 fn Converter::draw_table_rows(
   self : Converter,
   layout : TableLayout,
-  rows : Array[Int],
-  start_row : Int,
+  rows : Array[Int32],
+  start_row : Int32,
 ) -> Unit {
   let flow = self.flow
-  let tops : Map[Int, Double] = Map([])
+  let tops : Map[Int32, Double] = Map([])
   let mut y = flow.y
   for r in rows {
     tops[r] = y
@@ -994,7 +994,7 @@ fn Converter::convert_table(self : Converter, node : @core.Node) -> Unit {
 fn Converter::convert_table_body(
   self : Converter,
   node : @core.Node,
-  contained? : Bool = false,
+  contained~ : Bool = false,
 ) -> Unit {
   let flow = self.flow
   if !contained {
@@ -1092,7 +1092,7 @@ fn Converter::convert_table_body(
   }
   // the rows of each page, drawn once the page is full
   let mut page_top = flow.y
-  let mut rows_here : Array[Int] = []
+  let mut rows_here : Array[Int32] = []
   let mut used = 0.0
   let mut start_row = 0
   for r in 0..<layout.num_rows {

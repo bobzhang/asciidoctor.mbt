@@ -2,7 +2,7 @@
 /// A Ruby regex interpolated into another (`#{re}`): Ruby's `Regexp#to_s`,
 /// the source in a group that sets the regex's options (`m`, `i`, `x`) and
 /// clears the others, `(?-mix:src)` for a regex without options.
-pub fn rx(source : String, flags? : String = "") -> String {
+pub fn rx(source : String, flags~ : String = "") -> String {
   let on = StringBuilder()
   let off = StringBuilder()
   for c in ['m', 'i', 'x'] {

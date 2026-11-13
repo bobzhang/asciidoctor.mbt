@@ -48,8 +48,8 @@ async fn listing(dir : String) -> String {
 
 ///|
 fn safe_options(
-  safe? : Int = @core.SAFE_SAFE,
-  attributes? : Array[(String, @core.AttrVal)] = [],
+  safe~ : Int32 = @core.SAFE_SAFE,
+  attributes~ : Array[(String, @core.AttrVal)] = [],
   standalone? : Bool,
   base_dir? : String,
 ) -> @core.Options {
@@ -104,7 +104,7 @@ async test "fixpoint exhaustion raises with the unresolved paths" {
   with_tmp(dir => {
     write_nested_includes(dir)
     let text = read_text("\{dir}/main.adoc")
-    let run = async fn(max_rounds : Int) -> String {
+    let run = async fn(max_rounds : Int32) -> String {
       let vfs = @io.FsVfs::new()
       let opts = safe_options(base_dir=dir)
       opts.vfs = Some(vfs)
@@ -269,7 +269,7 @@ async test "copycss copies a user stylesheet into stylesdir" {
 /// returns "ok" or the security error.
 async fn attempt(
   dir : String,
-  safe : Int,
+  safe : Int32,
   destination : @io.Destination,
   to_dir? : String,
 ) -> String {

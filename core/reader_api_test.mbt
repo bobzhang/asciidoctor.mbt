@@ -302,13 +302,13 @@ fn fixtures_vfs() -> @core.MemoryVfs {
 /// Ruby `Asciidoctor::Document.new input, opts` (not parsed).
 fn new_doc(
   input : String,
-  attributes? : Array[(String, @core.AttrVal)] = [],
-  safe? : Int,
+  attributes~ : Array[(String, @core.AttrVal)] = [],
+  safe? : Int32,
   base_dir? : String,
-  sourcemap? : Bool = false,
+  sourcemap~ : Bool = false,
   standalone? : Bool,
   extensions? : @core.Extensions,
-  vfs? : @core.MemoryVfs = fixtures_vfs(),
+  vfs~ : @core.MemoryVfs = fixtures_vfs(),
 ) -> @core.Node {
   @core.new_document(
     Some(@core.prepare_source_string(input)),
@@ -328,12 +328,12 @@ fn new_doc(
 /// Ruby test helper `document_from_string` (standalone and parsed by default).
 fn document_from_string(
   input : String,
-  attributes? : Array[(String, @core.AttrVal)] = [],
-  safe? : Int,
+  attributes~ : Array[(String, @core.AttrVal)] = [],
+  safe? : Int32,
   base_dir? : String,
-  standalone? : Bool = true,
-  parse? : Bool = true,
-  vfs? : @core.MemoryVfs = fixtures_vfs(),
+  standalone~ : Bool = true,
+  parse~ : Bool = true,
+  vfs~ : @core.MemoryVfs = fixtures_vfs(),
 ) -> @core.Node {
   let doc = new_doc(input, attributes~, safe?, base_dir?, standalone~, vfs~)
   if parse {
@@ -346,7 +346,7 @@ fn document_from_string(
 ///|
 /// Ruby test helper `empty_safe_document`.
 fn empty_safe_document(
-  attributes? : Array[(String, @core.AttrVal)] = [],
+  attributes~ : Array[(String, @core.AttrVal)] = [],
   extensions? : @core.Extensions,
 ) -> @core.Node {
   @core.new_document(

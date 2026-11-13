@@ -12,7 +12,7 @@
 priv struct IndexDest {
   anchor : String
   mut page : String?
-  mut page_sortable : Int
+  mut page_sortable : Int32
 }
 
 ///|
@@ -39,7 +39,7 @@ priv struct IndexTerm {
 }
 
 ///|
-fn IndexTerm::new(markup : String, is_term? : Bool = true) -> IndexTerm {
+fn IndexTerm::new(markup : String, is_term~ : Bool = true) -> IndexTerm {
   {
     markup,
     name: formatted_plain_text(markup),
@@ -76,8 +76,8 @@ fn IndexTerm::store_term(
   self : IndexTerm,
   markup : String,
   dest : IndexDest?,
-  see? : String? = None,
-  see_also? : Array[String] = [],
+  see~ : String? = None,
+  see_also~ : Array[String] = [],
 ) -> IndexTerm {
   let term = match self.terms.get(markup) {
     Some(term) => term
@@ -101,7 +101,7 @@ fn IndexTerm::store_term(
 ///|
 /// Ruby's `IndexTermGroup#<=>`: case-insensitive (ASCII) first, then by
 /// bytes.
-fn compare_index_names(a : String, b : String) -> Int {
+fn compare_index_names(a : String, b : String) -> Int32 {
   let fold = fn(s : String) -> String {
     let sb = StringBuilder()
     for c in s {
@@ -124,7 +124,7 @@ fn compare_index_names(a : String, b : String) -> Int {
 }
 
 ///|
-fn compare_bytes(a : Bytes, b : Bytes) -> Int {
+fn compare_bytes(a : Bytes, b : Bytes) -> Int32 {
   let n = @cmp.minimum(a.length(), b.length())
   for i in 0..<n {
     if a[i] != b[i] {
@@ -160,8 +160,8 @@ fn IndexTerm::is_container(self : IndexTerm) -> Bool {
 priv struct IndexCatalog {
   categories : Map[String, IndexTerm]
   dests : Map[String, IndexDest]
-  mut sequence : Int
-  mut start_page_number : Int
+  mut sequence : Int32
+  mut start_page_number : Int32
 }
 
 ///|
@@ -267,8 +267,8 @@ fn IndexCatalog::store_term(
   self : IndexCatalog,
   names : Array[String],
   dest : IndexDest,
-  see? : String? = None,
-  see_also? : Array[String] = [],
+  see~ : String? = None,
+  see_also~ : Array[String] = [],
 ) -> Unit {
   if names.is_empty() {
     return
@@ -300,7 +300,7 @@ fn IndexCatalog::store_term(
 fn IndexCatalog::link_dest_to_page(
   self : IndexCatalog,
   anchor : String,
-  physical : Int,
+  physical : Int32,
 ) -> Unit {
   match self.dests.get(anchor) {
     Some(dest) => {
@@ -438,8 +438,8 @@ fn Converter::ink_prose_fragments(
   self : Converter,
   fragments : Array[Fragment],
   style : Style,
-  margin_bottom? : Double = 0.0,
-  hanging_indent? : Double = 0.0,
+  margin_bottom~ : Double = 0.0,
+  hanging_indent~ : Double = 0.0,
 ) -> Unit {
   let flow = self.flow
   let metrics = line_metrics(base_line_height(), flow.font(style), style.size)

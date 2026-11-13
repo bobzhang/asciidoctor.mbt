@@ -1,6 +1,6 @@
 ///|
 /// The glyph of icon `name` in the bundled table of `set`.
-fn glyph(set : String, name : String) -> Int? raise {
+fn glyph(set : String, name : String) -> Int32? raise {
   let table = @utf8.decode(@icons.fonts().get("\{set}/glyphs.txt").unwrap())
   for line in table.split("\n") {
     if line.has_prefix(name + ": ") {

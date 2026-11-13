@@ -1,3 +1,4 @@
+///|
 // Bundle asciidoctor-pdf's themes (its data/themes/*.yml) in the PDF
 // backend: writes pdf/theme/bundled.mbt, the YAML text of each theme as a
 // raw multiline string, which the theme loader serves from its virtual

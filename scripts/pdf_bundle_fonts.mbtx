@@ -1,3 +1,4 @@
+///|
 // Bundle the fonts Ruby asciidoctor-pdf ships in the PDF backend, so that
 // it needs no font files at run time (native and wasm alike): writes one
 // `data_*.mbt` per file and a `data_registry.mbt` into each of the font
@@ -65,7 +66,7 @@ let icon_fonts : String = "\{gems}/gems/prawn-icon-3.0.0/data/fonts"
 
 ///|
 /// Characters of armoured text per literal.
-let chunk : Int = 32768
+let chunk : Int32 = 32768
 
 ///|
 /// Where a bundled file comes from: a file, or the icon names of an icon
@@ -160,7 +161,9 @@ let icon_sets : Array[(String, String, IconNameSource)] = [
   (
     "fi",
     "fi/foundation-icons.ttf",
-    Css("scripts/pdf_icon_names/foundation-icons.css", ".fi-", ":before { content: \""),
+    Css(
+      "scripts/pdf_icon_names/foundation-icons.css", ".fi-", ":before { content: \"",
+    ),
   ),
   (
     "pf",
@@ -178,18 +181,18 @@ enum IconNameSource {
 }
 
 ///|
-fn u16(b : Bytes, o : Int) -> Int {
+fn u16(b : Bytes, o : Int32) -> Int32 {
   (b[o].to_int() << 8) | b[o + 1].to_int()
 }
 
 ///|
-fn u32(b : Bytes, o : Int) -> Int {
+fn u32(b : Bytes, o : Int32) -> Int32 {
   (u16(b, o) << 16) | u16(b, o + 2)
 }
 
 ///|
 /// The offset of table `tag` of a TrueType font.
-fn sfnt_table(b : Bytes, tag : String) -> Int? {
+fn sfnt_table(b : Bytes, tag : String) -> Int32? {
   for i in 0..<u16(b, 4) {
     let rec = 12 + 16 * i
     let t = StringBuilder()
@@ -208,39 +211,37 @@ fn sfnt_table(b : Bytes, tag : String) -> Int? {
 /// 2.0 refers to by index (Font Awesome's `apple` and `less` are two).
 let mac_glyph_names : Array[String] = [
   ".notdef", ".null", "nonmarkingreturn", "space", "exclam", "quotedbl", "numbersign",
-  "dollar", "percent", "ampersand", "quotesingle", "parenleft", "parenright",
-  "asterisk", "plus", "comma", "hyphen", "period", "slash", "zero", "one", "two",
-  "three", "four", "five", "six", "seven", "eight", "nine", "colon", "semicolon",
-  "less", "equal", "greater", "question", "at", "A", "B", "C", "D", "E", "F", "G",
-  "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-  "X", "Y", "Z", "bracketleft", "backslash", "bracketright", "asciicircum",
-  "underscore", "grave", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",
-  "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-  "braceleft", "bar", "braceright", "asciitilde", "Adieresis", "Aring", "Ccedilla",
-  "Eacute", "Ntilde", "Odieresis", "Udieresis", "aacute", "agrave", "acircumflex",
-  "adieresis", "atilde", "aring", "ccedilla", "eacute", "egrave", "ecircumflex",
-  "edieresis", "iacute", "igrave", "icircumflex", "idieresis", "ntilde", "oacute",
-  "ograve", "ocircumflex", "odieresis", "otilde", "uacute", "ugrave", "ucircumflex",
-  "udieresis", "dagger", "degree", "cent", "sterling", "section", "bullet",
-  "paragraph", "germandbls", "registered", "copyright", "trademark", "acute",
-  "dieresis", "notequal", "AE", "Oslash", "infinity", "plusminus", "lessequal",
-  "greaterequal", "yen", "mu", "partialdiff", "summation", "product", "pi",
-  "integral", "ordfeminine", "ordmasculine", "Omega", "ae", "oslash",
-  "questiondown", "exclamdown", "logicalnot", "radical", "florin", "approxequal",
-  "Delta", "guillemotleft", "guillemotright", "ellipsis", "nonbreakingspace",
-  "Agrave", "Atilde", "Otilde", "OE", "oe", "endash", "emdash", "quotedblleft",
-  "quotedblright", "quoteleft", "quoteright", "divide", "lozenge", "ydieresis",
-  "Ydieresis", "fraction", "currency", "guilsinglleft", "guilsinglright", "fi",
-  "fl", "daggerdbl", "periodcentered", "quotesinglbase", "quotedblbase",
-  "perthousand", "Acircumflex", "Ecircumflex", "Aacute", "Edieresis", "Egrave",
-  "Iacute", "Icircumflex", "Idieresis", "Igrave", "Oacute", "Ocircumflex", "apple",
-  "Ograve", "Uacute", "Ucircumflex", "Ugrave", "dotlessi", "circumflex", "tilde",
-  "macron", "breve", "dotaccent", "ring", "cedilla", "hungarumlaut", "ogonek",
+  "dollar", "percent", "ampersand", "quotesingle", "parenleft", "parenright", "asterisk",
+  "plus", "comma", "hyphen", "period", "slash", "zero", "one", "two", "three", "four",
+  "five", "six", "seven", "eight", "nine", "colon", "semicolon", "less", "equal",
+  "greater", "question", "at", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+  "bracketleft", "backslash", "bracketright", "asciicircum", "underscore", "grave",
+  "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p",
+  "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "braceleft", "bar", "braceright",
+  "asciitilde", "Adieresis", "Aring", "Ccedilla", "Eacute", "Ntilde", "Odieresis",
+  "Udieresis", "aacute", "agrave", "acircumflex", "adieresis", "atilde", "aring",
+  "ccedilla", "eacute", "egrave", "ecircumflex", "edieresis", "iacute", "igrave",
+  "icircumflex", "idieresis", "ntilde", "oacute", "ograve", "ocircumflex", "odieresis",
+  "otilde", "uacute", "ugrave", "ucircumflex", "udieresis", "dagger", "degree", "cent",
+  "sterling", "section", "bullet", "paragraph", "germandbls", "registered", "copyright",
+  "trademark", "acute", "dieresis", "notequal", "AE", "Oslash", "infinity", "plusminus",
+  "lessequal", "greaterequal", "yen", "mu", "partialdiff", "summation", "product",
+  "pi", "integral", "ordfeminine", "ordmasculine", "Omega", "ae", "oslash", "questiondown",
+  "exclamdown", "logicalnot", "radical", "florin", "approxequal", "Delta", "guillemotleft",
+  "guillemotright", "ellipsis", "nonbreakingspace", "Agrave", "Atilde", "Otilde",
+  "OE", "oe", "endash", "emdash", "quotedblleft", "quotedblright", "quoteleft", "quoteright",
+  "divide", "lozenge", "ydieresis", "Ydieresis", "fraction", "currency", "guilsinglleft",
+  "guilsinglright", "fi", "fl", "daggerdbl", "periodcentered", "quotesinglbase",
+  "quotedblbase", "perthousand", "Acircumflex", "Ecircumflex", "Aacute", "Edieresis",
+  "Egrave", "Iacute", "Icircumflex", "Idieresis", "Igrave", "Oacute", "Ocircumflex",
+  "apple", "Ograve", "Uacute", "Ucircumflex", "Ugrave", "dotlessi", "circumflex",
+  "tilde", "macron", "breve", "dotaccent", "ring", "cedilla", "hungarumlaut", "ogonek",
   "caron", "Lslash", "lslash", "Scaron", "scaron", "Zcaron", "zcaron", "brokenbar",
-  "Eth", "eth", "Yacute", "yacute", "Thorn", "thorn", "minus", "multiply",
-  "onesuperior", "twosuperior", "threesuperior", "onehalf", "onequarter",
-  "threequarters", "franc", "Gbreve", "gbreve", "Idotaccent", "Scedilla",
-  "scedilla", "Cacute", "cacute", "Ccaron", "ccaron", "dcroat",
+  "Eth", "eth", "Yacute", "yacute", "Thorn", "thorn", "minus", "multiply", "onesuperior",
+  "twosuperior", "threesuperior", "onehalf", "onequarter", "threequarters", "franc",
+  "Gbreve", "gbreve", "Idotaccent", "Scedilla", "scedilla", "Cacute", "cacute", "Ccaron",
+  "ccaron", "dcroat",
 ]
 
 ///|
@@ -249,7 +250,7 @@ let mac_glyph_names : Array[String] = [
 /// own metadata (metadata/icons.yml: `unicode` of an icon listing the
 /// set's style, marked `private`). Prawn draws the font's missing glyph for
 /// them; they are kept so that the icons render as they do with prawn-icon.
-let metadata_only_icons : Array[(String, String, Int)] = [
+let metadata_only_icons : Array[(String, String, Int32)] = [
   ("fab", "font-awesome-logo-full", 0xf4e6),
   ("far", "font-awesome-logo-full", 0xf4e6),
   ("fas", "font-awesome-logo-full", 0xf4e6),
@@ -277,15 +278,21 @@ fn post_glyph_names(b : Bytes) -> Array[String?] {
     names.push(sb.to_string())
     o += 1 + len
   }
-  index.map(i => if i >= 258 { names.get(i - 258) } else { Some(mac_glyph_names[i]) })
+  index.map(i => {
+    if i >= 258 {
+      names.get(i - 258)
+    } else {
+      Some(mac_glyph_names[i])
+    }
+  })
 }
 
 ///|
 /// The Unicode `cmap` of a font (platform 3, encoding 1, format 4): code
 /// point → glyph id.
-fn unicode_cmap(b : Bytes) -> Map[Int, Int] {
+fn unicode_cmap(b : Bytes) -> Map[Int32, Int32] {
   guard sfnt_table(b, "cmap") is Some(c) else { abort("the font has no cmap") }
-  let out : Map[Int, Int] = Map([])
+  let out : Map[Int32, Int32] = Map([])
   for i in 0..<u16(b, c + 2) {
     let rec = c + 4 + 8 * i
     let off = c + u32(b, rec + 4)
@@ -301,7 +308,7 @@ fn unicode_cmap(b : Bytes) -> Map[Int, Int] {
       let start = u16(b, starts + 2 * s)
       let delta = u16(b, deltas + 2 * s)
       let range = u16(b, ranges + 2 * s)
-      for cp in start..=u16(b, ends + 2 * s) {
+      for cp in start..<=u16(b, ends + 2 * s) {
         if cp == 0xFFFF {
           continue
         }
@@ -325,14 +332,14 @@ fn unicode_cmap(b : Bytes) -> Map[Int, Int] {
 }
 
 ///|
-fn hex_value(s : String) -> Int {
+fn hex_value(s : String) -> Int32 {
   let mut v = 0
   for c in s {
     v = v * 16 +
       (match c {
-        '0'..='9' => c.to_int() - '0'.to_int()
-        'a'..='f' => c.to_int() - 'a'.to_int() + 10
-        'A'..='F' => c.to_int() - 'A'.to_int() + 10
+        '0'..<='9' => c.to_int() - '0'.to_int()
+        'a'..<='f' => c.to_int() - 'a'.to_int() + 10
+        'A'..<='F' => c.to_int() - 'A'.to_int() + 10
         _ => abort("not hexadecimal: \{s}")
       })
   }
@@ -345,8 +352,8 @@ async fn derive_icon_names(
   set : String,
   font : Bytes,
   source : IconNameSource,
-) -> Array[(String, Int)] {
-  let map : Map[String, Int] = Map([])
+) -> Array[(String, Int32)] {
+  let map : Map[String, Int32] = Map([])
   match source {
     GlyphNames => {
       let names = post_glyph_names(font)
@@ -386,13 +393,12 @@ async fn derive_icon_names(
 
 ///|
 /// prawn-icon's legend of a set (`<set>/<set>.yml`): name → code point.
-async fn prawn_icon_legend(set : String) -> Map[String, Int] {
-  let map : Map[String, Int] = Map([])
-  for line in @fs.read_file("\{icon_fonts}/\{set}/\{set}.yml").text().split("\n") {
+async fn prawn_icon_legend(set : String) -> Map[String, Int32] {
+  let map : Map[String, Int32] = Map([])
+  for
+    line in @fs.read_file("\{icon_fonts}/\{set}/\{set}.yml").text().split("\n") {
     let line = line.trim().to_owned()
-    guard line.find(": ") is Some(i) && !line.has_prefix("__") else {
-      continue
-    }
+    guard line.find(": ") is Some(i) && !line.has_prefix("__") else { continue }
     let name = line[:i].to_owned()
     let value = line[i + 2:].to_owned()
     guard value.has_prefix("\"") && value.has_suffix("\"") else { continue }
@@ -425,7 +431,7 @@ async fn icon_names_file(set : String) -> Bytes {
   let cmap = unicode_cmap(font)
   let legend = prawn_icon_legend(set)
   let problems = []
-  let derived : Map[String, Int] = Map::from_array(entries)
+  let derived : Map[String, Int32] = Map::from_array(entries)
   for name, cp in legend {
     match derived.get(name) {
       Some(c) if c == cp => ()
@@ -433,7 +439,10 @@ async fn icon_names_file(set : String) -> Bytes {
         problems.push(
           "\{name}: U+\{c.to_string(radix=16)}, prawn-icon U+\{cp.to_string(radix=16)}",
         )
-      None => problems.push("\{name}: missing (prawn-icon U+\{cp.to_string(radix=16)})")
+      None =>
+        problems.push(
+          "\{name}: missing (prawn-icon U+\{cp.to_string(radix=16)})",
+        )
     }
   }
   for entry in entries {
@@ -441,13 +450,14 @@ async fn icon_names_file(set : String) -> Bytes {
     if !legend.contains(name) {
       problems.push("\{name}: not in prawn-icon's legend")
     }
-    if !cmap.contains(cp) &&
-      !metadata_only_icons.contains((set, name, cp)) {
+    if !cmap.contains(cp) && !metadata_only_icons.contains((set, name, cp)) {
       problems.push("\{name}: U+\{cp.to_string(radix=16)} is not in the font")
     }
   }
   if !problems.is_empty() {
-    abort("\{set}: the icon names differ from prawn-icon's:\n" + problems.join("\n"))
+    abort(
+      "\{set}: the icon names differ from prawn-icon's:\n" + problems.join("\n"),
+    )
   }
   println(
     "\{set}: \{entries.length()} icon names, identical to prawn-icon's legend",
@@ -482,13 +492,15 @@ let licenses : Array[(String, String)] = [
 fn ident(name : String) -> String {
   let sb = StringBuilder()
   for c in name {
-    sb.write_char(if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') {
-      c
-    } else if c >= 'A' && c <= 'Z' {
-      (c.to_int() + 32).unsafe_to_char()
-    } else {
-      '_'
-    })
+    sb.write_char(
+      if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') {
+        c
+      } else if c >= 'A' && c <= 'Z' {
+        (c.to_int() + 32).unsafe_to_char()
+      } else {
+        '_'
+      },
+    )
   }
   sb.to_string()
 }

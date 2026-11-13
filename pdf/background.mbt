@@ -26,7 +26,7 @@ priv struct BoxImage {
   alt : String?
   /// for a PDF, the page it shows (the `page` attribute, at least 1):
   /// imported rather than drawn in the box (see `import_pdf_page`)
-  pdf_page : Int?
+  pdf_page : Int32?
 }
 
 ///|
@@ -172,8 +172,8 @@ fn Converter::resolve_background_image(
   attr : String?,
   theme_key : String,
   container : (Double, Double),
-  symbolic? : Bool = false,
-  layout? : String = "portrait",
+  symbolic~ : Bool = false,
+  layout~ : String = "portrait",
 ) -> Background {
   let doc = self.doc
   let (value, from_theme) = match attr.bind(a => doc.attr(a)) {
@@ -213,8 +213,8 @@ fn Converter::resolve_box_image(
   value : String,
   from_theme : Bool,
   container : (Double, Double),
-  layout? : String = "portrait",
-  background? : Bool = true,
+  layout~ : String = "portrait",
+  background~ : Bool = true,
 ) -> Background {
   let doc = self.doc
   let mut path = value
@@ -560,8 +560,8 @@ fn Converter::page_bg_images(
 /// `title-page-background-image` instead where they are set.
 fn Converter::ink_page_backgrounds(
   self : Converter,
-  title_page : Int?,
-  front_cover? : Bool = false,
+  title_page : Int32?,
+  front_cover~ : Bool = false,
 ) -> Unit {
   let pages = self.flow.model.pages
   let color = page_background_color()

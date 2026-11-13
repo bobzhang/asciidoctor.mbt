@@ -1,14 +1,15 @@
 ///|
 /// An attribute value. Ruby Asciidoctor stores strings, integers, floats,
 /// booleans and nil in attribute hashes; this enum mirrors that.
+#derive(Eq, Debug)
 pub(all) enum AttrVal {
   Str(String)
-  Int(Int)
+  Int(Int32)
   Float(Double)
   Bool(Bool)
   List(Array[String])
   Nil
-} derive(Eq, Debug)
+}
 
 ///|
 /// Ruby `to_s` of the value (`nil` → "").
@@ -34,7 +35,7 @@ pub fn AttrVal::truthy(self : AttrVal) -> Bool {
 
 ///|
 /// Ruby `to_i` of the value.
-pub fn AttrVal::to_i(self : AttrVal) -> Int {
+pub fn AttrVal::to_i(self : AttrVal) -> Int32 {
   match self {
     Str(s) => @rb.to_i(s)
     Int(i) => i
@@ -62,19 +63,21 @@ pub fn AttrVal::is_str(self : AttrVal, s : String) -> Bool {
 
 ///|
 /// Key of an attribute: named (String) or positional (1-based Int).
+#derive(Eq, Hash, Debug)
 pub(all) enum AttrKey {
   Name(String)
-  Pos(Int)
-} derive(Eq, Hash, Debug)
+  Pos(Int32)
+}
 
 ///|
 /// A document attribute assignment recorded in the body of a document and
 /// replayed during conversion (Ruby `Document::AttributeEntry`).
+#derive(Debug)
 pub(all) struct AttributeEntry {
   name : String
   value : String?
   negate : Bool
-} derive(Debug)
+}
 
 ///|
 pub fn AttributeEntry::new(
@@ -118,7 +121,7 @@ pub fn Attributes::copy(self : Attributes) -> Attributes {
 }
 
 ///|
-pub fn Attributes::length(self : Attributes) -> Int {
+pub fn Attributes::length(self : Attributes) -> Int32 {
   self.map.length()
 }
 
@@ -166,7 +169,7 @@ pub fn Attributes::get(self : Attributes, name : String) -> AttrVal? {
 
 ///|
 /// Raw value of a positional attribute.
-pub fn Attributes::get_pos(self : Attributes, i : Int) -> AttrVal? {
+pub fn Attributes::get_pos(self : Attributes, i : Int32) -> AttrVal? {
   self.map.get(Pos(i))
 }
 
@@ -186,7 +189,7 @@ pub fn Attributes::str(self : Attributes, name : String) -> String? {
 
 ///|
 /// Positional attribute as string when truthy.
-pub fn Attributes::pos_str(self : Attributes, i : Int) -> String? {
+pub fn Attributes::pos_str(self : Attributes, i : Int32) -> String? {
   match self.map.get(Pos(i)) {
     Some(Nil) | Some(Bool(false)) | None => None
     Some(v) => Some(v.to_s())
@@ -209,7 +212,7 @@ pub fn Attributes::contains(self : Attributes, name : String) -> Bool {
 }
 
 ///|
-pub fn Attributes::contains_pos(self : Attributes, i : Int) -> Bool {
+pub fn Attributes::contains_pos(self : Attributes, i : Int32) -> Bool {
   self.map.contains(Pos(i))
 }
 
@@ -228,7 +231,7 @@ pub fn Attributes::set_str(
 }
 
 ///|
-pub fn Attributes::set_pos(self : Attributes, i : Int, v : AttrVal) -> Unit {
+pub fn Attributes::set_pos(self : Attributes, i : Int32, v : AttrVal) -> Unit {
   self.map[Pos(i)] = v
 }
 
@@ -270,7 +273,7 @@ pub fn Attributes::remove_str(self : Attributes, name : String) -> String? {
 }
 
 ///|
-pub fn Attributes::remove_pos(self : Attributes, i : Int) -> AttrVal? {
+pub fn Attributes::remove_pos(self : Attributes, i : Int32) -> AttrVal? {
   let k = Pos(i)
   let v = self.map.get(k)
   if v is Some(_) {

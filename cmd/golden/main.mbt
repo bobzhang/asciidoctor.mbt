@@ -196,14 +196,14 @@ fn build_options(
 
 ///|
 priv struct Stats {
-  mut records : Int
-  mut skipped : Int
-  mut ast_total : Int
-  mut ast_pass : Int
-  mut out_total : Int
-  mut out_pass : Int
-  mut msg_total : Int
-  mut msg_pass : Int
+  mut records : Int32
+  mut skipped : Int32
+  mut ast_total : Int32
+  mut ast_pass : Int32
+  mut out_total : Int32
+  mut out_pass : Int32
+  mut msg_total : Int32
+  mut msg_pass : Int32
   failures : Array[String]
 }
 
@@ -258,7 +258,7 @@ fn first_diff(expected : String, actual : String) -> String {
 }
 
 ///|
-fn severity_of_int(n : Int) -> @core.Severity {
+fn severity_of_int(n : Int32) -> @core.Severity {
   match n {
     0 => Debug
     1 => Info
@@ -622,11 +622,11 @@ async fn main {
   let ctx = { fixtures, verbose, trace, }
   let total = Stats::new()
   // number of records in each file (for the coverage check)
-  let counts : Array[(String, Int)] = []
+  let counts : Array[(String, Int32)] = []
   for file in files {
     let text = @fs.read_file(file).text()
     let stats = Stats::new()
-    let per_test : Map[String, Int] = Map([])
+    let per_test : Map[String, Int32] = Map([])
     let mut rec_idx = -1
     for lineno, line in text.split("\n").collect() {
       let line = line.to_owned()
@@ -680,7 +680,7 @@ async fn main {
       )
       println("wrote \{record_counts_path}")
     } else {
-      let actual : Map[String, Int] = Map::from_array(counts)
+      let actual : Map[String, Int32] = Map::from_array(counts)
       for e in expected_counts {
         let want = @rb.to_i(e.0)
         match actual.get(e.1) {
@@ -807,7 +807,7 @@ async fn main {
 
 ///|
 fn base64_decode(s : String) -> Bytes {
-  let value = fn(c : Int) -> Int {
+  let value = fn(c : Int32) -> Int32 {
     if c >= 'A' && c <= 'Z' {
       c - 'A'
     } else if c >= 'a' && c <= 'z' {

@@ -97,7 +97,7 @@ fn document_hooks() -> Hooks {
       with_session(session, () => {
         match session.inline_images.get(index) {
           Some(
-            { dropped: Some((_, message, node)), warned: false, .. } as image
+            { dropped: Some((_, message, node)), warned: false, .. } as image,
           ) => {
             image.warned = true
             warning(message, node)
@@ -118,6 +118,6 @@ fn document_hooks() -> Hooks {
 
 ///|
 /// A flow over the document's pages (`scratch` for a dry run).
-fn new_flow(catalog : FontCatalog, scratch? : Bool = false) -> Flow {
+fn new_flow(catalog : FontCatalog, scratch~ : Bool = false) -> Flow {
   Flow::new(catalog, session().page_setup, hooks=document_hooks(), scratch~)
 }

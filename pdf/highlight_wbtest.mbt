@@ -1,7 +1,7 @@
 ///|
 /// A colour as six hex digits.
 fn hex6(c : Color) -> String {
-  let digits = fn(v : Int) {
+  let digits = fn(v : Int32) {
     let s = v.to_string(radix=16)
     if s.length() < 2 {
       "0" + s
@@ -282,7 +282,7 @@ test "source-highlighter is locked off from the server safe mode up" {
     #|----
     #|puts 1
     #|----
-  let highlighted = (safe : Int?, attributes : Array[(String, @core.AttrVal)]) => {
+  let highlighted = (safe : Int32?, attributes : Array[(String, @core.AttrVal)]) => {
     register()
     let doc = @asciidoctor.load(
       source,

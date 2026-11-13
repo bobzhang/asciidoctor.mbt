@@ -378,7 +378,7 @@ fn restore_abstract(abstract_block : @core.Node) -> Unit {
 fn cover_tag(
   doc : @core.Node,
   face : String,
-  use_placeholder? : Bool = false,
+  use_placeholder~ : Bool = false,
 ) -> String? {
   match doc.attr("\{face}-cover-image") {
     Some(cover_image0) => {

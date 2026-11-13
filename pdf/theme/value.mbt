@@ -6,6 +6,7 @@
 
 ///|
 /// A theme value.
+#derive(Eq, Debug)
 pub(all) enum Value {
   Null
   Bool(Bool)
@@ -24,7 +25,7 @@ pub(all) enum Value {
   Transparent
   /// `CMYKColorValue`: four components, each an Int or a Float (0..100)
   Cmyk(Array[Value])
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Value with Eq::{not_equal, equal}
@@ -255,7 +256,7 @@ fn is_ruby_space(c : Char) -> Bool {
 ///|
 /// Digits with single underscores between them (Ruby's number literals in
 /// `to_f`/`to_i`), from `start`; returns the end and the digits.
-fn scan_digits(s : String, start : Int) -> (Int, String) {
+fn scan_digits(s : String, start : Int32) -> (Int32, String) {
   let sb = StringBuilder()
   let mut i = start
   while i < s.length() {

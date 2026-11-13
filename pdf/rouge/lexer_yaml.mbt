@@ -1,7 +1,7 @@
 ///|
 /// Ruby's `String#to_i` on a short numeric string: an optional sign and
 /// the digits that follow, 0 without digits.
-fn ruby_to_i(s : String) -> Int {
+fn ruby_to_i(s : String) -> Int32 {
   let mut i = 0
   let mut neg = false
   if s.length() > 0 && (s.unsafe_get(0) == '+' || s.unsafe_get(0) == '-') {
@@ -26,9 +26,9 @@ pub fn yaml(options : Map[String, String]) -> Lexer {
   let lx = Lexer::new("yaml", options~)
   // the indentation levels (`@indent_stack`), the indentation of the line
   // being lexed (`@next_indent`) and of the block scalar being lexed
-  let indent_stack : Array[Int] = [0]
+  let indent_stack : Array[Int32] = [0]
   let mut next_indent = 0
-  let mut block_scalar_indent : Int? = None
+  let mut block_scalar_indent : Int32? = None
   fn reset_indent() {
     indent_stack.clear()
     indent_stack.push(0)
@@ -36,7 +36,7 @@ pub fn yaml(options : Map[String, String]) -> Lexer {
     block_scalar_indent = None
   }
 
-  fn indent() -> Int {
+  fn indent() -> Int32 {
     match indent_stack.last() {
       Some(i) => i
       None => abort("empty indent stack!")

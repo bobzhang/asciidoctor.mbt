@@ -8,12 +8,13 @@ pub struct TableRows {
 
 ///|
 /// Implicit/explicit header state (Ruby `has_header_option`: true, :implicit, nil/false).
+#derive(Eq, Debug)
 pub(all) enum HeaderOption {
   NoHeader
   ExplicitHeader
   ImplicitHeader
   UnsetHeader // Ruby nil
-} derive(Eq, Debug)
+}
 
 ///|
 /// Table-specific data.
@@ -27,8 +28,8 @@ pub struct TableData {
 /// Table cell data.
 pub struct CellData {
   mut text : String
-  mut colspan : Int?
-  mut rowspan : Int?
+  mut colspan : Int32?
+  mut rowspan : Int32?
   mut inner_document : Node?
   priv mut cursor : Cursor?
   priv mut reinitialize_args : (Node?, String, Attributes?, Cursor?)?
@@ -61,12 +62,12 @@ pub fn Node::columns(self : Node) -> Array[Node] {
 }
 
 ///|
-pub fn Node::colspan(self : Node) -> Int? {
+pub fn Node::colspan(self : Node) -> Int32? {
   self.cell_data().colspan
 }
 
 ///|
-pub fn Node::rowspan(self : Node) -> Int? {
+pub fn Node::rowspan(self : Node) -> Int32? {
   self.cell_data().rowspan
 }
 
@@ -141,12 +142,13 @@ fn Node::header_row(self : Node) -> HeaderOption {
 
 ///|
 /// A column spec (Ruby Hash with width, halign, valign, style).
+#derive(Debug)
 pub(all) struct ColSpec {
-  mut width : Int
+  mut width : Int32
   mut halign : String?
   mut valign : String?
   mut style : String?
-} derive(Debug)
+}
 
 ///|
 /// Creates the columns from colspecs (Ruby `create_columns`).
@@ -218,7 +220,7 @@ fn num_sub(a : AttrVal, b : AttrVal) -> AttrVal {
 /// Ruby `Table#assign_column_widths`.
 fn Node::assign_column_widths(
   self : Node,
-  width_base? : Int,
+  width_base? : Int32,
   autowidth_cols? : Array[Node],
 ) -> Unit {
   let precision = 4
@@ -283,8 +285,8 @@ fn Node::assign_column_widths(
 fn Node::assign_width(
   self : Node,
   col_pcwidth : AttrVal,
-  width_base : Int?,
-  precision : Int,
+  width_base : Int32?,
+  precision : Int32,
 ) -> AttrVal {
   let pc = match width_base {
     Some(wb) =>
@@ -344,7 +346,7 @@ fn Node::partition_header_footer(self : Node, attrs : Attributes) -> Unit {
 /// Creates a table column (Ruby `Table::Column.new table, index, attributes`).
 fn Node::new_table_column(
   table : Node,
-  index : Int,
+  index : Int32,
   attributes : Attributes,
 ) -> Node {
   let col = Node::alloc(Some(table), TableColumn)
@@ -630,16 +632,16 @@ priv struct TableParserContext {
   reader : Reader
   table : Node
   format : String
-  mut colcount : Int
+  mut colcount : Int32
   mut buffer : String
   delimiter : String
   delimiter_rx : @regex.Regex
   cellspecs : Array[Attributes?]
   mut cell_open : Bool
-  active_rowspans : Array[Int]
-  mut column_visits : Int
+  active_rowspans : Array[Int32]
+  mut column_visits : Int32
   mut current_row : Array[Node]
-  mut linenum : Int
+  mut linenum : Int32
   start_cursor : Cursor
 }
 
@@ -818,7 +820,7 @@ fn TableParserContext::close_open_cell(
 ///|
 fn TableParserContext::close_cell(
   self : TableParserContext,
-  eol? : Bool = false,
+  eol~ : Bool = false,
 ) -> Unit {
   let mut cell_text = ""
   let mut cellspec : Attributes? = None
@@ -940,7 +942,7 @@ fn TableParserContext::close_table(self : TableParserContext) -> Unit {
 ///|
 fn TableParserContext::close_row(
   self : TableParserContext,
-  drop? : Bool = false,
+  drop~ : Bool = false,
 ) -> Unit {
   if !drop {
     self.table.table_data().rows.body.push(self.current_row)
@@ -959,8 +961,8 @@ fn TableParserContext::close_row(
 ///|
 fn TableParserContext::activate_rowspan(
   self : TableParserContext,
-  rowspan : Int,
-  colspan : Int,
+  rowspan : Int32,
+  colspan : Int32,
 ) -> Unit {
   for i in 1..<rowspan {
     while self.active_rowspans.length() <= i {
@@ -971,7 +973,7 @@ fn TableParserContext::activate_rowspan(
 }
 
 ///|
-fn TableParserContext::end_of_row(self : TableParserContext) -> Int {
+fn TableParserContext::end_of_row(self : TableParserContext) -> Int32 {
   if self.colcount == -1 {
     0
   } else {

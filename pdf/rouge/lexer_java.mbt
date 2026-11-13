@@ -122,7 +122,7 @@ fn is_signature_start(c : UInt16) -> Bool {
 /// (the rule would rescan the rest of the run at each identifier, quadratic
 /// in a long run, whether or not it ends in a `(`), so the positions of a
 /// run are checked in constant time.
-fn signature_ahead() -> (String, Int) -> Bool {
+fn signature_ahead() -> (String, Int32) -> Bool {
   let last_text : Ref[String] = Ref("")
   let run_start = Ref(-1)
   let run_end = Ref(-1)
