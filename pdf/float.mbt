@@ -8,7 +8,7 @@
 ///|
 /// The space beside a floated image, in flow coordinates (y down).
 priv struct FloatBox {
-  page : Int
+  page : Int32
   /// the top of the image (its caption included)
   top : Double
   /// the bottom of the box: the image's bottom plus the bottom gap, or the

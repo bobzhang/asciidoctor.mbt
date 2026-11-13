@@ -1,3 +1,4 @@
+///|
 // Harvest Rouge 3.30.0 (the version asciidoctor-pdf's spec suite resolves
 // to) for pdf/rouge, the MoonBit port of its lexers and themes: runs
 // scripts/pdf_rouge/harvest.rb and writes
@@ -90,9 +91,10 @@ async fn ruby() -> String {
     Some(r) if r != "" => return r
     _ => ()
   }
-  for candidate in [
-    "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
-  ] {
+  for
+    candidate in [
+      "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+    ] {
     if (@fs.exists(candidate) catch { _ => false }) {
       return candidate
     }
@@ -156,8 +158,7 @@ fn lit(s : String) -> String {
         (code >= 0x200B && code <= 0x200F) ||
         (code >= 0x2028 && code <= 0x202E) ||
         (code >= 0x2060 && code <= 0x206F) ||
-        code == 0xFEFF =>
-        sb.write_string("\\u{\{code.to_string(radix=16)}}")
+        code == 0xFEFF => sb.write_string("\\u{\{code.to_string(radix=16)}}")
       c => sb.write_char(c)
     }
   }
@@ -251,9 +252,11 @@ fn gen_unicode(data : Json) -> String {
   names.sort()
   for name in names {
     sb.write_string("  (\n    \{lit(name)},\n    [\n")
-    let ranges = items(props[name]).map(v => match v {
-      Number(n, ..) => "0x" + n.to_int().to_string(radix=16).to_upper()
-      _ => "0"
+    let ranges = items(props[name]).map(v => {
+      match v {
+        Number(n, ..) => "0x" + n.to_int().to_string(radix=16).to_upper()
+        _ => "0"
+      }
     })
     let mut i = 0
     while i < ranges.length() {
@@ -268,10 +271,10 @@ fn gen_unicode(data : Json) -> String {
 }
 
 ///|
-fn gen_tests(data : Json) -> (String, Int) {
+fn gen_tests(data : Json) -> (String, Int32) {
   let sb = StringBuilder()
   sb.write_string(header)
-  let seen : Map[String, Int] = Map([])
+  let seen : Map[String, Int32] = Map([])
   let mut count = 0
   for c in items(field(data, "cases")) {
     let f = items(c)
@@ -356,7 +359,11 @@ async fn main {
     @fs.realpath(pdf_lib),
     ..lexer_tags(),
   ]
-  let (code, stdout, stderr) = @process.collect_output(ruby(), args, extra_env=env)
+  let (code, stdout, stderr) = @process.collect_output(
+    ruby(),
+    args,
+    extra_env=env,
+  )
   if code != 0 {
     println(stdout.text() + stderr.text())
     fail("harvest.rb failed (exit \{code})")

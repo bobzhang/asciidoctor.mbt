@@ -63,7 +63,7 @@ fn parse_table(
   let parser_ctx = TableParserContext::new(table_reader, table, attributes)
   let format = parser_ctx.format
   let mut loop_idx = -1
-  let mut implicit_header_boundary : Int? = None
+  let mut implicit_header_boundary : Int32? = None
   while table_reader.read_line() is Some(line0) {
     let mut line : String? = Some(line0)
     loop_idx += 1
@@ -295,8 +295,8 @@ fn parse_colspecs(records0 : String) -> Array[ColSpec] {
 /// Parses a cell spec (Ruby `parse_cellspec`): returns (spec or None, rest).
 fn parse_cellspec(
   line : String,
-  start? : Bool = false,
-  delimiter? : String = "",
+  start~ : Bool = false,
+  delimiter~ : String = "",
 ) -> (Attributes?, String) {
   let mut m : @regex.MatchData? = None
   let mut rest = ""

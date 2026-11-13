@@ -418,7 +418,7 @@ fn read_lines_for_list_item(
   let mut has_text = has_text
   let mut continuation = 0 // 0 inactive, 1 active, 2 frozen
   let mut within_nested_list = false
-  let mut detached_continuation : Int? = None
+  let mut detached_continuation : Int32? = None
   let dlist = list_type == Dlist
   let mut this_line : String? = None
   let mut this_marker = false
@@ -711,8 +711,8 @@ fn ordered_list_style_of(marker : String) -> String? {
 ///|
 fn resolve_ordered_list_marker(
   marker : String,
-  ordinal? : Int?,
-  validate? : Bool = false,
+  ordinal? : Int32?,
+  validate~ : Bool = false,
   reader? : Reader?,
 ) -> (String, String?) {
   if marker.has_prefix(".") {
@@ -780,7 +780,7 @@ fn resolve_ordered_list_marker(
 }
 
 ///|
-fn resolve_ordered_list_start(marker : String) -> Int {
+fn resolve_ordered_list_start(marker : String) -> Int32 {
   if marker.has_prefix(".") {
     return 1
   }

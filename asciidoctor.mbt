@@ -73,7 +73,7 @@ fn ensure_converters() -> Unit {
 /// Where Ruby raises (e.g. no converter is registered for the backend), the
 /// document reports the error through `@core.Node::processing_error` and is
 /// left unparsed; `convert` raises it.
-pub fn load(input : String, options? : Options = Options::new()) -> Node {
+pub fn load(input : String, options~ : Options = Options::new()) -> Node {
   ensure_converters()
   if options.timings is Some(t) {
     t.start("read")
@@ -100,7 +100,7 @@ fn load_prepared(lines : Array[String], options : Options) -> Node {
 /// Loads a document from lines.
 pub fn load_lines(
   lines : Array[String],
-  options? : Options = Options::new(),
+  options~ : Options = Options::new(),
 ) -> Node {
   ensure_converters()
   if options.timings is Some(t) {
@@ -132,7 +132,7 @@ pub fn load_lines(
 /// ```
 pub fn convert(
   input : String,
-  options? : Options = Options::new(),
+  options~ : Options = Options::new(),
 ) -> String raise {
   let doc = load(input, options~)
   check_processing_error(doc)

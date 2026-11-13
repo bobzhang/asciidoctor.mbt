@@ -20,7 +20,7 @@ async fn main {
 
 ///|
 /// Runs the command line and returns the exit code.
-async fn run(args : Array[String]) -> Int {
+async fn run(args : Array[String]) -> Int32 {
   let command = parse_args(args) catch {
     CliError(msg) => {
       write_err(msg + "\n")
@@ -57,7 +57,7 @@ async fn run(args : Array[String]) -> Int {
 ///|
 /// `-h TOPIC`: the man page and the syntax overview are not bundled with the
 /// port, so those topics fail like Ruby does when the files are missing.
-async fn help(topic : String?) -> Int {
+async fn help(topic : String?) -> Int32 {
   match topic {
     Some("manpage") =>
       match @env.get_env_var("ASCIIDOCTOR_MANPAGE_PATH") {
@@ -152,7 +152,7 @@ fn error_message(e : Error) -> String {
 
 ///|
 /// Converts the input files (Ruby `Invoker#invoke!`) and returns the exit code.
-async fn invoke(opts : CliOptions) -> Int {
+async fn invoke(opts : CliOptions) -> Int32 {
   let infiles = opts.input_files
   let mut outfile = opts.output_file
   let mut stdin = false
@@ -258,8 +258,8 @@ async fn invoke(opts : CliOptions) -> Int {
 
 ///|
 #cfg(target="native")
-extern "C" fn c_exit(code : Int) = "exit"
+extern "C" fn c_exit(code : Int32) = "exit"
 
 ///|
 #cfg(target="wasm")
-fn c_exit(code : Int) = "wasi_snapshot_preview1" "proc_exit"
+fn c_exit(code : Int32) = "wasi_snapshot_preview1" "proc_exit"

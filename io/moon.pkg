@@ -18,6 +18,4 @@ supported_targets = "native+wasm"
 
 warnings = "-implicit_impl_as_method"
 
-options(
-  "max-concurrent-tests": 1,
-)
+max_concurrent_tests = 1

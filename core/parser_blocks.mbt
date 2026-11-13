@@ -128,8 +128,8 @@ fn start_of_block_or_list(l : String) -> Bool {
 fn read_paragraph_lines(
   reader : Reader,
   break_at_list : Bool,
-  skip_line_comments? : Bool = false,
-  skip_processing? : Bool = false,
+  skip_line_comments~ : Bool = false,
+  skip_processing~ : Bool = false,
 ) -> Array[String] {
   reader.read_lines_until(
     break_on_blank_lines=true,
@@ -176,8 +176,8 @@ fn next_block(
   reader : Reader,
   parent : Node,
   attributes : Attributes,
-  text_only? : Bool = false,
-  parse_metadata? : Bool = true,
+  text_only~ : Bool = false,
+  parse_metadata~ : Bool = true,
   list_type? : Context,
 ) -> Node? {
   guard reader.skip_blank_lines() is Some(skipped) else { return None }
@@ -1158,7 +1158,7 @@ fn build_block(
   parent : Node,
   reader : Reader,
   attributes : Attributes,
-  reader_only? : Bool = false,
+  reader_only~ : Bool = false,
   extension? : BlockProcessor,
 ) -> Node? {
   let (skip_processing, parse_as_content_model) = match content_model {

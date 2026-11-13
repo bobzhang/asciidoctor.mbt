@@ -5,7 +5,7 @@
 ///|
 /// Code point ranges (flattened inclusive lo/hi pairs) of the Unicode
 /// properties the regex engine lacks, by normalized name.
-let property_table : Array[(String, FixedArray[Int])] = [
+let property_table : Array[(String, FixedArray[Int32])] = [
   (
     "n",
     [

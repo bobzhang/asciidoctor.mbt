@@ -76,7 +76,7 @@ priv struct PygmentsAdapter {
 /// Creates a Pygments adapter registered under `name` (the `<pre>` class and
 /// the prefix of the `<name>-css`, `<name>-style` and `<name>-linenums-mode`
 /// attributes).
-pub fn adapter(name? : String = "pygments") -> &@core.SyntaxHighlighter {
+pub fn adapter(name~ : String = "pygments") -> &@core.SyntaxHighlighter {
   ({ name, requires_stylesheet: false, style: None, } : PygmentsAdapter)
 }
 

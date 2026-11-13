@@ -36,7 +36,7 @@ let rust_builtins : Set[String] = word_set(
 pub fn rust(options : Map[String, String]) -> Lexer {
   let lx = Lexer::new("rust", options~)
   // the open macro delimiters, by closing delimiter (`@macro_delims`)
-  let macro_delims : Map[String, Int] = Map([])
+  let macro_delims : Map[String, Int32] = Map([])
   let macro_closed = fn() { macro_delims.values().all(n => n == 0) }
   lx.start(fn(lx) {
     macro_delims.clear()

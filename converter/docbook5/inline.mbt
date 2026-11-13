@@ -93,7 +93,7 @@ fn convert_inline_indexterm(node : @core.Node) -> String {
   let terms = list_attr(node, "terms")
   let numterms = terms.length()
   let promote = node.document().has_option("indexterm-promotion")
-  let term = fn(i : Int) { terms.get(i).unwrap_or("") }
+  let term = fn(i : Int32) { terms.get(i).unwrap_or("") }
   if numterms > 2 {
     let promoted = if promote {
       "\n<indexterm>\n<primary>\{term(1)}</primary><secondary>\{term(2)}</secondary>\n</indexterm>\n<indexterm>\n<primary>\{term(2)}</primary>\n</indexterm>"

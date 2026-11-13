@@ -1,3 +1,4 @@
+///|
 // Byte-for-byte comparison with Ruby Asciidoctor over AsciiDoc corpora
 // (output and warnings), for one or more backends.
 //
@@ -36,9 +37,12 @@ async fn collect_adoc(dir : String, out : Array[String]) -> Unit {
     let path = "\{dir}/\{name}"
     match (@fs.kind(path) catch { _ => continue }) {
       Directory => collect_adoc(path, out)
-      Regular => if name.has_suffix(".adoc") || name.has_suffix(".asc") || name.has_suffix(".asciidoc") {
-        out.push(path)
-      }
+      Regular =>
+        if name.has_suffix(".adoc") ||
+          name.has_suffix(".asc") ||
+          name.has_suffix(".asciidoc") {
+          out.push(path)
+        }
       _ => ()
     }
   }
@@ -58,7 +62,7 @@ async fn run_one(
   args : Array[String],
   cwd : String,
   env : Map[String, String],
-) -> (Int, String, String) {
+) -> (Int32, String, String) {
   let (code, out, err) = @process.collect_output(cmd, args, cwd~, extra_env=env)
   (code, out.text(), err.text())
 }
@@ -107,7 +111,9 @@ async fn main {
       }
     }
   }
-  let (code, _, _) = @process.collect_output("moon", ["build", "--target", "native", "cmd/asciidoctor"])
+  let (code, _, _) = @process.collect_output("moon", [
+    "build", "--target", "native", "cmd/asciidoctor",
+  ])
   if code != 0 {
     fail("build failed")
   }
@@ -131,7 +137,9 @@ async fn main {
     let (_, gempath, _) = @process.collect_output("gem", ["env", "gempath"])
     ruby_env["GEM_PATH"] = "\{root}/.repos/gems:\{gempath.text().trim()}"
     ruby_env["ORACLE_PYGMENTS_PATH"] = "\{root}/\{oracle_pygments}"
-    ruby_args.push_iter(["-r", "\{root}/scripts/harvest/pygments_path.rb"].iter())
+    ruby_args.push_iter(
+      ["-r", "\{root}/scripts/harvest/pygments_path.rb"].iter(),
+    )
     attr_args.push_iter(["-a", "source-highlighter=pygments"].iter())
   }
   ruby_args.push(ruby_bin)
@@ -159,14 +167,23 @@ async fn main {
       let batch = 8
       let mut start = 0
       while start < files.length() {
-        let end = if start + batch < files.length() { start + batch } else { files.length() }
+        let end = if start + batch < files.length() {
+          start + batch
+        } else {
+          files.length()
+        }
         let results : Array[(String, Bool)] = []
         @async.with_task_group(group => {
           for f in files[start:end] {
             group.spawn_bg(() => {
               let common = ["-S", "safe", "-b", backend, "-o", "-", ..attr_args]
               let opts = if standalone { common } else { common + ["-s"] }
-              let rb = run_one("ruby", [..ruby_args, ..opts, f], dirname(f), ruby_env)
+              let rb = run_one(
+                "ruby",
+                [..ruby_args, ..opts, f],
+                dirname(f),
+                ruby_env,
+              )
               let mbt = run_one(bin, [..opts, f], dirname(f), env)
               results.push((f, rb == mbt))
             })
@@ -176,12 +193,20 @@ async fn main {
           if r.1 {
             same += 1
           } else {
-            diffs.push(relative(root, dir + r.0.unsafe_substring(start=real_dir.length(), end=r.0.length())))
+            diffs.push(
+              relative(
+                root,
+                dir +
+                r.0.unsafe_substring(start=real_dir.length(), end=r.0.length()),
+              ),
+            )
           }
         }
         start = end
       }
-      println("\{backend}\{mode}\t\{dir}\tidentical: \{same} / \{files.length()}")
+      println(
+        "\{backend}\{mode}\t\{dir}\tidentical: \{same} / \{files.length()}",
+      )
       for d in diffs {
         let is_known = known.contains("\{backend}\{mode}\t\{d}")
         if !is_known {

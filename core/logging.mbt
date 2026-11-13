@@ -1,5 +1,6 @@
 ///|
 /// Log severity (Ruby `::Logger::Severity`).
+#derive(Eq, Debug)
 pub(all) enum Severity {
   Debug
   Info
@@ -7,10 +8,10 @@ pub(all) enum Severity {
   Error
   Fatal
   Unknown
-} derive(Eq, Debug)
+}
 
 ///|
-pub fn Severity::to_int(self : Severity) -> Int {
+pub fn Severity::to_int(self : Severity) -> Int32 {
   match self {
     Debug => 0
     Info => 1
@@ -36,12 +37,13 @@ pub fn Severity::label(self : Severity) -> String {
 
 ///|
 /// A log message with optional source context (Ruby `message_with_context`).
+#derive(Debug)
 pub(all) struct LogMessage {
   severity : Severity
   text : String
   source_location : Cursor?
   include_location : Cursor?
-} derive(Debug)
+}
 
 ///|
 /// `path: line N: text` when a source location is present (Ruby `AutoFormattingMessage#inspect`).
@@ -67,7 +69,7 @@ pub struct Logger {
 /// Creates a logger that forwards messages at or above `level` to `sink`.
 pub fn Logger::new(
   sink : (LogMessage) -> Unit,
-  level? : Severity = Warn,
+  level~ : Severity = Warn,
 ) -> Logger {
   { level, max_severity: None, sink, record_all: false, report_all: false, }
 }

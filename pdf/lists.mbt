@@ -9,7 +9,7 @@
 /// its style's (`bibliography` is a square, an unknown style a disc), else
 /// the one for its depth; None for `unstyled` and `no-bullet`, which have
 /// no marker and a narrower indent.
-fn ulist_marker_type(node : @core.Node, depth : Int) -> String? {
+fn ulist_marker_type(node : @core.Node, depth : Int32) -> String? {
   match node.style {
     Some("circle") => Some("circle")
     Some("square") | Some("bibliography") => Some("square")
@@ -47,7 +47,7 @@ fn ulist_marker_content(marker_type : String) -> String {
 ///|
 /// Nesting level among unordered and ordered lists (asciidoctor-pdf's
 /// `list_level`).
-fn list_level(node : @core.Node) -> Int {
+fn list_level(node : @core.Node) -> Int32 {
   let mut level = 1
   let mut ancestor = node.parent()
   while ancestor is Some(a) {
@@ -107,7 +107,7 @@ fn Converter::convert_ulist(self : Converter, node : @core.Node) -> Unit {
 }
 
 ///|
-fn roman(n : Int, upper : Bool) -> String {
+fn roman(n : Int32, upper : Bool) -> String {
   let values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
   let symbols = [
     "m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i",
@@ -128,7 +128,7 @@ fn roman(n : Int, upper : Bool) -> String {
 }
 
 ///|
-fn alpha(n : Int, upper : Bool) -> String {
+fn alpha(n : Int32, upper : Bool) -> String {
   let base = if upper { 'A'.to_int() } else { 'a'.to_int() }
   let sb = StringBuilder()
   let mut rest = n
@@ -330,8 +330,8 @@ fn Converter::convert_olist(self : Converter, node : @core.Node) -> Unit {
 fn Converter::convert_list(
   self : Converter,
   node : @core.Node,
-  marker_of : (Int, @core.Node) -> Marker,
-  unmarked? : Bool = false,
+  marker_of : (Int32, @core.Node) -> Marker,
+  unmarked~ : Bool = false,
 ) -> Unit {
   let flow = self.flow
   if node.has_title() {

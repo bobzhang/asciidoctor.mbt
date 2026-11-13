@@ -1,3 +1,4 @@
+///|
 // Group the failing documents of a pdf_compare run by the first thing that
 // differs, to find root causes that affect many documents.
 //
@@ -157,10 +158,7 @@ fn signature(doc : Json) -> (String, String) {
   }
   (
     "other",
-    doc
-    |> field("gate_failures")
-    |> items
-    |> fn(a) { a.map(str).join("; ") },
+    doc |> field("gate_failures") |> items |> a => { a.map(str).join("; ") },
   )
 }
 
@@ -212,13 +210,13 @@ async fn main {
           println("  gate: \{str(f)}")
         }
         for
-          (k, v) in field(doc, "unsupported_summary")
-          |> fn(j) {
+          (k, v) in (field(doc, "unsupported_summary")
+          |> j => {
             match j {
               Object(o) => o.to_array()
               _ => []
             }
-          } {
+          }) {
           println("  unsupported: \{k} × \{v.stringify()}")
         }
         println(
@@ -244,7 +242,7 @@ async fn main {
   if unsupported_counts {
     // failing documents per unsupported feature, and those failing with
     // no other reported feature
-    let counts : Map[String, Int] = Map([])
+    let counts : Map[String, Int32] = Map([])
     for doc in docs {
       if passes(doc) {
         continue
@@ -267,7 +265,11 @@ async fn main {
   match pass_set {
     Some(file) => {
       let names = docs.filter(passes).map(d => str(field(d, "name")))
-      @fs.write_file(file, names.join("\n") + "\n", create_mode=CreateOrTruncate)
+      @fs.write_file(
+        file,
+        names.join("\n") + "\n",
+        create_mode=CreateOrTruncate,
+      )
     }
     None => ()
   }

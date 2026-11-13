@@ -2,7 +2,7 @@
 package "bobzhang/asciidoctor/internal/localtime"
 
 // Values
-pub fn utc_offset(Int64) -> Int
+pub fn utc_offset(Int64) -> Int32
 
 // Errors
 

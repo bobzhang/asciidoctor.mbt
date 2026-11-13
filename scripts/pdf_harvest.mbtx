@@ -1,3 +1,4 @@
+///|
 // Harvests PDF goldens from Ruby asciidoctor-pdf's own RSpec suite: runs the
 // suite of the pinned release with scripts/pdf_harvest/harvest.rb loaded,
 // which records every PDF conversion the specs perform (input, effective
@@ -52,11 +53,11 @@ import {
 
 ///|
 /// The Ruby that runs the specs (see `configure`).
-let ruby : Ref[String] = { val: "ruby" }
+let ruby : Ref[String] = { val: "ruby", }
 
 ///|
 /// The `gem` command of that Ruby.
-let gem_cmd : Ref[String] = { val: "gem" }
+let gem_cmd : Ref[String] = { val: "gem", }
 
 ///|
 /// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
@@ -81,11 +82,11 @@ let spec_commit : String = "39a97554fbd2c27cdd919bde3091dc048b174ce6"
 
 ///|
 /// The oracle's gem home, absolute (see `configure`).
-let runtime_gems : Ref[String] = { val: ".repos/gems-pdf" }
+let runtime_gems : Ref[String] = { val: ".repos/gems-pdf", }
 
 ///|
 /// The spec dependencies' gem home, absolute (see `configure`).
-let spec_gems : Ref[String] = { val: ".repos/gems-pdf-spec" }
+let spec_gems : Ref[String] = { val: ".repos/gems-pdf-spec", }
 
 ///|
 /// The oracle: asciidoctor-pdf 2.3.27 and its runtime dependencies, at the
@@ -213,13 +214,15 @@ async fn configure(args : Array[String], root : String) -> Array[String] {
     }
     i += 1
   }
-  let setting = (flag : String, name : String) => match flags.get(flag) {
-    Some(v) => Some(v)
-    None =>
-      match @env.get_env_var(name) {
-        Some(v) if v != "" => Some(v)
-        _ => None
-      }
+  let setting = (flag : String, name : String) => {
+    match flags.get(flag) {
+      Some(v) => Some(v)
+      None =>
+        match @env.get_env_var(name) {
+          Some(v) if v != "" => Some(v)
+          _ => None
+        }
+    }
   }
   match setting("--ruby", "ASCIIDOCTOR_PDF_RUBY") {
     Some(r) => ruby.val = r
@@ -315,9 +318,11 @@ fn failed_examples(output : String) -> Array[String] {
 }
 
 ///|
-async fn read_counts() -> Map[String, Int] {
-  let counts : Map[String, Int] = Map([])
-  let text = @fs.read_file(record_counts_path).text() catch { _ => return counts }
+async fn read_counts() -> Map[String, Int32] {
+  let counts : Map[String, Int32] = Map([])
+  let text = @fs.read_file(record_counts_path).text() catch {
+    _ => return counts
+  }
   for line in text.split("\n") {
     if line.has_prefix("#") || line.trim() == "" {
       continue
@@ -347,13 +352,13 @@ fn text_of(j : Json) -> String {
 }
 
 ///|
-fn bump(m : Map[String, Int], key : String) -> Unit {
+fn bump(m : Map[String, Int32], key : String) -> Unit {
   m[key] = m.get(key).unwrap_or(0) + 1
 }
 
 ///|
 /// Code point order (`String::compare` orders by length first).
-fn lexical(a : String, b : String) -> Int {
+fn lexical(a : String, b : String) -> Int32 {
   let n = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<n {
     if a[i] != b[i] {
@@ -364,9 +369,15 @@ fn lexical(a : String, b : String) -> Int {
 }
 
 ///|
-fn sorted_counts(m : Map[String, Int]) -> Array[(String, Int)] {
+fn sorted_counts(m : Map[String, Int32]) -> Array[(String, Int32)] {
   let a = m.iter().collect()
-  a.sort_by((x, y) => if x.1 != y.1 { y.1.compare(x.1) } else { lexical(x.0, y.0) })
+  a.sort_by((x, y) => {
+    if x.1 != y.1 {
+      y.1.compare(x.1)
+    } else {
+      lexical(x.0, y.0)
+    }
+  })
   a
 }
 
@@ -406,12 +417,16 @@ async fn main {
   harvest_env["PDF_HARVEST_GEMS"] = "\{@fs.realpath(runtime_gems.val)}:\{@fs.realpath(spec_gems.val)}"
   // the highlighters harvest.rb activates, at their pinned versions
   harvest_env["PDF_HARVEST_HIGHLIGHTERS"] = pinned_gems
-    .filter(g => [ "rouge", "coderay", "pygments.rb" ].contains(g.0))
+    .filter(g => ["rouge", "coderay", "pygments.rb"].contains(g.0))
     .map(g => "\{g.0}=\{g.1}")
     .join(",")
   let rspec_args = [
-    "\{spec_gems.val}/bin/rspec", "--require", "\{root}/scripts/pdf_harvest/harvest.rb",
-    "--format", "progress", ..specs,
+    "\{spec_gems.val}/bin/rspec",
+    "--require",
+    "\{root}/scripts/pdf_harvest/harvest.rb",
+    "--format",
+    "progress",
+    ..specs,
   ]
   println("$ rspec \{specs.join(" ")} (in \{spec_repo}, with \{ruby.val})")
   let (code, out) = @process.collect_output_merged(
@@ -422,7 +437,8 @@ async fn main {
   )
   let text = out.text()
   for line in text.split("\n") {
-    if line.has_suffix("failures") || line.contains("failure,") ||
+    if line.has_suffix("failures") ||
+      line.contains("failure,") ||
       line.contains("examples, ") ||
       line.has_prefix("Finished in") {
       println("  \{line}")
@@ -443,7 +459,7 @@ async fn main {
   let run_info = @json.parse(@fs.read_file("\{out_dir}/.run.json").text())
   let files = @fs.readdir(out_dir, sort=true).filter(f => f.has_suffix(".jsonl"))
   let staged : Map[String, String] = Map([])
-  let counts : Map[String, Int] = Map([])
+  let counts : Map[String, Int32] = Map([])
   let mut records = 0
   for f in files {
     let data = @fs.read_file("\{out_dir}/\{f}").text()
@@ -457,7 +473,9 @@ async fn main {
   let shrunk = []
   for name, n in previous {
     // tests/pdf_golden/x_spec.jsonl holds the records of spec/x_spec.rb
-    let spec_name = name.replace(old="\{golden_dir}/", new="").replace(old=".jsonl", new=".rb")
+    let spec_name = name
+      .replace(old="\{golden_dir}/", new="")
+      .replace(old=".jsonl", new=".rb")
     let ran = specs.is_empty() || specs.iter().any(s => s.contains(spec_name))
     let now = counts.get(name).unwrap_or(0)
     if ran && now < n {
@@ -470,7 +488,9 @@ async fn main {
     )
   }
   if records == 0 {
-    fail("the harvest recorded nothing; \{golden_dir} and \{pdf_cache} are unchanged")
+    fail(
+      "the harvest recorded nothing; \{golden_dir} and \{pdf_cache} are unchanged",
+    )
   }
   // validated: replace the records (a full run drops those of spec files
   // that no longer yield any) and the reference PDFs
@@ -491,7 +511,8 @@ async fn main {
   } else {
     ignore(@process.run("mkdir", ["-p", pdf_cache]))
     for f in @fs.readdir(staged_pdfs) {
-      if @process.run("mv", ["-f", "\{staged_pdfs}/\{f}", "\{pdf_cache}/\{f}"]) != 0 {
+      if @process.run("mv", ["-f", "\{staged_pdfs}/\{f}", "\{pdf_cache}/\{f}"]) !=
+        0 {
         fail("could not move \{staged_pdfs}/\{f} to \{pdf_cache}")
       }
     }
@@ -499,11 +520,7 @@ async fn main {
   if update_counts || previous.is_empty() {
     // a full harvest replaces the counts, so a spec that lost all its
     // records drops out; a partial one merges into them
-    let merged = if specs.is_empty() {
-      Map([])
-    } else {
-      previous.copy()
-    }
+    let merged = if specs.is_empty() { Map([]) } else { previous.copy() }
     for k, v in counts {
       merged[k] = v
     }
@@ -516,10 +533,16 @@ async fn main {
     for k in keys {
       lines.push("\{merged.get(k).unwrap_or(0)}\t\{k}")
     }
-    @fs.write_file(record_counts_path, lines.join("\n") + "\n", create_mode=CreateOrTruncate)
+    @fs.write_file(
+      record_counts_path,
+      lines.join("\n") + "\n",
+      create_mode=CreateOrTruncate,
+    )
     println("wrote \{record_counts_path}")
   }
-  let num = fn(key : String) { field(run_info, key).as_number().unwrap_or(0.0).to_int() }
+  let num = fn(key : String) {
+    field(run_info, key).as_number().unwrap_or(0.0).to_int()
+  }
   // the summary of every record now committed: a partial harvest's merged
   // into the others (the RSpec statistics stay those of the last full run)
   let run_line = if specs.is_empty() {
@@ -531,7 +554,9 @@ async fn main {
   if specs.is_empty() {
     println(summary)
   } else {
-    println("\{records} conversions recorded in \{specs.join(" ")}; \{golden_dir}/summary.txt updated")
+    println(
+      "\{records} conversions recorded in \{specs.join(" ")}; \{golden_dir}/summary.txt updated",
+    )
   }
   ignore(@process.run("rm", ["-rf", "\{root}/\{staging}"]))
 }
@@ -563,8 +588,8 @@ async fn previous_run_line(dir : String) -> String {
 /// the RSpec run's statistics; returns it.
 async fn write_summary(dir : String, run_line : String) -> String {
   let files = @fs.readdir(dir, sort=true).filter(f => f.has_suffix(".jsonl"))
-  let skipped : Map[String, Int] = Map([])
-  let vias : Map[String, Int] = Map([])
+  let skipped : Map[String, Int32] = Map([])
+  let vias : Map[String, Int32] = Map([])
   let mut records = 0
   let mut themed = 0
   let mut replayable = 0
@@ -579,7 +604,8 @@ async fn write_summary(dir : String, run_line : String) -> String {
       let rec = @json.parse(line.to_owned())
       bump(vias, text_of(field(rec, "via")))
       match field(rec, "pdf") {
-        Object(_) as p => pdf_bytes += (field(p, "size").as_number().unwrap_or(0.0)).to_int()
+        Object(_) as p =>
+          pdf_bytes += field(p, "size").as_number().unwrap_or(0.0).to_int()
         _ => ()
       }
       let attrs = field(field(rec, "options"), "attributes")
@@ -592,12 +618,7 @@ async fn write_summary(dir : String, run_line : String) -> String {
       }
       match field(rec, "skip") {
         String(reason) => bump(skipped, reason)
-        _ =>
-          if theme {
-            themed += 1
-          } else {
-            replayable += 1
-          }
+        _ => if theme { themed += 1 } else { replayable += 1 }
       }
     }
   }
@@ -644,7 +665,8 @@ async fn summary_problem(dir : String) -> String? {
     }
   }
   let text = @fs.read_file("\{dir}/summary.txt").text()
-  for wanted in ["conversions recorded: \{records} ", "reference PDFs: \{bytes} "] {
+  for
+    wanted in ["conversions recorded: \{records} ", "reference PDFs: \{bytes} "] {
     if !text.split("\n").any(l => l.has_prefix(wanted)) {
       return Some("summary.txt does not say `\{wanted}`")
     }
@@ -673,7 +695,8 @@ async fn self_test() -> Unit {
     fail("self-test: \{golden_dir}/summary.txt is not what its records give")
   }
   let file = "source_spec.jsonl"
-  let lines = @fs.read_file("\{dir}/\{file}").text()
+  let lines = @fs.read_file("\{dir}/\{file}")
+    .text()
     .split("\n")
     .filter(l => l.trim() != "")
     .map(l => l.to_owned())

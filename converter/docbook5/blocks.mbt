@@ -200,7 +200,7 @@ fn convert_listing(node : @core.Node) -> String {
 
 ///|
 /// Ruby `to_i` of an attribute value.
-fn attr_to_i(v : @core.AttrVal) -> Int {
+fn attr_to_i(v : @core.AttrVal) -> Int32 {
   match v {
     Str(s) => @rb.to_i(s)
     Nil => 0

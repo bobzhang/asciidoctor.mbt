@@ -79,10 +79,10 @@ priv struct CliOptions {
   attributes : Array[(String, @core.AttrVal)]
   input_files : Array[String]
   mut output_file : String?
-  mut safe : Int
+  mut safe : Int32
   mut doctype : String?
   /// 0 (`-q`), 1 (default) or 2 (`-v`)
-  mut verbose : Int
+  mut verbose : Int32
   mut base_dir : String?
   mut source_dir : String?
   mut destination_dir : String?
@@ -96,7 +96,7 @@ priv struct CliOptions {
   mut icon_fonts_dir : String?
   mut pdf_theme_json : String?
   /// `--attributes-json` files, in order with the `-a` options
-  attributes_json : Array[(Int, String)]
+  attributes_json : Array[(Int32, String)]
   mut layout_trace : String?
   /// warnings to print on stderr before converting
   notices : Array[String]

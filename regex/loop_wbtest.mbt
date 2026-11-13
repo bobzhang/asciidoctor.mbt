@@ -1,7 +1,7 @@
 ///|
 /// Result of one search in the differential loop test: the offsets (or "none"
 /// or "timeout") and the steps it used.
-fn loop_probe(re : Regex, input : String, start : Int) -> String {
+fn loop_probe(re : Regex, input : String, start : Int32) -> String {
   let vm = re.acquire(input)
   defer re.release(vm)
   let before = vm.fuel

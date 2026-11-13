@@ -1,3 +1,4 @@
+///|
 // Regenerates the golden fixtures in tests/golden/ by running the upstream
 // Ruby test suite with scripts/harvest/harvest.rb loaded.
 // Requires Ruby with minitest and nokogiri (and python3 for pygments.rb);
@@ -51,7 +52,13 @@ async fn install_python_pygments(root : String) -> String {
   let dir = "\{root}/.repos/python/pygments-\{python_pygments_version}"
   if !(@fs.exists("\{dir}/pygments") catch { _ => false }) {
     let code = @process.run("python3", [
-      "-m", "pip", "install", "--no-deps", "--target", dir, "pygments==\{python_pygments_version}",
+      "-m",
+      "pip",
+      "install",
+      "--no-deps",
+      "--target",
+      dir,
+      "pygments==\{python_pygments_version}",
     ])
     if code != 0 {
       fail("pip install failed: pygments==\{python_pygments_version}")
@@ -138,14 +145,22 @@ async fn main {
   @fs.mkdir("\{root}/tests/golden", recursive=true, allow_exist=true)
   let args = @env.args()[1:].to_owned().filter(a => a != "--")
   let tests = if args.is_empty() {
-    @fs.readdir("\{up}/test", sort=true).filter(n => n.has_suffix("_test.rb")).map(n => "test/\{n}")
+    @fs.readdir("\{up}/test", sort=true)
+    .filter(n => n.has_suffix("_test.rb"))
+    .map(n => "test/\{n}")
   } else {
     args
   }
   let failed = []
   for t in tests {
-    let name = t.rev_find("/").map(i => t.unsafe_substring(start=i + 1, end=t.length())).unwrap_or(t)
-    let name = name.unsafe_substring(start=0, end=name.length() - "_test.rb".length())
+    let name = t
+      .rev_find("/")
+      .map(i => t.unsafe_substring(start=i + 1, end=t.length()))
+      .unwrap_or(t)
+    let name = name.unsafe_substring(
+      start=0,
+      end=name.length() - "_test.rb".length(),
+    )
     let test_env = env.copy()
     test_env["HARVEST_OUT"] = "\{root}/tests/golden/\{name}.jsonl"
     let (code, out) = @process.collect_output_merged(
@@ -155,7 +170,11 @@ async fn main {
       extra_env=test_env,
     )
     let text = out.text()
-    let summary = text.split("\n").filter(l => l.contains("runs,")).map(l => l.to_owned()).collect()
+    let summary = text
+      .split("\n")
+      .filter(l => l.contains("runs,"))
+      .map(l => l.to_owned())
+      .collect()
     println("\{name}: \{summary.join(" ")}")
     if code != 0 {
       let failures = failed_tests(text)

@@ -98,9 +98,9 @@ pub(all) struct Files {
 
 ///|
 pub fn Files::new(
-  read? : (String) -> String? = _ => None,
-  cwd? : String = "/",
-  home? : String = "/",
+  read~ : (String) -> String? = _ => None,
+  cwd~ : String = "/",
+  home~ : String = "/",
 ) -> Files {
   { read, cwd, home, }
 }
@@ -357,7 +357,7 @@ fn protect_hex_color(line : String) -> String {
 ///|
 /// ` +(?!null$)(?<q>["']?)(?<h>#)?(?<v>\h{3,6})\k<q> *(?:#.*)?$` from
 /// `start` (the spaces after the colon): whether it had `#`, and the digits.
-fn match_hex_value(chars : Array[Char], start : Int) -> (Bool, String)? {
+fn match_hex_value(chars : Array[Char], start : Int32) -> (Bool, String)? {
   let n = chars.length()
   let mut i = start
   if i >= n || chars[i] != ' ' {
@@ -613,7 +613,7 @@ fn process_entry(
   key : String,
   val : Value,
   data : Theme,
-  normalize_key? : Bool = false,
+  normalize_key~ : Bool = false,
 ) -> Unit raise ThemeError {
   let key = if normalize_key { tr_dash(key) } else { key }
   if key == "font" {
@@ -769,7 +769,7 @@ let padding_bottom_hack_keys : Array[String] = [
 
 ///|
 /// `ThemeLoader#evaluate`
-fn evaluate(expr : Value, vars : Theme, math? : Bool = true) -> Value {
+fn evaluate(expr : Value, vars : Theme, math~ : Bool = true) -> Value {
   match expr {
     Str(s) => {
       let expanded = expand_vars(s, vars)
@@ -877,7 +877,7 @@ fn resolve_var(vars : Theme, written : String, name : String) -> Value {
 
 ///|
 /// A number `-?\d+(?:\.\d+)?` starting at `start`: its end.
-fn number_after(chars : Array[Char], start : Int) -> Int? {
+fn number_after(chars : Array[Char], start : Int32) -> Int32? {
   let mut i = start
   if i < chars.length() && chars[i] == '-' {
     i += 1
@@ -939,9 +939,9 @@ fn apply_ops(expr : String, ops : String) -> String {
 /// one or more spaces, the operator, spaces, the right number greedy.
 fn match_op_at(
   chars : Array[Char],
-  start : Int,
+  start : Int32,
   ops : String,
-) -> (Int, String, Char, String)? {
+) -> (Int32, String, Char, String)? {
   let n = chars.length()
   let mut i = start
   if i < n && chars[i] == '-' {
@@ -955,7 +955,7 @@ fn match_op_at(
     return None
   }
   // candidate ends of the left number: with the fraction, then without
-  let ends : Array[Int] = []
+  let ends : Array[Int32] = []
   if i + 1 < n && chars[i] == '.' && is_digit(chars[i + 1]) {
     let mut j = i + 1
     while j < n && is_digit(chars[j]) {
@@ -1000,7 +1000,7 @@ fn match_op_at(
 }
 
 ///|
-fn count_chars(s : String, set : String) -> Int {
+fn count_chars(s : String, set : String) -> Int32 {
   let mut n = 0
   for c in s {
     if set.contains_char(c) {

@@ -1,3 +1,4 @@
+///|
 // Fetches the real-world AsciiDoc corpora used by scripts/corpus.mbtx into
 // .repos/ (shallow clones at pinned commits, so results are reproducible).
 // Existing checkouts are moved to the pinned commit.
@@ -26,16 +27,24 @@ let corpora : Array[(String, String, String)] = [
   (
     "asciidoctorj", "https://github.com/asciidoctor/asciidoctorj", "e0af8078712c7f1f7c7f284a91bfb19d6a95816d",
   ),
-  ("progit2", "https://github.com/progit/progit2", "a013e3230a1207cfa5ae94d28ba7d2021063c337"),
-  ("git", "https://github.com/git/git", "a018953688f1b10bddf91bff8747068f5f4746a4"),
-  ("quarkus", "https://github.com/quarkusio/quarkus", "0d58874c815bd49a4e3b279726483141cf23818d"),
+  (
+    "progit2", "https://github.com/progit/progit2", "a013e3230a1207cfa5ae94d28ba7d2021063c337",
+  ),
+  (
+    "git", "https://github.com/git/git", "a018953688f1b10bddf91bff8747068f5f4746a4",
+  ),
+  (
+    "quarkus", "https://github.com/quarkusio/quarkus", "0d58874c815bd49a4e3b279726483141cf23818d",
+  ),
   (
     "spring-boot", "https://github.com/spring-projects/spring-boot", "ab1843bbf6d855ca066ea6b9ccf7e64b83139469",
   ),
   (
     "hibernate-orm", "https://github.com/hibernate/hibernate-orm", "ec6c0f1918af0c457036c696a190bfcb09ea78cf",
   ),
-  ("debezium", "https://github.com/debezium/debezium", "e9aa4d8721a92e216a1789fa358cb62d86364dff"),
+  (
+    "debezium", "https://github.com/debezium/debezium", "e9aa4d8721a92e216a1789fa358cb62d86364dff",
+  ),
   (
     "asciidoc-lang", "https://gitlab.eclipse.org/eclipse/asciidoc-lang/asciidoc-lang.git",
     "68ed0b22e8d9b919897542d8ae14f03e7dbdd2e4",
@@ -62,11 +71,15 @@ async fn main {
     let dir = ".repos/\{name}"
     if !@fs.exists(dir) {
       println("clone \{name}")
-      git(["clone", "--quiet", "--depth", "1", "--filter=blob:limit=2m", url, dir]) |> ignore
+      git([
+        "clone", "--quiet", "--depth", "1", "--filter=blob:limit=2m", url, dir,
+      ])
+      |> ignore
     }
     if git(["-C", dir, "rev-parse", "HEAD"]) != commit {
       println("checkout \{name} \{commit}")
-      git(["-C", dir, "fetch", "--quiet", "--depth", "1", "origin", commit]) |> ignore
+      git(["-C", dir, "fetch", "--quiet", "--depth", "1", "origin", commit])
+      |> ignore
       git(["-C", dir, "checkout", "--quiet", "--detach", commit]) |> ignore
     }
     println("\{name}\t\{commit}")

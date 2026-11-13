@@ -6,7 +6,7 @@
 /// 1-based line number: the (guard, numeral) pairs of the callouts on that
 /// line, in order (Ruby `extract_callouts`). The guard is `Nil`, the line
 /// comment prefix (`Str`) or `List(["<!--", "-->"])` for XML callouts.
-pub type CalloutMarks = Map[Int, Array[(AttrVal, String)]]
+pub type CalloutMarks = Map[Int32, Array[(AttrVal, String)]]
 
 ///|
 /// Options passed to `SyntaxHighlighter::highlight` (Ruby's opts Hash).
@@ -18,11 +18,11 @@ pub(all) struct HighlightOptions {
   /// The CSS mode (`<name>-css` attribute, default `"class"`).
   css_mode : String
   /// 1-based line numbers to highlight (`highlight` attribute).
-  highlight_lines : Array[Int]?
+  highlight_lines : Array[Int32]?
   /// `"table"` or `"inline"` (`<name>-linenums-mode`) when lines are numbered.
   number_lines : String?
   /// The first line number (when lines are numbered).
-  start_line_number : Int?
+  start_line_number : Int32?
   /// The style (theme) name (`<name>-style` attribute).
   style : String?
 }
@@ -32,10 +32,10 @@ pub(all) struct HighlightOptions {
 /// except `css_mode`, which Asciidoctor always sets).
 pub fn HighlightOptions::new(
   callouts? : CalloutMarks,
-  css_mode? : String = "class",
-  highlight_lines? : Array[Int],
+  css_mode~ : String = "class",
+  highlight_lines? : Array[Int32],
   number_lines? : String,
-  start_line_number? : Int,
+  start_line_number? : Int32,
   style? : String,
 ) -> HighlightOptions {
   {
@@ -61,7 +61,7 @@ pub(all) struct FormatOptions {
 
 ///|
 pub fn FormatOptions::new(
-  nowrap? : Bool = false,
+  nowrap~ : Bool = false,
   css_mode? : String,
   style? : String,
 ) -> FormatOptions {
@@ -81,9 +81,9 @@ pub(all) struct DocinfoOptions {
 
 ///|
 pub fn DocinfoOptions::new(
-  linkcss? : Bool = false,
-  cdn_base_url? : String = "https://cdnjs.cloudflare.com/ajax/libs",
-  self_closing_tag_slash? : String = "",
+  linkcss~ : Bool = false,
+  cdn_base_url~ : String = "https://cdnjs.cloudflare.com/ajax/libs",
+  self_closing_tag_slash~ : String = "",
 ) -> DocinfoOptions {
   { linkcss, cdn_base_url, self_closing_tag_slash, }
 }
@@ -106,7 +106,10 @@ pub(open) trait SyntaxHighlighter {
   /// offset: when the highlighted source contains markup before the first
   /// source line (e.g. a line number column), the offset of the first line.
   /// Callouts are restored to the lines after the offset.
-  fn highlight(Self, Node, String, String?, HighlightOptions) -> (String, Int?) = _
+  fn highlight(Self, Node, String, String?, HighlightOptions) -> (
+    String,
+    Int32?,
+  ) = _
   /// Wraps the converted source block in `<pre>`/`<code>` (Ruby `format`).
   fn format(Self, Node, String?, FormatOptions) -> String = _
   /// Whether docinfo is emitted at the location (`head` or `footer`).

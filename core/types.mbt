@@ -1,5 +1,6 @@
 ///|
 /// The context (kind) of a node. Mirrors the Ruby symbols (`:paragraph`, ...).
+#derive(Eq, Hash, Debug)
 pub(all) enum Context {
   Document
   Section
@@ -49,7 +50,7 @@ pub(all) enum Context {
   LatexMath
   AsciiMath
   Custom(String)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The Ruby name of the context (`:floating_title` → "floating_title").
@@ -159,6 +160,7 @@ pub fn Context::from_name(s : String) -> Context {
 
 ///|
 /// How the content of a block is processed.
+#derive(Eq, Debug)
 pub(all) enum ContentModel {
   Compound
   Simple
@@ -167,7 +169,7 @@ pub(all) enum ContentModel {
   Empty
   Skip
   Attributes // only used by block macro extension configs
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn ContentModel::name(self : ContentModel) -> String {
@@ -184,6 +186,7 @@ pub fn ContentModel::name(self : ContentModel) -> String {
 
 ///|
 /// A substitution step.
+#derive(Eq, Hash, Debug)
 pub(all) enum Sub {
   SpecialCharacters
   Quotes
@@ -193,7 +196,7 @@ pub(all) enum Sub {
   PostReplacements
   Callouts
   Highlight
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn Sub::name(self : Sub) -> String {
@@ -211,20 +214,20 @@ pub fn Sub::name(self : Sub) -> String {
 
 ///|
 /// Safe mode levels (Ruby `SafeMode`).
-pub const SAFE_UNSAFE : Int = 0
+pub const SAFE_UNSAFE : Int32 = 0
 
 ///|
-pub const SAFE_SAFE : Int = 1
+pub const SAFE_SAFE : Int32 = 1
 
 ///|
-pub const SAFE_SERVER : Int = 10
+pub const SAFE_SERVER : Int32 = 10
 
 ///|
-pub const SAFE_SECURE : Int = 20
+pub const SAFE_SECURE : Int32 = 20
 
 ///|
 /// Safe mode value for a (case-insensitive) name.
-pub fn safe_mode_value_for_name(name : String) -> Int? {
+pub fn safe_mode_value_for_name(name : String) -> Int32? {
   match @rb.downcase_ascii(name) {
     "unsafe" => Some(SAFE_UNSAFE)
     "safe" => Some(SAFE_SAFE)
@@ -235,7 +238,7 @@ pub fn safe_mode_value_for_name(name : String) -> Int? {
 }
 
 ///|
-pub fn safe_mode_name_for_value(value : Int) -> String? {
+pub fn safe_mode_name_for_value(value : Int32) -> String? {
   match value {
     0 => Some("unsafe")
     1 => Some("safe")
@@ -247,25 +250,26 @@ pub fn safe_mode_name_for_value(value : Int) -> String? {
 
 ///|
 /// A source location (Ruby `Reader::Cursor`).
+#derive(Debug, Eq)
 pub(all) struct Cursor {
   file : String?
   dir : String?
   path : String?
-  mut lineno : Int
-} derive(Debug, Eq)
+  mut lineno : Int32
+}
 
 ///|
 pub fn Cursor::new(
   file? : String,
   dir? : String,
   path? : String,
-  lineno? : Int = 1,
+  lineno~ : Int32 = 1,
 ) -> Cursor {
   { file, dir, path, lineno, }
 }
 
 ///|
-pub fn Cursor::advance(self : Cursor, num : Int) -> Unit {
+pub fn Cursor::advance(self : Cursor, num : Int32) -> Unit {
   self.lineno += num
 }
 
@@ -282,8 +286,9 @@ pub fn Cursor::line_info(self : Cursor) -> String {
 
 ///|
 /// Whether a section is numbered, and if so whether like a chapter.
+#derive(Eq, Debug)
 pub(all) enum Numbered {
   NotNumbered
   Numbered
   NumberedChapter
-} derive(Eq, Debug)
+}
