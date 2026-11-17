@@ -62,7 +62,7 @@ pub fn sub_specialchars(text : String) -> String {
       _ => ()
     }
   }
-  let sb = StringBuilder(size_hint=2 * size) // (in bytes)
+  let sb = StringBuilder(capacity=2 * size) // (in bytes)
   let mut last = 0
   for i in 0..<n {
     let entity = match text.unsafe_get(i) {

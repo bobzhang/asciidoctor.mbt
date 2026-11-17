@@ -163,7 +163,7 @@ pub fn decode_text_with(data : Bytes, encoding : String?) -> String {
     | Some("latin1")
     | Some("binary")
     | Some("ascii-8bit") => {
-      let sb = StringBuilder(size_hint=data.length())
+      let sb = StringBuilder(capacity=data.length())
       for b in data {
         sb.write_char(b.to_int().unsafe_to_char())
       }
