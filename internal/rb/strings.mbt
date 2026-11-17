@@ -464,7 +464,7 @@ pub fn downcase(s : String) -> String {
   if i == n {
     return s
   }
-  let sb = StringBuilder(size_hint=2 * n)
+  let sb = StringBuilder(capacity=2 * n)
   for c in s {
     let cp = c.to_int()
     if cp < 128 {
@@ -488,7 +488,7 @@ pub fn downcase(s : String) -> String {
 ///|
 /// Ruby `String#upcase` (full Unicode mapping).
 pub fn upcase(s : String) -> String {
-  let sb = StringBuilder(size_hint=s.length())
+  let sb = StringBuilder(capacity=s.length())
   for c in s {
     let cp = c.to_int()
     if cp < 128 {
