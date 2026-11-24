@@ -10,7 +10,7 @@ pub fn lua(options : Map[String, String]) -> Lexer {
   let builtins : Set[String] = Set([])
   for entry in lua_builtins {
     for f in entry.1 {
-      builtins.add(f)
+      builtins.insert(f)
     }
   }
   lx.state("root", fn(s) {
