@@ -490,7 +490,7 @@ fn Inspector::content_bytes(self : Inspector, page : @page.PdfPage) -> Bytes {
     match self.direct(entry) {
       PdfStreamObject(_) as stream => {
         let bytes = stream.stream_bytes() catch { _ => b"" }
-        buffer.write_bytes(bytes)
+        buffer.write_bytesview(bytes)
         buffer.write_byte(b'\n')
       }
       _ => ()
@@ -1203,9 +1203,9 @@ fn png_chunk(out : Buffer, kind : String, data : Bytes) -> Unit {
   for c in kind {
     body.write_byte(c.to_int().to_byte())
   }
-  body.write_bytes(data)
+  body.write_bytesview(data)
   let bytes = body.to_bytes()
-  out.write_bytes(bytes)
+  out.write_bytesview(bytes)
   write_u32(out, crc32(bytes))
 }
 
@@ -1222,9 +1222,9 @@ fn encode_png(width : Int32, height : Int32, rgb : FixedArray[Byte]) -> Bytes {
   let header = Buffer()
   write_u32(header, width.reinterpret_as_uint())
   write_u32(header, height.reinterpret_as_uint())
-  header.write_bytes(b"\x08\x02\x00\x00\x00")
+  header.write_bytesview(b"\x08\x02\x00\x00\x00")
   let out = Buffer()
-  out.write_bytes(b"\x89PNG\r\n\x1a\n")
+  out.write_bytesview(b"\x89PNG\r\n\x1a\n")
   png_chunk(out, "IHDR", header.to_bytes())
   png_chunk(out, "IDAT", @flate.pdf_flate_encode(raw.to_bytes()))
   png_chunk(out, "IEND", b"")
