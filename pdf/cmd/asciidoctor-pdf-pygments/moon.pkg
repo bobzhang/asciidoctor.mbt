@@ -1,7 +1,7 @@
 import {
+  "moonbitlang/async",
   "bobzhang/asciidoctor-pdf/cli",
   "bobzhang/asciidoctor-pdf/pygments",
-  "moonbitlang/async",
 }
 
 supported_targets = "native+wasm"

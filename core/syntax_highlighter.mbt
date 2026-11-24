@@ -192,16 +192,33 @@ pub fn format_source(
 pub type SyntaxHighlighterFactory = (String, String, Node) -> &SyntaxHighlighter?
 
 ///|
-let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = {
-  "highlightjs": (_, _, _) => Some(ClientHighlighter::new(HighlightJs)),
-  "highlight.js": (_, _, _) => Some(ClientHighlighter::new(HighlightJs)),
-  "prettify": (_, _, _) => Some(ClientHighlighter::new(Prettify)),
-  "html-pipeline": (_, _, _) => Some(ClientHighlighter::new(HtmlPipeline)),
+let syntax_highlighter_registry : Map[String, SyntaxHighlighterFactory] = Map([])
+
+///|
+fn init {
+  syntax_highlighter_registry["highlightjs"] = (_, _, _) => {
+    Some(ClientHighlighter::new(HighlightJs))
+  }
+  syntax_highlighter_registry["highlight.js"] = (_, _, _) => {
+    Some(ClientHighlighter::new(HighlightJs))
+  }
+  syntax_highlighter_registry["prettify"] = (_, _, _) => {
+    Some(ClientHighlighter::new(Prettify))
+  }
+  syntax_highlighter_registry["html-pipeline"] = (_, _, _) => {
+    Some(ClientHighlighter::new(HtmlPipeline))
+  }
   // server-side highlighters behave as in Ruby when their gem is missing;
   // an optional package (e.g. highlighter/pygments) replaces the entry
-  "rouge": (_, _, _) => Some(ClientHighlighter::new(Unavailable("rouge"))),
-  "coderay": (_, _, _) => Some(ClientHighlighter::new(Unavailable("coderay"))),
-  "pygments": (_, _, _) => Some(ClientHighlighter::new(Unavailable("pygments"))),
+  syntax_highlighter_registry["rouge"] = (_, _, _) => {
+    Some(ClientHighlighter::new(Unavailable("rouge")))
+  }
+  syntax_highlighter_registry["coderay"] = (_, _, _) => {
+    Some(ClientHighlighter::new(Unavailable("coderay")))
+  }
+  syntax_highlighter_registry["pygments"] = (_, _, _) => {
+    Some(ClientHighlighter::new(Unavailable("pygments")))
+  }
 }
 
 ///|

@@ -1,10 +1,10 @@
 import {
+  "moonbitlang/async",
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/highlighter/pygments",
   "bobzhang/asciidoctor/io",
   "bobzhang/asciidoctor/internal/rb",
   "bobzhang/asciidoctor/internal/localtime",
-  "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",

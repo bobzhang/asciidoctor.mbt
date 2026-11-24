@@ -1395,7 +1395,7 @@ fn usage() -> String {
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   let args = @env.args()
   let command = args.get(1).unwrap_or("")
   match command {
@@ -1451,4 +1451,9 @@ async fn main {
       fail("bad arguments")
     }
   }
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }

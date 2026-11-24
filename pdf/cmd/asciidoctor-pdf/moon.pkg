@@ -1,6 +1,6 @@
 import {
-  "bobzhang/asciidoctor-pdf/cli",
   "moonbitlang/async",
+  "bobzhang/asciidoctor-pdf/cli",
 }
 
 supported_targets = "native+wasm"
