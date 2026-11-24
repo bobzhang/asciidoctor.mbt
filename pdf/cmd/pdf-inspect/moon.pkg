@@ -6,7 +6,6 @@ import {
   "moonbitlang/pdflite/content",
   "moonbitlang/pdflite/geometry",
   "moonbitlang/pdflite/flate",
-  "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
