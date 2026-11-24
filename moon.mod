@@ -1,6 +1,6 @@
 name = "bobzhang/asciidoctor"
 
-version = "0.3.5"
+version = "0.3.6"
 
 readme = "README.mbt.md"
 
@@ -14,5 +14,5 @@ description = "A port of Asciidoctor (AsciiDoc processor) to MoonBit"
 
 import {
   "moonbitlang/async@0.22.4",
-  "bobzhang/pygments@0.1.1",
+  "bobzhang/pygments@0.2.7",
 }
