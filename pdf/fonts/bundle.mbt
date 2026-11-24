@@ -60,7 +60,7 @@ pub fn Bundle::names(self : Bundle) -> Array[String] {
 pub fn inflate_armoured(chunks : Array[Bytes]) -> Bytes {
   let joined = Buffer()
   for chunk in chunks {
-    joined.write_bytes(chunk)
+    joined.write_bytesview(chunk)
   }
   // the generator wrote valid data: failing to decode it is a bug
   @flate.pdf_flate_decode(@codec.pdf_ascii85_decode(joined.contents())) catch {
