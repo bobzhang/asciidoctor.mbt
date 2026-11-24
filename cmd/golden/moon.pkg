@@ -1,9 +1,9 @@
 import {
+  "moonbitlang/async",
   "bobzhang/asciidoctor",
   "bobzhang/asciidoctor/core",
   "bobzhang/asciidoctor/highlighter/pygments",
   "bobzhang/asciidoctor/internal/rb",
-  "moonbitlang/async",
   "moonbitlang/async/fs",
   "moonbitlang/core/json",
   "moonbitlang/core/env",

@@ -634,7 +634,7 @@ fn Parser::read_group_name(
 }
 
 ///|
-/// `\R`: `(?>\r\n|[\n\v\f\r\u0085  ])`.
+/// `\R`: `(?>\r\n|[\n\v\f\r\u0085\u2028\u2029])`.
 fn linebreak() -> Node {
   Atomic(
     Alt([

@@ -566,7 +566,7 @@ fn category_for(
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   let args = @env.args()
   let mut verbose = false
   let mut trace = false
@@ -838,4 +838,9 @@ fn base64_decode(s : String) -> Bytes {
     }
   }
   out.to_bytes()
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }

@@ -3,7 +3,12 @@
 // `source-highlighter: pygments` (larger: it links Pygments' lexers).
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   @pygments.register()
   @cli.run_process()
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }

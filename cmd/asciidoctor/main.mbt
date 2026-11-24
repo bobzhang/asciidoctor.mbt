@@ -8,7 +8,7 @@ async fn write_err(s : String) -> Unit {
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   // server-side syntax highlighting (`-a source-highlighter=pygments`)
   @pygments.register()
   let args = @env.args()
@@ -263,3 +263,8 @@ extern "C" fn c_exit(code : Int32) = "exit"
 ///|
 #cfg(target="wasm")
 fn c_exit(code : Int32) = "wasi_snapshot_preview1" "proc_exit"
+
+///|
+fn main {
+  @async.run_async_main(main_async)
+}

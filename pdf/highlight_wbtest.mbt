@@ -203,7 +203,8 @@ test "a numbered line that cannot fit fails the conversion" {
     ),
   )
   try convert_document(doc, test_catalog()) catch {
-    e => inspect(e, content="Failure(Prawn::Errors::CannotFit)")
+    Failure(message) => assert_eq(message, "Prawn::Errors::CannotFit")
+    e => raise e
   } noraise {
     _ => fail("expected the conversion to fail")
   }
