@@ -185,7 +185,7 @@ pub fn guess(source : String?, mimetype? : String) -> Array[String] {
         let names : Set[String] = Set([])
         for modeline in modelines {
           match compile(modeline.0, modeline.1).find(space) {
-            Some(m) => names.add(m.group(1).unwrap_or(""))
+            Some(m) => names.insert(m.group(1).unwrap_or(""))
             None => ()
           }
         }

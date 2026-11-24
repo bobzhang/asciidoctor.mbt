@@ -42,7 +42,7 @@ pub fn php(options : Map[String, String]) -> Lexer {
     for entry in php_builtins {
       if !disabledmodules.contains(entry.0) {
         for f in entry.1 {
-          builtins.add(f)
+          builtins.insert(f)
         }
       }
     }
