@@ -16,10 +16,10 @@ import {
   "bobzhang/asciidoctor@0.3.6",
   "bobzhang/prawn@0.2.3",
   "bobzhang/pygments@0.2.7",
-  "moonbitlang/pagelayout@0.7.1",
-  "moonbitlang/pdflite@0.3.7",
-  "moonbitlang/async@0.22.4",
-  "moonbit-community/yaml@0.0.8",
+  "moonbitlang/pagelayout@0.8.2",
+  "moonbitlang/pdflite@0.4.2",
+  "moonbitlang/async@0.22.10",
+  "moonbit-community/yaml@0.0.10",
 }
 
 preferred_target = "native"
