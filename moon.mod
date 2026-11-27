@@ -13,6 +13,6 @@ keywords = [ "asciidoc", "asciidoctor", "markup" ]
 description = "A port of Asciidoctor (AsciiDoc processor) to MoonBit"
 
 import {
-  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.10",
   "bobzhang/pygments@0.2.7",
 }
